@@ -354,10 +354,48 @@
                                 <h1 id="text02">Error Dev</h1>
                                 <p id="text05">Welcome, to <strong>DEV.BLOG</strong>, the official blog for Error Dev!</p>
                                 <ul id="buttons03" class="buttons">
-                                    <li><a href="https://error-dev.neocities.org/" class="button n01" role="button">DEV.WEB</a></li>
-                                    <li><a href="https://temp.template.temp/" class="button n02" role="button">RSS Feed</a></li>
-                                    <li><a href="https://error-dev.neocities.org/blogs#blog0" class="button n03" role="button">Latest Blog</a></li>
+                                    <li>
+                                        <a href="https://error-dev.neocities.org/" class="button n01" role="button">DEV.WEB</a>
+                                    </li>
+                                    <li>
+                                        <a href="#" class="button n02" role="button" id="rssFeedButton">RSS Feed</a>
+                                    </li>
+                                    <li>
+                                        <a href="https://error-dev.neocities.org/blogs#blog0" class="button n03" role="button">Latest Blog</a>
+                                    </li>
                                 </ul>
+
+                                <script>
+                                    // JavaScript for copying URL and showing "Copied!" message
+                                    document.getElementById('rssFeedButton').addEventListener('click', function(event) {
+                                        event.preventDefault(); // Prevent default link behavior
+
+                                        const textToCopy = 'https://error-dev.neocities.org/blogs.xml';
+                                        navigator.clipboard.writeText(textToCopy).then(() => {
+                                            const button = event.target;
+                                            const originalText = button.textContent;
+
+                                            // Change button text to "Copied!"
+                                            button.textContent = 'Copied!';
+
+                                            // Revert back to original text after 1 second
+                                            setTimeout(() => {
+                                                button.textContent = originalText;
+                                            }, 1000);
+                                        }).catch(err => {
+                                            const button = event.target;
+                                            const originalText = button.textContent;
+
+                                            // Change button text to "Error!"
+                                            button.textContent = 'Error!';
+                                
+                                            // Revert back to original text after 1 second
+                                            setTimeout(() => {
+                                                button.textContent = originalText;
+                                            }, 1000);
+                                        });
+                                    });
+                                </script>
                             </div>
                         </div>
                     </div>
