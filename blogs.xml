@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+  <channel>
+    <title>3rror-dev Blog</title>
+    <link>https://3rror-dev.github.io</link>
+    <description>A blog about updates, features, and random musings.</description>
+    <language>en-us</language>
+    <pubDate>Thu, 13 Mar 2025 14:21:00 +1100</pubDate>
+
+    <!-- POST START -->
+    <item>
+      <title>Published Site!</title>
+      <link>https://3rror-dev.github.io/blogs#blog1</link>
+      <description>Just finished creating the website, and hosted it on neocities! Let's go!</description>
+      <pubDate>Sat, 01 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>Created a Blog!</title>
+      <link>https://3rror-dev.github.io/blogs#blog2</link>
+      <description>Just added this blog section to the website. Who knew this would be so goddamn detrimental to do? Definitely me.</description>
+      <pubDate>Sun, 02 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>Separate Blog Page!</title>
+      <link>https://3rror-dev.github.io/blogs#blog3</link>
+      <description>Instead of a blog section which would be too detrimental for me to implement and stuff, I just made this simple blog page with all the blog posts in here. If you want to see the first post, well you better like scrolling... or just use the scrollbar. But not now, 'cause there's only three posts LOL.</description>
+      <pubDate>Mon, 03 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>Created Page 4 a Game</title>
+      <link>https://3rror-dev.github.io/blogs#blog4</link>
+      <description>I just made a website for an alliance I'm in in a game! Recently I've been playing Avatar Legends: Realms Collide a lot, and I've joined this alliance called [OMSH] Secret Tunnels, and after some days, I decided to make a website containing some information to make it more convenient. However, after another member raised the issue of security and privacy, I've now turned the website into a troll page, and if enemy alliances open it, they get rickrolled!</description>
+      <pubDate>Mon, 03 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>Custom URL Redirects!</title>
+      <link>https://3rror-dev.github.io/blogs#blog5</link>
+      <description>I just made a way for me to easily add URL redirections to my website, and it's only accessible to me! So now I can turn any long link (e.g. https://long.link/thats/super#annoying) into a custom url (e.g. https://3rror-dev.github.io/url)! Now ain't THAT cool?</description>
+      <pubDate>Wed, 05 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>In Honour of AStrangeCreature - The Highest Honor</title>
+      <link>https://3rror-dev.github.io/blogs#blog6</link>
+      <description>ok i forgot what i put here so yeh. basically i joined bro's discord and made some fanart and he liked it and made it his PFP and it was the best day of my life. Did i mention my birthday is on the 19th of march?</description>
+      <pubDate>Fri, 07 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>DEV.ARCHIVE and Jump To Tags!</title>
+      <link>https://3rror-dev.github.io/blogs#blog7</link>
+      <description>Change number UNO: I added a new subwebpage for my website, it's called DEV.ARCHIVE, where I archive a bunch of files and you can download them! Change number DUE: You can now jump to blogposts with tags based on the blog's date! For example, to jump to this blog post...</description>
+      <pubDate>Sat, 08 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>RSS Feed!</title>
+      <link>https://3rror-dev.github.io/blogs#blog8</link>
+      <description>The blog's RSS Feed has now been fully set up! All blog posts already existing are also added. To add the RSS Feed...</description>
+      <pubDate>Sun, 09 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>Major Update! UI & Features Revamp</title>
+      <link>https://3rror-dev.github.io/blogs#blog9</link>
+      <description>The entire website has now just been revamped! As you can see...</description>
+      <pubDate>Wed, 12 Mar 2025 00:00:00 +1100</pubDate>
+    </item>
+    <!-- POST END -->
+
+    <!-- POST START -->
+    <item>
+      <title>Removed Features</title>
+      <link>https://3rror-dev.github.io/blogs#blog10</link>
+      <description>Changelog update! Alright, so it was too much of a hassle to keep the DEV.ARCHIVE...</description>
+      <pubDate>Wed, 12 Mar 2025 01:00:00 +1100</pubDate><!-- Adjusted time for second post on same day -->
+    </item>
+    <!-- POST END -->
+
+  </channel>
+</rss>
