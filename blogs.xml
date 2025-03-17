@@ -11,6 +11,24 @@
     <item>
       <title>Removed Features</title>
       <link>https://3rror-dev.github.io/blogs#blog10</link>
+      <description>Okay. ANOTHER refresh! Look. I disliked the last refresh, so I changed it all again. Okay, listen up.
+Change #1:
+I added a projects section that lists a few of my projects.
+Change #2:
+Instead of the jump-to feature for the blog page, I added a table of contents at the very top of the blog page, so you can quickly jump to whichever blog post you want, in seconds. You may have also seen that I changed the layout a bit, with each post having buttons that let you go to the very top, the last post, or the next post.
+Change #3:
+Branding. Now, the DEV.() branding still exists, but the website has an additional branding, "Wormhole of Error Dev". Also you may have noticed the color scheme changed. Now it's orange and purple.
+-------------------------------------------------------------------------------------------------
+Update:
+So you guys remember the last update, on the 13th right? Yeah well Neocities support FINALLY came back to me, and told me that they found the error and fixed it, so now I've got access to the site again. This is absolutely BRILLIANT NEWS. However, I'm still going to stick with Github, because I'm afraid something like that will happen again, and this time I'm making sure to make local backups all the time. I'm probably going to use the neocities site, for something different.</description>
+      <pubDate>Wed, 17 Mar 2025 01:00:00 +1100</pubDate><!-- Adjusted time for second post on same day -->
+    </item>
+    <!-- POST END -->
+    
+    <!-- POST START -->
+    <item>
+      <title>Removed Features</title>
+      <link>https://3rror-dev.github.io/blogs#blog10</link>
       <description>Changelog update! Alright, so it was too much of a hassle to keep the DEV.ARCHIVE...</description>
       <pubDate>Wed, 12 Mar 2025 01:00:00 +1100</pubDate><!-- Adjusted time for second post on same day -->
     </item>
