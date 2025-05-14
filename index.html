@@ -14639,13 +14639,16 @@
           </div>
           <main class="flex-1 container mx-auto px-4 py-12">             
             <div dir="ltr" data-orientation="horizontal" class="w-full">               
-              <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 mb-8" tabindex="0" data-orientation="horizontal" style="outline: none">                 
+              <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 mb-8" tabindex="0" data-orientation="horizontal" style="outline: none">                 
                 <button type="button" role="tab" aria-selected="true" aria-controls="radix-:r0:-content-about" data-state="active" id="radix-:r0:-trigger-about" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">                   
                   Profile
                 </button>
                 <button type="button" role="tab" aria-selected="false" aria-controls="radix-:r0:-content-blog" data-state="inactive" id="radix-:r0:-trigger-blog" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">                   
                   Blog                 
-                </button>               
+                </button>
+                <button type="button" role="tab" aria-selected="false" aria-controls="radix-:r0:-content-gallery" data-state="inactive" id="radix-:r0:-trigger-gallery" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">                   
+                  Gallery                 
+                </button>
               </div>                
               <div style="opacity: 1; transform: none">                 
                 <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-about" id="radix-:r0:-content-about" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-8" style="animation-duration: 0s">                   
@@ -14735,6 +14738,7 @@ https://modrinth.com/organization/infiniverse</i></a>!<br><br>Contact me at <a h
                     </div>                   
                   </div>                 
                 </div>                 
+                
                 <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-blog" hidden="" id="radix-:r0:-content-blog" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-6">
                   <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
                     <div class="p-6 pt-6">
@@ -14835,7 +14839,36 @@ Alright, that's it for now, see y'all! (It has since be revamped again, twice!)<
                       </div>
                     </div>
                   </div>
-                </div>               
+                </div>
+
+                <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-gallery" id="radix-:r0:-content-gallery" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5" hidden=''>
+                  <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
+                    <div class="p-6 pt-6">
+                      <h2 class="text-2xl font-bold mb-4">Gallery</h2>
+                      <div class="space-y-5">
+                        
+                        <div class="flex flex-col md:flex-col gap-4 items-start">
+                          <img src="https://media.discordapp.net/attachments/1163243300388610108/1371360109250220062/SPOILER_SPOILER_image.png?ex=68257d20&is=68242ba0&hm=a52a8099873ac03336dd850dae1f66c40d321d500d5cd0e3693cabc8dfb57c33&=&width=833&height=929" class="galleryimg rounded-lg w-full md:w-1/9 object-cover" />
+                          <div>
+                            <h3 class="text-lg font-bold text-accent">Fishing Boat</h3>
+                            <p class="text-muted-foreground">A sneak peak of part of my build for Maritime MBC</p>
+                          </div>
+                        </div>
+
+                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full mt-8 mb-8"></div>
+
+                        <div class="flex flex-col md:flex-col gap-4 items-start">
+                          <img src="https://cdn.discordapp.com/avatars/989414384679927838/dcf7c5fb2f1931a651376a3a03dd9c0f.webp?size=1024&width=640&height=640" class="galleryimg rounded-lg w-full md:w-1/9 object-cover" />
+                          <div>
+                            <h3 class="text-lg font-bold text-accent">WINTER IS A LIE</h3>
+                            <p class="text-muted-foreground">My self-made Discord PFP using MS Paint!</p>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>             
             </div>
             <script>
@@ -14843,10 +14876,12 @@ Alright, that's it for now, see y'all! (It has since be revamped again, twice!)<
                 // Get the tab buttons
                 const profileButton = document.getElementById('radix-:r0:-trigger-about');
                 const blogButton = document.getElementById('radix-:r0:-trigger-blog');
+                const galleryButton = document.getElementById('radix-:r0:-trigger-gallery');
                 
                 // Get the content sections
                 const profileContent = document.getElementById('radix-:r0:-content-about');
                 const blogContent = document.getElementById('radix-:r0:-content-blog');
+                const galleryContent = document.getElementById('radix-:r0:-content-gallery');
                 
                 // Function to show Profile tab
                 const showProfile = function() {
@@ -14855,12 +14890,16 @@ Alright, that's it for now, see y'all! (It has since be revamped again, twice!)<
                   profileButton.setAttribute('data-state', 'active');
                   blogButton.setAttribute('aria-selected', 'false');
                   blogButton.setAttribute('data-state', 'inactive');
+                  galleryButton.setAttribute('aria-selected', 'false');
+                  galleryButton.setAttribute('data-state', 'inactive');
                   
                   // Update content visibility
                   profileContent.setAttribute('data-state', 'active');
                   profileContent.removeAttribute('hidden');
                   blogContent.setAttribute('data-state', 'inactive');
                   blogContent.setAttribute('hidden', '');
+                  galleryContent.setAttribute('data-state', 'inactive');
+                  galleryContent.setAttribute('hidden', '');
                 };
                 
                 // Function to show Blog tab
@@ -14870,19 +14909,60 @@ Alright, that's it for now, see y'all! (It has since be revamped again, twice!)<
                   profileButton.setAttribute('data-state', 'inactive');
                   blogButton.setAttribute('aria-selected', 'true');
                   blogButton.setAttribute('data-state', 'active');
+                  galleryButton.setAttribute('aria-selected', 'false');
+                  galleryButton.setAttribute('data-state', 'inactive');
                   
                   // Update content visibility
                   profileContent.setAttribute('data-state', 'inactive');
                   profileContent.setAttribute('hidden', '');
                   blogContent.setAttribute('data-state', 'active');
                   blogContent.removeAttribute('hidden');
+                  galleryContent.setAttribute('data-state', 'inactive');
+                  galleryContent.setAttrivute('hidden', '');
+                };
+
+                // Function to show Blog tab
+                const showGallery = function() {
+                  // Update button states
+                  profileButton.setAttribute('aria-selected', 'false');
+                  profileButton.setAttribute('data-state', 'inactive');
+                  blogButton.setAttribute('aria-selected', 'false');
+                  blogButton.setAttribute('data-state', 'inactive');
+                  galleryButton.setAttribute('aria-selected', 'true');
+                  galleryButton.setAttribute('data-state', 'active');
+                  
+                  // Update content visibility
+                  profileContent.setAttribute('data-state', 'inactive');
+                  profileContent.setAttribute('hidden', '');
+                  blogContent.setAttribute('data-state', 'inactive');
+                  blogContent.setAttribute('hidden', '');
+                  galleryContent.setAttribute('data-state', 'active');
+                  galleryContent.removeAttribute('hidden');
                 };
                 
                 // Add click event listeners
                 profileButton.addEventListener('click', showProfile);
                 blogButton.addEventListener('click', showBlog);
+                galleryButton.addEventListener('click', showGallery);
               });
             </script>
+
+            <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-info" id="radix-:r0:-content-info" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5">
+            <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
+              <div class="p-6 pt-6">
+                <h2 class="text-2xl font-bold mb-4">Information</h2>
+                <p class="text-muted-foreground leading-relaxed">Error Dev's self-custom-made website. Coded in purely HTML, JS, and CSS.<br>HTML: xx%, JS: xx%, CSS: xx%</p>                       
+                <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full my-6"></div>
+                <div class="grid grid-cols-2 md:grid-cols-2 gap-3">
+                  <div class="bg-secondary/50 rounded-md px-3 py-2 text-sm">100% Self-Made</div>
+                  <div class="bg-secondary/50 rounded-md px-3 py-2 text-sm">Hosted Using <a href="https://github.com/">Github</a></div>
+                  <div class="bg-secondary/50 rounded-md px-3 py-2 text-sm">Copyright from 2023 to 2025</div>
+                  <div class="bg-secondary/50 rounded-md px-3 py-2 text-sm">Copyright Error Dev</div>
+                </div>
+              </div>                   
+            </div>
+          </div>
+
           </main>
           <footer class="py-6 px-4 border-t border-border/30 text-center text-sm text-muted-foreground">
             <p>© 2023-2025 Error Dev. All rights reserved.</p>
