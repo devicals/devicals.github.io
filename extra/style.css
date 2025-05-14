@@ -1425,9 +1425,9 @@ body {
 
 .alert {
   padding: 20px;
-  background-color: #414458;
+  background-color: hsl(var(--background));
   color: white;
-  border-radius: 0.5rem;
+  border-radius: 0rem;
 }
 
 .closebtn {
