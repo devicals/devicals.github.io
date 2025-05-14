@@ -1444,3 +1444,11 @@ body {
 .closebtn:hover {
   color: #ff4971;
 }
+
+.galleryimg {
+  max-width: 75%;
+  max-height: 45%;
+  width: auto;
+  height: auto;
+  border-radius: 0.5rem;
+}
