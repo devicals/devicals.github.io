@@ -1426,7 +1426,7 @@ body {
 .alert {
   padding: 20px;
   background-color: hsl(var(--background));
-  color: hsl(var(text-muted-foreground));
+  color: hsl(var(--text-muted-foreground));
   border-radius: 0rem;
 }
 
