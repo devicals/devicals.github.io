@@ -33,22 +33,48 @@ bars:
     widgets:
       left: [
           "home", 
+          "launchpad",
+          "notes",
           "media", 
-          "active_window",
+          "active_window"
       ]
       center: [
           "clock",
         ]
       right: [
-          "memory",
-          "disk",
-          "weather",
-          "wifi",
+          "systray",
+          "device-stats",
+          "network",
           "volume",
           "battery",
+          "language",
+          "notifications",
           "power_menu"
       ]
 widgets:
+  notes:
+    type: "yasb.notes.NotesWidget"
+    options:
+      label: "<span>\udb82\udd0c</span> {count}"
+      label_alt: "{count} notes"
+      menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "System"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        max_title_size: 150
+        show_date_time: true
+      icons:
+        note: "\udb82\udd0c"
+        delete: "\ueab8"
+        copy: "\uebcc"
+      callbacks:
+        on_left: "toggle_menu"
+        on_right: "toggle_label"
   home:
     type: "yasb.home.HomeWidget"
     options:
@@ -57,7 +83,6 @@ widgets:
         - { title: "Home", path: "~" }
         - { title: "Downloads", path: "~\\Downloads"}
         - { title: "Documents", path: "~\\Documents"}
-        - { title: "Datapacks", path: "~\\Documents\\Minecraft Datapacks"}
         - { title: "YASB Config", path: "~\\.config\\yasb\\config.yaml"}
         - { title: "YASB Styling", path: "~\\.config\\yasb\\styles.css"}
       system_menu: true
@@ -71,6 +96,37 @@ widgets:
         
       offset_left: 4
       offset_top: 0
+  launchpad:
+    type: "yasb.launchpad.LaunchpadWidget"
+    options:
+      label: "<span>\uf40e</span> Shortcuts"
+      search_placeholder: "Search apps..."
+      app_icon_size: 48
+      window:
+        fullscreen: false
+        width: 800
+        height: 600
+        overlay_block: true
+      window_style:
+        enable_blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "system"
+      window_animation:
+        fade_in_duration: 200
+        fade_out_duration: 200
+      callbacks:
+        on_left: "toggle_launchpad"
+      app_title_shadow:
+        enabled: true
+        color: "#00000090"
+        offset: [1, 1]
+        radius: 2
+      app_icon_shadow:
+        enabled: true
+        color: "#00000090"
+        offset: [0, 2]
+        radius: 8
   media:
     type: "yasb.media.MediaWidget"
     options:
@@ -114,14 +170,62 @@ widgets:
     options:
       media_menu:
         border_color: '#7aa2f7'
+  systray:
+    type: "yasb.systray.SystrayWidget"
+    options:
+      class_name: "systray"
+      label_collapsed: "\uf47d"
+      label_expanded: "\uf460"
+      label_position: "right"
+      icon_size: 16
+      pin_click_modifier: "alt"
+      show_unpinned: false
+      show_unpinned_button: true
+      show_battery: false
+      show_volume: false
+      show_network: false
+      tooltip: true
+  device-stats:
+    type: "yasb.grouper.GrouperWidget"
+    options:
+      class_name: "device-stats"
+      widgets: [
+        "memory",
+        "cpu",
+        "disk",
+      ]
+      container_padding:
+        top: 0
+        left: 2
+        bottom: 0
+        right: 2
+  network:
+    type: "yasb.grouper.GrouperWidget"
+    options:
+      class_name: "network"
+      widgets: [
+        "wifi",
+        "traffic",
+      ]
+      container_padding:
+        left: 0
   memory:
     type: "yasb.memory.MemoryWidget"
     options:
-      label: "<span>\uf4bc</span> {virtual_mem_outof}"
-      label_alt: "<span>\uf4bc</span> {virtual_mem_outof}"
-      update_interval: 10000
+      label: "<span>\uefc5</span> {virtual_mem_used}/{virtual_mem_total}"
+      label_alt: "<span>\uf4bc</span> VIRT: {virtual_mem_percent}% SWAP: {swap_mem_percent}%"
+      update_interval: 5000
       callbacks:
+        on_left: "toggle_label"
         on_right: "exec cmd /c Taskmgr"
+  cpu:
+    type: "yasb.cpu.CpuWidget"
+    options:
+      label: "<span>\uf4bc</span> {info[percent][total]:.0f}%"
+      label_alt: "<span>\uf4bc</span> {info[percent][total]:.0f}%"
+      update_interval: 2000
+      callbacks:
+        on_right: "toggle_label"
   disk:
     type: "yasb.disk.DiskWidget"
     options:
@@ -138,6 +242,16 @@ widgets:
         offset_top: 0
       callbacks:
         on_left: "toggle_group"
+  notifications:
+    type: "yasb.notifications.NotificationsWidget"
+    options:
+      label: "<span>\uf476</span> {count}"
+      label_alt: "<span>\uf476</span> {count} notifications"
+      hide_empty: false
+      tooltip: false
+      callbacks:
+        on_left: "toggle_notification"
+        on_right: "toggle_label"
   active_window:
     type: "yasb.active_window.ActiveWindowWidget"
     options:
@@ -162,38 +276,6 @@ widgets:
         border_color: "#7aa2f7"
         alignment: "center"
         offset_top: 0
-  weather:
-    type: "yasb.weather.WeatherWidget"
-    options:
-      label: "<span>{icon}</span> {temp}"
-      label_alt: "{location}: {conditions}, Min {min_temp}, Max {max_temp}, Humidity {humidity}"
-      api_key: '24b6c2cda6d84066b0304531241908'
-      update_interval: 600
-      hide_decimal: true
-      location: "Glenroy, Victoria, Australia"
-      units: "metric"
-      callbacks:
-        on_left: "toggle_card"
-      icons:
-        sunnyDay: "\udb81\udd99"
-        clearNight: "\ue3c2"
-        cloudyDay: "\ue21d"
-        cloudyNight: "\ue226"
-        rainyDay: "\ue371"
-        rainyNight: "\ue371"
-        snowyIcyDay: "\udb81\udf17"
-        snowyIcyNight: "\udb81\udf17"
-        blizzard: "\udb81\udd99"
-        default: "\udb81\udd99"
-      weather_card:
-        blur: true
-        round_corners: true
-        round_corners_type: "small"
-        border_color: "#7aa2f7"
-        alignment: "center"
-        direction: "down"
-        offset_top: 0
-        icon_size: 48
   wifi:
     type: "yasb.wifi.WifiWidget"
     options:
@@ -211,6 +293,22 @@ widgets:
         "\udb82\udd25",  # Icon for 41-80% strength
         "\udb82\udd28"   # Icon for 81-100% strength
       ]
+  traffic:
+    type: "yasb.traffic.TrafficWidget"
+    options:
+      label: "\ueb01 \ueab4 {download_speed} | \ueab7 {upload_speed}"
+      update_interval: 1000
+      menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "system"
+        alignment: "left"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+      callbacks:
+        on_left: "toggle_menu"
   volume:
     type: "yasb.volume.VolumeWidget"
     options:
@@ -257,3 +355,25 @@ widgets:
         sleep: ["\u23fe", "Sleep"]
         lock: ["\uea75", "Lock"]
         cancel: ["","Cancel"]
+        
+  language:
+    type: "yasb.language.LanguageWidget"
+    options:
+      label: "<span>\udb80\udf0c</span> {lang[country_code]}"
+      label_alt: "<span>\udb80\udf0c</span> {lang[full_name]}"
+      update_interval: 5
+      callbacks:
+        on_left: "toggle_menu"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
+      language_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "None"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        show_layout_icon: true
+        layout_icon: "\uf11c"
