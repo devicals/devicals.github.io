@@ -1165,40 +1165,40 @@ body {
 }
 
 .rounded-\[2px\] {
-    border-radius: 2px
+    border-radius: 0rem
 }
 
 .rounded-\[calc\(var\(--radius\)\)\] {
-    border-radius: calc(var(--radius))
+    border-radius: 0rem
 }
 
 .rounded-\[inherit\] {
-    border-radius: inherit
+    border-radius: 0rem
 }
 
 .rounded-full {
-    border-radius: 9999px
+    border-radius: 0rem
 }
 
 .rounded-lg {
-    border-radius: var(--radius)
+    border-radius: 0rem
 }
 
 .rounded-md {
-    border-radius: calc(var(--radius) - 2px)
+    border-radius: 0rem
 }
 
 .rounded-sm {
-    border-radius: calc(var(--radius) - 4px)
+    border-radius: 0rem
 }
 
 .rounded-t-\[10px\] {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px
+    border-top-left-radius: 0rem;
+    border-top-right-radius: 0rem
 }
 
 .rounded-tl-sm {
-    border-top-left-radius: calc(var(--radius) - 4px)
+    border-top-left-radius: 0rem
 }
 
 .border {
@@ -1450,5 +1450,5 @@ body {
   max-height: 45%;
   width: auto;
   height: auto;
-  border-radius: 0.5rem;
+  border-radius: 0rem;
 }
