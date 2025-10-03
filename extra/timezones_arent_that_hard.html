@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <style>
+        * {
+            font-family: monospace;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            margin: 0 0 30px 0;
+            font-size: 2em;
+        }
+        .countdown {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        .time-unit {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 80px;
+        }
+        .time-value {
+            font-size: 3em;
+            font-weight: bold;
+            display: block;
+        }
+        .time-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+        .custom-date {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-date input {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            height: 40px;
+            box-sizing: border-box;
+        }
+        .custom-date button {
+            padding: 10px 20px;
+            background: #fff;
+            color: #667eea;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin: 5px;
+            height: 40px;
+            box-sizing: border-box;
+        }
+        .custom-date button:hover {
+            background: #f0f0f0;
+        }
+        .code-section {
+            margin-top: 40px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+        }
+        .code-section h3 {
+            margin-top: 0;
+        }
+        .code-section pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Countdown to October 3rd, 6 PM UTC</h1>
+        <div class="countdown" id="countdown">
+            <div class="time-unit">
+                <span class="time-value" id="days">00</span>
+                <span class="time-label">Days</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value" id="hours">00</span>
+                <span class="time-label">Hours</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value" id="minutes">00</span>
+                <span class="time-label">Minutes</span>
+            </div>
+            <div class="time-unit">
+                <span class="time-value" id="seconds">00</span>
+                <span class="time-label">Seconds</span>
+            </div>
+        </div>
+
+        <div class="custom-date">
+            <h3>Set Custom Date & Time (UTC)</h3>
+            <input type="date" id="customDate" value="2025-10-03">
+            <input type="time" id="customTime" value="18:00">
+            <button onclick="setCustomCountdown()">Update Countdown</button>
+        </div>
+
+        <div class="code-section">
+            <h3>Countdown Code (For 6 PM UTC, 3rd of October 2025):</h3>
+            <pre><code>let targetDate = new Date('2025-10-03T18:00:00Z');
+
+function updateCountdown() {
+    const now = new Date();
+    const diff = targetDate - now;
+    
+    if (diff <= 0) {
+        document.getElementById('days').textContent = '00';
+        document.getElementById('hours').textContent = '00';
+        document.getElementById('minutes').textContent = '00';
+        document.getElementById('seconds').textContent = '00';
+        return;
+    }
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+    
+    document.getElementById('days').textContent = 
+        String(days).padStart(2, '0');
+    document.getElementById('hours').textContent = 
+        String(hours).padStart(2, '0');
+    document.getElementById('minutes').textContent = 
+        String(minutes).padStart(2, '0');
+    document.getElementById('seconds').textContent = 
+        String(seconds).padStart(2, '0');
+}
+
+setInterval(updateCountdown, 1000);
+updateCountdown();</code></pre>
+        </div>
+    </div>
+
+    <script>
+        let targetDate = new Date('2025-10-03T18:00:00Z');
+
+        function updateCountdown() {
+            const now = new Date();
+            const diff = targetDate - now;
+            
+            if (diff <= 0) {
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+                return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+            
+            document.getElementById('days').textContent = String(days).padStart(2, '0');
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+        }
+
+        function setCustomCountdown() {
+            const date = document.getElementById('customDate').value;
+            const time = document.getElementById('customTime').value;
+            targetDate = new Date(`${date}T${time}:00Z`);
+            updateCountdown();
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+</body>
+</html>
