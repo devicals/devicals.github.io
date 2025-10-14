@@ -9,31 +9,37 @@
     <link rel="preload" href="extra/style.css" as="style">
     <link rel="stylesheet" href="extra/style.css" data-n-g="">
     <link rel="stylesheet" href="extra/style.css">
-    <script>
-      function announcement() {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert';
+      <script>
+        function announcement() {
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert';
         
-        const closeBtn = document.createElement('span');
-        closeBtn.className = 'closebtn';
-        closeBtn.innerHTML = '&times;';
-        closeBtn.onclick = function() {
-          this.parentElement.style.display = 'none';
-        };
+          const closeBtn = document.createElement('span');
+          closeBtn.className = 'closebtn';
+          closeBtn.innerHTML = '&times;';
+          closeBtn.onclick = function() {
+            this.parentElement.style.display = 'none';
+          };
         
-        const strongText = document.createElement('strong');
-        strongText.textContent = 'Announcement: ';
+          const strongText = document.createElement('strong');
+          strongText.textContent = 'Announcement: ';
         
-        alertDiv.appendChild(closeBtn);
-        alertDiv.appendChild(strongText);
-        alertDiv.appendChild(document.createTextNode('Finished updating all of my Minecraft datapacks to the latest version!'));
+          const link = document.createElement('a');
+          link.href = '/obliter8tion.html';
+          link.textContent = '[here]';
+        
+          alertDiv.appendChild(closeBtn);
+          alertDiv.appendChild(strongText);
+          alertDiv.appendChild(document.createTextNode('Check out my new book project (WIP), inspired by ULTRAKILL, '));
+          alertDiv.appendChild(link);
+          alertDiv.appendChild(document.createTextNode('!'));
+          document.body.insertBefore(alertDiv, document.body.firstChild);
+        }
 
-        document.body.insertBefore(alertDiv, document.body.firstChild);
-      }
-      window.addEventListener('load', function() {
+        window.addEventListener('load', function() {
           announcement();
-      });
-    </script>
+        });
+      </script>
     <style>
       html[lang] > body.ishome > div.adult + main.main,
       html[lang] > body.startnew > div#sections > section#section_uname,
@@ -520,7 +526,7 @@
                       <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full my-6"></div>
                       <h3 class="text-xl font-bold mb-4">Social Links</h3>
                       <div class="grid grid-cols-3 md:grid-cols-3 gap-3">                         
-                        <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://discord.com/users/989414384679927838/', '_blank')">Discord</button>  
+                        <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://discord.com/users/989414384679927838/', '_blank')">Discord</button>
                         <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://www.reddit.com/user/3RR0R_0FF1C1AL/', '_blank')">Reddit</button>  
                         <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://www.youtube.com/@3rror_dev/', '_blank')">YouTube</button>  
                         <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://github.com/devicals/', '_blank')">GitHub</button>  
