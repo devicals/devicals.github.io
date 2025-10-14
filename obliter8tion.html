@@ -477,11 +477,11 @@
     function friendlyTitleFromChapter(chapter) {
       switch (chapter.type) {
 				case "chapter":
-					return `< C:${chapter.num} | ${chapter.name} >`;
+					return `< ${chapter.num}C | ${chapter.name} >`;
 				case "bonus":
-					return `[ B:${chapter.num} | ${chapter.name} }`;
+					return `[ ${chapter.num}B | ${chapter.name} }`;
 				case "test":
-					return `{ T:${chapter.num} | ${chapter.name} }`;
+					return `{ ${chapter.num}T | ${chapter.name} }`;
 				default:
 					return `< ERR: CONTENT TYPE UNKNOWN, REPORT ERROR INFO TO CREATOR | INFO: ${chapter.num}/${chapter.name} >`;
 			}
@@ -624,7 +624,7 @@
           .join(', ');
         
         document.querySelector('.information-stats').innerHTML = 
-          `Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
+          `<strong>Key</strong>: C = Chapter, B = Bonus Content, T = Test<br><br>Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
         
       } catch (error) {
         console.error('Error fetching GitHub language stats:', error);
