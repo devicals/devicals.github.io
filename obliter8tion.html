@@ -474,17 +474,23 @@
 
     let chaptersData = [];
 
-    function friendlyTitleFromChapter(chapter) {
+    function friendlyTitleFromChapter(chapter, maxNumLength) {
+      let numStr = chapter.num;
+      const paddingNeeded = maxNumLength - numStr.length;
+      
+      const pad = '\u00A0'.repeat(paddingNeeded);
+      numStr = pad + numStr;
+
       switch (chapter.type) {
-				case "chapter":
-					return `< ${chapter.num}C | ${chapter.name} >`;
-				case "bonus":
-					return `[ ${chapter.num}B | ${chapter.name} }`;
-				case "test":
-					return `{ ${chapter.num}T | ${chapter.name} }`;
-				default:
-					return `< ERR: CONTENT TYPE UNKNOWN, REPORT ERROR INFO TO CREATOR | INFO: ${chapter.num}/${chapter.name} >`;
-			}
+        case "chapter":
+          return `${numStr}C // ${chapter.name}`;
+        case "bonus":
+          return `${numStr}B // ${chapter.name}`;
+        case "test":
+          return `${numStr}T \\\\ ${chapter.name}`;
+        default:
+          return `ERR: CONTENT TYPE UNKNOWN, REPORT ERROR INFO TO CREATOR \\\\ INFO: ${numStr}/${chapter.name}`;
+      }
     }
 
     function loadChapter(chapter) {
@@ -564,11 +570,12 @@
         window.chaptersData = chaptersData;
         
         // Populate dropdown
+        const maxNumLength = Math.max(...chaptersData.map(ch => ch.num.length));
         chapterSelect.innerHTML = "";
         chaptersData.forEach(chapter => {
           const opt = document.createElement("option");
           opt.value = `${chapter.type}|${chapter.num}`;
-          opt.textContent = friendlyTitleFromChapter(chapter);
+          opt.textContent = friendlyTitleFromChapter(chapter, maxNumLength);
           chapterSelect.appendChild(opt);
         });
 
@@ -583,10 +590,10 @@
         
         // Load first chapter
         if (chaptersData.length > 0) {
-					const firstChapter = chaptersData[0];
-					chapterSelect.value = `${firstChapter.type}|${firstChapter.num}`;
-					loadChapter(firstChapter);
-				}
+          const firstChapter = chaptersData[0];
+          chapterSelect.value = `${firstChapter.type}|${firstChapter.num}`;
+          loadChapter(firstChapter);
+        }
       } catch (err) {
         console.error("Error loading books/obliter8tion.json:", err);
         contentDiv.innerHTML = `<p style="color:hsl(var(--accent));">Error loading books/obliter8tion.json<br><br><strong>CORS Error - Local File Restrictions</strong><br><br>Your browser blocks loading JSON files locally for security reasons.<br><br><strong>Solutions:</strong><br><br>1. <strong>Run a local server</strong> (recommended):<br>   - Python: <code>python -m http.server 8000</code><br>   - Then open: <code>http://localhost:8000/obliter8tion.html</code><br><br>2. <strong>Convert JSON to JS</strong>:<br>   - Rename <code>books/obliter8tion.json</code> to <code>chapters.js</code><br>   - Add at the start: <code>window.CHAPTERS_DATA = </code><br>   - Add in HTML head: <code>&lt;script src="chapters.js"&gt;&lt;/script&gt;</code><br><br>3. <strong>Upload to GitHub Pages</strong> (works perfectly online)<br><br>Debug info: ${err.message}</p>`;
@@ -624,7 +631,7 @@
           .join(', ');
         
         document.querySelector('.information-stats').innerHTML = 
-          `<strong>Key</strong>: C = Chapter, B = Bonus Content, T = Test<br><br>Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
+          `Inspired by <a href="https://store.steampowered.com/app/1229490/ULTRAKILL/" target="_blank"><strong>ULTRAKILL</strong></a> and <a href="https://www.planetminecraft.com/project/antitheist/" target="_blank"><strong>ANTITHEIST</strong></a>.<br><strong>Key</strong>: C = Chapter, B = Bonus Content, T = Test<br><br>Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
         
       } catch (error) {
         console.error('Error fetching GitHub language stats:', error);
