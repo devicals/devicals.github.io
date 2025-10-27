@@ -68,6 +68,9 @@
   </style>
 </head>
 <body style="cursor: default">
+  <audio autoplay loop>
+    <source src="Rubedo.mp3" type="audio/mpeg">
+  </audio>
 	<script>
 		function goToTop() {
 			document.body.scrollTop = 0;
@@ -84,7 +87,7 @@
           </div>
 
           <div class="relative z-10 max-w-3xl mx-auto">
-            <div class="text-lg mb-2">print(<span class="text-accent">"OBLITER8TION"</span>)</div>
+            <div id="chapter-type" class="text-lg mb-2">print(<span class="text-accent">"OBLITER8TION"</span>)</div>
             <h1 id="chapter-title" class="text-4xl md:text-6xl font-bold mb-4">
               <span class="text-accent">Loading...</span>
             </h1>
@@ -451,7 +454,7 @@
               <p class="text-muted-foreground leading-relaxed information-stats">Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>Loading language stats...</p>
               <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full my-6"></div>
               <div class="grid grid-cols-3 md:grid-cols-3 gap-3">
-								<button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="goToTop()">↑ Go to Top | OBLITER8TION | By Error Dev ↑</button>
+								<button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="goToTop()">↑ Go to Top | By Error Dev ↑</button>
                 <div class="bg-secondary/50 rounded-md px-3 py-2 text-sm">Hosted Using <a href="https://github.com/" target="_blank">Github</a></div>
                 <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://devicals.github.io/feedback', '_blank')">SEND FEEDBACK</button>
               </div>
@@ -469,6 +472,7 @@
   <script>
     const chapterSelect = document.getElementById('chapterSelect');
     const contentDiv = document.getElementById('chapter-content');
+    const preSubtitle = document.getElementById('chapter-type');
     const titleEl = document.getElementById('chapter-title');
 
     let chaptersData = [];
@@ -483,6 +487,8 @@
       switch (chapter.type) {
         case "chapter":
           return `${numStr}C // ${chapter.name}`;
+        case "prelude":
+          return `${numStr}P // ${chapter.name}`;
         case "bonus":
           return `${numStr}B // ${chapter.name}`;
         case "test":
@@ -493,6 +499,7 @@
     }
 
     function loadChapter(chapter) {
+      preSubtitle.innerHTML = `print(<span class="text-accent">"${chapter.type}"</span>)`;
       titleEl.innerHTML = `<span class="text-accent">${chapter.name}</span>`;
       contentDiv.innerHTML = "<p>Loading chapter...</p>";
 
@@ -630,7 +637,7 @@
           .join(', ');
         
         document.querySelector('.information-stats').innerHTML = 
-          `Inspired by <a href="https://store.steampowered.com/app/1229490/ULTRAKILL/" target="_blank"><strong>ULTRAKILL</strong></a> and <a href="https://www.planetminecraft.com/project/antitheist/" target="_blank"><strong>ANTITHEIST</strong></a>.<br><strong>Key</strong>: C = Chapter, B = Bonus Content, T = Test<br><br>Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
+          `Inspired by <a href="https://store.steampowered.com/app/1229490/ULTRAKILL/" target="_blank"><strong>ULTRAKILL</strong></a> and <a href="https://www.planetminecraft.com/project/antitheist/" target="_blank"><strong>ANTITHEIST</strong></a>.<br><strong>Key</strong>: P = Prelude, C = Chapter, B = Bonus Content, T = Test<br><br>Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
         
       } catch (error) {
         console.error('Error fetching GitHub language stats:', error);

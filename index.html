@@ -7,39 +7,91 @@
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" data-optimized-fonts="true">
     <meta name="next-head-count" content="5">
     <link rel="preload" href="extra/style.css" as="style">
-    <link rel="stylesheet" href="extra/style.css" data-n-g="">
     <link rel="stylesheet" href="extra/style.css">
       <script>
-        function announcement() {
-          const alertDiv = document.createElement('div');
-          alertDiv.className = 'alert';
-        
-          const closeBtn = document.createElement('span');
-          closeBtn.className = 'closebtn';
-          closeBtn.innerHTML = '&times;';
-          closeBtn.onclick = function() {
-            this.parentElement.style.display = 'none';
-          };
-        
-          const strongText = document.createElement('strong');
-          strongText.textContent = 'Announcement: ';
-        
-          const link = document.createElement('a');
-          link.href = '/obliter8tion.html';
-          link.textContent = '[here]';
-        
-          alertDiv.appendChild(closeBtn);
-          alertDiv.appendChild(strongText);
-          alertDiv.appendChild(document.createTextNode('Check out my new book project (WIP), inspired by ULTRAKILL, '));
-          alertDiv.appendChild(link);
-          alertDiv.appendChild(document.createTextNode('!'));
-          document.body.insertBefore(alertDiv, document.body.firstChild);
+        async function announcement() {
+          try {
+            const response = await fetch('/extra/announcement.md');
+            if (!response.ok) {
+              throw new Error('Failed to fetch announcement');
+            }
+            
+            const markdownText = await response.text();
+            const lines = markdownText.trim().split('\n').filter(line => line.trim() !== '');
+            
+            if (lines.length === 0) return;
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert';
+            
+            const closeBtn = document.createElement('span');
+            closeBtn.className = 'closebtn';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = function() {
+              this.parentElement.style.display = 'none';
+            };
+            
+            const contentContainer = document.createElement('span');
+            
+            function parseMarkdown(text) {
+              const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+              const parts = [];
+              let lastIndex = 0;
+              let match;
+              
+              while ((match = linkRegex.exec(text)) !== null) {
+                if (match.index > lastIndex) {
+                  parts.push(document.createTextNode(text.substring(lastIndex, match.index)));
+                }
+                
+                const link = document.createElement('a');
+                link.href = match[2];
+                link.textContent = match[1];
+                parts.push(link);
+                
+                lastIndex = match.index + match[0].length;
+              }
+              
+              if (lastIndex < text.length) {
+                parts.push(document.createTextNode(text.substring(lastIndex)));
+              }
+              
+              return parts;
+            }
+            
+            let currentIndex = 0;
+            function updateContent() {
+              contentContainer.innerHTML = '';
+              
+              const strongText = document.createElement('strong');
+              strongText.textContent = 'Announcement: ';
+              contentContainer.appendChild(strongText);
+              
+              const parsedContent = parseMarkdown(lines[currentIndex]);
+              parsedContent.forEach(element => contentContainer.appendChild(element));
+              
+              currentIndex = (currentIndex + 1) % lines.length;
+            }
+            
+            updateContent();
+            
+            alertDiv.appendChild(closeBtn);
+            alertDiv.appendChild(contentContainer);
+            document.body.insertBefore(alertDiv, document.body.firstChild);
+            
+            if (lines.length > 1) {
+              setInterval(updateContent, 7500);
+            }
+            
+          } catch (error) {
+            console.error('Error loading announcement:', error);
+          }
         }
 
         window.addEventListener('load', function() {
           announcement();
         });
-      </script>
+    </script>
     <style>
       html[lang] > body.ishome > div.adult + main.main,
       html[lang] > body.startnew > div#sections > section#section_uname,
