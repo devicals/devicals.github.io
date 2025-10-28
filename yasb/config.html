@@ -14232,7 +14232,7 @@
     <div id="__next">
       <div class="min-h-screen">
         <div class="bg-background min-h-screen flex flex-col font-mono">
-          
+
           <div class="relative flex flex-col items-center justify-center py-20 px-4 text-center" style="opacity: 1; transform: none">
             <div class="absolute inset-0 overflow-hidden">
               <div class="absolute inset-0 bg-gradient-to-b from-background/80 to-background"></div>
@@ -14243,7 +14243,6 @@
               <h1 class="text-4xl md:text-6xl font-bold mb-4" style="opacity: 1; transform: none; white-space: nowrap;">DOWNLOADING <span class="text-accent">FILE</span>
               </h1>
               <script>
-                // Define all themes
                 const themes = [
                   {
                     name: "Default",
@@ -14279,7 +14278,7 @@
                     styles: {
                       background: "120 15% 20%",
                       foreground: "60 30% 96%",
-                      card: "120 15% 15%", 
+                      card: "120 15% 15%",
                       cardForeground: "60 30% 96%",
                       popover: "120 15% 20%",
                       popoverForeground: "60 30% 96%",
@@ -14507,15 +14506,11 @@
                     }
                   }
                 ];
-
-                // Current theme index
                 let currentThemeIndex = 0;
-
-                // Function to apply theme
                 function applyTheme(theme) {
                   const root = document.documentElement;
                   const styles = theme.styles;
-                  
+
                   root.style.setProperty('--background', styles.background);
                   root.style.setProperty('--foreground', styles.foreground);
                   root.style.setProperty('--card', styles.card);
@@ -14540,23 +14535,15 @@
                   root.style.setProperty('--chart-3', styles.chart3);
                   root.style.setProperty('--chart-4', styles.chart4);
                   root.style.setProperty('--chart-5', styles.chart5);
-                  
-                  // Update theme name display
                   if (document.getElementById('themeName')) {
                     document.getElementById('themeName').textContent = `Current Theme: ${theme.name}`;
                   }
-                  
-                  // Optional: Save current theme preference to localStorage
                   localStorage.setItem('selectedTheme', currentThemeIndex);
                 }
-
-                // Function to cycle through themes
                 function cycleTheme() {
                   currentThemeIndex = (currentThemeIndex + 1) % themes.length;
                   applyTheme(themes[currentThemeIndex]);
                 }
-
-                // Function to initialize theme from saved preference (if available)
                 function initTheme() {
                   const savedTheme = localStorage.getItem('selectedTheme');
                   if (savedTheme !== null) {
@@ -14564,8 +14551,6 @@
                   }
                   applyTheme(themes[currentThemeIndex]);
                 }
-
-                // Initialize theme when DOM is loaded
                 document.addEventListener('DOMContentLoaded', initTheme);
               </script>
               <div id="themeName" class="theme-name text-lg md:text-xl text-muted-foreground mb-8" style="cursor: pointer; opacity: 1; transform: none" onclick="cycleTheme()">Current Theme: Default</div>
@@ -14581,7 +14566,7 @@
                   gap: 10px;
                   z-index: 1000;
                 }
-                
+
                 /* Theme name indicator */
                 .theme-name {
                   font-size: 14px;
@@ -14593,24 +14578,24 @@
                   border: 1px solid hsl(var(--border));
                 }
               </style>
-              
+
               <div class="flex flex-wrap justify-center gap-4" style="opacity: 1; transform: none"></div>
               <div class="mt-8">
                 <script>
                   function congrats() {
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'alert';
-                    
+
                     const closeBtn = document.createElement('span');
                     closeBtn.className = 'closebtn';
                     closeBtn.innerHTML = '&times;';
                     closeBtn.onclick = function() {
                       this.parentElement.style.display = 'none';
                     };
-                    
+
                     const strongText = document.createElement('strong');
                     strongText.textContent = 'About:';
-                    
+
                     alertDiv.appendChild(closeBtn);
                     alertDiv.appendChild(strongText);
                     alertDiv.appendChild(document.createTextNode(' You are currently downloading a file from my GitHub.'));
@@ -14626,7 +14611,7 @@
           </div>
           <main class="flex-1 container mx-auto px-4 py-12">
             <div dir="ltr" data-orientation="horizontal" class="w-full">
-              
+
               <div style="opacity: 1; transform: none">
                 <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-about" id="radix-:r0:-content-about" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-8" style="animation-duration: 0s">
                   <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
@@ -14635,7 +14620,7 @@
                       <p class="text-muted-foreground leading-relaxed">You are seeing this page because you are downloading a file from my GitHub. If you do not see a download, please click this link: <a href="https://raw.githubusercontent.com/devicals/devicals.github.io/refs/heads/main/files/yasb/config.yaml"><span class="text-accent">https://raw.githubusercontent.com/devicals/devicals.github.io/refs/heads/main/files/yasb/config.yaml</span></a></p>
                     </div>
                   </div>
-                  
+
                 </div>
                 <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-blog" hidden="" id="radix-:r0:-content-blog" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-6"></div>
               </div>
@@ -14682,6 +14667,6 @@
           overflow-wrap: normal;
         "></p></next-route-announcer>
     <div></div>
-  
+
 
 <script src="https://devicals.github.io/files/codevscript.js" data-nscript="afterInteractive"></script><div></div><next-route-announcer><p aria-live="assertive" id="__next-route-announcer__" role="alert" style="border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; margin: -1px; overflow: hidden; padding: 0px; position: absolute; top: 0px; width: 1px; white-space: nowrap; overflow-wrap: normal;"></p></next-route-announcer></body></html>

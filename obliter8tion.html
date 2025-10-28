@@ -21,7 +21,7 @@
       border-radius: 0;
       box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     }
-    
+
     .custom-dropdown {
       width: 100%;
       height: 100%;
@@ -38,16 +38,16 @@
       -moz-appearance: none;
       outline: none;
     }
-    
+
     .custom-dropdown:focus {
       outline: none;
     }
-    
+
     .custom-dropdown option {
       background: hsl(var(--background));
       color: hsl(var(--foreground));
     }
-    
+
     .dropdown-arrow {
       position: absolute;
       right: 0.75rem;
@@ -93,7 +93,6 @@
             </h1>
 
             <script>
-              // Define all themes
               const themes = [
                 {
                   name: "Default",
@@ -129,7 +128,7 @@
                   styles: {
                     background: "120 15% 20%",
                     foreground: "60 30% 96%",
-                    card: "120 15% 15%", 
+                    card: "120 15% 15%",
                     cardForeground: "60 30% 96%",
                     popover: "120 15% 20%",
                     popoverForeground: "60 30% 96%",
@@ -357,15 +356,11 @@
                   }
                 }
               ];
-
-              // Current theme index
               let currentThemeIndex = 0;
-
-              // Function to apply theme
               function applyTheme(theme) {
                 const root = document.documentElement;
                 const styles = theme.styles;
-                
+
                 root.style.setProperty('--background', styles.background);
                 root.style.setProperty('--foreground', styles.foreground);
                 root.style.setProperty('--card', styles.card);
@@ -390,23 +385,15 @@
                 root.style.setProperty('--chart-3', styles.chart3);
                 root.style.setProperty('--chart-4', styles.chart4);
                 root.style.setProperty('--chart-5', styles.chart5);
-                
-                // Update theme name display
                 if (document.getElementById('themeName')) {
                   document.getElementById('themeName').textContent = `Current Theme: ${theme.name}`;
                 }
-                
-                // Save current theme preference
                 localStorage.setItem('selectedTheme', currentThemeIndex);
               }
-
-              // Function to cycle through themes
               function cycleTheme() {
                 currentThemeIndex = (currentThemeIndex + 1) % themes.length;
                 applyTheme(themes[currentThemeIndex]);
               }
-
-              // Function to initialize theme from saved preference
               function initTheme() {
                 const savedTheme = localStorage.getItem('selectedTheme');
                 if (savedTheme !== null) {
@@ -414,11 +401,9 @@
                 }
                 applyTheme(themes[currentThemeIndex]);
               }
-
-              // Initialize theme when DOM is loaded
               document.addEventListener('DOMContentLoaded', initTheme);
             </script>
-            
+
             <div id="themeName" class="theme-name text-lg md:text-xl text-muted-foreground mb-8" style="cursor: pointer;" onclick="cycleTheme()"><strong>Current Theme:</strong> Default</div>
 
             <div class="mt-2">
@@ -480,7 +465,7 @@
     function friendlyTitleFromChapter(chapter, maxNumLength) {
       let numStr = chapter.num;
       const paddingNeeded = maxNumLength - numStr.length;
-      
+
       const pad = '\u00A0'.repeat(paddingNeeded);
       numStr = pad + numStr;
 
@@ -505,15 +490,15 @@
 
       try {
         let content = chapter.content;
-        
+
         content = content.replace(/\\n/g, '\n');
-        
-        const html = marked.parse(content, { 
-          mangle: false, 
+
+        const html = marked.parse(content, {
+          mangle: false,
           headerIds: false,
           breaks: true
         });
-        
+
         contentDiv.innerHTML = html;
         window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (err) {
@@ -524,9 +509,7 @@
 
     async function loadChaptersFromJSON() {
       try {
-        // Try different methods to load the JSON file
         try {
-          // Method 1: Standard fetch (works online)
           const response = await fetch('books/obliter8tion.json?t=' + Date.now());
           if (response.ok) {
             chaptersData = await response.json();
@@ -534,8 +517,6 @@
         } catch (e) {
           console.log("Standard fetch failed (normal for local files), trying XMLHttpRequest...");
         }
-        
-        // Method 2: XMLHttpRequest with overrideMimeType (works for local files)
         if (!chaptersData) {
           try {
             chaptersData = await new Promise((resolve, reject) => {
@@ -562,20 +543,14 @@
             console.log("XMLHttpRequest failed:", e);
           }
         }
-        
-        // Method 3: Try loading from a script tag (if someone adds it)
         if (!chaptersData && window.CHAPTERS_DATA) {
           chaptersData = window.CHAPTERS_DATA;
         }
-        
+
         if (!chaptersData || chaptersData.length === 0) {
           throw new Error("Could not load books/obliter8tion.json. For local files, you need to run a local server or open via http://");
         }
-        
-        // Store the data
         window.chaptersData = chaptersData;
-        
-        // Populate dropdown
         const maxNumLength = Math.max(...chaptersData.map(ch => ch.num.length));
         chapterSelect.innerHTML = "";
         chaptersData.forEach(chapter => {
@@ -584,8 +559,6 @@
           opt.textContent = friendlyTitleFromChapter(chapter, maxNumLength);
           chapterSelect.appendChild(opt);
         });
-
-        // Set up change handler
         chapterSelect.onchange = () => {
 					const [type, num] = chapterSelect.value.split("|");
 					const chapter = chaptersData.find(ch => ch.num === num && ch.type === type);
@@ -593,8 +566,6 @@
 						loadChapter(chapter);
 					}
 				};
-        
-        // Load first chapter
         if (chaptersData.length > 0) {
           const firstChapter = chaptersData[0];
           chapterSelect.value = `${firstChapter.type}|${firstChapter.num}`;
@@ -606,8 +577,6 @@
         titleEl.innerHTML = `<span class="text-accent">CORS Error</span>`;
       }
     }
-
-    // Initialize on page load
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', loadChaptersFromJSON);
     } else {
@@ -617,36 +586,34 @@
     async function fetchGitHubLanguageStats() {
       try {
         const response = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const languages = await response.json();
         const totalBytes = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0);
-        
+
         const languageStats = Object.entries(languages)
           .map(([language, bytes]) => ({
             language,
             percentage: ((bytes / totalBytes) * 100).toFixed(1)
           }))
           .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage));
-        
+
         const statsString = languageStats
           .map(({ language, percentage }) => `${language}: ${percentage}%`)
           .join(', ');
-        
-        document.querySelector('.information-stats').innerHTML = 
+
+        document.querySelector('.information-stats').innerHTML =
           `Inspired by <a href="https://store.steampowered.com/app/1229490/ULTRAKILL/" target="_blank"><strong>ULTRAKILL</strong></a> and <a href="https://www.planetminecraft.com/project/antitheist/" target="_blank"><strong>ANTITHEIST</strong></a>.<br><strong>Key</strong>: P = Prelude, C = Chapter, B = Bonus Content, T = Test<br><br>Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>${statsString}`;
-        
+
       } catch (error) {
         console.error('Error fetching GitHub language stats:', error);
-        document.querySelector('.information-stats').innerHTML = 
+        document.querySelector('.information-stats').innerHTML =
           `Error Dev's self-custom-made website. Coded in HTML, JS, and CSS.<br>HTML: 78.2%, JavaScript: 18.1%, CSS: 3.8%`;
       }
     }
-
-    // Load GitHub stats
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', fetchGitHubLanguageStats);
     } else {

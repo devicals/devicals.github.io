@@ -68,7 +68,7 @@
       <div class="min-h-screen">
         <div class="bg-background min-h-screen flex flex-col font-mono">
           <header class="w-full">
-            
+
           </header>
           <div class="relative flex flex-col items-center justify-center py-20 px-4 text-center" style="opacity: 1; transform: none">
             <div class="absolute inset-0 overflow-hidden">
@@ -81,7 +81,6 @@
               <h1 class="text-4xl md:text-6xl font-bold mb-4" style="opacity: 1; transform: none; white-space: nowrap;"><span class="text-accent">INFINI</span>VERSE
               </h1>
               <script>
-                // Define all themes
                 const themes = [
                   {
                     name: "Default",
@@ -117,7 +116,7 @@
                     styles: {
                       background: "120 15% 20%",
                       foreground: "60 30% 96%",
-                      card: "120 15% 15%", 
+                      card: "120 15% 15%",
                       cardForeground: "60 30% 96%",
                       popover: "120 15% 20%",
                       popoverForeground: "60 30% 96%",
@@ -345,15 +344,11 @@
                     }
                   }
                 ];
-
-                // Current theme index
                 let currentThemeIndex = 0;
-
-                // Function to apply theme
                 function applyTheme(theme) {
                   const root = document.documentElement;
                   const styles = theme.styles;
-                  
+
                   root.style.setProperty('--background', styles.background);
                   root.style.setProperty('--foreground', styles.foreground);
                   root.style.setProperty('--card', styles.card);
@@ -378,23 +373,15 @@
                   root.style.setProperty('--chart-3', styles.chart3);
                   root.style.setProperty('--chart-4', styles.chart4);
                   root.style.setProperty('--chart-5', styles.chart5);
-                  
-                  // Update theme name display
                   if (document.getElementById('themeName')) {
                     document.getElementById('themeName').textContent = `Current Theme: ${theme.name}`;
                   }
-                  
-                  // Optional: Save current theme preference to localStorage
                   localStorage.setItem('selectedTheme', currentThemeIndex);
                 }
-
-                // Function to cycle through themes
                 function cycleTheme() {
                   currentThemeIndex = (currentThemeIndex + 1) % themes.length;
                   applyTheme(themes[currentThemeIndex]);
                 }
-
-                // Function to initialize theme from saved preference (if available)
                 function initTheme() {
                   const savedTheme = localStorage.getItem('selectedTheme');
                   if (savedTheme !== null) {
@@ -402,8 +389,6 @@
                   }
                   applyTheme(themes[currentThemeIndex]);
                 }
-
-                // Initialize theme when DOM is loaded
                 document.addEventListener('DOMContentLoaded', initTheme);
               </script>
               <div id="themeName" class="theme-name text-lg md:text-xl text-muted-foreground mb-8" style="cursor: pointer; opacity: 1; transform: none" onclick="cycleTheme()">Current Theme: Default</div>
@@ -419,7 +404,7 @@
                   gap: 10px;
                   z-index: 1000;
                 }
-                
+
                 /* Theme name indicator */
                 .theme-name {
                   font-size: 14px;
@@ -437,17 +422,17 @@
                   function congrats() {
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'alert';
-                    
+
                     const closeBtn = document.createElement('span');
                     closeBtn.className = 'closebtn';
                     closeBtn.innerHTML = '&times;';
                     closeBtn.onclick = function() {
                       this.parentElement.style.display = 'none';
                     };
-                    
+
                     const strongText = document.createElement('strong');
                     strongText.textContent = 'Congrats!';
-                    
+
                     alertDiv.appendChild(closeBtn);
                     alertDiv.appendChild(strongText);
                     alertDiv.appendChild(document.createTextNode(' You won absolutely nothing!'));
@@ -461,43 +446,35 @@
               </div>
             </div>
           </div>
-          <main class="flex-1 container mx-auto px-4 py-12">             
-            <div dir="ltr" data-orientation="horizontal" class="w-full">               
-                              
-              <div style="opacity: 1; transform: none">                 
+          <main class="flex-1 container mx-auto px-4 py-12">
+            <div dir="ltr" data-orientation="horizontal" class="w-full">
+
+              <div style="opacity: 1; transform: none">
                 <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-about" id="radix-:r0:-content-about" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-8" style="animation-duration: 0s">
-                  <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">  
-                    <div class="p-6 pt-6">    
+                  <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
+                    <div class="p-6 pt-6">
                       <h2 class="text-2xl font-bold mb-4">Thank You!</h2>
-                      <p class="text-muted-foreground leading-relaxed">Hey there, thanks for using my Discord bot! It was developed solely by myself, and it took me a long time, so I appreciate it!</p>    
+                      <p class="text-muted-foreground leading-relaxed">Hey there, thanks for using my Discord bot! It was developed solely by myself, and it took me a long time, so I appreciate it!</p>
                     </div>
                   </div>
                 </div>
-              </div>             
+              </div>
             </div>
             <script>
               document.addEventListener('DOMContentLoaded', function() {
-                // Get the tab buttons
                 const profileButton = document.getElementById('radix-:r0:-trigger-about');
                 const blogButton = document.getElementById('radix-:r0:-trigger-blog');
                 const galleryButton = document.getElementById('radix-:r0:-trigger-gallery');
-                
-                // Get the content sections
                 const profileContent = document.getElementById('radix-:r0:-content-about');
                 const blogContent = document.getElementById('radix-:r0:-content-blog');
                 const galleryContent = document.getElementById('radix-:r0:-content-gallery');
-                
-                // Function to show Profile tab
                 const showProfile = function() {
-                  // Update button states
                   profileButton.setAttribute('aria-selected', 'true');
                   profileButton.setAttribute('data-state', 'active');
                   blogButton.setAttribute('aria-selected', 'false');
                   blogButton.setAttribute('data-state', 'inactive');
                   galleryButton.setAttribute('aria-selected', 'false');
                   galleryButton.setAttribute('data-state', 'inactive');
-                  
-                  // Update content visibility
                   profileContent.setAttribute('data-state', 'active');
                   profileContent.removeAttribute('hidden');
                   blogContent.setAttribute('data-state', 'inactive');
@@ -505,18 +482,13 @@
                   galleryContent.setAttribute('data-state', 'inactive');
                   galleryContent.setAttribute('hidden', '');
                 };
-                
-                // Function to show Blog tab
                 const showBlog = function() {
-                  // Update button states
                   profileButton.setAttribute('aria-selected', 'false');
                   profileButton.setAttribute('data-state', 'inactive');
                   blogButton.setAttribute('aria-selected', 'true');
                   blogButton.setAttribute('data-state', 'active');
                   galleryButton.setAttribute('aria-selected', 'false');
                   galleryButton.setAttribute('data-state', 'inactive');
-                  
-                  // Update content visibility
                   profileContent.setAttribute('data-state', 'inactive');
                   profileContent.setAttribute('hidden', '');
                   blogContent.setAttribute('data-state', 'active');
@@ -524,18 +496,13 @@
                   galleryContent.setAttribute('data-state', 'inactive');
                   galleryContent.setAttrivute('hidden', '');
                 };
-
-                // Function to show Blog tab
                 const showGallery = function() {
-                  // Update button states
                   profileButton.setAttribute('aria-selected', 'false');
                   profileButton.setAttribute('data-state', 'inactive');
                   blogButton.setAttribute('aria-selected', 'false');
                   blogButton.setAttribute('data-state', 'inactive');
                   galleryButton.setAttribute('aria-selected', 'true');
                   galleryButton.setAttribute('data-state', 'active');
-                  
-                  // Update content visibility
                   profileContent.setAttribute('data-state', 'inactive');
                   profileContent.setAttribute('hidden', '');
                   blogContent.setAttribute('data-state', 'inactive');
@@ -543,8 +510,6 @@
                   galleryContent.setAttribute('data-state', 'active');
                   galleryContent.removeAttribute('hidden');
                 };
-                
-                // Add click event listeners
                 profileButton.addEventListener('click', showProfile);
                 blogButton.addEventListener('click', showBlog);
                 galleryButton.addEventListener('click', showGallery);
@@ -555,31 +520,30 @@
             <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
               <div class="p-6 pt-6">
                 <script>
-                  // Function to fetch GitHub repository language statistics
                   async function fetchGitHubLanguageStats() {
                     try {
                       const response = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
-                      
+
                       if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                       }
-                      
+
                       const languages = await response.json();
                       const totalBytes = Object.values(languages).reduce((sum, bytes) => sum + bytes, 0);
-                      
+
                       const languageStats = Object.entries(languages)
                         .map(([language, bytes]) => ({
                           language,
                           percentage: ((bytes / totalBytes) * 100).toFixed(1)
                         }))
                         .sort((a, b) => parseFloat(b.percentage) - parseFloat(a.percentage));
-                      
+
                       const statsString = languageStats
                         .map(({ language, percentage }) => `${language}: ${percentage}%`)
                         .join(', ');
-                      
+
                       return statsString;
-                      
+
                     } catch (error) {
                       console.error('Error fetching GitHub language stats:', error);
                       return 'HTML: 95.1%, JS: 0.2%, CSS: 4.7%'; // Fallback
@@ -588,10 +552,10 @@
 
                   async function updateLanguageStats() {
                     const statsElement = document.querySelector('.information-stats');
-                    
+
                     if (statsElement) {
                       statsElement.innerHTML = 'Error Dev\'s self-custom-made website. Coded in purely HTML, JS, and CSS.<br>Loading language stats...';
-                      
+
                       const stats = await fetchGitHubLanguageStats();
                       statsElement.innerHTML = `Error Dev's self-custom-made website. Coded in purely HTML, JS, and CSS.<br>${stats}`;
                     }
@@ -600,7 +564,7 @@
                   document.addEventListener('DOMContentLoaded', updateLanguageStats);
                 </script>
                 <h2 class="text-2xl font-bold mb-4">Information</h2>
-                <p class="text-muted-foreground leading-relaxed information-stats">Error Dev's self-custom-made website. Coded in purely HTML, JS, and CSS.<br>HTML: X%, JS: X%, CSS: X%</p>                       
+                <p class="text-muted-foreground leading-relaxed information-stats">Error Dev's self-custom-made website. Coded in purely HTML, JS, and CSS.<br>HTML: X%, JS: X%, CSS: X%</p>
                 <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full my-6"></div>
                 <div class="grid grid-cols-2 md:grid-cols-2 gap-3">
                   <div class="bg-secondary/50 rounded-md px-3 py-2 text-sm">Hosted Using <a href="https://github.com/" target="_blank">Github</a></div>
@@ -652,6 +616,6 @@
           overflow-wrap: normal;
         "></p></next-route-announcer>
     <div></div>
-  
+
 
 <script src="/files/codevscript.js" data-nscript="afterInteractive"></script><next-route-announcer><p aria-live="assertive" id="__next-route-announcer__" role="alert" style="border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; margin: -1px; overflow: hidden; padding: 0px; position: absolute; top: 0px; width: 1px; white-space: nowrap; overflow-wrap: normal;"></p></next-route-announcer><script src="/extra/script.js"></script></body></html>
