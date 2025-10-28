@@ -11,7 +11,7 @@
       <script>
         async function announcement() {
           try {
-            const response = await fetch('/extra/announcement.md');
+            const response = await fetch('/extra/notices.md');
             if (!response.ok) {
               throw new Error('Failed to fetch announcement');
             }
@@ -80,7 +80,7 @@
             document.body.insertBefore(alertDiv, document.body.firstChild);
             
             if (lines.length > 1) {
-              setInterval(updateContent, 7500);
+              setInterval(updateContent, 2500);
             }
             
           } catch (error) {
@@ -552,7 +552,7 @@
                 <button type="button" role="tab" aria-selected="true" aria-controls="radix-:r0:-content-about" data-state="active" id="radix-:r0:-trigger-about" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">                   
                   Profile
                 </button>
-                <button type="button" role="tab" aria-selected="false" data-state="inactive" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="" onclick="window.location.href='https://devicals.github.io/blog'">
+                <button type="button" role="tab" aria-selected="false" data-state="inactive" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="" onclick="window.location.href='/blog.html'">
                   Blog (↗)
                 </button>
                 <button type="button" role="tab" aria-selected="false" aria-controls="radix-:r0:-content-gallery" data-state="inactive" id="radix-:r0:-trigger-gallery" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">                   
@@ -564,7 +564,7 @@
                   <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">                     
                     <div class="p-6 pt-6">                       
                       <h2 class="text-2xl font-bold mb-4">About Me</h2>
-                      <p class="text-muted-foreground leading-relaxed">👋 Sup! I'm <u><strong>Error Dev</strong></u>, an <i>Aussie</i>! I enjoy playing <strong>games</strong> such as <i>Minecraft</i> and <i>Persona 5 Royal</i>, experimenting in <strong>Powerpoint</strong>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <strong><a href="https://github.com/">Github</a>!</strong><br>Also check out my Minecraft projects at <a class="text-accent" href="https://modrinth.com/organization/infiniverse" target="_blank"><i>https://modrinth.com/organization/infiniverse</i></a>!<br><br>Contact me at <a href="mailto:3rr0r.d3v@gmail.com"><code><i>3rr0r.d3v@gmail.com</i></code></a> or text me at <a href="sms:0416956146"><i>0416 956 146</i></a>!</p>                       
+                      <p class="text-muted-foreground leading-relaxed">👋 Sup! I'm <u><strong>Error Dev</strong></u>, an <i>Aussie</i>! I enjoy playing <strong>games</strong> such as <i>Minecraft</i> and <i>Persona 5 Royal</i>, experimenting in <strong>Powerpoint</strong>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <strong><a href="https://github.com/">Github</a>!</strong><br>Also check out my Minecraft projects at <a class="text-accent" href="https://modrinth.com/organization/infiniverse" target="_blank"><i>https://modrinth.com/organization/infiniverse</i></a>!<br><br>Contact me at <a href="mailto:3rr0r.d3v@gmail.com"><code><i>3rr0r.d3v@gmail.com</i></code></a> or text me at <a href="sms:0416956146"><i>0416 956 146</i></a>! (Australian texts only.)</p>                       
                       <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full my-6"></div>                       
                       <h3 class="text-xl font-bold mb-4">Programming Skills</h3>                       
                       <div class="grid grid-cols-2 md:grid-cols-3 gap-3">                         
@@ -586,64 +586,108 @@
                         <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://www.deviantart.com/3rrordev/', '_blank')">DeviantART</button>  
                         <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://x.com/error_dev_xt/', '_blank')">X/Twitter</button>  
                         <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://error-offixial.itch.io/', '_blank')">Itch.io</button>  
-                        <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://www.wattpad.com/user/error_dev/', '_blank')">Wattpad</button>                                                                                                                                                    
+                        <button class="bg-secondary/50 rounded-md px-3 py-2 text-sm" style="text-align: left;" onclick="window.open('https://www.wattpad.com/user/error_dev/', '_blank')">Wattpad</button>
                       </div>
                     </div>                   
                   </div>                   
                   <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">                     
                     <div class="p-6 pt-6">                       
                       <h2 class="text-2xl font-bold mb-4">Projects</h2>                       
-                      <div class="space-y-6">                         
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://github.com/devicals/AI-Teaching-Master" target="_blank">AI Teaching Master</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">HTML (61.9%), Python (20.3%), CSS (15.8%), Batchfile (2%)</p>                           
-                          <p class="text-muted-foreground">An interactive AI-powered educational platform that generates lessons, questions, and provides personalized learning experiences using advanced language models. </p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://github.com/devicals/money-maker-hacked" target="_blank">Money Maker Hacked</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">JavaScript (72.5%), HTML (27.5%)</p>                           
-                          <p class="text-muted-foreground">The chromium extension clicker game 'Make Money', but hacked by yours truly, Error Dev!</p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>                                                
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://error-dev.neocities.org/url-shortens" target="_blank">Custom URL Redirect Generator</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">HTML (100%)</p>                           
-                          <p class="text-muted-foreground">A tool to help you create URL redirection links for your website.</p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>                          
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://error-dev.neocities.org/download-gen" target="_blank">Drive File Direct Download URL Generator</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">HTML (100%)</p>                           
-                          <p class="text-muted-foreground">A tool to help you create file download links for your drive files.</p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>                                                
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://github.com/devicals/cube-dimensions" target="_blank">Startpage</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">JavaScript (42.8%), CSS (30.3%), HTML (26.9%)</p>                           
-                          <p class="text-muted-foreground">A custom startpage/new tab page. Forked from <a href="https://gitlab.com/fazzi/startpage" target="_blank"><i>https://gitlab.com/fazzi/startpage</i></a>.</p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://github.com/devicals/MBC-Entries" target="_blank">MBC Entries</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">Minecraft World Files (100%)</p>                           
-                          <p class="text-muted-foreground">A repository for my entries for Leon's Monthly Build Challenge. </p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://github.com/devicals/profile" target="_blank">Dev's Web (Archived)</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">HTML (100%)</p>                           
-                          <p class="text-muted-foreground">A past version of the current website. Therefore archived.</p>                         
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>                           
-                          <h3 class="text-lg font-bold text-accent"><a href="https://github.com/devicals/cube-dimensions" target="_blank">Cube Dimensions Website (Archived)</a></h3>                           
-                          <p class="text-sm text-muted-foreground mb-2">HTML (100%)</p>                           
-                          <p class="text-muted-foreground">A website made for Cube Dimensions. Now archived as Cube Dimensions has ended.</p>                         
-                        </div>
+                      <div id="projects-container" class="space-y-6">
+                        <p class="text-muted-foreground">Loading projects...</p>
                       </div>
                     </div>                   
-                  </div>                 
+                  </div>
+
+                  <script>
+                    async function loadProjects() {
+                      const container = document.getElementById('projects-container');
+                      
+                      try {
+                        let projects = null;
+                        
+                        try {
+                          const response = await fetch('files/projects.json?t=' + Date.now());
+                          if (response.ok) {
+                            projects = await response.json();
+                          }
+                        } catch (e) {
+                          console.log("Standard fetch failed, trying XMLHttpRequest...");
+                        }
+                        
+                        if (!projects) {
+                          try {
+                            projects = await new Promise((resolve, reject) => {
+                              const xhr = new XMLHttpRequest();
+                              xhr.overrideMimeType("application/json");
+                              xhr.open("GET", 'files/projects.json', true);
+                              xhr.onreadystatechange = function() {
+                                if (xhr.readyState === 4) {
+                                  if (xhr.status === 200 || xhr.status === 0) {
+                                    try {
+                                      const data = JSON.parse(xhr.responseText);
+                                      resolve(data);
+                                    } catch (e) {
+                                      reject(new Error("Failed to parse JSON: " + e.message));
+                                    }
+                                  } else {
+                                    reject(new Error("HTTP " + xhr.status));
+                                  }
+                                }
+                              };
+                              xhr.send();
+                            });
+                          } catch (e) {
+                            console.log("XMLHttpRequest failed:", e);
+                          }
+                        }
+                        
+                        if (!projects || projects.length === 0) {
+                          throw new Error("Could not load files/projects.json");
+                        }
+                        
+                        container.innerHTML = '';
+                        
+                        projects.forEach((project, index) => {
+                          const projectDiv = document.createElement('div');
+                          
+                          const title = document.createElement('h3');
+                          title.className = 'text-lg font-bold text-accent';
+                          const titleLink = document.createElement('a');
+                          titleLink.href = project.link;
+                          titleLink.target = '_blank';
+                          titleLink.textContent = project.title;
+                          title.appendChild(titleLink);
+                          projectDiv.appendChild(title);
+                          
+                          const description = document.createElement('p');
+                          description.className = 'text-muted-foreground';
+                          description.textContent = project.description;
+                          projectDiv.appendChild(description);
+                          
+                          container.appendChild(projectDiv);
+                          
+                          if (index < projects.length - 1) {
+                            const separator = document.createElement('div');
+                            separator.setAttribute('data-orientation', 'horizontal');
+                            separator.setAttribute('role', 'none');
+                            separator.className = 'shrink-0 bg-border h-[1px] w-full';
+                            container.appendChild(separator);
+                          }
+                        });
+                        
+                      } catch (error) {
+                        console.error('Error loading projects:', error);
+                        container.innerHTML = `<p style="color:hsl(var(--accent));">Error loading projects from files/projects.json<br><br>${error.message}</p>`;
+                      }
+                    }
+
+                    if (document.readyState === 'loading') {
+                      document.addEventListener('DOMContentLoaded', loadProjects);
+                    } else {
+                      loadProjects();
+                    }
+                  </script>               
                 </div>                 
                 
                 <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-blog" hidden="" id="radix-:r0:-content-blog" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-6">
