@@ -48,6 +48,18 @@
       color: hsl(var(--foreground));
     }
 
+    .custom-dropdown option.separator {
+      color: hsl(var(--muted-foreground));
+      padding: 0;
+      font-size: 0.875rem;
+      cursor: default;
+    }
+
+    .custom-dropdown option:disabled {
+      color: hsl(var(--muted-foreground));
+      cursor: default;
+    }
+
     .dropdown-arrow {
       position: absolute;
       right: 0.75rem;
@@ -415,7 +427,19 @@
         </div>
 
         <main class="flex-1 container mx-auto">
-          <!-- Dropdown at the top -->
+          <!-- Book dropdown (only shows if multiple books) -->
+          <div id="bookSelectContainer" dir="ltr" data-orientation="horizontal" class="w-full mb-6" style="display: none;">
+            <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground flex w-full" tabindex="0" data-orientation="horizontal" style="outline: none;">
+              <div class="custom-dropdown-wrapper">
+                <select id="bookSelect" class="custom-dropdown">
+                  <option>Loading books...</option>
+                </select>
+                <span class="dropdown-arrow">Select Book ↓</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chapter dropdown -->
           <div dir="ltr" data-orientation="horizontal" class="w-full mb-6">
             <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground flex w-full" tabindex="0" data-orientation="horizontal" style="outline: none;">
               <div class="custom-dropdown-wrapper">
@@ -455,14 +479,21 @@
   </div>
 
   <script>
-    const chapterSelect = document.getElementById('chapterSelect');
-    const contentDiv = document.getElementById('chapter-content');
-    const preSubtitle = document.getElementById('chapter-type');
-    const titleEl = document.getElementById('chapter-title');
-
     let chaptersData = [];
+    let seriesData = null;
+    let currentSeriesName = '';
+
+    function getSeriesNameFromFilename() {
+      const path = window.location.pathname;
+      const filename = path.substring(path.lastIndexOf('/') + 1);
+      return filename.replace('.html', '');
+    }
 
     function friendlyTitleFromChapter(chapter, maxNumLength) {
+      if (chapter.type === "separator") {
+        return "────────────────────────────────────────────────────────────────────────────────";
+      }
+
       let numStr = chapter.num;
       const paddingNeeded = maxNumLength - numStr.length;
 
@@ -484,6 +515,10 @@
     }
 
     function loadChapter(chapter) {
+      const preSubtitle = document.getElementById('chapter-type');
+      const titleEl = document.getElementById('chapter-title');
+      const contentDiv = document.getElementById('chapter-content');
+
       preSubtitle.innerHTML = `print(<span class="text-accent">"${chapter.type}"</span>)`;
       titleEl.innerHTML = `<span class="text-accent">${chapter.name}</span>`;
       contentDiv.innerHTML = "<p>Loading chapter...</p>";
@@ -500,6 +535,13 @@
         });
 
         contentDiv.innerHTML = html;
+        
+        if (chapter.font === "tnr") {
+          contentDiv.style.fontFamily = "'Times New Roman', Times, serif";
+        } else {
+          contentDiv.style.fontFamily = "'Fira Code', monospace";
+        }
+        
         window.scrollTo({ top: 0, behavior: "smooth" });
       } catch (err) {
         console.error("Error loading chapter:", err);
@@ -507,80 +549,154 @@
       }
     }
 
-    async function loadChaptersFromJSON() {
+    async function fetchJSON(url) {
       try {
-        try {
-          const response = await fetch('books/obliter8tion.json?t=' + Date.now());
-          if (response.ok) {
-            chaptersData = await response.json();
+        const response = await fetch(url + '?t=' + Date.now());
+        if (response.ok) {
+          return await response.json();
+        }
+      } catch (e) {
+        console.log("Standard fetch failed, trying XMLHttpRequest...");
+      }
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.overrideMimeType("application/json");
+        xhr.open("GET", url, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200 || xhr.status === 0) {
+              try {
+                const data = JSON.parse(xhr.responseText);
+                resolve(data);
+              } catch (e) {
+                reject(new Error("Failed to parse JSON: " + e.message));
+              }
+            } else {
+              reject(new Error("HTTP " + xhr.status));
+            }
           }
-        } catch (e) {
-          console.log("Standard fetch failed (normal for local files), trying XMLHttpRequest...");
-        }
-        if (!chaptersData) {
-          try {
-            chaptersData = await new Promise((resolve, reject) => {
-              const xhr = new XMLHttpRequest();
-              xhr.overrideMimeType("application/json");
-              xhr.open("GET", 'books/obliter8tion.json', true);
-              xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
-                  if (xhr.status === 200 || xhr.status === 0) { // 0 for local files
-                    try {
-                      const data = JSON.parse(xhr.responseText);
-                      resolve(data);
-                    } catch (e) {
-                      reject(new Error("Failed to parse JSON: " + e.message));
-                    }
-                  } else {
-                    reject(new Error("HTTP " + xhr.status));
-                  }
-                }
-              };
-              xhr.send();
-            });
-          } catch (e) {
-            console.log("XMLHttpRequest failed:", e);
-          }
-        }
-        if (!chaptersData && window.CHAPTERS_DATA) {
-          chaptersData = window.CHAPTERS_DATA;
-        }
+        };
+        xhr.send();
+      });
+    }
+
+    async function loadChaptersForBook(bookName) {
+      const chapterSelect = document.getElementById('chapterSelect');
+      const contentDiv = document.getElementById('chapter-content');
+      const titleEl = document.getElementById('chapter-title');
+
+      try {
+        const bookPath = `books/${currentSeriesName}/${bookName}.json`;
+        chaptersData = await fetchJSON(bookPath);
 
         if (!chaptersData || chaptersData.length === 0) {
-          throw new Error("Could not load books/obliter8tion.json. For local files, you need to run a local server or open via http://");
+          throw new Error(`Could not load ${bookPath}`);
         }
-        window.chaptersData = chaptersData;
-        const maxNumLength = Math.max(...chaptersData.map(ch => ch.num.length));
+
+        const maxNumLength = Math.max(...chaptersData.filter(ch => ch.type !== "separator").map(ch => ch.num.length));
         chapterSelect.innerHTML = "";
+        let separatorIndex = 0;
         chaptersData.forEach(chapter => {
           const opt = document.createElement("option");
-          opt.value = `${chapter.type}|${chapter.num}`;
-          opt.textContent = friendlyTitleFromChapter(chapter, maxNumLength);
+          
+          if (chapter.type === "separator") {
+            opt.value = `separator-${separatorIndex++}`;
+            opt.disabled = true;
+            opt.className = "separator";
+            opt.textContent = friendlyTitleFromChapter(chapter, maxNumLength);
+          } else {
+            opt.value = `${chapter.type}|${chapter.num}`;
+            opt.textContent = friendlyTitleFromChapter(chapter, maxNumLength);
+          }
+          
           chapterSelect.appendChild(opt);
         });
+
         chapterSelect.onchange = () => {
-					const [type, num] = chapterSelect.value.split("|");
-					const chapter = chaptersData.find(ch => ch.num === num && ch.type === type);
-					if (chapter) {
-						loadChapter(chapter);
-					}
-				};
+          const [type, num] = chapterSelect.value.split("|");
+          const chapter = chaptersData.find(ch => ch.num === num && ch.type === type);
+          if (chapter) {
+            loadChapter(chapter);
+          }
+        };
+
         if (chaptersData.length > 0) {
-          const firstChapter = chaptersData[0];
-          chapterSelect.value = `${firstChapter.type}|${firstChapter.num}`;
-          loadChapter(firstChapter);
+          const firstNonSeparatorChapter = chaptersData.find(ch => ch.type !== "separator");
+          if (firstNonSeparatorChapter) {
+            chapterSelect.value = `${firstNonSeparatorChapter.type}|${firstNonSeparatorChapter.num}`;
+            loadChapter(firstNonSeparatorChapter);
+          }
         }
       } catch (err) {
-        console.error("Error loading books/obliter8tion.json:", err);
-        contentDiv.innerHTML = `<p style="color:hsl(var(--accent));">Error loading books/obliter8tion.json<br><br><strong>CORS Error - Local File Restrictions</strong><br><br>Your browser blocks loading JSON files locally for security reasons.<br><br><strong>Solutions:</strong><br><br>1. <strong>Run a local server</strong> (recommended):<br>   - Python: <code>python -m http.server 8000</code><br>   - Then open: <code>http://localhost:8000/obliter8tion.html</code><br><br>2. <strong>Convert JSON to JS</strong>:<br>   - Rename <code>books/obliter8tion.json</code> to <code>chapters.js</code><br>   - Add at the start: <code>window.CHAPTERS_DATA = </code><br>   - Add in HTML head: <code>&lt;script src="chapters.js"&gt;&lt;/script&gt;</code><br><br>3. <strong>Upload to GitHub Pages</strong> (works perfectly online)<br><br>Debug info: ${err.message}</p>`;
+        console.error("Error loading chapters:", err);
+        contentDiv.innerHTML = `<p style="color:hsl(var(--accent));">Error loading chapters for book<br><br>${err.message}</p>`;
+        titleEl.innerHTML = `<span class="text-accent">Error</span>`;
+      }
+    }
+
+    async function initializeSeries() {
+      const bookSelect = document.getElementById('bookSelect');
+      const bookSelectContainer = document.getElementById('bookSelectContainer');
+      const contentDiv = document.getElementById('chapter-content');
+      const titleEl = document.getElementById('chapter-title');
+
+      try {
+        currentSeriesName = getSeriesNameFromFilename();
+        const definitions = await fetchJSON('books/definition.json');
+
+        seriesData = definitions.find(series => series[0] === currentSeriesName);
+
+        if (!seriesData) {
+          throw new Error(`Series "${currentSeriesName}" not found in definition.json`);
+        }
+
+        const books = seriesData[1];
+        const bookEntries = Object.entries(books).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+
+        if (bookEntries.length > 1) {
+          bookSelectContainer.style.display = 'block';
+          
+          // Find the max length for alignment
+          const maxBookNumLength = Math.max(...bookEntries.map(([num]) => num.length));
+          
+          bookSelect.innerHTML = "";
+          bookEntries.forEach(([num, name]) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            
+            // Add padding to align the separator
+            const paddingNeeded = maxBookNumLength - num.length;
+            const pad = '\u00A0'.repeat(paddingNeeded);
+            
+            opt.textContent = `BOOK ${pad}${num} | ${name}`;
+            bookSelect.appendChild(opt);
+          });
+
+          bookSelect.onchange = () => {
+            loadChaptersForBook(bookSelect.value);
+          };
+        } else {
+          bookSelectContainer.style.display = 'none';
+        }
+
+        const firstBookName = bookEntries[0][1];
+        if (bookEntries.length > 1) {
+          bookSelect.value = firstBookName;
+        }
+        await loadChaptersForBook(firstBookName);
+
+      } catch (err) {
+        console.error("Error initializing series:", err);
+        contentDiv.innerHTML = `<p style="color:hsl(var(--accent));">Error loading series definition<br><br><strong>CORS Error - Local File Restrictions</strong><br><br>Your browser blocks loading JSON files locally for security reasons.<br><br><strong>Solutions:</strong><br><br>1. <strong>Run a local server</strong> (recommended):<br>   - Python: <code>python -m http.server 8000</code><br>   - Then open: <code>http://localhost:8000/${currentSeriesName}.html</code><br><br>2. <strong>Upload to GitHub Pages</strong> (works perfectly online)<br><br>Debug info: ${err.message}</p>`;
         titleEl.innerHTML = `<span class="text-accent">CORS Error</span>`;
       }
     }
+
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', loadChaptersFromJSON);
+      document.addEventListener('DOMContentLoaded', initializeSeries);
     } else {
-      loadChaptersFromJSON();
+      initializeSeries();
     }
 
     async function fetchGitHubLanguageStats() {
