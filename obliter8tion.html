@@ -500,15 +500,25 @@
       const pad = '\u00A0'.repeat(paddingNeeded);
       numStr = pad + numStr;
 
+      const prefixes = {
+        chapter: "CHAPTER",
+        prelude: "PRELUDE",
+        bonus: "BONUS",
+        test: "TEST"
+      };
+      
+      const maxPrefixLength = Math.max(...Object.values(prefixes).map(p => p.length));
+      const prefixPad = (prefix) => '\u00A0'.repeat(maxPrefixLength - prefix.length);
+
       switch (chapter.type) {
         case "chapter":
-          return `${numStr}C // ${chapter.name}`;
+          return `${prefixPad("CHAPTER")}CHAPTER // ${numStr}C // ${chapter.name}`;
         case "prelude":
-          return `${numStr}P // ${chapter.name}`;
+          return `${prefixPad("PRELUDE")}PRELUDE // ${numStr}P // ${chapter.name}`;
         case "bonus":
-          return `${numStr}B // ${chapter.name}`;
+          return `${prefixPad("BONUS")}BONUS // ${numStr}B // ${chapter.name}`;
         case "test":
-          return `${numStr}T \\\\ ${chapter.name}`;
+          return `${prefixPad("TEST")}TEST // ${numStr}T \\\\ ${chapter.name}`;
         default:
           return `ERR: CONTENT TYPE UNKNOWN, REPORT ERROR INFO TO CREATOR \\\\ INFO: ${numStr}/${chapter.name}`;
       }
