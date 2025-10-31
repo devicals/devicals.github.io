@@ -4,13 +4,11 @@
   <meta charset="utf-8">
   <title>OBLITER8TION</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="The Lore of OBLITER8TION">
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="extra/style.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 	<link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4997/4997543.png">
   <style>
-    /* Custom dropdown styling to match tab bar */
     .custom-dropdown-wrapper {
       position: relative;
       display: flex;
@@ -101,7 +99,7 @@
           <div class="relative z-10 max-w-3xl mx-auto">
             <div id="chapter-type" class="text-lg mb-2">print(<span class="text-accent">"OBLITER8TION"</span>)</div>
             <h1 id="chapter-title" class="text-4xl md:text-6xl font-bold mb-4">
-              <span class="text-accent">Loading...</span>
+              <span class="text-accent">OBLITER8TION</span>
             </h1>
 
             <script>
@@ -427,7 +425,6 @@
         </div>
 
         <main class="flex-1 container mx-auto">
-          <!-- Book dropdown (only shows if multiple books) -->
           <div id="bookSelectContainer" dir="ltr" data-orientation="horizontal" class="w-full mb-6" style="display: none;">
             <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground flex w-full" tabindex="0" data-orientation="horizontal" style="outline: none;">
               <div class="custom-dropdown-wrapper">
@@ -439,7 +436,6 @@
             </div>
           </div>
 
-          <!-- Chapter dropdown -->
           <div dir="ltr" data-orientation="horizontal" class="w-full mb-6">
             <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground flex w-full" tabindex="0" data-orientation="horizontal" style="outline: none;">
               <div class="custom-dropdown-wrapper">
@@ -451,12 +447,10 @@
             </div>
           </div>
 
-          <!-- Chapter content box -->
           <div id="chapter-content" class="markdown-body p-6 rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50 mb-6" style="white-space: pre-wrap;">
             <p>Loading content...</p>
           </div>
 
-          <!-- Information box -->
           <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
             <div class="p-6 pt-6">
               <h2 class="text-2xl font-bold mb-4">Information</h2>
@@ -526,11 +520,9 @@
 
     function loadChapter(chapter) {
       const preSubtitle = document.getElementById('chapter-type');
-      const titleEl = document.getElementById('chapter-title');
       const contentDiv = document.getElementById('chapter-content');
 
       preSubtitle.innerHTML = `print(<span class="text-accent">"${chapter.type}"</span>)`;
-      titleEl.innerHTML = `<span class="text-accent">${chapter.name}</span>`;
       contentDiv.innerHTML = "<p>Loading chapter...</p>";
 
       try {

@@ -158,7 +158,7 @@
           <div class="relative flex flex-col items-center justify-center py-20 px-4 text-center" style="opacity: 1; transform: none">
             <div class="absolute inset-0 overflow-hidden">
               <div class="absolute inset-0 bg-gradient-to-b from-background/80 to-background"></div>
-              <img src="obliter8tion.png" alt="OBLITER8TION Banner" style="width:100%; height:auto;">
+              <img src="https://static0.cbrimages.com/wordpress/wp-content/uploads/2022/05/Van-Gogh.jpg" alt="Starry Night Background" style="width:100%; height:auto;">
 
             </div>
             <div class="relative z-10 max-w-3xl mx-auto" style="opacity: 1">
@@ -537,15 +537,15 @@
                 <button type="button" role="tab" aria-selected="true" aria-controls="radix-:r0:-content-about" data-state="active" id="radix-:r0:-trigger-about" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">
                   Profile
                 </button>
-                <button type="button" role="tab" aria-selected="false" data-state="inactive" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="" onclick="window.location.href='/blog.html'">
-                  Blog (↗)
+                <button type="button" role="tab" aria-selected="false" aria-controls="radix-:r0:-content-blog" data-state="inactive" id="radix-:r0:-trigger-blog" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">
+                  Blog
                 </button>
-                <button type="button" role="tab" aria-selected="false" aria-controls="radix-:r0:-content-gallery" data-state="inactive" id="radix-:r0:-trigger-gallery" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">
-                  Minecraft
+                <button type="button" role="tab" aria-selected="false" aria-controls="radix-:r0:-content-projects" data-state="inactive" id="radix-:r0:-trigger-projects" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal" data-radix-collection-item="">
+                  Projects
                 </button>
               </div>
               <div style="opacity: 1; transform: none">
-                <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-about" id="radix-:r0:-content-about" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-8" style="animation-duration: 0s">
+                <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-about" id="radix-:r0:-content-about" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5" style="animation-duration: 0s">
                   <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
                     <div class="p-6 pt-6">
                       <h2 class="text-2xl font-bold mb-4">About Me</h2>
@@ -575,215 +575,400 @@
                       </div>
                     </div>
                   </div>
-                  <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
-                    <div class="p-6 pt-6">
-                      <h2 class="text-2xl font-bold mb-4">Projects</h2>
-                      <div id="projects-container" class="space-y-6">
-                        <p class="text-muted-foreground">Loading projects...</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <script>
-                    async function loadProjects() {
-                      const container = document.getElementById('projects-container');
-
-                      try {
-                        let projects = null;
-
-                        try {
-                          const response = await fetch('files/projects.json?t=' + Date.now());
-                          if (response.ok) {
-                            projects = await response.json();
-                          }
-                        } catch (e) {
-                          console.log("Standard fetch failed, trying XMLHttpRequest...");
-                        }
-
-                        if (!projects) {
-                          try {
-                            projects = await new Promise((resolve, reject) => {
-                              const xhr = new XMLHttpRequest();
-                              xhr.overrideMimeType("application/json");
-                              xhr.open("GET", 'files/projects.json', true);
-                              xhr.onreadystatechange = function() {
-                                if (xhr.readyState === 4) {
-                                  if (xhr.status === 200 || xhr.status === 0) {
-                                    try {
-                                      const data = JSON.parse(xhr.responseText);
-                                      resolve(data);
-                                    } catch (e) {
-                                      reject(new Error("Failed to parse JSON: " + e.message));
-                                    }
-                                  } else {
-                                    reject(new Error("HTTP " + xhr.status));
-                                  }
-                                }
-                              };
-                              xhr.send();
-                            });
-                          } catch (e) {
-                            console.log("XMLHttpRequest failed:", e);
-                          }
-                        }
-
-                        if (!projects || projects.length === 0) {
-                          throw new Error("Could not load files/projects.json");
-                        }
-
-                        container.innerHTML = '';
-
-                        projects.forEach((project, index) => {
-                          const projectDiv = document.createElement('div');
-
-                          const title = document.createElement('h3');
-                          title.className = 'text-lg font-bold text-accent';
-                          const titleLink = document.createElement('a');
-                          titleLink.href = project.link;
-                          titleLink.target = '_blank';
-                          titleLink.textContent = project.title;
-                          title.appendChild(titleLink);
-                          projectDiv.appendChild(title);
-
-                          const description = document.createElement('p');
-                          description.className = 'text-muted-foreground';
-                          description.textContent = project.description;
-                          projectDiv.appendChild(description);
-
-                          container.appendChild(projectDiv);
-
-                          if (index < projects.length - 1) {
-                            const separator = document.createElement('div');
-                            separator.setAttribute('data-orientation', 'horizontal');
-                            separator.setAttribute('role', 'none');
-                            separator.className = 'shrink-0 bg-border h-[1px] w-full';
-                            container.appendChild(separator);
-                          }
-                        });
-
-                      } catch (error) {
-                        console.error('Error loading projects:', error);
-                        container.innerHTML = `<p style="color:hsl(var(--accent));">Error loading projects from files/projects.json<br><br>${error.message}</p>`;
-                      }
-                    }
-
-                    if (document.readyState === 'loading') {
-                      document.addEventListener('DOMContentLoaded', loadProjects);
-                    } else {
-                      loadProjects();
-                    }
-                  </script>
                 </div>
 
                 <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-blog" hidden="" id="radix-:r0:-content-blog" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-6">
-                </div>
-
-                <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-gallery" id="radix-:r0:-content-gallery" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5" hidden=''>
                   <div class="rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50">
                     <div class="p-6 pt-6">
-                      <h2 class="text-2xl font-bold mb-4">Minecraft</h2>
-                      <div class="space-y-6">
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/infinilib" target="_blank">Infinilib</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">The required library for all Infini-projects.</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/resourcepack/infiniresources" target="_blank">Infiniresources</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">The required resourcepack for all Infini-projects.</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/infinicontrol" target="_blank">Infinicontrol</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">A datapack containing many commands made for server management!</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/infinicrafts" target="_blank">Infinicrafts</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">Gain the ability to craft all* uncraftable items or blocks in Minecraft! <i>*most</i></p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/pku" target="_blank">Parkour Utility</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">A bunch of stuff to help make parkour courses!</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/infinitools" target="_blank">Infiniarmory</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">Transform any tool or armor into a different one of the same type! Turn your wooden hoe into a netherite one as soon as you start!</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/infinitrolls" target="_blank">Infinitrolls</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">A datapack full of functions to troll your friends!</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/resourcepack/starhud-hotbar" target="_blank">StarHUD Hotbar</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">A custom hotbar resourcepack for the StarHUD mod by Finside.</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/liminal-paintings" target="_blank">Liminal Paintings</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">DyoudiM!'s liminal-vibe artwork added to Minecraft as paintings!</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/wormhole-items" target="_blank">Wormhole Items</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">All of the CUSTOM items (that require multiple command blocks) from the Wormhole by Spoke, improved, and packed as a datapack.</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
-                        <div>
-                          <h3 class="text-lg font-bold text-accent"><a href="https://modrinth.com/datapack/spectral-orbital-lasers" target="_blank">Spectral Orbital Lasers
-</a></h3>
-                          <p class="text-sm text-muted-foreground mb-2">Synopsis</p>
-                          <p class="text-muted-foreground">Turns spectral arrows into destructive lasers!</p>
-                        </div>
-                        <div data-orientation="horizontal" role="none" class="shrink-0 bg-border h-[1px] w-full"></div>
+                      <h2 class="text-2xl font-bold mb-4">Blog Posts <a href="/feed.xml" target="_blank" class="text-accent">[RSS Feed]</a></h2>
+                      <div id="blog-posts-container" class="space-y-6">
+                        <p class="text-muted-foreground">Loading blog posts...</p>
                       </div>
                     </div>
                   </div>
                 </div>
+
+                <script>
+                  function getOrdinalSuffix(day) {
+                    if (day > 3 && day < 21) return 'th';
+                    switch (day % 10) {
+                      case 1: return 'st';
+                      case 2: return 'nd';
+                      case 3: return 'rd';
+                      default: return 'th';
+                    }
+                  }
+
+                  function formatDate(dateStr) {
+                    const parts = dateStr.split('/');
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = parts[2];
+
+                    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+                    return `${day}${getOrdinalSuffix(day)} of ${monthNames[month]}, ${year}`;
+                  }
+
+                  function parseMarkdown(text) {
+                    if (!text) return '';
+
+                    text = text.replace(/\\n/g, '\n');
+
+                    const links = [];
+                    let linkIndex = 0;
+                    text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, function(match, linkText, url) {
+                      let hasItalic = (linkText.startsWith('*') && linkText.endsWith('*') && linkText.length > 2);
+                      let hasUnderline = (linkText.startsWith('_') && linkText.endsWith('_') && linkText.length > 2);
+
+                      let cleanText = linkText;
+                      if (hasItalic) {
+                        cleanText = cleanText.slice(1, -1);
+                      }
+                      if (hasUnderline) {
+                        cleanText = cleanText.slice(1, -1);
+                      }
+
+                      let italic = !hasItalic;
+                      let underline = !hasUnderline;
+
+                      let style = '';
+                      if (italic && underline) {
+                        style = 'font-style: italic; text-decoration: underline;';
+                      } else if (italic) {
+                        style = 'font-style: italic;';
+                      } else if (underline) {
+                        style = 'text-decoration: underline;';
+                      }
+
+                      const placeholder = `LINKPLACEHOLDER${linkIndex}LINKPLACEHOLDER`;
+                      links.push(`<a href="${url}" target="_blank" style="${style}">${cleanText}</a>`);
+                      linkIndex++;
+                      return placeholder;
+                    });
+
+                    text = text.replace(/(?<!\\)\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+                    text = text.replace(/(?<!\\)\*([^\*]+)\*/g, '<em>$1</em>');
+                    text = text.replace(/(?<!\\)_([^_]+)_/g, '<u>$1</u>');
+                    text = text.replace(/(?<!\\)~~([^~]+)~~/g, '<s>$1</s>');
+                    text = text.replace(/\\(\*|_|~)/g, '$1');
+                    text = text.replace(/\\\\\\\\/g, '\\\\');
+                    text = text.replace(/\\\\/g, '\\');
+
+                    links.forEach((link, index) => {
+                      text = text.replace(`LINKPLACEHOLDER${index}LINKPLACEHOLDER`, link);
+                    });
+
+                    text = text.replace(/\n/g, '<br>');
+
+                    return text;
+                  }
+
+                  async function loadBlogPosts() {
+                    const container = document.getElementById('blog-posts-container');
+
+                    try {
+                      let blogPosts = null;
+
+                      try {
+                        const response = await fetch('files/blogs.json?t=' + Date.now());
+                        if (response.ok) {
+                          blogPosts = await response.json();
+                        }
+                      } catch (e) {
+                        console.log("Standard fetch failed, trying XMLHttpRequest...");
+                      }
+
+                      if (!blogPosts) {
+                        try {
+                          blogPosts = await new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.overrideMimeType("application/json");
+                            xhr.open("GET", 'files/blogs.json', true);
+                            xhr.onreadystatechange = function() {
+                              if (xhr.readyState === 4) {
+                                if (xhr.status === 200 || xhr.status === 0) {
+                                  try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    resolve(data);
+                                  } catch (e) {
+                                    reject(new Error("Failed to parse JSON: " + e.message));
+                                  }
+                                } else {
+                                  reject(new Error("HTTP " + xhr.status));
+                                }
+                              }
+                            };
+                            xhr.send();
+                          });
+                        } catch (e) {
+                          console.log("XMLHttpRequest failed:", e);
+                        }
+                      }
+
+                      if (!blogPosts || blogPosts.length === 0) {
+                        throw new Error("Could not load files/blogs.json");
+                      }
+
+                      container.innerHTML = '';
+
+                      blogPosts.sort((a, b) => {
+                        const parseDate = (dateStr) => {
+                          const parts = dateStr.split('/');
+                          return new Date(parts[2], parts[1] - 1, parts[0]);
+                        };
+                        return parseDate(b.date) - parseDate(a.date);
+                      });
+
+                      blogPosts.forEach((post, index) => {
+                        const postDiv = document.createElement('div');
+                        postDiv.id = `blog-post-${post.id}`;
+
+                        const title = document.createElement('h3');
+                        title.className = 'text-lg font-bold text-accent';
+                        title.textContent = post.title;
+                        postDiv.appendChild(title);
+
+                        const date = document.createElement('p');
+                        date.className = 'text-sm text-muted-foreground mb-2';
+                        date.textContent = `(ID: ${post.id}) ${formatDate(post.date)}`;
+                        postDiv.appendChild(date);
+
+                        const content = document.createElement('p');
+                        content.className = 'text-muted-foreground';
+                        content.innerHTML = parseMarkdown(post.content);
+                        postDiv.appendChild(content);
+
+                        container.appendChild(postDiv);
+
+                        if (index < blogPosts.length - 1) {
+                          const separator = document.createElement('div');
+                          separator.setAttribute('data-orientation', 'horizontal');
+                          separator.setAttribute('role', 'none');
+                          separator.className = 'shrink-0 bg-border h-[1px] w-full';
+                          container.appendChild(separator);
+                        }
+
+                        const hash = window.location.hash;
+                        const match = hash.match(/[?&]id=(\d+)/);
+                        if (match) {
+                          const blogId = match[1];
+                          const targetPost = document.getElementById(`blog-post-${blogId}`);
+                          if (targetPost) {
+                            setTimeout(() => {
+                              targetPost.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }, 300);
+                          }
+                        }
+                      });
+                    } catch (error) {
+                      console.error('Error loading blog posts:', error);
+                      container.innerHTML = `<p style="color:hsl(var(--accent));">Error loading blog posts from files/blogs.json<br><br>${error.message}</p>`;
+                    }
+                  }
+
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', loadBlogPosts);
+                  } else {
+                    loadBlogPosts();
+                  }
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', loadBlogPosts);
+                  } else {
+                    loadBlogPosts();
+                  }
+                </script>
+
+                <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-projects" id="radix-:r0:-content-projects" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5" hidden=''>
+                  <div id="gallery-projects-container">
+                    <p class="text-muted-foreground">Loading projects...</p>
+                  </div>
+                </div>
+
+                <script>
+                  async function loadGalleryProjects() {
+                    const container = document.getElementById('gallery-projects-container');
+
+                    try {
+                      let projects = null;
+
+                      try {
+                        const response = await fetch('files/projects.json?t=' + Date.now());
+                        if (response.ok) {
+                          projects = await response.json();
+                        }
+                      } catch (e) {
+                        console.log("Standard fetch failed, trying XMLHttpRequest...");
+                      }
+
+                      if (!projects) {
+                        try {
+                          projects = await new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.overrideMimeType("application/json");
+                            xhr.open("GET", 'files/projects.json', true);
+                            xhr.onreadystatechange = function() {
+                              if (xhr.readyState === 4) {
+                                if (xhr.status === 200 || xhr.status === 0) {
+                                  try {
+                                    const data = JSON.parse(xhr.responseText);
+                                    resolve(data);
+                                  } catch (e) {
+                                    reject(new Error("Failed to parse JSON: " + e.message));
+                                  }
+                                } else {
+                                  reject(new Error("HTTP " + xhr.status));
+                                }
+                              }
+                            };
+                            xhr.send();
+                          });
+                        } catch (e) {
+                          console.log("XMLHttpRequest failed:", e);
+                        }
+                      }
+
+                      if (!projects || projects.length === 0) {
+                        throw new Error("Could not load files/projects.json");
+                      }
+
+                      container.innerHTML = '';
+                      container.className = 'space-y-2';
+
+                      projects.forEach((section) => {
+                        const sectionTitle = section[0];
+                        const sectionProjects = section.slice(1);
+
+                        const sectionCard = document.createElement('div');
+                        sectionCard.className = 'rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50';
+
+                        const cardContent = document.createElement('div');
+                        cardContent.className = 'p-6 pt-6';
+
+                        const title = document.createElement('h2');
+                        title.className = 'text-2xl font-bold mb-4';
+                        title.textContent = sectionTitle;
+                        cardContent.appendChild(title);
+
+                        const projectsContainer = document.createElement('div');
+                        projectsContainer.className = 'space-y-6';
+
+                        sectionProjects.forEach((project, index) => {
+                          const projectDiv = document.createElement('div');
+                          projectDiv.className = 'space-y-2';
+
+                          const projectTitle = document.createElement('h3');
+                          projectTitle.className = 'text-lg font-bold text-accent';
+                          const projectLink = document.createElement('a');
+                          projectLink.href = project.link;
+                          projectLink.target = '_blank';
+                          projectLink.textContent = project.title;
+                          projectTitle.appendChild(projectLink);
+                          projectDiv.appendChild(projectTitle);
+
+                          const description = document.createElement('p');
+                          description.className = 'text-muted-foreground';
+                          description.innerHTML = project.description;
+                          projectDiv.appendChild(description);
+
+                          projectsContainer.appendChild(projectDiv);
+
+                          if (index < sectionProjects.length - 1) {
+                            const separator = document.createElement('div');
+                            separator.setAttribute('data-orientation', 'horizontal');
+                            separator.setAttribute('role', 'none');
+                            separator.className = 'sh rink-0 bg-border h-[1px] w-full my-6';
+                            projectsContainer.appendChild(separator);
+                          }
+                        });
+
+                        cardContent.appendChild(projectsContainer);
+                        sectionCard.appendChild(cardContent);
+                        container.appendChild(sectionCard);
+                      });
+
+                    } catch (error) {
+                      console.error('Error loading gallery projects:', error);
+                      container.innerHTML = `<p style="color:hsl(var(--accent));">Error loading projects from files/projects.json<br><br>${error.message}</p>`;
+                    }
+                  }
+
+                  if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', loadGalleryProjects);
+                  } else {
+                    loadGalleryProjects();
+                  }
+                </script>
               </div>
             </div>
             <script>
               document.addEventListener('DOMContentLoaded', function() {
                 const profileButton = document.getElementById('radix-:r0:-trigger-about');
-                const galleryButton = document.getElementById('radix-:r0:-trigger-gallery');
+                const blogButton = document.getElementById('radix-:r0:-trigger-blog');
+                const projectsButton = document.getElementById('radix-:r0:-trigger-projects');
+                
                 const profileContent = document.getElementById('radix-:r0:-content-about');
-                const galleryContent = document.getElementById('radix-:r0:-content-gallery');
+                const blogContent = document.getElementById('radix-:r0:-content-blog');
+                const projectsContent = document.getElementById('radix-:r0:-content-projects');
                 const showProfile = function() {
                   profileButton.setAttribute('aria-selected', 'true');
                   profileButton.setAttribute('data-state', 'active');
-                  galleryButton.setAttribute('aria-selected', 'false');
-                  galleryButton.setAttribute('data-state', 'inactive');
+                  blogButton.setAttribute('aria-selected', 'false');
+                  blogButton.setAttribute('data-state', 'inactive');
+                  projectsButton.setAttribute('aria-selected', 'false');
+                  projectsButton.setAttribute('data-state', 'inactive');
+
                   profileContent.setAttribute('data-state', 'active');
                   profileContent.removeAttribute('hidden');
-                  galleryContent.setAttribute('data-state', 'inactive');
-                  galleryContent.setAttribute('hidden', '');
+                  blogContent.setAttribute('data-state', 'inactive');
+                  blogContent.setAttribute('hidden', '');
+                  projectsContent.setAttribute('data-state', 'inactive');
+                  projectsContent.setAttribute('hidden', '');
                 };
-                const showGallery = function() {
+                const showBlog = function() {
                   profileButton.setAttribute('aria-selected', 'false');
                   profileButton.setAttribute('data-state', 'inactive');
-                  galleryButton.setAttribute('aria-selected', 'true');
-                  galleryButton.setAttribute('data-state', 'active');
+                  blogButton.setAttribute('aria-selected', 'true');
+                  blogButton.setAttribute('data-state', 'active');
+                  projectsButton.setAttribute('aria-selected', 'false');
+                  projectsButton.setAttribute('data-state', 'inactive');
+
                   profileContent.setAttribute('data-state', 'inactive');
                   profileContent.setAttribute('hidden', '');
-                  galleryContent.setAttribute('data-state', 'active');
-                  galleryContent.removeAttribute('hidden');
+                  blogContent.setAttribute('data-state', 'active');
+                  blogContent.removeAttribute('hidden');
+                  projectsContent.setAttribute('data-state', 'inactive');
+                  projectsContent.setAttribute('hidden', '');
+                };
+                const showProjects = function() {
+                  profileButton.setAttribute('aria-selected', 'false');
+                  profileButton.setAttribute('data-state', 'inactive');
+                  blogButton.setAttribute('aria-selected', 'false');
+                  blogButton.setAttribute('data-state', 'inactive');
+                  projectsButton.setAttribute('aria-selected', 'true');
+                  projectsButton.setAttribute('data-state', 'active');
+
+                  profileContent.setAttribute('data-state', 'inactive');
+                  profileContent.setAttribute('hidden', '');
+                  blogContent.setAttribute('data-state', 'inactive');
+                  blogContent.setAttribute('hidden', '');
+                  projectsContent.setAttribute('data-state', 'active');
+                  projectsContent.removeAttribute('hidden');
                 };
                 profileButton.addEventListener('click', showProfile);
-                galleryButton.addEventListener('click', showGallery);
+                blogButton.addEventListener('click', showBlog);
+                projectsButton.addEventListener('click', showProjects);
+
+                  const hash = window.location.hash;
+                  if (hash.startsWith('#about')) {
+                    showProfile();
+                  }
+                  else if (hash.startsWith('#blog')) {
+                    showBlog();
+                  }
+                  else if (hash.startsWith('#projects')) {
+                    showProjects();
+                  }
               });
             </script>
 
