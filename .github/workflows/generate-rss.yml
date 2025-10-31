@@ -1,0 +1,38 @@
+name: Generate RSS Feed
+
+on:
+  push:
+    paths:
+      - 'files/blogs.json'
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  generate-rss:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Generate RSS feed
+        run: |
+          node .github/scripts/generate-rss.js
+      
+      - name: Commit RSS feed
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add feed.xml
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update RSS feed"
+          git push
