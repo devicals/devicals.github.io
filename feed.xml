@@ -5,9 +5,18 @@
     <link>https://devicals.github.io/</link>
     <description>Blog posts from Error Dev's website</description>
     <language>en-us</language>
-    <lastBuildDate>Fri, 31 Oct 2025 04:28:35 GMT</lastBuildDate>
+    <lastBuildDate>Sat, 01 Nov 2025 05:32:07 GMT</lastBuildDate>
     <atom:link href="https://devicals.github.io/feed.xml" rel="self" type="application/rss+xml"/>
     
+    <item>
+      <title>Post-Hallows</title>
+      <link>https://devicals.github.io/#blog?id=18</link>
+      <guid isPermaLink="true">https://devicals.github.io/#blog?id=18</guid>
+      <pubDate>Sat, 01 Nov 2025 12:00:00 GMT</pubDate>
+      <description>Hope ya&apos;ll had a wonderful Spooktober and Halloween! Anyways just a little more changes, the Projects tab now has a separate tab bar instead of having whole sections for the three project group thingies. You can use #projects?tab={ID} to link directly to any tab! As usually the ID will be displayed next to the name of each section.
+Another change is to the book rendering! Now although it uses a bit more definition (.json) files, it makes my life EVEN EASIER because now all the chapters will be using .md, so it 1) makes it easier for me to look at and 2) I no longer have to replace all the line breaks with &amp;#92;n. I won&apos;t be applying this system to the blogs because I&apos;m not gonna make blogs THAT long, and I&apos;m just lazy. Anyways, CYA!</description>
+    </item>
+
     <item>
       <title>Happy Halloween!</title>
       <link>https://devicals.github.io/#blog?id=17</link>
