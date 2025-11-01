@@ -137,7 +137,6 @@
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4997/4997543.png">
   </head>
 
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-53ZKHVZY8H"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -587,7 +586,6 @@
                     </div>
                   </div>
                 </div>
-
                 <script>
                   function getOrdinalSuffix(day) {
                     if (day > 3 && day < 21) return 'th';
@@ -780,196 +778,317 @@
                 </script>
 
                 <div data-state="inactive" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-projects" id="radix-:r0:-content-projects" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5" hidden=''>
-                  <div id="gallery-projects-container">
-                    <p class="text-muted-foreground">Loading projects...</p>
+                  <div dir="ltr" data-orientation="horizontal" class="w-full">
+                    <div role="tablist" aria-orientation="horizontal" class="h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground grid w-full grid-cols-3 mb-6" tabindex="0" data-orientation="horizontal" style="outline: none">
+                      <button type="button" role="tab" aria-selected="true" aria-controls="projects-coding-content" data-state="active" id="projects-coding-tab" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal">
+                        Coding Projects
+                      </button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="projects-books-content" data-state="inactive" id="projects-books-tab" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal">
+                        Books
+                      </button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="projects-mc-content" data-state="inactive" id="projects-mc-tab" class="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow" tabindex="-1" data-orientation="horizontal">
+                        Minecraft
+                      </button>
+                    </div>
+                  </div>
+
+                  <div id="projects-coding-content" data-state="active">
+                    <div id="gallery-projects-coding-container">
+                      <p class="text-muted-foreground">Loading coding projects...</p>
+                    </div>
+                  </div>
+                  <div id="projects-books-content" data-state="inactive" hidden="">
+                    <div id="gallery-projects-books-container">
+                      <p class="text-muted-foreground">Loading books...</p>
+                    </div>
+                  </div>
+                  <div id="projects-mc-content" data-state="inactive" hidden="">
+                    <div id="gallery-projects-mc-container">
+                      <p class="text-muted-foreground">Loading Minecraft projects...</p>
+                    </div>
                   </div>
                 </div>
-
                 <script>
                   async function loadGalleryProjects() {
-                    const container = document.getElementById('gallery-projects-container');
+                  try {
+                    let projects = null;
 
                     try {
-                      let projects = null;
+                      const response = await fetch('files/projects.json?t=' + Date.now());
+                      if (response.ok) {
+                        projects = await response.json();
+                      }
+                    } catch (e) {
+                      console.log("Standard fetch failed, trying XMLHttpRequest...");
+                    }
 
+                    if (!projects) {
                       try {
-                        const response = await fetch('files/projects.json?t=' + Date.now());
-                        if (response.ok) {
-                          projects = await response.json();
-                        }
-                      } catch (e) {
-                        console.log("Standard fetch failed, trying XMLHttpRequest...");
-                      }
-
-                      if (!projects) {
-                        try {
-                          projects = await new Promise((resolve, reject) => {
-                            const xhr = new XMLHttpRequest();
-                            xhr.overrideMimeType("application/json");
-                            xhr.open("GET", 'files/projects.json', true);
-                            xhr.onreadystatechange = function() {
-                              if (xhr.readyState === 4) {
-                                if (xhr.status === 200 || xhr.status === 0) {
-                                  try {
-                                    const data = JSON.parse(xhr.responseText);
-                                    resolve(data);
-                                  } catch (e) {
-                                    reject(new Error("Failed to parse JSON: " + e.message));
-                                  }
-                                } else {
-                                  reject(new Error("HTTP " + xhr.status));
+                        projects = await new Promise((resolve, reject) => {
+                          const xhr = new XMLHttpRequest();
+                          xhr.overrideMimeType("application/json");
+                          xhr.open("GET", 'files/projects.json', true);
+                          xhr.onreadystatechange = function() {
+                            if (xhr.readyState === 4) {
+                              if (xhr.status === 200 || xhr.status === 0) {
+                                try {
+                                  const data = JSON.parse(xhr.responseText);
+                                  resolve(data);
+                                } catch (e) {
+                                  reject(new Error("Failed to parse JSON: " + e.message));
                                 }
+                              } else {
+                                reject(new Error("HTTP " + xhr.status));
                               }
-                            };
-                            xhr.send();
-                          });
-                        } catch (e) {
-                          console.log("XMLHttpRequest failed:", e);
-                        }
+                            }
+                          };
+                          xhr.send();
+                        });
+                      } catch (e) {
+                        console.log("XMLHttpRequest failed:", e);
                       }
+                    }
 
-                      if (!projects || projects.length === 0) {
-                        throw new Error("Could not load files/projects.json");
-                      }
+                    if (!projects || projects.length === 0) {
+                      throw new Error("Could not load files/projects.json");
+                    }
+
+                    const sectionMap = {
+                      'Coding Projects (id: coding)': 'gallery-projects-coding-container',
+                      'Books (id: books)': 'gallery-projects-books-container',
+                      'Minecraft (id: mc)': 'gallery-projects-mc-container'
+                    };
+
+                    projects.forEach((section) => {
+                      const sectionTitle = section[0];
+                      const sectionProjects = section.slice(1);
+                      const containerId = sectionMap[sectionTitle];
+
+                      if (!containerId) return;
+
+                      const container = document.getElementById(containerId);
+                      if (!container) return;
 
                       container.innerHTML = '';
-                      container.className = 'space-y-2';
 
-                      projects.forEach((section) => {
-                        const sectionTitle = section[0];
-                        const sectionProjects = section.slice(1);
+                      const sectionCard = document.createElement('div');
+                      sectionCard.className = 'rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50';
 
-                        const sectionCard = document.createElement('div');
-                        sectionCard.className = 'rounded-[calc(var(--radius))] text-card-foreground shadow bg-card/50 backdrop-blur-sm border border-border/50';
+                      const cardContent = document.createElement('div');
+                      cardContent.className = 'p-6 pt-6';
 
-                        const cardContent = document.createElement('div');
-                        cardContent.className = 'p-6 pt-6';
+                      const title = document.createElement('h2');
+                      title.className = 'text-2xl font-bold mb-4';
+                      title.textContent = sectionTitle;
+                      cardContent.appendChild(title);
 
-                        const title = document.createElement('h2');
-                        title.className = 'text-2xl font-bold mb-4';
-                        title.textContent = sectionTitle;
-                        cardContent.appendChild(title);
+                      const projectsContainer = document.createElement('div');
+                      projectsContainer.className = 'space-y-6';
 
-                        const projectsContainer = document.createElement('div');
-                        projectsContainer.className = 'space-y-6';
+                      sectionProjects.forEach((project, index) => {
+                        const projectDiv = document.createElement('div');
+                        projectDiv.className = 'space-y-2';
 
-                        sectionProjects.forEach((project, index) => {
-                          const projectDiv = document.createElement('div');
-                          projectDiv.className = 'space-y-2';
+                        const projectTitle = document.createElement('h3');
+                        projectTitle.className = 'text-lg font-bold text-accent';
+                        const projectLink = document.createElement('a');
+                        projectLink.href = project.link;
+                        projectLink.target = '_blank';
+                        projectLink.textContent = project.title;
+                        projectTitle.appendChild(projectLink);
+                        projectDiv.appendChild(projectTitle);
 
-                          const projectTitle = document.createElement('h3');
-                          projectTitle.className = 'text-lg font-bold text-accent';
-                          const projectLink = document.createElement('a');
-                          projectLink.href = project.link;
-                          projectLink.target = '_blank';
-                          projectLink.textContent = project.title;
-                          projectTitle.appendChild(projectLink);
-                          projectDiv.appendChild(projectTitle);
+                        const description = document.createElement('p');
+                        description.className = 'text-muted-foreground';
+                        description.innerHTML = project.description;
+                        projectDiv.appendChild(description);
 
-                          const description = document.createElement('p');
-                          description.className = 'text-muted-foreground';
-                          description.innerHTML = project.description;
-                          projectDiv.appendChild(description);
+                        projectsContainer.appendChild(projectDiv);
 
-                          projectsContainer.appendChild(projectDiv);
-
-                          if (index < sectionProjects.length - 1) {
-                            const separator = document.createElement('div');
-                            separator.setAttribute('data-orientation', 'horizontal');
-                            separator.setAttribute('role', 'none');
-                            separator.className = 'sh rink-0 bg-border h-[1px] w-full my-6';
-                            projectsContainer.appendChild(separator);
-                          }
-                        });
-
-                        cardContent.appendChild(projectsContainer);
-                        sectionCard.appendChild(cardContent);
-                        container.appendChild(sectionCard);
+                        if (index < sectionProjects.length - 1) {
+                          const separator = document.createElement('div');
+                          separator.setAttribute('data-orientation', 'horizontal');
+                          separator.setAttribute('role', 'none');
+                          separator.className = 'shrink-0 bg-border h-[1px] w-full my-6';
+                          projectsContainer.appendChild(separator);
+                        }
                       });
 
-                    } catch (error) {
-                      console.error('Error loading gallery projects:', error);
-                      container.innerHTML = `<p style="color:hsl(var(--accent));">Error loading projects from files/projects.json<br><br>${error.message}</p>`;
-                    }
-                  }
+                      cardContent.appendChild(projectsContainer);
+                      sectionCard.appendChild(cardContent);
+                      container.appendChild(sectionCard);
+                    });
 
-                  if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', loadGalleryProjects);
-                  } else {
-                    loadGalleryProjects();
+                  } catch (error) {
+                    console.error('Error loading gallery projects:', error);
+                    const containers = ['gallery-projects-coding-container', 'gallery-projects-books-container', 'gallery-projects-mc-container'];
+                    containers.forEach(id => {
+                      const container = document.getElementById(id);
+                      if (container) {
+                        container.innerHTML = `<p style="color:hsl(var(--accent));">Error loading projects from files/projects.json<br><br>${error.message}</p>`;
+                      }
+                    });
                   }
+                }
+
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', loadGalleryProjects);
+                } else {
+                  loadGalleryProjects();
+                }
                 </script>
               </div>
             </div>
             <script>
               document.addEventListener('DOMContentLoaded', function() {
-                const profileButton = document.getElementById('radix-:r0:-trigger-about');
-                const blogButton = document.getElementById('radix-:r0:-trigger-blog');
-                const projectsButton = document.getElementById('radix-:r0:-trigger-projects');
+              const profileButton = document.getElementById('radix-:r0:-trigger-about');
+              const blogButton = document.getElementById('radix-:r0:-trigger-blog');
+              const projectsButton = document.getElementById('radix-:r0:-trigger-projects');
+              
+              const profileContent = document.getElementById('radix-:r0:-content-about');
+              const blogContent = document.getElementById('radix-:r0:-content-blog');
+              const projectsContent = document.getElementById('radix-:r0:-content-projects');
+
+              // Projects sub-tabs
+              const codingTab = document.getElementById('projects-coding-tab');
+              const booksTab = document.getElementById('projects-books-tab');
+              const mcTab = document.getElementById('projects-mc-tab');
+
+              const codingContent = document.getElementById('projects-coding-content');
+              const booksContent = document.getElementById('projects-books-content');
+              const mcContent = document.getElementById('projects-mc-content');
+
+              const showProfile = function() {
+                profileButton.setAttribute('aria-selected', 'true');
+                profileButton.setAttribute('data-state', 'active');
+                blogButton.setAttribute('aria-selected', 'false');
+                blogButton.setAttribute('data-state', 'inactive');
+                projectsButton.setAttribute('aria-selected', 'false');
+                projectsButton.setAttribute('data-state', 'inactive');
+
+                profileContent.setAttribute('data-state', 'active');
+                profileContent.removeAttribute('hidden');
+                blogContent.setAttribute('data-state', 'inactive');
+                blogContent.setAttribute('hidden', '');
+                projectsContent.setAttribute('data-state', 'inactive');
+                projectsContent.setAttribute('hidden', '');
+              };
+
+              const showBlog = function() {
+                profileButton.setAttribute('aria-selected', 'false');
+                profileButton.setAttribute('data-state', 'inactive');
+                blogButton.setAttribute('aria-selected', 'true');
+                blogButton.setAttribute('data-state', 'active');
+                projectsButton.setAttribute('aria-selected', 'false');
+                projectsButton.setAttribute('data-state', 'inactive');
+
+                profileContent.setAttribute('data-state', 'inactive');
+                profileContent.setAttribute('hidden', '');
+                blogContent.setAttribute('data-state', 'active');
+                blogContent.removeAttribute('hidden');
+                projectsContent.setAttribute('data-state', 'inactive');
+                projectsContent.setAttribute('hidden', '');
+              };
+
+              const showProjects = function() {
+                profileButton.setAttribute('aria-selected', 'false');
+                profileButton.setAttribute('data-state', 'inactive');
+                blogButton.setAttribute('aria-selected', 'false');
+                blogButton.setAttribute('data-state', 'inactive');
+                projectsButton.setAttribute('aria-selected', 'true');
+                projectsButton.setAttribute('data-state', 'active');
+
+                profileContent.setAttribute('data-state', 'inactive');
+                profileContent.setAttribute('hidden', '');
+                blogContent.setAttribute('data-state', 'inactive');
+                blogContent.setAttribute('hidden', '');
+                projectsContent.setAttribute('data-state', 'active');
+                projectsContent.removeAttribute('hidden');
+              };
+
+              // Projects sub-tab switching
+              const showCodingProjects = function() {
+                codingTab.setAttribute('aria-selected', 'true');
+                codingTab.setAttribute('data-state', 'active');
+                booksTab.setAttribute('aria-selected', 'false');
+                booksTab.setAttribute('data-state', 'inactive');
+                mcTab.setAttribute('aria-selected', 'false');
+                mcTab.setAttribute('data-state', 'inactive');
+
+                codingContent.setAttribute('data-state', 'active');
+                codingContent.removeAttribute('hidden');
+                booksContent.setAttribute('data-state', 'inactive');
+                booksContent.setAttribute('hidden', '');
+                mcContent.setAttribute('data-state', 'inactive');
+                mcContent.setAttribute('hidden', '');
+              };
+
+              const showBooksProjects = function() {
+                codingTab.setAttribute('aria-selected', 'false');
+                codingTab.setAttribute('data-state', 'inactive');
+                booksTab.setAttribute('aria-selected', 'true');
+                booksTab.setAttribute('data-state', 'active');
+                mcTab.setAttribute('aria-selected', 'false');
+                mcTab.setAttribute('data-state', 'inactive');
+
+                codingContent.setAttribute('data-state', 'inactive');
+                codingContent.setAttribute('hidden', '');
+                booksContent.setAttribute('data-state', 'active');
+                booksContent.removeAttribute('hidden');
+                mcContent.setAttribute('data-state', 'inactive');
+                mcContent.setAttribute('hidden', '');
+              };
+
+              const showMcProjects = function() {
+                codingTab.setAttribute('aria-selected', 'false');
+                codingTab.setAttribute('data-state', 'inactive');
+                booksTab.setAttribute('aria-selected', 'false');
+                booksTab.setAttribute('data-state', 'inactive');
+                mcTab.setAttribute('aria-selected', 'true');
+                mcTab.setAttribute('data-state', 'active');
+
+                codingContent.setAttribute('data-state', 'inactive');
+                codingContent.setAttribute('hidden', '');
+                booksContent.setAttribute('data-state', 'inactive');
+                booksContent.setAttribute('hidden', '');
+                mcContent.setAttribute('data-state', 'active');
+                mcContent.removeAttribute('hidden');
+              };
+
+              profileButton.addEventListener('click', showProfile);
+              blogButton.addEventListener('click', showBlog);
+              projectsButton.addEventListener('click', showProjects);
+
+              codingTab.addEventListener('click', showCodingProjects);
+              booksTab.addEventListener('click', showBooksProjects);
+              mcTab.addEventListener('click', showMcProjects);
+
+              // Handle URL hash and query parameters
+              const hash = window.location.hash;
+              if (hash.startsWith('#about')) {
+                showProfile();
+              }
+              else if (hash.startsWith('#blog')) {
+                showBlog();
+              }
+              else if (hash.startsWith('#projects')) {
+                showProjects();
                 
-                const profileContent = document.getElementById('radix-:r0:-content-about');
-                const blogContent = document.getElementById('radix-:r0:-content-blog');
-                const projectsContent = document.getElementById('radix-:r0:-content-projects');
-                const showProfile = function() {
-                  profileButton.setAttribute('aria-selected', 'true');
-                  profileButton.setAttribute('data-state', 'active');
-                  blogButton.setAttribute('aria-selected', 'false');
-                  blogButton.setAttribute('data-state', 'inactive');
-                  projectsButton.setAttribute('aria-selected', 'false');
-                  projectsButton.setAttribute('data-state', 'inactive');
-
-                  profileContent.setAttribute('data-state', 'active');
-                  profileContent.removeAttribute('hidden');
-                  blogContent.setAttribute('data-state', 'inactive');
-                  blogContent.setAttribute('hidden', '');
-                  projectsContent.setAttribute('data-state', 'inactive');
-                  projectsContent.setAttribute('hidden', '');
-                };
-                const showBlog = function() {
-                  profileButton.setAttribute('aria-selected', 'false');
-                  profileButton.setAttribute('data-state', 'inactive');
-                  blogButton.setAttribute('aria-selected', 'true');
-                  blogButton.setAttribute('data-state', 'active');
-                  projectsButton.setAttribute('aria-selected', 'false');
-                  projectsButton.setAttribute('data-state', 'inactive');
-
-                  profileContent.setAttribute('data-state', 'inactive');
-                  profileContent.setAttribute('hidden', '');
-                  blogContent.setAttribute('data-state', 'active');
-                  blogContent.removeAttribute('hidden');
-                  projectsContent.setAttribute('data-state', 'inactive');
-                  projectsContent.setAttribute('hidden', '');
-                };
-                const showProjects = function() {
-                  profileButton.setAttribute('aria-selected', 'false');
-                  profileButton.setAttribute('data-state', 'inactive');
-                  blogButton.setAttribute('aria-selected', 'false');
-                  blogButton.setAttribute('data-state', 'inactive');
-                  projectsButton.setAttribute('aria-selected', 'true');
-                  projectsButton.setAttribute('data-state', 'active');
-
-                  profileContent.setAttribute('data-state', 'inactive');
-                  profileContent.setAttribute('hidden', '');
-                  blogContent.setAttribute('data-state', 'inactive');
-                  blogContent.setAttribute('hidden', '');
-                  projectsContent.setAttribute('data-state', 'active');
-                  projectsContent.removeAttribute('hidden');
-                };
-                profileButton.addEventListener('click', showProfile);
-                blogButton.addEventListener('click', showBlog);
-                projectsButton.addEventListener('click', showProjects);
-
-                  const hash = window.location.hash;
-                  if (hash.startsWith('#about')) {
-                    showProfile();
-                  }
-                  else if (hash.startsWith('#blog')) {
-                    showBlog();
-                  }
-                  else if (hash.startsWith('#projects')) {
-                    showProjects();
-                  }
-              });
+                // Check for sub-tab parameter
+                const urlParams = new URLSearchParams(hash.split('?')[1]);
+                const subTab = urlParams.get('tab');
+                
+                if (subTab === 'coding') {
+                  showCodingProjects();
+                } else if (subTab === 'books') {
+                  showBooksProjects();
+                } else if (subTab === 'mc') {
+                  showMcProjects();
+                } else {
+                  showCodingProjects(); // Default to coding projects
+                }
+              }
+            });
             </script>
 
             <div data-state="active" data-orientation="horizontal" role="tabpanel" aria-labelledby="radix-:r0:-trigger-info" id="radix-:r0:-content-info" tabindex="0" class="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 space-y-5">

@@ -1,5 +1,10 @@
 [
     {
+        "date": "01/11/2025", "id": 18,
+        "title": "Post-Hallows",
+        "content": "Hope ya'll had a wonderful Spooktober and Halloween! Anyways just a little more changes, the Projects tab now has a separate tab bar instead of having whole sections for the three project group thingies. You can use **#projects?tab={ID}** to link directly to any tab! As usually the ID will be displayed next to the name of each section.\nAnother change is to the book rendering! Now although it uses a bit more definition (**.json**) files, it makes my life EVEN EASIER because now all the chapters will be using **.md**, so it **1)** makes it easier for me to look at and **2)** I no longer have to replace all the line breaks with **&#92;n**. I won't be applying this system to the blogs because I'm not gonna make blogs THAT long, and I'm just lazy. Anyways, CYA!"
+    },
+    {
         "date": "31/10/2025", "id": 17,
         "title": "Happy Halloween!",
         "content": "It's the 31st, and you know what that means! Happy All Hallows' Eve everyone! A few changes occured:\n\n**1.** I merged the blogs page back into index.html, providing a smoother experience with the tab bar.\n**2.** Projects have been moved to the now Projects tab, and it has multiple sections, currently: Coding Projects, Books, and Minecraft.\n**3.** I have added back the fuctionality of using # to define where you want to be! Now you can add **#about**, **#blog**, or **#projects** at the end of the link to be on the Profile, Blog, or Projects tab respectively. Furthermore, blogs now had a numerical ID, displayed next to the date. With **#blog?id={ID}** where **{ID}** is the ID of the blog post, you can directly open to page to that post!\n**4.** Now practically everything are now defined using JSON, e.g. the blog posts, projects, even the books! This makes my life SO much easier making these posts and stuff, and makes my code just that tad bit cleaner and shorter! Hopefully because of this, I'll be making more blog posts now!\n**5.** As a Halloween special, I'm making a 3 chapter short psychological horror story that may release in a few weeks.\n**6.** Also, I've added back the [RSS feed](index.html#blog?id=8) feature!\n\nAnyways, that's all for now, have a very happy Halloween guys!"
@@ -84,5 +89,4 @@
         "title": "Published Site!",
         "content": "Just finished creating the website, and hosted it on Neocities GitHub! Let's go! Be sure to tune in for more updates!"
     }
-
 ]

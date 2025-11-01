@@ -1,6 +1,6 @@
 [
     [
-        "Coding Projects",
+        "Coding Projects (id: coding)",
         {
             "title": "AI Teaching Master",
             "link": "https://github.com/devicals/AI-Teaching-Master",
@@ -43,7 +43,12 @@
         }
     ],
     [
-        "Books",
+        "Books (id: books)",
+        {
+            "title": "Core",
+            "link": "core.html",
+            "description": "The core updated book render. Includes 2 books & 10 tests in total."
+        },
         {
             "title": "OBLITER8TION",
             "link": "obliter8tion.html",
@@ -51,7 +56,7 @@
         }
     ],
     [
-        "Minecraft",
+        "Minecraft (id: mc)",
         {
             "title": "Infinilib",
             "link": "https://modrinth.com/datapack/infinilib",
