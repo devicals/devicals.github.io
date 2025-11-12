@@ -275,26 +275,74 @@
         let events = [];
         let updateInterval;
 
-        // Get timezone codes mapping
+        // Get timezone codes mapping - check both summer and winter dates
         const timezoneToCode = {};
         const codeToTimezones = {};
         
+        // Check dates in both summer (July) and winter (January) to catch DST variations
+        const summerDate = new Date('2024-07-15T12:00:00Z');
+        const winterDate = new Date('2024-01-15T12:00:00Z');
+        
         timezones.forEach(tz => {
-            const now = new Date();
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: tz,
-                timeZoneName: 'short'
-            });
-            const parts = formatter.formatToParts(now);
-            const code = parts.find(p => p.type === 'timeZoneName')?.value || '';
-            
-            if (code && code.length <= 5) {
-                timezoneToCode[tz] = code;
-                if (!codeToTimezones[code]) {
-                    codeToTimezones[code] = [];
+            [summerDate, winterDate].forEach(testDate => {
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tz,
+                    timeZoneName: 'short'
+                });
+                const parts = formatter.formatToParts(testDate);
+                const code = parts.find(p => p.type === 'timeZoneName')?.value || '';
+                
+                if (code && code.length <= 5 && !/^GMT[+-]/.test(code)) {
+                    const upperCode = code.toUpperCase();
+                    
+                    // Store the code for this timezone
+                    if (!timezoneToCode[tz]) {
+                        timezoneToCode[tz] = upperCode;
+                    }
+                    
+                    // Map the code to timezone
+                    if (!codeToTimezones[upperCode]) {
+                        codeToTimezones[upperCode] = [];
+                    }
+                    if (!codeToTimezones[upperCode].includes(tz)) {
+                        codeToTimezones[upperCode].push(tz);
+                    }
                 }
-                codeToTimezones[code].push(tz);
+            });
+        });
+
+        // Add manual mappings for common timezone codes that might not be auto-detected
+        const manualMappings = {
+            'CET': ['Europe/Paris', 'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid', 'Europe/Brussels', 'Europe/Amsterdam'],
+            'CEST': ['Europe/Paris', 'Europe/Berlin', 'Europe/Rome', 'Europe/Madrid', 'Europe/Brussels', 'Europe/Amsterdam'],
+            'GMT': ['Europe/London', 'UTC'],
+            'UTC': ['UTC'],
+            'BST': ['Europe/London'],
+            'WET': ['Europe/Lisbon', 'Atlantic/Canary'],
+            'WEST': ['Europe/Lisbon', 'Atlantic/Canary'],
+            'EET': ['Europe/Athens', 'Europe/Bucharest', 'Europe/Helsinki'],
+            'EEST': ['Europe/Athens', 'Europe/Bucharest', 'Europe/Helsinki'],
+            'MSK': ['Europe/Moscow'],
+            'IST': ['Asia/Kolkata'],
+            'JST': ['Asia/Tokyo'],
+            'KST': ['Asia/Seoul'],
+            'CST': ['Asia/Shanghai', 'America/Chicago'],
+            'HKT': ['Asia/Hong_Kong'],
+            'SGT': ['Asia/Singapore'],
+            'NZST': ['Pacific/Auckland'],
+            'NZDT': ['Pacific/Auckland']
+        };
+
+        // Merge manual mappings with auto-detected ones
+        Object.keys(manualMappings).forEach(code => {
+            if (!codeToTimezones[code]) {
+                codeToTimezones[code] = [];
             }
+            manualMappings[code].forEach(tz => {
+                if (timezones.includes(tz) && !codeToTimezones[code].includes(tz)) {
+                    codeToTimezones[code].push(tz);
+                }
+            });
         });
 
         // Populate timezone dropdown
@@ -398,6 +446,8 @@
 
         timezoneCodeInput.addEventListener('input', (e) => {
             const code = e.target.value.trim().toUpperCase();
+            timezoneCodeInput.value = code; // Update the input to show uppercase
+            
             if (code && codeToTimezones[code]) {
                 const possibleTimezones = codeToTimezones[code];
                 // Find the one closest to detected timezone
@@ -411,7 +461,15 @@
                 currentTimezone = selectedTz;
                 timezoneSelect.value = selectedTz;
                 useGMTOffset = false;
-                updateGMTOffsetDisplay();
+                
+                // Update GMT offset without calling updateGMTOffsetDisplay to avoid overwriting the code
+                const now = new Date();
+                const localDate = new Date(now.toLocaleString('en-US', { timeZone: currentTimezone }));
+                const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+                const offset = (localDate - utcDate) / (1000 * 60 * 60);
+                gmtOffsetInput.value = offset;
+                gmtOffsetValue = offset;
+                
                 renderTable();
             }
         });
@@ -616,8 +674,16 @@
                 return;
             }
             
-            // Sort events by date
-            const sortedEvents = [...events].sort((a, b) => a.date - b.date);
+            // Filter out passed events and sort by date
+            const now = new Date();
+            const upcomingEvents = events.filter(event => event.date > now);
+            
+            if (upcomingEvents.length === 0) {
+                content.innerHTML = '<div class="loading">No upcoming events.</div>';
+                return;
+            }
+            
+            const sortedEvents = [...upcomingEvents].sort((a, b) => a.date - b.date);
             
             const dateHeader = getDateFormat(currentTimezone, useGMTOffset);
             
