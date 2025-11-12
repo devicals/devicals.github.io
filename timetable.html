@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8">
+    <title>Totemsteal SMP Timetable</title>
+    <meta name="description" content="Event timetable with automatic timezone detection">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/4997/4997543.png">
+    <style>
+        :root {
+            --background: 246 13% 30%;
+            --foreground: 0 0% 98%;
+            --card: 246 13% 25%;
+            --card-foreground: 0 0% 98%;
+            --border: 246 13% 40%;
+            --border-radius: 0;
+            --accent: 342 82% 73%;
+            --muted-foreground: 240 5% 64.9%;
+            --secondary: 246 13% 20%;
+        }
+
+        * {
+            border-color: hsl(var(--border));
+            border-radius: 0 !important;
+        }
+
+        body {
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+            font-family: 'Fira Code', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            padding: 0;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .page-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 100;
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            padding: 0.4rem 0.8rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .back-button:hover {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--foreground));
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .card {
+            background-color: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            padding: 1.5rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        th {
+            font-weight: 600;
+            color: hsl(var(--accent));
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        select {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            padding: 0.5rem 1rem;
+            font-family: 'Fira Code', monospace;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: hsl(var(--accent));
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: hsl(var(--muted-foreground));
+        }
+
+        .error {
+            color: hsl(var(--accent));
+            padding: 1rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .timezone-selector {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .countdown {
+            font-variant-numeric: tabular-nums;
+        }
+
+        input[type="number"] {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            padding: 0.5rem;
+            font-family: 'Fira Code', monospace;
+            width: 80px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: hsl(var(--accent));
+        }
+
+        /* Hide number input arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+
+        input[type="text"] {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            padding: 0.5rem;
+            font-family: 'Fira Code', monospace;
+            width: 120px;
+            text-transform: uppercase;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: hsl(var(--accent));
+        }
+
+        .separator {
+            color: hsl(var(--muted-foreground));
+            opacity: 0.6;
+            font-weight: 500;
+        }
+
+        .discord-footer {
+            text-align: right;
+            margin-top: 1rem;
+            color: hsl(var(--muted-foreground));
+            font-size: 0.875rem;
+        }
+
+        .discord-footer a {
+            color: hsl(var(--accent));
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .discord-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='https://devicals.github.io'">
+        ← Back to Home
+    </button>
+
+    <div class="content-wrapper">
+        <div class="container">
+        <h1>Totemsteal SMP Timetable</h1>
+        
+        <div class="card">
+            <div class="timezone-selector">
+                <label for="timezone">Timezone:</label>
+                <select id="timezone"></select>
+                <span class="separator">or</span>
+                <label for="timezoneCode">Code:</label>
+                <input type="text" id="timezoneCode" placeholder="AEDT" maxlength="5">
+                <span class="separator">or</span>
+                <span>GMT +</span>
+                <input type="number" id="gmtOffset" step="0.5" placeholder="0" min="-12" max="14">
+            </div>
+
+            <div id="content">
+                <div class="loading">Loading events...</div>
+            </div>
+
+            <div class="discord-footer">
+                Is a time not suitable? Discuss alternatives in the <a href="https://discord.com/channels/1434137081969512622/1437044481055653908" target="_blank">Discord</a>!
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <footer style="padding: 1.5rem 1rem; text-align: center; font-size: 0.875rem; color: hsl(var(--muted-foreground));">
+        <p>© 2023-2025 Error Dev. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const timezones = Intl.supportedValuesOf('timeZone');
+        let detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        // Fix Melbourne detection
+        if (detectedTimezone === 'Australia/Sydney') {
+            detectedTimezone = 'Australia/Melbourne';
+        }
+        
+        let currentTimezone = detectedTimezone;
+        let useGMTOffset = false;
+        let gmtOffsetValue = 0;
+        let events = [];
+        let updateInterval;
+
+        // Get timezone codes mapping
+        const timezoneToCode = {};
+        const codeToTimezones = {};
+        
+        timezones.forEach(tz => {
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                timeZoneName: 'short'
+            });
+            const parts = formatter.formatToParts(now);
+            const code = parts.find(p => p.type === 'timeZoneName')?.value || '';
+            
+            if (code && code.length <= 5) {
+                timezoneToCode[tz] = code;
+                if (!codeToTimezones[code]) {
+                    codeToTimezones[code] = [];
+                }
+                codeToTimezones[code].push(tz);
+            }
+        });
+
+        // Populate timezone dropdown
+        const timezoneSelect = document.getElementById('timezone');
+        const timezoneCodeInput = document.getElementById('timezoneCode');
+        const gmtOffsetInput = document.getElementById('gmtOffset');
+        
+        timezones.forEach(tz => {
+            const option = document.createElement('option');
+            option.value = tz;
+            option.textContent = tz;
+            if (tz === detectedTimezone) {
+                option.selected = true;
+            }
+            timezoneSelect.appendChild(option);
+        });
+
+        // Update GMT offset display when timezone changes
+        function updateGMTOffsetDisplay() {
+            const now = new Date();
+            const localDate = new Date(now.toLocaleString('en-US', { timeZone: currentTimezone }));
+            const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+            const offset = (localDate - utcDate) / (1000 * 60 * 60);
+            gmtOffsetInput.value = offset;
+            gmtOffsetValue = offset;
+            
+            // Update timezone code
+            timezoneCodeInput.value = timezoneToCode[currentTimezone] || '';
+        }
+        
+        // Find timezone closest to user's detected location
+        function findClosestTimezoneByOffset(offsetHours) {
+            // Special case for GMT+0
+            if (offsetHours === 0) {
+                return 'UTC';
+            }
+            
+            const now = new Date();
+            const detectedRegion = detectedTimezone.split('/')[0]; // e.g., "Australia"
+            const detectedCity = detectedTimezone.split('/')[1]; // e.g., "Melbourne"
+            
+            let exactMatches = [];
+            let regionalMatches = [];
+            let otherMatches = [];
+            
+            for (const tz of timezones) {
+                const localDate = new Date(now.toLocaleString('en-US', { timeZone: tz }));
+                const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+                const tzOffset = (localDate - utcDate) / (1000 * 60 * 60);
+                
+                if (Math.abs(tzOffset - offsetHours) < 0.1) {
+                    // Exact offset match
+                    if (tz === detectedTimezone) {
+                        return tz; // Perfect match with detected timezone
+                    }
+                    
+                    const tzRegion = tz.split('/')[0];
+                    const tzCity = tz.split('/')[1];
+                    
+                    if (tzRegion === detectedRegion) {
+                        // Same region/continent
+                        regionalMatches.push({ tz, city: tzCity });
+                    } else {
+                        otherMatches.push(tz);
+                    }
+                }
+            }
+            
+            // Prefer Melbourne over other Australian cities
+            if (regionalMatches.length > 0) {
+                // Check if detected city is in the list
+                const detectedMatch = regionalMatches.find(m => m.city === detectedCity);
+                if (detectedMatch) {
+                    return detectedMatch.tz;
+                }
+                
+                // Prefer major cities
+                const majorCities = ['Melbourne', 'Sydney', 'Brisbane', 'Adelaide', 'Perth', 
+                                     'Los_Angeles', 'New_York', 'Chicago', 'London', 'Paris', 'Tokyo'];
+                for (const city of majorCities) {
+                    const match = regionalMatches.find(m => m.city === city);
+                    if (match) {
+                        return match.tz;
+                    }
+                }
+                
+                // Return first regional match
+                return regionalMatches[0].tz;
+            }
+            
+            // Return first other match
+            return otherMatches[0] || 'UTC';
+        }
+
+        timezoneSelect.addEventListener('change', (e) => {
+            currentTimezone = e.target.value;
+            useGMTOffset = false;
+            updateGMTOffsetDisplay();
+            renderTable();
+        });
+
+        timezoneCodeInput.addEventListener('input', (e) => {
+            const code = e.target.value.trim().toUpperCase();
+            if (code && codeToTimezones[code]) {
+                const possibleTimezones = codeToTimezones[code];
+                // Find the one closest to detected timezone
+                let selectedTz = possibleTimezones[0];
+                for (const tz of possibleTimezones) {
+                    if (tz === detectedTimezone || tz.split('/')[0] === detectedTimezone.split('/')[0]) {
+                        selectedTz = tz;
+                        break;
+                    }
+                }
+                currentTimezone = selectedTz;
+                timezoneSelect.value = selectedTz;
+                useGMTOffset = false;
+                updateGMTOffsetDisplay();
+                renderTable();
+            }
+        });
+
+        gmtOffsetInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            
+            // Allow empty input and default to 0
+            if (value === '' || value === '-') {
+                gmtOffsetValue = 0;
+                useGMTOffset = true;
+                
+                const closestTimezone = findClosestTimezoneByOffset(0);
+                currentTimezone = closestTimezone;
+                timezoneSelect.value = closestTimezone;
+                timezoneCodeInput.value = timezoneToCode[closestTimezone] || '';
+                
+                renderTable();
+                return;
+            }
+            
+            let numValue = parseFloat(value);
+            if (!isNaN(numValue)) {
+                // Cap the value between -12 and +14
+                numValue = Math.max(-12, Math.min(14, numValue));
+                
+                // Update input if value was capped
+                if (numValue !== parseFloat(value)) {
+                    e.target.value = numValue;
+                }
+                
+                useGMTOffset = true;
+                gmtOffsetValue = numValue;
+                
+                const closestTimezone = findClosestTimezoneByOffset(numValue);
+                
+                if (closestTimezone) {
+                    currentTimezone = closestTimezone;
+                    timezoneSelect.value = closestTimezone;
+                    
+                    // Check if it's an exact match
+                    const now = new Date();
+                    const localDate = new Date(now.toLocaleString('en-US', { timeZone: closestTimezone }));
+                    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+                    const tzOffset = (localDate - utcDate) / (1000 * 60 * 60);
+                    
+                    if (Math.abs(tzOffset - numValue) < 0.1) {
+                        useGMTOffset = false;
+                    }
+                    
+                    timezoneCodeInput.value = timezoneToCode[closestTimezone] || '';
+                }
+                
+                renderTable();
+            }
+        });
+        
+        // Initialize GMT offset display
+        updateGMTOffsetDisplay();
+
+        // Parse ICS content
+        function parseICS(content) {
+            const lines = content.split(/\r?\n/);
+            const event = {};
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('DTSTART:')) {
+                    event.start = parseICSDate(line.substring(8));
+                } else if (line.startsWith('DTEND:')) {
+                    event.end = parseICSDate(line.substring(6));
+                } else if (line.startsWith('SUMMARY:')) {
+                    event.summary = line.substring(8);
+                }
+            }
+            
+            return event;
+        }
+
+        function parseICSDate(dateStr) {
+            // Handle format: 20251115T020000Z
+            if (dateStr.endsWith('Z')) {
+                const year = dateStr.substring(0, 4);
+                const month = dateStr.substring(4, 6);
+                const day = dateStr.substring(6, 8);
+                const hour = dateStr.substring(9, 11);
+                const minute = dateStr.substring(11, 13);
+                const second = dateStr.substring(13, 15);
+                return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}Z`);
+            }
+            return new Date(dateStr);
+        }
+
+        // Format date based on timezone or GMT offset
+        function formatDate(date, timezone, useOffset = false, offsetHours = 0) {
+            let targetDate;
+            let useMDY = false;
+            
+            if (useOffset) {
+                // Calculate date with GMT offset
+                const utcTime = date.getTime();
+                const offsetMs = offsetHours * 60 * 60 * 1000;
+                targetDate = new Date(utcTime + offsetMs);
+                
+                let hours = targetDate.getUTCHours();
+                const minutes = targetDate.getUTCMinutes().toString().padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                
+                const day = targetDate.getUTCDate().toString().padStart(2, '0');
+                const month = (targetDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                const year = targetDate.getUTCFullYear();
+                
+                const timeStr = `${hours.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                return `${timeStr} (${day}/${month}/${year})`;
+            }
+            
+            useMDY = isUS(timezone);
+            
+            const timeStr = date.toLocaleTimeString('en-US', {
+                timeZone: timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            
+            const dateStr = date.toLocaleDateString('en-GB', {
+                timeZone: timezone,
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            
+            if (useMDY) {
+                const parts = dateStr.split('/');
+                return `${timeStr} (${parts[1]}/${parts[0]}/${parts[2]})`;
+            }
+            
+            return `${timeStr} (${dateStr})`;
+        }
+        
+        function getDateFormat(timezone, useOffset = false) {
+            if (useOffset) {
+                return 'Date (DD/MM/YYYY)';
+            }
+            return isUS(timezone) ? 'Date (MM/DD/YYYY)' : 'Date (DD/MM/YYYY)';
+        }
+
+        function isUS(timezone) {
+            return timezone.startsWith('America/') && !timezone.includes('Argentina');
+        }
+
+        // Get GMT offset
+        function getGMTOffset(date, timezone, useOffset = false, offsetHours = 0) {
+            if (useOffset) {
+                const sign = offsetHours >= 0 ? '+' : '';
+                return `GMT${sign}${offsetHours}`;
+            }
+            
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezone,
+                timeZoneName: 'short'
+            });
+            
+            const parts = formatter.formatToParts(date);
+            const tzName = parts.find(p => p.type === 'timeZoneName')?.value || '';
+            
+            // Calculate offset manually
+            const localDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+            const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+            const offset = (localDate - utcDate) / (1000 * 60 * 60);
+            
+            const sign = offset >= 0 ? '+' : '';
+            return `${timezone} (GMT${sign}${offset})`;
+        }
+
+        // Calculate countdown
+        function getCountdown(date) {
+            const now = new Date();
+            const diff = date - now;
+            
+            if (diff < 0) {
+                return 'Passed';
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            return `${days}d ${hours}hr ${minutes}min ${seconds}s`;
+        }
+
+        // Render table
+        function renderTable() {
+            const content = document.getElementById('content');
+            
+            if (events.length === 0) {
+                content.innerHTML = '<div class="error">No events found. Please add .ics files to the /events/ folder.</div>';
+                return;
+            }
+            
+            // Sort events by date
+            const sortedEvents = [...events].sort((a, b) => a.date - b.date);
+            
+            const dateHeader = getDateFormat(currentTimezone, useGMTOffset);
+            
+            let html = '<div class="table-container"><table>';
+            html += '<thead><tr>';
+            html += '<th>Event</th>';
+            html += `<th>${dateHeader}</th>`;
+            html += '<th>Timezone</th>';
+            html += '<th>Countdown</th>';
+            html += '</tr></thead>';
+            html += '<tbody>';
+            
+            sortedEvents.forEach(event => {
+                html += '<tr>';
+                html += `<td>${event.name}</td>`;
+                html += `<td>${formatDate(event.date, currentTimezone, useGMTOffset, gmtOffsetValue)}</td>`;
+                html += `<td>${getGMTOffset(event.date, currentTimezone, useGMTOffset, gmtOffsetValue)}</td>`;
+                html += `<td class="countdown">${getCountdown(event.date)}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            content.innerHTML = html;
+        }
+
+        // Load events from /events/ folder
+        async function loadEvents() {
+            // You need to manually list your .ics files here
+            // OR create an events/index.json file with the list of filenames
+            
+            let icsFiles = [];
+            
+            // Try to load index.json first
+            try {
+                const indexResponse = await fetch('events/index.json');
+                if (indexResponse.ok) {
+                    icsFiles = await indexResponse.json();
+                }
+            } catch (error) {
+                console.log('No index.json found, using fallback list');
+                // Fallback: manually list your files here
+                icsFiles = ['event.ics', 'Server Start.ics', 'Nether Opens.ics'];
+            }
+            
+            for (const filename of icsFiles) {
+                try {
+                    const response = await fetch(`events/${filename}`);
+                    if (response.ok) {
+                        const content = await response.text();
+                        const parsedEvent = parseICS(content);
+                        
+                        if (parsedEvent.start) {
+                            // Extract name from filename without extension
+                            const eventName = filename.replace(/\.ics$/i, '');
+                            
+                            events.push({
+                                name: eventName,
+                                date: parsedEvent.start,
+                                summary: parsedEvent.summary
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.log(`Could not load ${filename}`);
+                }
+            }
+            
+            renderTable();
+            
+            // Update countdown every second
+            if (updateInterval) clearInterval(updateInterval);
+            updateInterval = setInterval(renderTable, 1000);
+        }
+
+        // Initialize
+        loadEvents();
+    </script>
+</body>
+</html>
