@@ -1,5 +1,10 @@
 [
     {
+        "date": "25/12/2025", "id": 19,
+        "title": "Happy Christmas!",
+        "content": "Happy Christmas everybody! I haven't been doing much blog posts recently, and I wont make a lot after this except for some holidays because I'm working on a new revamp for the website, as I feel it is sort of cluttered, and could use a clean up and a new style. Also I totally forgot to publish the Halloween special book, so I'm gonna do it now."
+    },
+    {
         "date": "01/11/2025", "id": 18,
         "title": "Post-Hallows",
         "content": "Hope ya'll had a wonderful Spooktober and Halloween! Anyways just a little more changes, the Projects tab now has a separate tab bar instead of having whole sections for the three project group thingies. You can use **#projects?tab={ID}** to link directly to any tab! As usually the ID will be displayed next to the name of each section.\nAnother change is to the book rendering! Now although it uses a bit more definition (**.json**) files, it makes my life EVEN EASIER because now all the chapters will be using **.md**, so it **1)** makes it easier for me to look at and **2)** I no longer have to replace all the line breaks with **&#92;n**. I won't be applying this system to the blogs because I'm not gonna make blogs THAT long, and I'm just lazy. Anyways, CYA!"
