@@ -100,6 +100,7 @@
                 <label>Jump to</label>
                 <input type="number" id="blog-id-input" placeholder="ID">
                 <button onclick="jumpToBlog()" class="copy-btn" style="padding: 4px 10px;">Go</button>
+                <button onclick="copyRSS()" class="copy-btn" id="rss-btn" style="padding: 4px 10px; background: transparent; border: 1px solid hsla(var(--primary), 0.5);">RSS URL</button>
             </div>
         </div>
         
@@ -166,6 +167,16 @@
             } else {
                 alert(`Blog #${id} not found.`);
             }
+        }
+
+        function copyRSS() {
+            const rssUrl = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml";
+            navigator.clipboard.writeText(rssUrl).then(() => {
+                const btn = document.getElementById('rss-btn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = originalText; }, 2000);
+            });
         }
 
         document.addEventListener('DOMContentLoaded', async () => {

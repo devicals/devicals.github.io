@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Error Dev - Blogs</title>
+  <link>https://devicals.github.io/#page=blogs</link>
+  <description>Latest updates from Error Dev</description>
+  <atom:link href="https://devicals.github.io/storage/internal/blogs.xml" rel="self" type="application/rss+xml" />
+  <item>
+    <title>Really Quick Update</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=22</link>
+    <guid isPermaLink="false">blog-id-22</guid>
+    <pubDate>Sun, 19 Jan 2026</pubDate>
+    <description>Really quick changelog: - minor bug fixes:   - pages w/ giscus would load giscus first before loading applied theme   - signing in w/ giscus would then send you to the raw page with glitched...</description>
+  </item>
+  <item>
+    <title>Redesign Finished</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=21</link>
+    <guid isPermaLink="false">blog-id-21</guid>
+    <pubDate>Sun, 19 Jan 2026</pubDate>
+    <description>I've finally finished the redesign! What do you guys think? Send me some [feedback](./#page=feedback)!   For all features, just look around! For example theres a better tag jumping feature or wh...</description>
+  </item>
+  <item>
+    <title>Happy New Years!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=20</link>
+    <guid isPermaLink="false">blog-id-20</guid>
+    <pubDate>Wed, 31 Dec 2025</pubDate>
+    <description>Happy New Years everyone! Although this post would only show after the revamp so I doubt I made it in time... but it's the thought that counts! Alr cyall!  [Progress Report] doing well, probably l...</description>
+  </item>
+  <item>
+    <title>Happy Christmas!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=19</link>
+    <guid isPermaLink="false">blog-id-19</guid>
+    <pubDate>Thu, 25 Dec 2025</pubDate>
+    <description>Happy Christmas everybody! I haven't been doing much blog posts recently, and I wont make a lot after this except for some holidays because I'm working on a new revamp for the website, as I feel i...</description>
+  </item>
+  <item>
+    <title>Post-Hallows</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=18</link>
+    <guid isPermaLink="false">blog-id-18</guid>
+    <pubDate>Sat, 01 Nov 2025</pubDate>
+    <description>Hope ya'll had a wonderful Spooktober and Halloween! Anyways just a little more changes, the Projects tab now has a separate tab bar instead of having whole sections for the three project group th...</description>
+  </item>
+  <item>
+    <title>Happy Halloween!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=17</link>
+    <guid isPermaLink="false">blog-id-17</guid>
+    <pubDate>Fri, 31 Oct 2025</pubDate>
+    <description>It's the 31st, and you know what that means! Happy All Hallows' Eve everyone! A few changes occured:  1. I merged the blogs page back into index.html, providing a smoother experience with the tab...</description>
+  </item>
+  <item>
+    <title>Happy Spooktober!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=16</link>
+    <guid isPermaLink="false">blog-id-16</guid>
+    <pubDate>Tue, 28 Oct 2025</pubDate>
+    <description>**All Hallows' Eve** is coming up, so happy Spooktober guys! On another note, I have revamped some of the UI for the website again! To de-clutter my index.html I also split off the blog into a se...</description>
+  </item>
+  <item>
+    <title>Infiniverse Update</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=15</link>
+    <guid isPermaLink="false">blog-id-15</guid>
+    <pubDate>Tue, 30 Sep 2025</pubDate>
+    <description>Sup everyone! Been a hot minute! So a few things first, I've finally started posting on YouTube again, and I also got my hands on Persona 1 and Persona 2: Innocent Sin! Unfortunately I'm still se...</description>
+  </item>
+  <item>
+    <title>Major Update 2</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=14</link>
+    <guid isPermaLink="false">blog-id-14</guid>
+    <pubDate>Wed, 14 May 2025</pubDate>
+    <description>Hello everyone! I'm finally back with the blog posts! As you can probably tell, I've changed the website up a LOT. The theme, style, everything! There are some other features other than just the O...</description>
+  </item>
+  <item>
+    <title>Side Project 1</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=13</link>
+    <guid isPermaLink="false">blog-id-13</guid>
+    <pubDate>Wed, 26 Mar 2025</pubDate>
+    <description>Sup guys, I'm back. Now, I've just made a little side project for a friend, you should check it out! I'm not going to tell you everything to not spoil it. Also, unfortunately, I'm discontinuing t...</description>
+  </item>
+  <item>
+    <title>Birthday!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=12</link>
+    <guid isPermaLink="false">blog-id-12</guid>
+    <pubDate>Wed, 19 Mar 2025</pubDate>
+    <description>Alright everyone! So it's my birthday today! Yeah. That's all. Because I'm gonna have fun all day and I'm not gonna bother writing a whole blog on everything....</description>
+  </item>
+  <item>
+    <title>Website Refresh</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=11</link>
+    <guid isPermaLink="false">blog-id-11</guid>
+    <pubDate>Mon, 17 Mar 2025</pubDate>
+    <description>Okay. ANOTHER refresh! Look. I disliked the last refresh, so I changed it all again. Okay, listen up.  **Change #1:** I added a projects section that lists a few of my projects.  **Change #2:** I...</description>
+  </item>
+  <item>
+    <title>Removed Features</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=10</link>
+    <guid isPermaLink="false">blog-id-10</guid>
+    <pubDate>Thu, 13 Mar 2025</pubDate>
+    <description>Changelog update! Alright, so it was too much of a hassle to keep the DEV.ARCHIVE, so I decided to just completely and utterly annihilate it. Also, we're now using GitHub as a host, instead of Ne...</description>
+  </item>
+  <item>
+    <title>UI &amp; Features Revamp</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=9</link>
+    <guid isPermaLink="false">blog-id-9</guid>
+    <pubDate>Wed, 12 Mar 2025</pubDate>
+    <description>The entire website has now just been revamped! As you can see, everything looks more fresh and heck, more modern! I'll let you explore that on your own.  Now onto the features!  First of all, I a...</description>
+  </item>
+  <item>
+    <title>RSS Feed!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=8</link>
+    <guid isPermaLink="false">blog-id-8</guid>
+    <pubDate>Sun, 09 Mar 2025</pubDate>
+    <description>The blog's RSS Feed has now been fully set up! All blog posts already existing are also added. To add the RSS Feed, click the RSS Feed button on the blog page to copy the RSS link. Then paste tha...</description>
+  </item>
+  <item>
+    <title>DEV.ARCHIVE &amp; Jump To Tags!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=7</link>
+    <guid isPermaLink="false">blog-id-7</guid>
+    <pubDate>Sat, 08 Mar 2025</pubDate>
+    <description>Content was removed, too much stuff and also the features are currently gone....</description>
+  </item>
+  <item>
+    <title>The Highest Honor</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=6</link>
+    <guid isPermaLink="false">blog-id-6</guid>
+    <pubDate>Fri, 07 Mar 2025</pubDate>
+    <description>ok i forgot what i put here so yeh. basically i joined AStrangeCreature's discord and made some fanart and he liked it and made it his PFP and it was the best day of my life. Did I mention my bir...</description>
+  </item>
+  <item>
+    <title>Custom URL Redirects!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=5</link>
+    <guid isPermaLink="false">blog-id-5</guid>
+    <pubDate>Wed, 05 Mar 2025</pubDate>
+    <description>I just made a way for me to easily add URL redirections to my website, and it's only accessible to me! So now I can turn any long link (e.g. *https://long.link/thats/super#annoying*) into a custo...</description>
+  </item>
+  <item>
+    <title>Separate Blog Page!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=4</link>
+    <guid isPermaLink="false">blog-id-4</guid>
+    <pubDate>Mon, 03 Mar 2025</pubDate>
+    <description>Instead of a blog section which would be too detrimental for me to implement and stuff, I just made this simple blog page with all the blog posts in here. If you want to see the first post, well ...</description>
+  </item>
+  <item>
+    <title>Just an Update</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=3</link>
+    <guid isPermaLink="false">blog-id-3</guid>
+    <pubDate>Mon, 03 Mar 2025</pubDate>
+    <description>I just made a website for an alliance I'm in in a game! Recently I've been playing *Avatar Legends: Realms Collide* a lot, and I've joined this alliance called *[OMSH] Secret Tunnels*, and after ...</description>
+  </item>
+  <item>
+    <title>Created a Blog!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=2</link>
+    <guid isPermaLink="false">blog-id-2</guid>
+    <pubDate>Sun, 02 Mar 2025</pubDate>
+    <description>Just added this blog section to the website. Who knew this would be so goddamn detrimental to do? **Definitely me.**...</description>
+  </item>
+  <item>
+    <title>Published Site!</title>
+    <link>https://devicals.github.io/#page=blogs&amp;id=1</link>
+    <guid isPermaLink="false">blog-id-1</guid>
+    <pubDate>Sat, 01 Mar 2025</pubDate>
+    <description>Just finished creating the website, and hosted it on Neocities GitHub! Let's go! Be sure to tune in for more updates!...</description>
+  </item>
+</channel>
+</rss>

@@ -1,0 +1,85 @@
+name: Generate RSS Feed
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Generate RSS
+        run: |
+          python - <<EOF
+          import yaml
+          import os
+          from xml.sax.saxutils import escape
+          import datetime
+
+          # Ensure directory exists
+          os.makedirs('storage/internal', exist_ok=True)
+
+          with open('storage/data/blogs.yaml', 'r') as f:
+              data = yaml.safe_load(f)
+
+          rss = '<?xml version="1.0" encoding="UTF-8" ?>\n'
+          rss += '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+          rss += '<channel>\n'
+          rss += '  <title>Error Dev - Blogs</title>\n'
+          rss += '  <link>https://devicals.github.io/#page=blogs</link>\n'
+          rss += '  <description>Latest updates from Error Dev</description>\n'
+          rss += '  <atom:link href="https://devicals.github.io/storage/internal/blogs.xml" rel="self" type="application/rss+xml" />\n'
+
+          if data and 'blogs' in data:
+              for blog in data['blogs']:
+                  # Convert DD/MM/YYYY to RSS date format (RFC 822)
+                  try:
+                      date_obj = datetime.datetime.strptime(blog['date'], '%d/%m/%Y')
+                      pub_date = date_obj.strftime('%a, %d %b %Y 00:00:00 +0000')
+                  except:
+                      pub_date = datetime.datetime.now().strftime('%a, %d %b %Y 00:00:00 +0000')
+
+                  rss += '  <item>\n'
+                  rss += f'    <title>{escape(str(blog["title"]))}</title>\n'
+                  rss += f'    <link>https://devicals.github.io/#page=blogs&amp;id={blog["id"]}</link>\n'
+                  rss += f'    <guid isPermaLink="false">blog-id-{blog["id"]}</guid>\n'
+                  rss += f'    <pubDate>{pub_date}</pub_date>\n'
+                  # Clean up content for description
+                  clean_content = blog["content"].replace('\n', ' ')[:200]
+                  rss += f'    <description>{escape(clean_content)}...</description>\n'
+                  rss += '  </item>\n'
+
+          rss += '</channel>\n</rss>'
+
+          with open('storage/internal/blogs.xml', 'w') as f:
+              f.write(rss)
+          EOF
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add storage/internal/blogs.xml
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to RSS feed."
+          else
+            git commit -m "Auto-generate RSS feed"
+            git push origin main --force
+          fi

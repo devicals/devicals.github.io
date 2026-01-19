@@ -8,7 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="storage/internal/main.js"></script>
     <script src="storage/internal/embed-detect.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <style>
         .visitor-card {
             margin-bottom: 20px;
@@ -106,97 +108,74 @@
     </div>
     
     <script>
-        async function updateVisitorCount() {
-            const namespace = "devicals-github-io";
-            const key = "main-counter";
-            const display = document.getElementById('visit-count');
-            const hasVisited = localStorage.getItem('has_visited_before');
-            
-            const primaryUrl = `https://api.counterapi.dev/v1/${namespace}/${key}/`;
-            const backupUrl = `https://api.countapi.it/get/${namespace}/${key}/`;
-
-            try {
-                let response;
-                if (!hasVisited) {
-                    response = await fetch(`${primaryUrl}up`);
-                    localStorage.setItem('has_visited_before', 'true');
-                } else {
-                    response = await fetch(primaryUrl);
-                }
-                
-                const data = await response.json();
-                
-                if (data && data.status === 200) {
-                    display.textContent = data.count.toString().padStart(6, '0');
-                } else {
-                    throw new Error("Primary API returned non-200 status");
-                }
-
-            } catch (err) {
-                console.warn("Primary CounterAPI failed, trying backup...", err);
-                
-                try {
-                    const fallbackRes = await fetch(backupUrl);
-                    const fallbackData = await fallbackRes.json();
-                    
-                    if (fallbackData && fallbackData.value !== undefined) {
-                        display.textContent = fallbackData.value.toString().padStart(6, '0');
-                    } else {
-                        display.textContent = "OFFLINE";
-                    }
-                } catch (fallbackErr) {
-                    console.error("All counter APIs failed.");
-                    display.textContent = "OFFLINE";
-                }
-            }
-        }
-
         document.addEventListener('DOMContentLoaded', async () => {
-            updateVisitorCount();
+            const renderStats = (data) => {
+                if (!data) return;
+                document.getElementById('stars').textContent = (data.stars ?? 0).toLocaleString();
+                document.getElementById('forks').textContent = (data.forks ?? 0).toLocaleString();
+                document.getElementById('watchers').textContent = (data.watchers ?? 0).toLocaleString();
+                document.getElementById('size').textContent = (data.size ?? 0).toLocaleString();
 
-            try {
-                const repoResponse = await fetch('https://api.github.com/repos/devicals/devicals.github.io');
-                const repoData = await repoResponse.json();
-                
-                document.getElementById('stars').textContent = repoData.stargazers_count || 0;
-                document.getElementById('forks').textContent = repoData.forks_count || 0;
-                document.getElementById('watchers').textContent = repoData.subscribers_count || 0;
-                document.getElementById('size').textContent = (repoData.size || 0).toLocaleString();
-                
-                const langResponse = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
-                const langData = await langResponse.json();
-                
-                const totalBytes = Object.values(langData).reduce((sum, bytes) => sum + bytes, 0);
                 const container = document.getElementById('languages-container');
-                
-                Object.entries(langData)
-                    .sort((a, b) => b[1] - a[1])
-                    .forEach(([lang, bytes]) => {
-                        const percentage = ((bytes / totalBytes) * 100).toFixed(1);
+                container.innerHTML = '';
+
+                if (data.languages) {
+                    data.languages.forEach(lang => {
                         const langItem = document.createElement('div');
                         langItem.className = 'language-item';
-                        
                         langItem.innerHTML = `
                             <div class="language-header">
-                                <span class="language-name">${lang}</span>
-                                <span class="language-percent">${percentage}%</span>
+                                <span class="language-name">${lang.name}</span>
+                                <span class="language-percent">${lang.percent}%</span>
                             </div>
-                            <div class="language-bar">
-                                <div class="language-fill" style="width: 0%"></div>
-                            </div>
+                            <div class="language-bar"><div class="language-fill" style="width: 0%"></div></div>
                         `;
-                        
                         container.appendChild(langItem);
                         setTimeout(() => {
-                            langItem.querySelector('.language-fill').style.width = `${percentage}%`;
+                            const fill = langItem.querySelector('.language-fill');
+                            if (fill) fill.style.width = `${lang.percent}%`;
                         }, 100);
                     });
+                }
+            };
+
+            try {
+                const response = await fetch('storage/internal/stats.yaml');
+                if (!response.ok) throw new Error("File not found");
                 
-            } catch (error) {
-                console.error('Error fetching repository data:', error);
-                ['stars', 'forks', 'watchers', 'size'].forEach(id => {
-                    document.getElementById(id).textContent = 'Error';
-                });
+                const yamlText = await response.text();
+                const stats = jsyaml.load(yamlText);
+                
+                if (!stats || stats.stars === undefined) throw new Error("Incomplete YAML");
+                
+                console.log("Loaded from YAML successfully");
+                renderStats(stats);
+
+            } catch (e) {
+                console.warn("Local YAML failed, falling back to Live API...", e);
+                try {
+                    const repoRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io');
+                    const repoData = await repoRes.json();
+                    const langRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
+                    const langData = await langRes.json();
+
+                    const total = Object.values(langData).reduce((a, b) => a + b, 0);
+                    const fallbackData = {
+                        stars: repoData.stargazers_count,
+                        forks: repoData.forks_count,
+                        watchers: repoData.subscribers_count,
+                        size: repoData.size,
+                        languages: Object.entries(langData).map(([name, bytes]) => ({
+                            name,
+                            percent: ((bytes / total) * 100).toFixed(1)
+                        }))
+                    };
+                    renderStats(fallbackData);
+                } catch (err) {
+                    ['stars', 'forks', 'watchers', 'size'].forEach(id => {
+                        document.getElementById(id).textContent = 'Error';
+                    });
+                }
             }
         });
     </script>

@@ -259,3 +259,40 @@ document.addEventListener('click', (e) => {
         closePreferences();
     }
 });
+
+async function updateVisitorCount() {
+    const namespace = "devicals-github-io";
+    const key = "main-counter";
+    const display = document.getElementById('visit-count'); // Might be null
+    const hasVisited = localStorage.getItem('has_visited_before');
+    
+    const primaryUrl = `https://api.counterapi.dev/v1/${namespace}/${key}`;
+
+    try {
+        let response;
+        if (!hasVisited) {
+            // This increments the count
+            response = await fetch(`${primaryUrl}/up`);
+            localStorage.setItem('has_visited_before', 'true');
+        } else {
+            // This only gets the count if we are on the info page
+            // Logic: only fetch the "get" API if the counter display actually exists on this page
+            if (!display) return; 
+            response = await fetch(`${primaryUrl}/`);
+        }
+        
+        const data = await response.json();
+        const count = data.count || data.value;
+
+        // Only try to update the text if the ID "visit-count" exists on the current page
+        if (display && count !== undefined) {
+            display.textContent = count.toString().padStart(6, '0');
+        }
+
+    } catch (err) {
+        console.warn("Counter API failed.");
+        if (display) display.textContent = "??????";
+    }
+}
+
+document.addEventListener('DOMContentLoaded', updateVisitorCount);
