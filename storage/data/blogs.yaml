@@ -1,4 +1,14 @@
 blogs:
+  - id: 21
+    date: 19/01/2026
+    title: "Redesign Finished"
+    content: |-
+      I've finally finished the redesign! What do you guys think? Send me some [feedback](https://devicals.github.io/#page=feedback)!
+      
+      For all features, just look around! For example theres a better tag jumping feature or whatever to navigate & link pages, you'll see whenever you change a page or click anything it would update the url, if you copy that url and then go to it then it will take you to wherever you were at, the same tab, navigation, etc.
+
+      Alright signing off, I have to eat dinner!
+
   - id: 20
     date: 31/12/2025
     title: "Happy New Years!"
