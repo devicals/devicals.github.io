@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloads - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Downloads</h1>
+        
+        <div class="downloads-list" id="downloads-list"></div>
+    </div>
+    
+    <script>
+        async function loadYAML(path) {
+            const response = await fetch(path);
+            const text = await response.text();
+            return jsyaml.load(text);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const data = await loadYAML('storage/data/downloads.yaml');
+                
+                console.log('Downloads data:', data);
+                
+                if (!data || !data.downloads) {
+                    console.error('No downloads data found');
+                    return;
+                }
+                
+                const container = document.getElementById('downloads-list');
+                
+                data.downloads.forEach((download, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'download-card';
+                    card.id = `download-${index + 1}`;
+                    
+                    const header = document.createElement('div');
+                    header.className = 'download-header';
+                    
+                    const name = document.createElement('div');
+                    name.className = 'download-name';
+                    name.textContent = download.name;
+                    
+                    const btn = document.createElement('a');
+                    btn.className = 'download-btn';
+                    btn.href = download.url;
+                    btn.target = '_blank';
+                    btn.rel = 'noopener noreferrer';
+                    btn.textContent = 'Download';
+                    
+                    header.appendChild(name);
+                    header.appendChild(btn);
+                    
+                    const description = document.createElement('div');
+                    description.className = 'download-description';
+                    description.textContent = download.description;
+                    
+                    card.appendChild(header);
+                    card.appendChild(description);
+                    container.appendChild(card);
+                });
+                
+                // Handle hash navigation
+                if (window.location.hash) {
+                    const id = window.location.hash.substring(1).replace('id=', '');
+                    if (id) {
+                        setTimeout(() => {
+                            const element = document.getElementById(`download-${id}`);
+                            if (element) {
+                                element.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }, 100);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading downloads:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+blogs:
+  - id: 20
+    date: 31/12/2025
+    title: "Happy New Years!"
+    content: |-
+      Happy New Years everyone! Although this post would only show after the revamp so I doubt I made it in time... but it's the thought that counts! Alr cyall!
+
+      [Progress Report] doing well, probably like around 45% done maybe?
+
+  - id: 19
+    date: 25/12/2025
+    title: "Happy Christmas!"
+    content: |-
+      Happy Christmas everybody! I haven't been doing much blog posts recently, and I wont make a lot after this except for some holidays because I'm working on a new revamp for the website, as I feel it is sort of cluttered, and could use a clean up and a new style. Also I totally forgot to publish the Halloween special book, so I'm gonna do it now.
+
+  - id: 18
+    date: 01/11/2025
+    title: "Post-Hallows"
+    content: |-
+      Hope ya'll had a wonderful Spooktober and Halloween! Anyways just a little more changes, the Projects tab now has a separate tab bar instead of having whole sections for the three project group thingies. You can use **#projects?tab={ID}** to link directly to any tab! As usually the ID will be displayed next to the name of each section.
+
+
+      Another change is to the book rendering! Now although it uses a bit more definition (**.json**) files, it makes my life EVEN EASIER because now all the chapters will be using **.md**, so it **1)** makes it easier for me to look at and **2)** I no longer have to replace all the line breaks with **&#92;n**. I won't be applying this system to the blogs because I'm not gonna make blogs THAT long, and I'm just lazy. Anyways, CYA!
+
+  - id: 17
+    date: 31/10/2025
+    title: "Happy Halloween!"
+    content: |-
+      It's the 31st, and you know what that means! Happy All Hallows' Eve everyone! A few changes occured:
+
+      **1.** I merged the blogs page back into index.html, providing a smoother experience with the tab bar.
+      **2.** Projects have been moved to the now Projects tab, and it has multiple sections, currently: Coding Projects, Books, and Minecraft.
+      **3.** I have added back the fuctionality of using # to define where you want to be! Now you can add **#about**, **#blog**, or **#projects** at the end of the link to be on the Profile, Blog, or Projects tab respectively. Furthermore, blogs now had a numerical ID, displayed next to the date. With **#blog?id={ID}** where **{ID}** is the ID of the blog post, you can directly open to page to that post!
+      **4.** Now practically everything are now defined using JSON, e.g. the blog posts, projects, even the books! This makes my life SO much easier making these posts and stuff, and makes my code just that tad bit cleaner and shorter! Hopefully because of this, I'll be making more blog posts now!
+      **5.** As a Halloween special, I'm making a 3 chapter short psychological horror story that may release in a few weeks.
+      **6.** Also, I've added back the [RSS feed](blogs.html#8) feature!
+
+      Anyways, that's all for now, have a very happy Halloween guys!
+
+  - id: 16
+    date: 28/10/2025
+    title: "Happy Spooktober!"
+    content: |-
+      **All Hallows' Eve** is coming up, so happy Spooktober guys! On another note, I have revamped some of the UI for the website again! To de-clutter my index.html I also split off the blog into a separate page of its own, but of course as you probably have seen, still easily accessible via the tab-bar at the top of the page. Also check out my new book (*still in WIP*) [here](obliter8tion.html).
+
+  - id: 15
+    date: 30/09/2025
+    title: "Infiniverse Update"
+    content: |-
+      Sup everyone! Been a hot minute! So a few things first, I've finally started posting on YouTube again, and I also got my hands on Persona 1 and Persona 2: Innocent Sin! Unfortunately I'm still searching for P2: Eternal Punishment.
+
+      Anyways, so the update is that I've been doing a lot of Minecraft stuff, first, I updated everything to 1.21.8, which is the latest version, *for now*, and I've made a few other datapacks on my profile! You should check them all out! I also did some shenanigans and now the projects in Infiniverse also appear on my user profile, so you can check it all out at [https://modrinth.com/user/error_dev_yt](https://modrinth.com/user/error_dev_yt)!
+
+  - id: 14
+    date: 14/05/2025
+    title: "Major Update 2"
+    content: |-
+      Hello everyone! I'm finally back with the blog posts! As you can probably tell, I've changed the website up a LOT. The theme, style, everything! There are some other features other than just the OG About Me, Social Links, and Blog, and that's the Programming Skills, and Projects section! Not to mention I've allowed you all to choose your own theme by cycling through some premade themes! If you'd like a custom theme, please email me or direct message me on Discord!
+
+      Also I've been making some Minecraft datapacks recently, so go check them out at [https://modrinth.com/organization/infiniverse](https://modrinth.com/organization/infiniverse)!
+
+  - id: 13
+    date: 26/03/2025
+    title: "Side Project 1"
+    content: |-
+      Sup guys, I'm back. Now, I've just made a little side project for a friend, you should check it out! I'm not going to tell you everything to not spoil it. Also, unfortunately, I'm discontinuing the RSS Feed because I'm absolutely too lazy.
+
+  - id: 12
+    date: 19/03/2025
+    title: "Birthday!"
+    content: |-
+      Alright everyone! So it's my birthday today! Yeah. That's all. Because I'm gonna have fun all day and I'm not gonna bother writing a whole blog on everything.
+
+  - id: 11
+    date: 17/03/2025
+    title: "Website Refresh"
+    content: |-
+      Okay. ANOTHER refresh! Look. I disliked the last refresh, so I changed it all again. Okay, listen up.
+
+      **Change #1:** I added a projects section that lists a few of my projects.
+
+      **Change #2:** Instead of the jump-to feature for the blog page, I added a table of contents at the very top of the blog page, so you can quickly jump to whichever blog post you want, in seconds. You may have also seen that I changed the layout a bit, with each post having buttons that let you go to the very top, the last post, or the next post.
+
+      **Change #3:** Branding. Now, the DEV.() branding still exists, but the website has an additional branding, *"Wormhole of Error Dev"*. Also you may have noticed the color scheme changed. Now it's orange and purple.
+
+      -------
+
+      **Update:** So you guys remember the last update, on the 13th right? Yeah well Neocities support FINALLY came back to me, and told me that they found the error and fixed it, so now I've got access to the site again. This is absolutely **BRILLIANT NEWS.** However, I'm still going to stick with Github, because I'm afraid something like that will happen again, and this time I'm making sure to make local backups all the time. I'm probably going to use the neocities site, for something different.
+
+  - id: 10
+    date: 13/03/2025
+    title: "Removed Features"
+    content: |-
+      Changelog update! Alright, so it was too much of a hassle to keep the DEV.ARCHIVE, so I decided to just completely and utterly annihilate it. Also, we're now using GitHub as a host, instead of Neocities, because Neocities for NO REASON AT ALL decided *"Oh yeah, fuck this dude, let's just delete his whole account and website and say absolutely nothing!"* like wtf???
+
+  - id: 9
+    date: 12/03/2025
+    title: "UI & Features Revamp"
+    content: |-
+      The entire website has now just been revamped! As you can see, everything looks more fresh and heck, more modern! I'll let you explore that on your own.
+
+      Now onto the features!
+
+      First of all, I added a contact me form on the main page, so you guys can send me emails from this very website! I also added a newsletter feed under it, you just plop your email there and BOOM!, you're subscribed!
+
+      Secondly, the blog post "jump to tags" function has also been changed. As you can see above the big blog titles, there's a small line of text that contains the blog number and the blog date. The jump to tags now function using the blog number. The format is **#blog<#|-** with **<#|-** being the blog number. For example, to automatically jump to this blog post, you would go to **https://devicals.github.io/blogs#9**, note the main part: **#blog9**. Also, to view the latest blog post, you can now go to the tag **#blog0**!
+
+      Alright, that's it for now, see y'all! (It has since been revamped again, twice!)
+
+  - id: 8
+    date: 09/03/2025
+    title: "RSS Feed!"
+    content: |-
+      The blog's RSS Feed has now been fully set up! All blog posts already existing are also added. To add the RSS Feed, click the RSS Feed button on the blog page to copy the RSS link. Then paste that link into the RSS Feed reader of your choice! Me personally, I use Mozilla Thunderbird. I strongly advise you to NOT use Feedly, as with my experience, it does NOT update when an RSS Feed updates.
+
+  - id: 7
+    date: 08/03/2025
+    title: "DEV.ARCHIVE & Jump To Tags!"
+    content: |-
+      Content was removed, too much stuff and also the features are currently gone.
+
+  - id: 6
+    date: 07/03/2025
+    title: "The Highest Honor"
+    content: |-
+      ok i forgot what i put here so yeh. basically i joined AStrangeCreature's discord and made some fanart and he liked it and made it his PFP and it was the best day of my life. Did I mention my birthday is on the 19th of March?
+
+  - id: 5
+    date: 05/03/2025
+    title: "Custom URL Redirects!"
+    content: |-
+      I just made a way for me to easily add URL redirections to my website, and it's only accessible to me! So now I can turn any long link (e.g. *https://long.link/thats/super#annoying*) into a custom URL (e.g. *https://devicals.github.io/url*)! Now ain't THAT cool?
+
+  - id: 4
+    date: 03/03/2025
+    title: "Separate Blog Page!"
+    content: |-
+      Instead of a blog section which would be too detrimental for me to implement and stuff, I just made this simple blog page with all the blog posts in here. If you want to see the first post, well you better like scrolling... or just use the scrollbar. But not now, 'cause there's only three posts *LOL*.
+
+  - id: 3
+    date: 03/03/2025
+    title: "Just an Update"
+    content: |-
+      I just made a website for an alliance I'm in in a game! Recently I've been playing *Avatar Legends: Realms Collide* a lot, and I've joined this alliance called *[OMSH] Secret Tunnels*, and after some days, I decided to make a website containing some information to make it more convenient. However, after another member raised the issue of security and privacy, I've now turned the website into a troll page, and if enemy alliances open it, they get rickrolled!
+
+  - id: 2
+    date: 02/03/2025
+    title: "Created a Blog!"
+    content: |-
+      Just added this blog section to the website. Who knew this would be so goddamn detrimental to do? **Definitely me.**
+
+  - id: 1
+    date: 01/03/2025
+    title: "Published Site!"
+    content: |-
+      Just finished creating the website, and hosted it on Neocities GitHub! Let's go! Be sure to tune in for more updates!

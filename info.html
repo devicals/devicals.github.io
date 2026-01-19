@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="storage/internal/page-styles.css">
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Repository Info</h1>
+        
+        <div class="info-grid">
+            <div class="stat-card">
+                <h2>Repository Stats</h2>
+                <div class="stats-group">
+                    <div class="stat-item">
+                        <div class="stat-value" id="stars">-</div>
+                        <div class="stat-label">Stars</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="forks">-</div>
+                        <div class="stat-label">Forks</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="watchers">-</div>
+                        <div class="stat-label">Watchers</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h2>Repo Size</h2>
+                <div class="size-display">
+                    <div class="size-value" id="size">-</div>
+                    <div class="stat-label">KB</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="languages-section">
+            <h2>Languages</h2>
+            <div class="stat-card" id="languages-container"></div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch repo data from GitHub API
+                const repoResponse = await fetch('https://api.github.com/repos/devicals/devicals.github.io');
+                const repoData = await repoResponse.json();
+                
+                console.log('Repo data:', repoData);
+                
+                // Update stats
+                document.getElementById('stars').textContent = repoData.stargazers_count || 0;
+                document.getElementById('forks').textContent = repoData.forks_count || 0;
+                document.getElementById('watchers').textContent = repoData.subscribers_count || 0;
+                document.getElementById('size').textContent = (repoData.size || 0).toLocaleString();
+                
+                // Fetch languages
+                const langResponse = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
+                const langData = await langResponse.json();
+                
+                console.log('Languages:', langData);
+                
+                // Calculate total bytes
+                const totalBytes = Object.values(langData).reduce((sum, bytes) => sum + bytes, 0);
+                
+                // Render languages
+                const container = document.getElementById('languages-container');
+                
+                Object.entries(langData)
+                    .sort((a, b) => b[1] - a[1])
+                    .forEach(([lang, bytes]) => {
+                        const percentage = ((bytes / totalBytes) * 100).toFixed(1);
+                        
+                        const langItem = document.createElement('div');
+                        langItem.className = 'language-item';
+                        
+                        const header = document.createElement('div');
+                        header.className = 'language-header';
+                        
+                        const name = document.createElement('span');
+                        name.className = 'language-name';
+                        name.textContent = lang;
+                        
+                        const percent = document.createElement('span');
+                        percent.className = 'language-percent';
+                        percent.textContent = `${percentage}%`;
+                        
+                        header.appendChild(name);
+                        header.appendChild(percent);
+                        
+                        const bar = document.createElement('div');
+                        bar.className = 'language-bar';
+                        
+                        const fill = document.createElement('div');
+                        fill.className = 'language-fill';
+                        fill.style.width = '0%';
+                        
+                        bar.appendChild(fill);
+                        
+                        langItem.appendChild(header);
+                        langItem.appendChild(bar);
+                        container.appendChild(langItem);
+                        
+                        // Animate the bar
+                        setTimeout(() => {
+                            fill.style.width = `${percentage}%`;
+                        }, 100);
+                    });
+                
+            } catch (error) {
+                console.error('Error fetching repository data:', error);
+                document.getElementById('stars').textContent = 'Error';
+                document.getElementById('forks').textContent = 'Error';
+                document.getElementById('watchers').textContent = 'Error';
+                document.getElementById('size').textContent = 'Error';
+            }
+        });
+    </script>
+</body>
+</html>

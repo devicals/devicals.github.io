@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Page - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <style>
+        .breadcrumb {
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        
+        .breadcrumb-path {
+            flex: 1;
+        }
+        
+        .breadcrumb-nav {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .breadcrumb a {
+            color: hsl(var(--accent));
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .breadcrumb span {
+            color: hsl(var(--muted-foreground));
+            margin: 0 8px;
+        }
+        
+        .breadcrumb-btn {
+            padding: 6px 12px;
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            transition: opacity 0.2s;
+        }
+        
+        .breadcrumb-btn:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+        
+        .breadcrumb-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .scroll-to-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 16px;
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        
+        .scroll-to-top.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .scroll-to-top:hover {
+            opacity: 0.9;
+        }
+        
+        .section-grid {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .section-card {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: hsl(var(--foreground));
+            display: block;
+        }
+        
+        .section-card:hover {
+            border-color: hsl(var(--accent));
+            transform: translateY(-2px);
+        }
+        
+        .section-card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: hsl(var(--accent));
+            margin-bottom: 8px;
+        }
+        
+        .section-card-type {
+            font-size: 12px;
+            color: hsl(var(--muted-foreground));
+            text-transform: uppercase;
+        }
+        
+        .md-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            line-height: 1.8;
+        }
+        
+        .md-content p {
+            white-space: pre-wrap;
+        }
+
+        .hide-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title" id="page-title">Loading...</h1>
+        
+        <div id="breadcrumb" class="breadcrumb">
+            <div class="breadcrumb-path" id="breadcrumb-path"></div>
+            <div class="breadcrumb-nav">
+                <button class="breadcrumb-btn" id="prev-btn" disabled>← Prev</button>
+                <button class="breadcrumb-btn" id="next-btn" disabled>Next →</button>
+            </div>
+        </div>
+        
+        <div id="content"></div>
+        
+        <button class="scroll-to-top" id="scroll-to-top">↑ Top</button>
+    </div>
+    
+    <script>
+        let currentPath = [];
+        let pagesData = null;
+        let customPageData = null;
+        let rootPageId = null;
+        
+        // Configure marked to render single line breaks
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+        
+        async function loadYAML(path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) throw new Error(`Failed to load ${path}`);
+                const text = await response.text();
+                return jsyaml.load(text);
+            } catch (error) {
+                console.error('Error loading YAML:', path, error);
+                return null;
+            }
+        }
+        
+        async function loadMarkdown(path) {
+            const response = await fetch(path);
+            return await response.text();
+        }
+        
+        function getPageIdFromParentURL() {
+            const parentHash = window.parent.location.hash.substring(1);
+            const params = new URLSearchParams(parentHash);
+            return params.get('page');
+        }
+        
+        function normalizeType(typeValue) {
+            if (typeof typeValue === 'object' && typeValue !== null) {
+                return {
+                    type: typeValue.type,
+                    display: typeValue.display || null
+                };
+            }
+            return {
+                type: typeValue,
+                display: null
+            };
+        }
+        
+        function getTypeDisplay(typeValue) {
+            const normalized = normalizeType(typeValue);
+            if (normalized.display) {
+                return `(${normalized.type.toUpperCase()}) ${normalized.display}`;
+            }
+            return normalized.type.toUpperCase();
+        }
+        
+        function buildNavURL(path) {
+            if (path.length === 0) {
+                return `#page=${rootPageId}`;
+            }
+            const navPath = path.map(p => p.id).join('&');
+            return `#page=${rootPageId}&nav=${navPath}`;
+        }
+        
+        function updateBreadcrumb() {
+            const breadcrumbPath = document.getElementById('breadcrumb-path');
+            const parts = [];
+            
+            if (customPageData) {
+                const rootUrl = buildNavURL([]);
+                parts.push(`<a href="${rootUrl}" onclick="navigateTo([]); return false;">${customPageData.name || 'Root'}</a>`);
+            }
+            
+            currentPath.forEach((item, index) => {
+                const path = currentPath.slice(0, index + 1);
+                const url = buildNavURL(path);
+                parts.push(`<span>/</span>`);
+                parts.push(`<a href="${url}" onclick='navigateTo(${JSON.stringify(path)}); return false;'>${item.name}</a>`);
+            });
+            
+            breadcrumbPath.innerHTML = parts.join('');
+            updateBreadcrumbButtons();
+        }
+        
+        function updateBreadcrumbButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            if (!pagesData || pagesData.length === 0 || currentPath.length === 0) {
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+            
+            const currentItem = currentPath[currentPath.length - 1];
+            const currentIndex = pagesData.findIndex(p => p.id === currentItem.id || p.name === currentItem.name);
+            
+            if (currentIndex === -1) {
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                return;
+            }
+            
+            const lastSlash = currentItem.path.lastIndexOf('/');
+            const basePath = lastSlash !== -1 ? currentItem.path.substring(0, lastSlash + 1) : '';
+            
+            // Previous button
+            prevBtn.disabled = currentIndex <= 0;
+            prevBtn.onclick = currentIndex > 0 ? () => {
+                const prevPage = pagesData[currentIndex - 1];
+                const typeData = normalizeType(prevPage.type || detectType(prevPage.path));
+                const newPath = [...currentPath.slice(0, -1), {
+                    id: prevPage.id || prevPage.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+                    name: prevPage.name,
+                    path: basePath + prevPage.path,
+                    type: typeData.type,
+                    typeDisplay: typeData.display
+                }];
+                navigateTo(newPath);
+            } : null;
+            
+            // Next button
+            nextBtn.disabled = currentIndex >= pagesData.length - 1;
+            nextBtn.onclick = currentIndex < pagesData.length - 1 ? () => {
+                const nextPage = pagesData[currentIndex + 1];
+                const typeData = normalizeType(nextPage.type || detectType(nextPage.path));
+                const newPath = [...currentPath.slice(0, -1), {
+                    id: nextPage.id || nextPage.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+                    name: nextPage.name,
+                    path: basePath + nextPage.path,
+                    type: typeData.type,
+                    typeDisplay: typeData.display
+                }];
+                navigateTo(newPath);
+            } : null;
+        }
+        
+        async function navigateTo(path) {
+            console.log('Navigating to:', path);
+            currentPath = path;
+            updateBreadcrumb();
+            updateURL();
+            
+            if (path.length === 0) {
+                // Show root sections
+                if (customPageData && customPageData.path) {
+                    await renderSections(customPageData.path);
+                }
+            } else {
+                // Navigate to the specified path
+                const lastItem = path[path.length - 1];
+                
+                console.log('Last item type:', lastItem.type, 'Path:', lastItem.path);
+                
+                if (lastItem.type === 'section') {
+                    // Load the section's YAML file
+                    await renderSections(lastItem.path);
+                } else if (lastItem.type === 'md') {
+                    await renderMarkdown(lastItem.path);
+                } else if (lastItem.type === 'html') {
+                    renderHTML(lastItem.path);
+                }
+            }
+        }
+        
+        async function renderSections(yamlPath) {
+            console.log('Rendering sections from:', yamlPath);
+            
+            // Calculate base path - the directory containing the YAML file
+            const lastSlash = yamlPath.lastIndexOf('/');
+            const basePath = lastSlash !== -1 ? yamlPath.substring(0, lastSlash + 1) : '';
+            
+            console.log('Base path:', basePath);
+            
+            const data = await loadYAML('storage/data/' + yamlPath);
+            if (!data || !data.pages) {
+                console.error('No pages data found in:', yamlPath);
+                return;
+            }
+            
+            pagesData = data.pages;
+            console.log('Loaded pages:', pagesData);
+            
+            const content = document.getElementById('content');
+            content.innerHTML = '';
+            
+            const grid = document.createElement('div');
+            grid.className = 'section-grid';
+            
+            data.pages.forEach((page, index) => {
+                console.log(`Processing page ${index}:`, page);
+                
+                const card = document.createElement('a');
+                card.className = 'section-card';
+                card.href = '#';
+                card.onclick = async (e) => {
+                    e.preventDefault();
+                    
+                    // The page.path is relative to the current YAML's directory
+                    const fullPath = basePath + page.path;
+                    const typeData = normalizeType(page.type || detectType(page.path));
+                    
+                    console.log('Card clicked:', page.name, 'Type:', typeData.type, 'Full path:', fullPath);
+                    
+                    await navigateTo([...currentPath, {
+                        id: page.id || page.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+                        name: page.name,
+                        path: fullPath,
+                        type: typeData.type,
+                        typeDisplay: typeData.display
+                    }]);
+                };
+                
+                const title = document.createElement('div');
+                title.className = 'section-card-title';
+                title.textContent = page.name;
+                
+                const type = document.createElement('div');
+                type.className = 'section-card-type';
+                type.textContent = getTypeDisplay(page.type || detectType(page.path));
+                
+                card.appendChild(title);
+                card.appendChild(type);
+                grid.appendChild(card);
+            });
+            
+            content.appendChild(grid);
+            updateBreadcrumbButtons();
+        }
+        
+        async function renderMarkdown(mdPath) {
+            const content = document.getElementById('content');
+            const markdown = await loadMarkdown('storage/data/' + mdPath);
+            
+            const mdContent = document.createElement('div');
+            mdContent.className = 'md-content';
+            mdContent.innerHTML = marked.parse(markdown);
+            
+            content.innerHTML = '';
+            content.appendChild(mdContent);
+            
+            updateBreadcrumbButtons();
+        }
+        
+        function renderHTML(htmlPath) {
+            const content = document.getElementById('content');
+            const iframe = document.createElement('iframe');
+            iframe.src = htmlPath;
+            iframe.style.width = '100%';
+            iframe.style.height = '600px';
+            iframe.style.border = '2px solid hsl(var(--border))';
+            
+            content.innerHTML = '';
+            content.appendChild(iframe);
+            
+            updateBreadcrumbButtons();
+        }
+        
+        function detectType(path) {
+            if (path.endsWith('.yaml') || path.endsWith('.yml')) return 'section';
+            if (path.endsWith('.md')) return 'md';
+            if (path.endsWith('.html')) return 'html';
+            return 'unknown';
+        }
+        
+        function updateURL() {
+            const url = buildNavURL(currentPath);
+            window.parent.history.replaceState(null, null, url);
+        }
+        
+        async function parseURLNav() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const nav = params.get('nav');
+            
+            if (!nav) return [];
+            
+            console.log('Parsing nav:', nav);
+            
+            // Parse the navigation path
+            const navIds = nav.split('&');
+            const path = [];
+            
+            // Start from root custom page
+            let currentYamlPath = customPageData.path;
+            
+            // Traverse the path
+            for (let i = 0; i < navIds.length; i++) {
+                const navId = navIds[i];
+                console.log(`Looking for navId "${navId}" in ${currentYamlPath}`);
+                
+                const yamlData = await loadYAML('storage/data/' + currentYamlPath);
+                if (!yamlData || !yamlData.pages) {
+                    console.error('Failed to load YAML or no pages:', currentYamlPath);
+                    break;
+                }
+                
+                const page = yamlData.pages.find(p => p.id === navId);
+                if (!page) {
+                    console.error(`Page with id "${navId}" not found in ${currentYamlPath}`);
+                    break;
+                }
+                
+                console.log('Found page:', page);
+                
+                // Calculate base path and full path
+                const lastSlash = currentYamlPath.lastIndexOf('/');
+                const basePath = lastSlash !== -1 ? currentYamlPath.substring(0, lastSlash + 1) : '';
+                const fullPath = basePath + page.path;
+                
+                console.log('Full path for page:', fullPath);
+                
+                const typeData = normalizeType(page.type || detectType(page.path));
+                
+                path.push({
+                    id: page.id,
+                    name: page.name,
+                    path: fullPath,
+                    type: typeData.type,
+                    typeDisplay: typeData.display
+                });
+                
+                // If this is a section and not the last item, update currentYamlPath for next iteration
+                if (typeData.type === 'section' && i < navIds.length - 1) {
+                    currentYamlPath = fullPath;
+                }
+            }
+            
+            console.log('Parsed path:', path);
+            return path;
+        }
+        
+        // Scroll to top functionality
+        const scrollToTopBtn = document.getElementById('scroll-to-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+        
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        async function initialize() {
+            // Get the page ID from parent URL
+            rootPageId = getPageIdFromParentURL();
+            console.log('Root page ID:', rootPageId);
+            
+            // Load custom page data
+            const customData = await loadYAML('storage/data/custom.yaml');
+            customPageData = customData.customPages.find(p => p.id === rootPageId);
+            
+            if (!customPageData) {
+                document.getElementById('page-title').textContent = 'Page Not Found';
+                document.getElementById('content').innerHTML = '<p>The requested page could not be found.</p>';
+                return;
+            }
+            
+            console.log('Custom page data:', customPageData);
+            
+            // Set page title
+            document.getElementById('page-title').textContent = customPageData.name || 'Custom Page';
+            
+            // Parse URL navigation
+            const urlPath = await parseURLNav();
+            await navigateTo(urlPath);
+        }
+        
+        document.addEventListener('DOMContentLoaded', initialize);
+        
+        // Listen for hash changes from parent
+        window.addEventListener('hashchange', async () => {
+            const urlPath = await parseURLNav();
+            await navigateTo(urlPath);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+customPages:
+  - id: books
+    name: "Books"
+    path: books/definition.yaml
+    type:
+      type: section
+    locked: false
+
+  - id: funcgen
+    name: null
+    path: ../../function_generator.html
+    type:
+      type: html
+    locked: true
+
+  - id: test
+    name: "Testing"
+    path: "testing.md"
+    type:
+      type: raw
+    locked: false

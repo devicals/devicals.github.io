@@ -1,0 +1,94 @@
+projects:
+  tabs:
+    coding:
+      display: "Coding"
+      projects:
+        - name: "AI Teaching Master"
+          link: https://github.com/devicals/AI-Teaching-Master
+          description: "An interactive AI-powered educational platform that generates lessons, questions, and provides personalized learning experiences using advanced language models."
+        
+        - name: "Money Maker Hacked"
+          link: https://github.com/devicals/money-maker-hacked
+          description: "The chromium extension clicker game 'Make Money', but hacked by yours truly, Error Dev!"
+        
+        - name: "Custom URL Redirect Generator"
+          link: https://error-dev.neocities.org/url-shortens
+          description: "A tool to help you create URL redirection links for your website."
+        
+        - name: "Drive File Direct Download URL Generator"
+          link: https://error-dev.neocities.org/download-gen
+          description: "A tool to help you create file download links for your drive files."
+        
+        - name: "Startpage"
+          link: https://github.com/devicals/cube-dimensions
+          description: "A custom startpage/new tab page. Forked from https://gitlab.com/fazzi/startpage."
+        
+        - name: "MBC Entries"
+          link: https://github.com/devicals/MBC-Entries
+          description: "A repository for my entries for Leon's Monthly Build Challenge."
+        
+        - name: "Dev's Web (Archived)"
+          link: https://github.com/devicals/profile
+          description: "A past version of the current website. Therefore archived."
+        
+        - name: "Cube Dimensions Website (Archived)"
+          link: https://github.com/devicals/cube-dimensions
+          description: "A website made for Cube Dimensions. Now archived as Cube Dimensions has ended."
+
+    books:
+      display: "Books"
+      projects:
+        - name: "OBLITER8TION"
+          link: index.html#page=books?series=obliter8tion&book=retribution
+          description: "A W.I.P. book inspired by ANTHIEST and ULTRAKILL. (On Pause)"
+
+        - name: "O' Mother of Mine"
+          link: index.html#page=books?series=hs&book=omom
+          description: "2025 Halloween Special Short Story"
+
+    mc:
+      display: "Minecraft"
+      projects:
+        - name: "Infinilib"
+          link: https://modrinth.com/datapack/infinilib
+          description: "The required library for all Infini-projects."
+        
+        - name: "Infiniresources"
+          link: https://modrinth.com/resourcepack/infiniresources
+          description: "The required resourcepack for most Infini-projects."
+        
+        - name: "Infinicontrol"
+          link: https://modrinth.com/datapack/infinicontrol
+          description: "A datapack containing many commands made for server management!"
+        
+        - name: "Infinicrafts"
+          link: https://modrinth.com/datapack/infinicrafts
+          description: "Gain the ability to craft all* uncraftable items or blocks in Minecraft! *most*"
+        
+        - name: "Parkour Utility"
+          link: https://modrinth.com/datapack/pku
+          description: "A bunch of stuff to help make parkour courses!"
+        
+        - name: "Infiniarmory"
+          link: https://modrinth.com/datapack/infinitools
+          description: "Transform any tool or armor into a different one of the same type! Turn your wooden hoe into a netherite one as soon as you start!"
+        
+        - name: "Infinitrolls"
+          link: https://modrinth.com/datapack/infinitrolls
+          description: "A datapack full of functions to troll your friends!"
+        
+        - name: "StarHUD Hotbar"
+          link: https://modrinth.com/resourcepack/starhud-hotbar
+          description: "A custom hotbar resourcepack for the StarHUD mod by Finside."
+        
+        - name: "Liminal Paintings"
+          link: https://modrinth.com/datapack/liminal-paintings
+          description: "DyoudiM!'s liminal-vibe artwork added to Minecraft as paintings!"
+        
+        - name: "Wormhole Items"
+          link: https://modrinth.com/datapack/wormhole-items
+          description: "All of the CUSTOM items (that require multiple command blocks) from the Wormhole by Spoke, improved, and packed as a datapack."
+        
+        - name: "Spectral Orbital Lasers"
+          link: https://modrinth.com/datapack/spectral-orbital-lasers
+          description: "Turns spectral arrows into destructive lasers!"

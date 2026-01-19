@@ -1,0 +1,48 @@
+pages:
+  - id: 0
+    name: "INTRODUCTION"
+    path: intro_1.md
+    type:
+      type: md
+
+  - id: 1
+    name: "THE GUARDIANS FOUR"
+    path: prelude_-5.md
+    type:
+      type: md
+
+  - id: 2
+    name: "THE DAWN OF CHAOS"
+    path: prelude_-4.md
+    type:
+      type: md
+
+  - id: 3
+    name: '"DEATH IS A MERCY NOT GIFTED UPON US"'
+    path: prelude_-3.md
+    type:
+      type: md
+
+  - id: 4
+    name: "MORS, MUNDORUM DELITRIX, MALEDICTIO QUAM IN NOBIS IECISSIMUS, OMNIA PAENITET NOS"
+    path: prelude_-2.md
+    type:
+      type: md
+
+  - id: 5
+    name: "ACKNOWLEDGED FROM ABOVE, IN A LAND OF CLOUDS, NOW BIRTHPLACE TO THE GREAT PURGE"
+    path: prelude_-1.md
+    type:
+      type: md
+
+  - id: 6
+    name: "THE AWAKENING"
+    path: chapter_1.md
+    type:
+      type: md
+
+  - id: 7
+    name: "MY LAST BREATH"
+    path: bonus_1.md
+    type:
+      type: md

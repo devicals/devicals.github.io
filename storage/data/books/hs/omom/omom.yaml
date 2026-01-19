@@ -1,0 +1,19 @@
+pages:
+  - id: 0
+    name: "The Lamb of Blood"
+    path: chapter_1.md
+    type:
+      type: md
+      display: "Chapter #1"
+
+  - id: 1
+    name: "The Shepherd of Filth"
+    path: chapter_2.md
+    type:
+      type: md
+
+  - id: 2
+    name: "The Slaughtered Lamb"
+    path: chapter_3.md
+    type:
+      type: md

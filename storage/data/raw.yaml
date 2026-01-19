@@ -1,0 +1,24 @@
+fileMappings:
+  html: 'html'
+  css: 'css'
+  js: 'javascript'
+  json: 'json'
+
+  md: 'markdown'
+  wiki: 'markdown'
+
+  yml: 'yaml'
+  yaml: 'yaml'
+
+  py: 'python'
+
+  go: 'go'
+  rs: 'rust'
+  rb: 'ruby'
+  ts: 'typescript'
+
+mapDisplays:
+  yaml: "Internal Data"
+
+  md: "Document"
+  wiki: "Wiki Page"

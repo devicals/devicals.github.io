@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <style>
+        .blog-id {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 12px;
+            color: hsl(var(--muted-foreground));
+            font-weight: 600;
+        }
+        
+        .blog-post {
+            position: relative;
+        }
+
+        .hide-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Blogs</h1>
+        
+        <div class="blog-controls">
+            <div class="blog-jump">
+                <label>Jump to ID:</label>
+                <input type="number" id="blog-id-input" placeholder="e.g. 20">
+                <button onclick="jumpToBlog()">Go</button>
+            </div>
+        </div>
+        
+        <div class="blog-posts" id="blog-posts"></div>
+    </div>
+    
+    <script>
+        let blogsData = [];
+
+        async function loadYAML(path) {
+            const response = await fetch(path);
+            const text = await response.text();
+            return jsyaml.load(text);
+        }
+
+        function parseDate(dateStr) {
+            const [day, month, year] = dateStr.split('/').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        function renderBlogs(blogs) {
+            const container = document.getElementById('blog-posts');
+            container.innerHTML = '';
+            
+            blogs.forEach(blog => {
+                const blogPost = document.createElement('div');
+                blogPost.className = 'blog-post';
+                blogPost.id = `blog-${blog.id}`;
+                
+                const idBadge = document.createElement('div');
+                idBadge.className = 'blog-id';
+                idBadge.textContent = `#${blog.id}`;
+                blogPost.appendChild(idBadge);
+                
+                const header = document.createElement('div');
+                header.className = 'blog-header';
+                
+                const title = document.createElement('a');
+                title.className = 'blog-title';
+                title.href = `#id=${blog.id}`;
+                title.textContent = blog.title;
+                title.onclick = (e) => {
+                    e.preventDefault();
+                    const fullUrl = `${window.location.origin}${window.location.pathname}#page=blogs&id=${blog.id}`;
+                    window.parent.location.hash = `page=blogs&id=${blog.id}`;
+                    
+                    // Copy to clipboard
+                    navigator.clipboard.writeText(fullUrl).then(() => {
+                        const originalText = title.textContent;
+                        title.textContent = originalText + ' (Copied!)';
+                        setTimeout(() => {
+                            title.textContent = originalText;
+                        }, 2000);
+                    });
+                    
+                    blogPost.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+                
+                const date = document.createElement('div');
+                date.className = 'blog-date';
+                date.textContent = blog.date;
+                
+                header.appendChild(title);
+                header.appendChild(date);
+                
+                const content = document.createElement('div');
+                content.className = 'blog-content';
+                content.innerHTML = marked.parse(blog.content);
+                
+                blogPost.appendChild(header);
+                blogPost.appendChild(content);
+                container.appendChild(blogPost);
+            });
+        }
+
+        function jumpToBlog() {
+            const input = document.getElementById('blog-id-input');
+            const id = input.value;
+            
+            if (!id) return;
+            
+            const element = document.getElementById(`blog-${id}`);
+            if (element) {
+                window.parent.location.hash = `page=blogs&id=${id}`;
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                alert(`Blog post with ID ${id} not found.`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const data = await loadYAML('storage/data/blogs.yaml');
+                
+                console.log('Blogs data loaded:', data);
+                
+                if (!data || !data.blogs) {
+                    console.error('No blogs data found');
+                    return;
+                }
+                
+                // Sort by date (newest first)
+                const blogEntries = data.blogs.sort((a, b) => {
+                    const dateA = parseDate(a.date);
+                    const dateB = parseDate(b.date);
+                    return dateB - dateA;
+                });
+                
+                blogsData = blogEntries;
+                
+                renderBlogs(blogEntries);
+                
+                // Handle hash navigation to specific blog
+                if (window.location.hash) {
+                    const hash = window.location.hash.substring(1);
+                    const params = new URLSearchParams(hash);
+                    const id = params.get('id');
+                    if (id) {
+                        setTimeout(() => {
+                            const element = document.getElementById(`blog-${id}`);
+                            if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 100);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading blogs:', error);
+            }
+        });
+
+        // Allow Enter key to jump
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && document.activeElement.id === 'blog-id-input') {
+                jumpToBlog();
+            }
+        });
+    </script>
+</body>
+</html>

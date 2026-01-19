@@ -1,0 +1,44 @@
+home:
+  bio: |-
+          👋 Sup! I'm __**Error Dev**__, an *Aussie*! I enjoy playing **games** such as *Minecraft* and *Persona 5* Royal, experimenting in **Powerpoint**, and also watching **movies and TV series**! Not to mention, I also **draw**, **write**, and **code**! Hosted on [Github](https://github.com/)!
+          Also check out my Minecraft projects at [https://modrinth.com/organization/infiniverse](https://modrinth.com/organization/infiniverse)!
+
+          Contact me at [3rr0r.d3v@gmail.com](mailto:3rr0r.d3v@gmail.com)!
+
+  skills:
+    - skill: "Hypertext Markup Language (HTML)"
+      link: https://html.com/
+    - skill: "JavaScript (JS)"
+      link: https://www.javascript.com/
+    - skill: "YAML Ain't Markup Language (YAML)"
+      link: https://yaml.org/
+    - skill: "JS Object Notation (JSON)"
+      link: https://www.json.org/json-en.html
+    - skill: "Flexion (Flexible Object Notation) (FLON)"
+      link: https://marketplace.visualstudio.com/items?itemName=error-dev.flexion-language
+    - skill: "Cascading Style Sheets (CSS)"
+      link: https://www.w3.org/Style/CSS/Overview.en.html
+    - skill: "Python (PY)"
+      link: https://www.python.org/
+    - skill: "Beet & Bolt (Minecraft Datapacks)"
+      link: https://mcbeet.dev/
+
+  socials:
+    - name: "Discord"
+      link: https://discord.com/users/989414384679927838/
+    - name: "YouTube"
+      link: https://www.youtube.com/@3rror_dev/
+    - name: "Reddit"
+      link: https://www.reddit.com/user/3RR0R_0FF1C1AL/
+    - name: "Github"
+      link: https://github.com/devicals/
+    - name: "Steam"
+      link: https://steamcommunity.com/id/error_dev/
+    - name: "DeviantART"
+      link: https://www.deviantart.com/3rrordev
+    - name: "X / Twitter"
+      link: https://x.com/error_dev_xt/
+    - name: "itch.io"
+      link: https://error-offixial.itch.io/
+    - name: "Wattpad"
+      link: https://www.wattpad.com/user/error_dev
