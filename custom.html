@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="storage/internal/embed-detect.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <style>
@@ -134,10 +135,31 @@
             border: 2px solid hsl(var(--border));
             padding: 24px;
             line-height: 1.8;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow-x: hidden;
         }
         
         .md-content p {
             white-space: pre-wrap;
+            margin-bottom: 1rem;
+        }
+
+        .md-content ul, 
+        .md-content ol {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .md-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .md-content li > ul,
+        .md-content li > ol {
+            margin-top: 0.5rem;
+            padding-left: 1.5rem;
         }
 
         .hide-scrollbar {

@@ -29,6 +29,7 @@ a {
 }
 
 a:hover {
+    color: hsl(var(--accent));
     text-decoration: underline;
 }
 
@@ -79,6 +80,7 @@ a:hover {
 }
 
 .bio-card a:hover {
+    color: hsl(var(--accent));
     text-decoration: underline;
 }
 
@@ -489,4 +491,26 @@ a:hover {
 
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
+}
+
+.counter-card {
+    border: 1px solid hsla(var(--primary), 0.2);
+    padding: 15px;
+    display: inline-block;
+    border-radius: 4px;
+    background: hsla(var(--primary), 0.03);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.counter-label {
+    font-size: 0.7rem;
+    color: hsl(var(--muted-foreground));
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.counter-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: hsl(var(--primary));
 }

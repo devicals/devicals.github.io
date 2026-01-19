@@ -1,12 +1,3 @@
 announcements:
   - >-
-    New redesign! Whoo Yay Wow!
-    Testing for double line (should show on the same line
-    but with space between last and this line because
-    using yaml folded)
-
-  - >-
-    Testing Multiple Announcements Switching
-
-  - >-
-    ~~_testing_ **markdown**~~ [link](https://www.youtube.com/)
+    New redesign! Yay! Check out the blog post [here](https://devicals.github.io/#page=blogs&id=21)!

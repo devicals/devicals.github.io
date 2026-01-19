@@ -12,10 +12,10 @@ customPages:
     type:
       type: html
     locked: true
-
+  
   - id: test
-    name: "Testing"
-    path: "testing.md"
+    name: null
+    path: testing.md
     type:
       type: raw
-    locked: false
+    locked: true

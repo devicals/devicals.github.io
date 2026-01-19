@@ -1,9 +1,22 @@
 blogs:
+  - id: 22
+    date: 19/01/2026
+    title: "Really Quick Update"
+    content: |-
+      Really quick changelog:
+      - minor bug fixes:
+        - pages w/ giscus would load giscus first before loading applied theme
+        - signing in w/ giscus would then send you to the raw page with glitched css
+      - minor additions:
+        - added a guestbook
+        - added a visitor counter! yay
+        - made jump to id box (in [blogs](./#page=blogs)) a floating little thing :)
+
   - id: 21
     date: 19/01/2026
     title: "Redesign Finished"
     content: |-
-      I've finally finished the redesign! What do you guys think? Send me some [feedback](https://devicals.github.io/#page=feedback)!
+      I've finally finished the redesign! What do you guys think? Send me some [feedback](./#page=feedback)!
       
       For all features, just look around! For example theres a better tag jumping feature or whatever to navigate & link pages, you'll see whenever you change a page or click anything it would update the url, if you copy that url and then go to it then it will take you to wherever you were at, the same tab, navigation, etc.
 
@@ -38,12 +51,12 @@ blogs:
     content: |-
       It's the 31st, and you know what that means! Happy All Hallows' Eve everyone! A few changes occured:
 
-      **1.** I merged the blogs page back into index.html, providing a smoother experience with the tab bar.
-      **2.** Projects have been moved to the now Projects tab, and it has multiple sections, currently: Coding Projects, Books, and Minecraft.
-      **3.** I have added back the fuctionality of using # to define where you want to be! Now you can add **#about**, **#blog**, or **#projects** at the end of the link to be on the Profile, Blog, or Projects tab respectively. Furthermore, blogs now had a numerical ID, displayed next to the date. With **#blog?id={ID}** where **{ID}** is the ID of the blog post, you can directly open to page to that post!
-      **4.** Now practically everything are now defined using JSON, e.g. the blog posts, projects, even the books! This makes my life SO much easier making these posts and stuff, and makes my code just that tad bit cleaner and shorter! Hopefully because of this, I'll be making more blog posts now!
-      **5.** As a Halloween special, I'm making a 3 chapter short psychological horror story that may release in a few weeks.
-      **6.** Also, I've added back the [RSS feed](blogs.html#8) feature!
+      1. I merged the blogs page back into index.html, providing a smoother experience with the tab bar.
+      2. Projects have been moved to the now Projects tab, and it has multiple sections, currently: Coding Projects, Books, and Minecraft.
+      3. I have added back the fuctionality of using # to define where you want to be! Now you can add **#about**, **#blog**, or **#projects** at the end of the link to be on the Profile, Blog, or Projects tab respectively. Furthermore, blogs now had a numerical ID, displayed next to the date. With **#blog?id={ID}** where **{ID}** is the ID of the blog post, you can directly open to page to that post!
+      4. Now practically everything are now defined using JSON, e.g. the blog posts, projects, even the books! This makes my life SO much easier making these posts and stuff, and makes my code just that tad bit cleaner and shorter! Hopefully because of this, I'll be making more blog posts now!
+      5. As a Halloween special, I'm making a 3 chapter short psychological horror story that may release in a few weeks.
+      6. Also, I've added back the [RSS feed](&id=8) feature!
 
       Anyways, that's all for now, have a very happy Halloween guys!
 
@@ -51,7 +64,7 @@ blogs:
     date: 28/10/2025
     title: "Happy Spooktober!"
     content: |-
-      **All Hallows' Eve** is coming up, so happy Spooktober guys! On another note, I have revamped some of the UI for the website again! To de-clutter my index.html I also split off the blog into a separate page of its own, but of course as you probably have seen, still easily accessible via the tab-bar at the top of the page. Also check out my new book (*still in WIP*) [here](obliter8tion.html).
+      **All Hallows' Eve** is coming up, so happy Spooktober guys! On another note, I have revamped some of the UI for the website again! To de-clutter my index.html I also split off the blog into a separate page of its own, but of course as you probably have seen, still easily accessible via the tab-bar at the top of the page. Also check out my new book (*still in WIP*) [here](./#page=books&nav=obliter8tion&retribution).
 
   - id: 15
     date: 30/09/2025
@@ -91,7 +104,7 @@ blogs:
 
       **Change #2:** Instead of the jump-to feature for the blog page, I added a table of contents at the very top of the blog page, so you can quickly jump to whichever blog post you want, in seconds. You may have also seen that I changed the layout a bit, with each post having buttons that let you go to the very top, the last post, or the next post.
 
-      **Change #3:** Branding. Now, the DEV.() branding still exists, but the website has an additional branding, *"Wormhole of Error Dev"*. Also you may have noticed the color scheme changed. Now it's orange and purple.
+      **Change #3:** Branding. Now, the `DEV.()`` branding still exists, but the website has an additional branding, *"Wormhole of Error Dev"*. Also you may have noticed the color scheme changed. Now it's orange and purple.
 
       -------
 

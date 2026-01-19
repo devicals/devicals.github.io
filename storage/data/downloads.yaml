@@ -3,10 +3,18 @@ downloads:
     description: "Error Dev's custom HTML/CSS/JS portfolio website"
     url: https://github.com/devicals/devicals.github.io
     
-  - name: "MC Badges Resource Pack"
-    description: "A Minecraft resource pack with clean badge textures"
-    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/files/MC%20Badges.zip
+  - name: "MC Badges Pack"
+    description: "Clean badge textures to put links on your modrinth page"
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/MC%20Badges.zip
 
   - name: "ULTRAKILL Rainmeter Skin"
-    description: "A cyberpunk-inspired Rainmeter skin inspired by ULTRAKILL"
-    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/files/ULTRAKILL.rmskin
+    description: "A Rainmeter skin inspired by ULTRAKILL"
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/ULTRAKILL.rmskin
+  
+  - name: "YASB Config"
+    description: "My YASB config file"
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/yasb/config.yaml
+  
+  - name: "YASB CSS"
+    description: "My YASB styles file"
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/yasb/styles.css

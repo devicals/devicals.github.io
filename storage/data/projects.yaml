@@ -18,22 +18,6 @@ projects:
         - name: "Drive File Direct Download URL Generator"
           link: https://error-dev.neocities.org/download-gen
           description: "A tool to help you create file download links for your drive files."
-        
-        - name: "Startpage"
-          link: https://github.com/devicals/cube-dimensions
-          description: "A custom startpage/new tab page. Forked from https://gitlab.com/fazzi/startpage."
-        
-        - name: "MBC Entries"
-          link: https://github.com/devicals/MBC-Entries
-          description: "A repository for my entries for Leon's Monthly Build Challenge."
-        
-        - name: "Dev's Web (Archived)"
-          link: https://github.com/devicals/profile
-          description: "A past version of the current website. Therefore archived."
-        
-        - name: "Cube Dimensions Website (Archived)"
-          link: https://github.com/devicals/cube-dimensions
-          description: "A website made for Cube Dimensions. Now archived as Cube Dimensions has ended."
 
     books:
       display: "Books"
@@ -92,3 +76,26 @@ projects:
         - name: "Spectral Orbital Lasers"
           link: https://modrinth.com/datapack/spectral-orbital-lasers
           description: "Turns spectral arrows into destructive lasers!"
+
+    archived:
+      display: "Archived"
+      projects:
+        - name: "Dev's Web (Archived)"
+          link: https://github.com/devicals/profile
+          description: "A past version of the current website. Therefore archived."
+
+        - name: "Cube Dimensions Website (Archived)"
+          link: https://github.com/devicals/cube-dimensions
+          description: "A website made for Cube Dimensions. Now archived as Cube Dimensions has ended."
+        
+        - name: "Infiniextras (Archived)"
+          link: https://modrinth.com/datapack/infiniextras
+          description: "Gain the ability to craft god items in Minecraft!"
+
+        - name: "Startpage (Archived)"
+          link: https://github.com/devicals/startpage
+          description: "A custom startpage/new tab page. Forked from https://gitlab.com/fazzi/startpage."
+        
+        - name: "MBC Entries (Archived)"
+          link: https://github.com/devicals/MBC-Entries
+          description: "A repository for my entries for Leon's Monthly Build Challenge."

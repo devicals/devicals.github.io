@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="storage/internal/embed-detect.js"></script>
     <style>
         .template-box {
             background: hsl(var(--card));
@@ -83,25 +84,36 @@ Feedback: &lt;Your Feedback&gt;</div>
         
         <div class="giscus-container">
             <h3>Comments</h3>
-            <script src="https://giscus.app/client.js"
-                data-repo="devicals/devicals.github.io"
-                data-repo-id="R_kgDOOHsfMg"
-                data-category="General"
-                data-category-id="DIC_kwDOOHsfMs4C0rjJ"
-                data-mapping="pathname"
-                data-strict="0"
-                data-reactions-enabled="0"
-                data-emit-metadata="0"
-                data-input-position="top"
-                data-theme="noborder_dark"
-                data-lang="en"
-                crossorigin="anonymous"
-                async>
-            </script>
+            <div id="giscus-slot"></div>
         </div>
     </div>
     
     <script>
+        function loadGiscus() {
+            const script = document.createElement('script');
+            script.src = "https://giscus.app/client.js";
+            script.setAttribute('data-repo', "devicals/devicals.github.io");
+            script.setAttribute('data-repo-id', "R_kgDOOHsfMg");
+            script.setAttribute('data-category', "General");
+            script.setAttribute('data-category-id', "DIC_kwDOOHsfMs4C0rjJ");
+            script.setAttribute('data-mapping', "pathname");
+            script.setAttribute('data-strict', "0");
+            script.setAttribute('data-reactions-enabled', "0");
+            script.setAttribute('data-emit-metadata', "0");
+            script.setAttribute('data-input-position', "top");
+            script.setAttribute('data-lang', "en");
+            script.setAttribute('crossorigin', "anonymous");
+            script.async = true;
+
+            script.setAttribute('data-theme', 'noborder_dark');
+
+            document.getElementById('giscus-slot').appendChild(script);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadGiscus, 100);
+        });
+
         function copyTemplate() {
             const template = `Rating: <Your Rating>/5 stars
 Feedback: <Your Feedback>`;

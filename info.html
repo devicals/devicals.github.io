@@ -8,11 +8,69 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="storage/internal/page-styles.css">
+    <script src="storage/internal/embed-detect.js"></script>
+    <style>
+        .visitor-card {
+            margin-bottom: 20px;
+            padding: 15px 30px !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: auto !important;
+        }
+
+        .visitor-card h2 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .visitor-info-group {
+            text-align: right;
+            display: flex;
+            align-items: baseline;
+            gap: 15px;
+        }
+
+        #visit-count {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .visitor-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            .visitor-info-group {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Repository Info</h1>
-        
+
+        <div class="stat-card visitor-card">
+            <h2>Unique Visitors</h2>
+            <div class="visitor-info-group">
+                <div class="size-value" id="visit-count">000000</div>
+                <div class="stat-label">Total Visits</div>
+            </div>
+        </div>
+
         <div class="info-grid">
             <div class="stat-card">
                 <h2>Repository Stats</h2>
@@ -48,79 +106,97 @@
     </div>
     
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
+        async function updateVisitorCount() {
+            const namespace = "devicals-github-io";
+            const key = "main-counter";
+            const display = document.getElementById('visit-count');
+            const hasVisited = localStorage.getItem('has_visited_before');
+            
+            const primaryUrl = `https://api.counterapi.dev/v1/${namespace}/${key}/`;
+            const backupUrl = `https://api.countapi.it/get/${namespace}/${key}/`;
+
             try {
-                // Fetch repo data from GitHub API
+                let response;
+                if (!hasVisited) {
+                    response = await fetch(`${primaryUrl}up`);
+                    localStorage.setItem('has_visited_before', 'true');
+                } else {
+                    response = await fetch(primaryUrl);
+                }
+                
+                const data = await response.json();
+                
+                if (data && data.status === 200) {
+                    display.textContent = data.count.toString().padStart(6, '0');
+                } else {
+                    throw new Error("Primary API returned non-200 status");
+                }
+
+            } catch (err) {
+                console.warn("Primary CounterAPI failed, trying backup...", err);
+                
+                try {
+                    const fallbackRes = await fetch(backupUrl);
+                    const fallbackData = await fallbackRes.json();
+                    
+                    if (fallbackData && fallbackData.value !== undefined) {
+                        display.textContent = fallbackData.value.toString().padStart(6, '0');
+                    } else {
+                        display.textContent = "OFFLINE";
+                    }
+                } catch (fallbackErr) {
+                    console.error("All counter APIs failed.");
+                    display.textContent = "OFFLINE";
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateVisitorCount();
+
+            try {
                 const repoResponse = await fetch('https://api.github.com/repos/devicals/devicals.github.io');
                 const repoData = await repoResponse.json();
                 
-                console.log('Repo data:', repoData);
-                
-                // Update stats
                 document.getElementById('stars').textContent = repoData.stargazers_count || 0;
                 document.getElementById('forks').textContent = repoData.forks_count || 0;
                 document.getElementById('watchers').textContent = repoData.subscribers_count || 0;
                 document.getElementById('size').textContent = (repoData.size || 0).toLocaleString();
                 
-                // Fetch languages
                 const langResponse = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
                 const langData = await langResponse.json();
                 
-                console.log('Languages:', langData);
-                
-                // Calculate total bytes
                 const totalBytes = Object.values(langData).reduce((sum, bytes) => sum + bytes, 0);
-                
-                // Render languages
                 const container = document.getElementById('languages-container');
                 
                 Object.entries(langData)
                     .sort((a, b) => b[1] - a[1])
                     .forEach(([lang, bytes]) => {
                         const percentage = ((bytes / totalBytes) * 100).toFixed(1);
-                        
                         const langItem = document.createElement('div');
                         langItem.className = 'language-item';
                         
-                        const header = document.createElement('div');
-                        header.className = 'language-header';
+                        langItem.innerHTML = `
+                            <div class="language-header">
+                                <span class="language-name">${lang}</span>
+                                <span class="language-percent">${percentage}%</span>
+                            </div>
+                            <div class="language-bar">
+                                <div class="language-fill" style="width: 0%"></div>
+                            </div>
+                        `;
                         
-                        const name = document.createElement('span');
-                        name.className = 'language-name';
-                        name.textContent = lang;
-                        
-                        const percent = document.createElement('span');
-                        percent.className = 'language-percent';
-                        percent.textContent = `${percentage}%`;
-                        
-                        header.appendChild(name);
-                        header.appendChild(percent);
-                        
-                        const bar = document.createElement('div');
-                        bar.className = 'language-bar';
-                        
-                        const fill = document.createElement('div');
-                        fill.className = 'language-fill';
-                        fill.style.width = '0%';
-                        
-                        bar.appendChild(fill);
-                        
-                        langItem.appendChild(header);
-                        langItem.appendChild(bar);
                         container.appendChild(langItem);
-                        
-                        // Animate the bar
                         setTimeout(() => {
-                            fill.style.width = `${percentage}%`;
+                            langItem.querySelector('.language-fill').style.width = `${percentage}%`;
                         }, 100);
                     });
                 
             } catch (error) {
                 console.error('Error fetching repository data:', error);
-                document.getElementById('stars').textContent = 'Error';
-                document.getElementById('forks').textContent = 'Error';
-                document.getElementById('watchers').textContent = 'Error';
-                document.getElementById('size').textContent = 'Error';
+                ['stars', 'forks', 'watchers', 'size'].forEach(id => {
+                    document.getElementById(id).textContent = 'Error';
+                });
             }
         });
     </script>

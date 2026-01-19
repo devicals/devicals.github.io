@@ -11,9 +11,11 @@ pages:
     path: chapter_2.md
     type:
       type: md
+      chapter: "Chapter #2"
 
   - id: 2
     name: "The Slaughtered Lamb"
     path: chapter_3.md
     type:
       type: md
+      chapter: "Chapter #3"
