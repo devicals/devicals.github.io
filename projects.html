@@ -82,18 +82,12 @@
             currentTab = tabKey;
             
             console.log('Switching to tab:', tabKey);
-            
-            // Update tab buttons
             document.querySelectorAll('.project-tab').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabKey);
             });
-            
-            // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.toggle('active', content.dataset.tab === tabKey);
             });
-            
-            // Update parent URL
             window.parent.location.hash = `page=projects&tab=${tabKey}`;
         }
 
@@ -109,16 +103,10 @@
                 }
                 
                 const tabs = data.projects.tabs;
-                
-                // Render tabs
                 renderTabs(tabs);
-                
-                // Load each tab's content
                 Object.keys(tabs).forEach(tabKey => {
                     renderTabContent(tabKey, tabs[tabKey]);
                 });
-                
-                // Handle hash navigation
                 const hash = window.location.hash.substring(1);
                 if (hash) {
                     const params = new URLSearchParams(hash);
@@ -127,11 +115,9 @@
                     if (tab && tabs[tab]) {
                         switchTab(tab);
                     } else {
-                        // Default to first tab
                         switchTab(Object.keys(tabs)[0]);
                     }
                 } else {
-                    // Default to first tab
                     switchTab(Object.keys(tabs)[0]);
                 }
             } catch (error) {

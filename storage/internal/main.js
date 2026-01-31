@@ -141,15 +141,11 @@ function handleHashNavigation() {
 
 async function loadPage(pageName, args = '') {
     console.log('Loading page:', pageName, 'with args:', args);
-    
     document.querySelectorAll('.sidebar-nav a').forEach(link => {
         link.classList.remove('active');
         const href = link.getAttribute('href');
-        if (href) {
-            const linkPage = href.replace('#page=', '');
-            if (linkPage === pageName) {
-                link.classList.add('active');
-            }
+        if (href && href.replace('#page=', '') === pageName) {
+            link.classList.add('active');
         }
     });
     
@@ -158,72 +154,35 @@ async function loadPage(pageName, args = '') {
         const customPage = customData.customPages.find(p => p.id === pageName);
         
         if (customPage) {
-            console.log('Loading custom page:', customPage);
-            
-            let pageType = customPage.type.type;
-            if (!pageType) {
-                if (customPage.path.endsWith('.yaml') || customPage.path.endsWith('.yml')) {
-                    pageType = 'section';
-                } else if (customPage.path.endsWith('.md') || customPage.path.endsWith('.wiki')) {
-                    pageType = 'md';
-                } else if (customPage.path.endsWith('.html')) {
-                    pageType = 'html';
-                }
-                else {
-                    pageType = 'raw';
-                }
-            }
+            const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
+            const pageType = typeInfo.type || 'raw';
             
             const iframe = document.getElementById('content-frame');
-            
+            const encodedPath = encodeURIComponent(customPage.path);
             if (pageType === 'section') {
-                const url = args ? `custom.html#${args}` : `custom.html`;
-                iframe.src = url;
-            } else if (pageType === 'md') {
-                iframe.src = `md-viewer.html?file=${encodeURIComponent(customPage.path)}`;
-            } else if (pageType === 'html') {
-                iframe.src = customPage.path;
-            }
+                iframe.src = `custom.html${args ? '#' + args : ''}`;
+            } 
             else if (pageType === 'raw') {
-                iframe.src = `raw.html?file=${encodeURIComponent(customPage.path)}`;
+                iframe.src = `raw.html?file=${encodedPath}`;
+            } 
+            else if (pageType.startsWith('gallery')) {
+                iframe.src = `gallery.html?file=${encodedPath}&type=${pageType}${args ? '&' + args : ''}`;
+            } 
+            else if (pageType === 'md') {
+                iframe.src = `md-viewer.html?file=${encodedPath}`;
+            } 
+            else if (pageType === 'html') {
+                iframe.src = customPage.path;
             }
             
             const newHash = args ? `page=${pageName}&${args}` : `page=${pageName}`;
             history.replaceState(null, null, `#${newHash}`);
-
-            iframe.onload = () => {
-                const savedTheme = localStorage.getItem('selected-theme') || 'default';
-                if (savedTheme === 'custom') {
-                    const savedCustom = localStorage.getItem('custom-theme-data');
-                    if (savedCustom) {
-                        applyTheme('custom', JSON.parse(savedCustom));
-                    }
-                } else {
-                    applyTheme(savedTheme);
-                }
-            };
             return;
         }
     }
-    
     const iframe = document.getElementById('content-frame');
-    const url = args ? `${pageName}.html#${args}` : `${pageName}.html`;
-    iframe.src = url;
-    
-    const newHash = args ? `page=${pageName}&${args}` : `page=${pageName}`;
-    history.replaceState(null, null, `#${newHash}`);
-    
-    iframe.onload = () => {
-        const savedTheme = localStorage.getItem('selected-theme') || 'default';
-        if (savedTheme === 'custom') {
-            const savedCustom = localStorage.getItem('custom-theme-data');
-            if (savedCustom) {
-                applyTheme('custom', JSON.parse(savedCustom));
-            }
-        } else {
-            applyTheme(savedTheme);
-        }
-    };
+    iframe.src = args ? `${pageName}.html#${args}` : `${pageName}.html`;
+    history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
 }
 
 function toggleSidebar() {
@@ -263,7 +222,7 @@ document.addEventListener('click', (e) => {
 async function updateVisitorCount() {
     const namespace = "devicals-github-io";
     const key = "main-counter";
-    const display = document.getElementById('visit-count'); // Might be null
+    const display = document.getElementById('visit-count');
     const hasVisited = localStorage.getItem('has_visited_before');
     
     const primaryUrl = `https://api.counterapi.dev/v1/${namespace}/${key}`;
@@ -271,12 +230,12 @@ async function updateVisitorCount() {
     try {
         let response;
         if (!hasVisited) {
-            // This increments the count
+
             response = await fetch(`${primaryUrl}/up`);
             localStorage.setItem('has_visited_before', 'true');
         } else {
-            // This only gets the count if we are on the info page
-            // Logic: only fetch the "get" API if the counter display actually exists on this page
+
+
             if (!display) return; 
             response = await fetch(`${primaryUrl}/`);
         }
@@ -284,7 +243,7 @@ async function updateVisitorCount() {
         const data = await response.json();
         const count = data.count || data.value;
 
-        // Only try to update the text if the ID "visit-count" exists on the current page
+
         if (display && count !== undefined) {
             display.textContent = count.toString().padStart(6, '0');
         }

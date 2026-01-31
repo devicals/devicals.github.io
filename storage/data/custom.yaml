@@ -13,9 +13,16 @@ customPages:
       type: html
     locked: true
   
-  - id: test
-    name: null
-    path: testing.md
+  - id: test_gallery
+    name: "Fallery"
+    path: testing.yaml
+    type:
+      type: gallery
+    locked: true
+  
+  - id: test_raw
+    name: "Raw"
+    path: testing.yaml
     type:
       type: raw
     locked: true
