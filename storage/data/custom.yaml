@@ -14,8 +14,15 @@ customPages:
     locked: true
   
   - id: test
-    name: null
-    path: testing.md
+    name: "ax"
+    path: testing.yaml
+    type:
+      type: gallery
+    locked: false
+  
+  - id: teswt
+    name: "axx"
+    path: testing.yaml
     type:
       type: raw
-    locked: true
+    locked: false

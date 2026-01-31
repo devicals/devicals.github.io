@@ -170,6 +170,196 @@
         .hide-scrollbar::-webkit-scrollbar {
             display: none;
         }
+        
+        .gallery-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+            padding-bottom: 100px;
+        }
+
+        .gallery-card {
+            background: #181818 !important;
+            border: 1px solid #2d2e2e !important;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .gallery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: #181818 !important;
+            border-bottom: 1px solid #2d2e2e !important;
+        }
+
+        .gallery-type-label {
+            color: #7e7e7e !important;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .gallery-card .gallery-button {
+            display: inline-block !important;
+            text-decoration: none !important;
+            background: #181818 !important;
+            border: 1px solid #2d2e2e !important;
+            color: #7e7e7e !important;
+            padding: 6px 14px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .gallery-card .gallery-button:hover {
+            background: #1b1e1d !important;
+            border-color: #dbd7ca !important;
+            color: #dbd7ca !important;
+        }
+
+        .gallery-media-container {
+            padding: 0;
+            background: #181818 !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+
+        .gallery-media-container img, 
+        .gallery-media-container video {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .gallery-info {
+            padding: 16px;
+            border-top: 1px solid #2d2e2e !important;
+        }
+
+        .gallery-item-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: hsl(var(--accent));
+            margin-bottom: 4px;
+        }
+
+        .gallery-item-desc {
+            font-size: 13px;
+            color: hsl(var(--foreground));
+            opacity: 0.8;
+        }
+
+        .audio-ui {
+            width: 100%;
+            background: #121212;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .audio-controls-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .audio-btn {
+            background: #181818;
+            border: 1px solid #2d2e2e;
+            color: #7e7e7e;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            min-width: 80px;
+        }
+
+        .audio-btn:hover {
+            border-color: #dbd7ca;
+            color: #dbd7ca;
+            background: #1b1e1d;
+        }
+
+        .audio-progress {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            background: #2d2e2e;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .audio-progress::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #dbd7ca;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .audio-progress::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: #dbd7ca;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        .audio-time-display {
+            color: #7e7e7e;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-box {
+            background: #181818;
+            border: 1px solid #2d2e2e;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .filter-label {
+            color: #7e7e7e;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .filter-box label {
+            color: #dbd7ca;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .filter-box input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: #dbd7ca;
+        }
     </style>
 </head>
 <body>
@@ -195,7 +385,6 @@
         let customPageData = null;
         let rootPageId = null;
         
-        // Configure marked to render single line breaks
         marked.setOptions({
             breaks: true,
             gfm: true
@@ -294,8 +483,6 @@
             
             const lastSlash = currentItem.path.lastIndexOf('/');
             const basePath = lastSlash !== -1 ? currentItem.path.substring(0, lastSlash + 1) : '';
-            
-            // Previous button
             prevBtn.disabled = currentIndex <= 0;
             prevBtn.onclick = currentIndex > 0 ? () => {
                 const prevPage = pagesData[currentIndex - 1];
@@ -309,8 +496,6 @@
                 }];
                 navigateTo(newPath);
             } : null;
-            
-            // Next button
             nextBtn.disabled = currentIndex >= pagesData.length - 1;
             nextBtn.onclick = currentIndex < pagesData.length - 1 ? () => {
                 const nextPage = pagesData[currentIndex + 1];
@@ -327,37 +512,57 @@
         }
         
         async function navigateTo(path) {
-            console.log('Navigating to:', path);
             currentPath = path;
             updateBreadcrumb();
             updateURL();
             
             if (path.length === 0) {
-                // Show root sections
-                if (customPageData && customPageData.path) {
-                    await renderSections(customPageData.path);
-                }
+                if (customPageData && customPageData.path) await renderSections(customPageData.path);
             } else {
-                // Navigate to the specified path
                 const lastItem = path[path.length - 1];
-                
-                console.log('Last item type:', lastItem.type, 'Path:', lastItem.path);
-                
                 if (lastItem.type === 'section') {
-                    // Load the section's YAML file
                     await renderSections(lastItem.path);
                 } else if (lastItem.type === 'md') {
                     await renderMarkdown(lastItem.path);
                 } else if (lastItem.type === 'html') {
                     renderHTML(lastItem.path);
+                } else if (lastItem.type === 'raw') {
+                    await renderRaw(lastItem.path);
+                } else if (lastItem.type.startsWith('gallery')) {
+                    await renderGallery(lastItem.path, lastItem.type);
                 }
             }
         }
-        
+
+        async function renderRaw(path) {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading">Loading Raw File...</div>';
+            try {
+                const response = await fetch('storage/data/' + path);
+                const text = await response.text();
+                content.innerHTML = `
+                    <style>
+                        .raw-container { 
+                            background: #181818; 
+                            border: 1px solid #2d2e2e; 
+                            padding: 20px; 
+                            font-family: 'JetBrains Mono', monospace; 
+                            color: #7e7e7e;
+                            white-space: pre-wrap;
+                            font-size: 13px;
+                        }
+                    </style>
+                    <div class="raw-container">${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+                `;
+            } catch (e) {
+                content.innerHTML = '<div class="error">Failed to load raw file.</div>';
+            }
+            updateBreadcrumbButtons();
+        }
+
         async function renderSections(yamlPath) {
             console.log('Rendering sections from:', yamlPath);
             
-            // Calculate base path - the directory containing the YAML file
             const lastSlash = yamlPath.lastIndexOf('/');
             const basePath = lastSlash !== -1 ? yamlPath.substring(0, lastSlash + 1) : '';
             
@@ -386,8 +591,6 @@
                 card.href = '#';
                 card.onclick = async (e) => {
                     e.preventDefault();
-                    
-                    // The page.path is relative to the current YAML's directory
                     const fullPath = basePath + page.path;
                     const typeData = normalizeType(page.type || detectType(page.path));
                     
@@ -447,7 +650,8 @@
             updateBreadcrumbButtons();
         }
         
-        function detectType(path) {
+        function detectType(path, typeObj) {
+            if (typeObj && typeObj.type) return typeObj.type;
             if (path.endsWith('.yaml') || path.endsWith('.yml')) return 'section';
             if (path.endsWith('.md')) return 'md';
             if (path.endsWith('.html')) return 'html';
@@ -467,15 +671,9 @@
             if (!nav) return [];
             
             console.log('Parsing nav:', nav);
-            
-            // Parse the navigation path
             const navIds = nav.split('&');
             const path = [];
-            
-            // Start from root custom page
             let currentYamlPath = customPageData.path;
-            
-            // Traverse the path
             for (let i = 0; i < navIds.length; i++) {
                 const navId = navIds[i];
                 console.log(`Looking for navId "${navId}" in ${currentYamlPath}`);
@@ -493,8 +691,6 @@
                 }
                 
                 console.log('Found page:', page);
-                
-                // Calculate base path and full path
                 const lastSlash = currentYamlPath.lastIndexOf('/');
                 const basePath = lastSlash !== -1 ? currentYamlPath.substring(0, lastSlash + 1) : '';
                 const fullPath = basePath + page.path;
@@ -510,8 +706,6 @@
                     type: typeData.type,
                     typeDisplay: typeData.display
                 });
-                
-                // If this is a section and not the last item, update currentYamlPath for next iteration
                 if (typeData.type === 'section' && i < navIds.length - 1) {
                     currentYamlPath = fullPath;
                 }
@@ -520,8 +714,6 @@
             console.log('Parsed path:', path);
             return path;
         }
-        
-        // Scroll to top functionality
         const scrollToTopBtn = document.getElementById('scroll-to-top');
         
         window.addEventListener('scroll', () => {
@@ -539,12 +731,194 @@
             });
         });
         
+        async function renderGallery(yamlPath, galleryType) {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading">Loading Gallery...</div>';
+
+            const parseExt = async (p) => {
+                try {
+                    const r = await fetch(p);
+                    if (!r.ok) {
+                        console.error('Failed to fetch extension list:', p);
+                        return [];
+                    }
+                    const t = await r.text();
+                    console.log('Extension list content:', p, t.substring(0, 200));
+                    
+                    const match = t.match(/\(([\s\S]*?)\)/);
+                    if (!match) {
+                        console.error('No match found in extension list:', p);
+                        return [];
+                    }
+                    
+                    const extensions = match[1]
+                        .split(/[,\n]/)
+                        .map(s => s.trim().replace(/["']/g, ''))
+                        .filter(s => s.length > 0);
+                    
+                    console.log('Parsed extensions from', p, ':', extensions.length, 'extensions');
+                    return extensions;
+                } catch (e) { 
+                    console.error('Failed to parse extension list:', p, e);
+                    return []; 
+                }
+            };
+
+            const [imgExts, vidExts, musExts] = await Promise.all([
+                parseExt('storage/internal/ext/image.list'),
+                parseExt('storage/internal/ext/video.list'),
+                parseExt('storage/internal/ext/music.list')
+            ]);
+
+            console.log('=== EXTENSION LOADING ===');
+            console.log('Image extensions:', imgExts.length, imgExts.slice(0, 10));
+            console.log('Video extensions:', vidExts.length, vidExts.slice(0, 10));
+            console.log('Audio extensions:', musExts.length, musExts.slice(0, 10));
+            console.log('========================');
+
+            const data = await loadYAML('storage/data/' + yamlPath);
+            if (!data || !data.items) {
+                console.error('No items in gallery data');
+                return;
+            }
+
+            console.log('Gallery items:', data.items.length);
+
+            const renderItems = () => {
+                const showImg = document.getElementById('f-img')?.checked ?? true;
+                const showVid = document.getElementById('f-vid')?.checked ?? true;
+                const showAud = document.getElementById('f-aud')?.checked ?? true;
+                
+                console.log('Filter states - Images:', showImg, 'Videos:', showVid, 'Audio:', showAud);
+                
+                content.innerHTML = `
+                    <div class="filter-box">
+                        <span class="filter-label">GALLERY FILTER</span>
+                        <label><input type="checkbox" id="f-img" ${showImg ? 'checked' : ''}> IMAGES</label>
+                        <label><input type="checkbox" id="f-vid" ${showVid ? 'checked' : ''}> VIDEOS</label>
+                        <label><input type="checkbox" id="f-aud" ${showAud ? 'checked' : ''}> AUDIO</label>
+                    </div>
+                    <div class="gallery-grid"></div>
+                `;
+                
+                content.querySelectorAll('.filter-box input').forEach(i => {
+                    i.addEventListener('change', renderItems);
+                });
+                
+                const grid = content.querySelector('.gallery-grid');
+
+                let renderedCount = 0;
+                let imgCount = 0, vidCount = 0, audCount = 0;
+                
+                data.items.forEach((item, index) => {
+                    const ext = item.path.split('.').pop().toLowerCase();
+                    const isImg = imgExts.includes(ext);
+                    const isVid = vidExts.includes(ext);
+                    const isAud = musExts.includes(ext);
+
+                    if (isImg) imgCount++;
+                    if (isVid) vidCount++;
+                    if (isAud) audCount++;
+
+                    if (index < 3) {
+                        console.log(`Item ${index}:`, item.path, '| Ext:', ext, '| Img:', isImg, 'Vid:', isVid, 'Aud:', isAud);
+                    }
+
+                    if (isImg && !showImg) return;
+                    if (isVid && !showVid) return;
+                    if (isAud && !showAud) return;
+
+                    renderedCount++;
+                    const typeLabel = isImg ? 'IMAGE' : (isVid ? 'VIDEO' : (isAud ? 'AUDIO' : 'FILE'));
+                    const card = document.createElement('div');
+                    card.className = 'gallery-card';
+                    
+                    let mediaSection = '';
+                    if (isImg) {
+                        mediaSection = `<img src="storage/data/${item.path}" loading="lazy" alt="${item.title || 'Image'}">`;
+                    } else if (isVid) {
+                        mediaSection = `<video src="storage/data/${item.path}" controls></video>`;
+                    } else if (isAud) {
+                        mediaSection = `
+                            <div class="audio-ui">
+                                <audio id="aud-${index}" src="storage/data/${item.path}" preload="metadata"></audio>
+                                <div class="audio-controls-row">
+                                    <button class="audio-btn" id="play-btn-${index}">Play</button>
+                                    <input type="range" id="seek-${index}" class="audio-progress" value="0" step="0.1" max="100">
+                                </div>
+                                <div class="audio-time-display" id="time-${index}">00:00 / 00:00</div>
+                            </div>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="gallery-header">
+                            <span class="gallery-type-label">${typeLabel}</span>
+                        </div>
+                        <div class="gallery-media-container">${mediaSection}</div>
+                        <div class="gallery-info">
+                            <div class="gallery-item-title">${item.title || 'Untitled'}</div>
+                            <div class="gallery-item-desc">${item.description || ''}</div>
+                        </div>`;
+                    
+                    grid.appendChild(card);
+
+                    if (isAud) {
+                        setTimeout(() => {
+                            const aud = document.getElementById(`aud-${index}`);
+                            const playBtn = document.getElementById(`play-btn-${index}`);
+                            const seek = document.getElementById(`seek-${index}`);
+                            const timeDisplay = document.getElementById(`time-${index}`);
+                            
+                            const formatTime = (seconds) => {
+                                if (isNaN(seconds)) return '00:00';
+                                const mins = Math.floor(seconds / 60);
+                                const secs = Math.floor(seconds % 60);
+                                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                            };
+                            
+                            if (aud && playBtn && seek && timeDisplay) {
+                                aud.addEventListener('loadedmetadata', () => {
+                                    seek.max = aud.duration;
+                                    timeDisplay.textContent = `00:00 / ${formatTime(aud.duration)}`;
+                                });
+                                playBtn.addEventListener('click', () => {
+                                    if (aud.paused) {
+                                        aud.play();
+                                        playBtn.textContent = 'Pause';
+                                    } else {
+                                        aud.pause();
+                                        playBtn.textContent = 'Play';
+                                    }
+                                });
+                                aud.addEventListener('timeupdate', () => {
+                                    seek.value = aud.currentTime;
+                                    timeDisplay.textContent = `${formatTime(aud.currentTime)} / ${formatTime(aud.duration)}`;
+                                });
+                                seek.addEventListener('input', () => {
+                                    aud.currentTime = parseFloat(seek.value);
+                                });
+                                aud.addEventListener('ended', () => {
+                                    playBtn.textContent = 'Play';
+                                });
+                            }
+                        }, 0);
+                    }
+                });
+
+                console.log('=== RENDER SUMMARY ===');
+                console.log('Total items:', data.items.length);
+                console.log('Image items:', imgCount, '| Video items:', vidCount, '| Audio items:', audCount);
+                console.log('Rendered:', renderedCount, 'items');
+                console.log('=====================');
+            };
+
+            renderItems();
+            updateBreadcrumbButtons();
+        }
+
         async function initialize() {
-            // Get the page ID from parent URL
             rootPageId = getPageIdFromParentURL();
             console.log('Root page ID:', rootPageId);
-            
-            // Load custom page data
             const customData = await loadYAML('storage/data/custom.yaml');
             customPageData = customData.customPages.find(p => p.id === rootPageId);
             
@@ -555,18 +929,12 @@
             }
             
             console.log('Custom page data:', customPageData);
-            
-            // Set page title
             document.getElementById('page-title').textContent = customPageData.name || 'Custom Page';
-            
-            // Parse URL navigation
             const urlPath = await parseURLNav();
             await navigateTo(urlPath);
         }
         
         document.addEventListener('DOMContentLoaded', initialize);
-        
-        // Listen for hash changes from parent
         window.addEventListener('hashchange', async () => {
             const urlPath = await parseURLNav();
             await navigateTo(urlPath);

@@ -90,28 +90,21 @@
             border-color: var(--accent);
             color: var(--accent);
         }
-
-        /* --- WORD WRAP LOGIC --- */
-        #code-content pre.shiki {
+#code-content pre.shiki {
             margin: 0;
             padding: 1.5rem;
             font-size: 14px;
             line-height: 1.7;
             background-color: transparent !important;
-            /* Default: No Wrap */
-            white-space: pre; 
+white-space: pre; 
             overflow-x: auto;
         }
-
-        /* When wrap class is active on the container */
-        .wrap-enabled #code-content pre.shiki {
+.wrap-enabled #code-content pre.shiki {
             white-space: pre-wrap !important;
             word-break: break-all;
             overflow-wrap: anywhere;
         }
-
-        /* Floating Back to Top */
-        #back-to-top {
+#back-to-top {
             position: fixed;
             bottom: 30px;
             right: 30px;
@@ -161,7 +154,7 @@
     
     <script type="module">
         import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
-        import jsyaml from 'https://esm.sh/js-yaml'; // Added YAML parser
+        import jsyaml from 'https://esm.sh/js-yaml';
 
         const card = document.getElementById('main-card');
         const wrapBtn = document.getElementById('wrap-toggle');
@@ -169,7 +162,7 @@
         const langLabel = document.getElementById('lang-label');
 
         let isWrapped = localStorage.getItem('wordWrap') !== 'false';
-        let config = { fileMappings: {}, mapDisplays: {} }; // Global config storage
+        let config = { fileMappings: {}, mapDisplays: {} };
 
         function updateWrapUI() {
             if (isWrapped) {
@@ -188,18 +181,12 @@
             localStorage.setItem('wordWrap', isWrapped);
             updateWrapUI();
         };
-
-        // Updated to use the YAML config
         function getLangFromFilename(filename) {
             const ext = filename.split('.').pop().toLowerCase();
             return config.fileMappings[ext] || 'text';
         }
-
-        // Updated to determine the display text
         function getDisplayText(filename, detectedLang) {
             const ext = filename.split('.').pop().toLowerCase();
-            // 1. Check if extension has a custom display name in YAML
-            // 2. Fallback to the detected language name
             const displayName = config.mapDisplays[ext] || detectedLang;
             return displayName.toUpperCase();
         }
@@ -212,20 +199,23 @@
             if (!filePath) return;
 
             try {
-                // 1. Fetch and parse the YAML config first
-                const yamlResp = await fetch('storage/data/raw.yaml');
-                const yamlText = await yamlResp.text();
-                config = jsyaml.load(yamlText);
+                try {
+                    const yamlResp = await fetch('storage/data/raw.yaml');
+                    if (yamlResp.ok) {
+                        const yamlText = await yamlResp.text();
+                        config = jsyaml.load(yamlText) || config;
+                    }
+                } catch (e) {
+                    console.warn("raw.yaml not found, using default mappings");
+                }
 
-                // 2. Fetch the actual code file
                 const response = await fetch('storage/data/' + filePath);
-                const rawCode = await response.text();
+                if (!response.ok) throw new Error(`File not found: ${filePath}`);
                 
-                // 3. Determine language and display text
+                const rawCode = await response.text();
                 const lang = getLangFromFilename(filePath);
                 langLabel.textContent = getDisplayText(filePath, lang);
-
-                // 4. Highlight code
+                
                 const html = await codeToHtml(rawCode, {
                     lang: lang,
                     theme: 'vitesse-dark'
@@ -242,7 +232,7 @@
 
             } catch (err) {
                 console.error(err);
-                document.getElementById('code-content').innerHTML = `<p style="padding:2rem; color:#f87171;">Error loading config or file: ${err.message}</p>`;
+                document.getElementById('code-content').innerHTML = `<p style="padding:2rem; color:#f87171;">Error: ${err.message}</p>`;
             }
         }
 
