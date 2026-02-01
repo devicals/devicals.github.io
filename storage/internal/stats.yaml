@@ -1,11 +1,11 @@
 forks: 0
 languages:
 - name: HTML
-  percent: 57.8
+  percent: 65.0
 - name: CSS
-  percent: 26.1
+  percent: 22.6
 - name: JavaScript
-  percent: 16.1
-size: 13484
+  percent: 12.4
+size: 13493
 stars: 1
 watchers: 1
