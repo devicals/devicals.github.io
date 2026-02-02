@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Dev's Coffin</title>
-    <link rel="stylesheet" href="storage/internal/styles.css">
+    <title>Devicals' Coffin</title>
+    <link rel="icon" type="image/x-icon" href="/storage/assets/favicon.ico">
+    <link rel="stylesheet" href="/storage/internal/styles/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,11 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 </head>
 <body>
-<div id="announcement-banner" class="announcement-banner">
-        <div class="announcement-content"></div>
-        <button class="announcement-close" onclick="closeAnnouncement()">×</button>
-    </div>
-<div id="sidebar" class="sidebar">
+    <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <h2 id="sidebar-title">Dev's Coffin</h2>
             <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -29,15 +26,12 @@
                 <h3>MAIN</h3>
                 <a href="#page=home" onclick="loadPage('home'); return false;">Home</a>
                 <a href="#page=blogs" onclick="loadPage('blogs'); return false;">Blogs</a>
+                <br><h3>CONTENT</h3>
                 <a href="#page=projects" onclick="loadPage('projects'); return false;">Projects</a>
                 <a href="#page=downloads" onclick="loadPage('downloads'); return false;">Downloads</a>
-                <a href="#page=feedback" onclick="loadPage('feedback'); return false;">Feedback</a>
-                <a href="#page=guestbook" onclick="loadPage('guestbook'); return false;">Guestbook</a>
             </div>
 
-            <div class="nav-section" id="custom-pages">
-                <h3>CUSTOM</h3>
-            </div>
+            <div id="custom-pages-container"></div>
 
             <div class="nav-section nav-bottom">
                 <a class="preferences-btn" href="#page=info" onclick="loadPage('info'); return false;">ⓘ Info</a>
@@ -45,22 +39,29 @@
             </div>
         </nav>
     </div>
-<div id="main-content" class="main-content">
+    
+    <div id="announcement-banner" class="announcement-banner">
+        <div class="announcement-content"></div>
+        <button class="announcement-close" onclick="closeAnnouncement()">×</button>
+    </div>
+    
+    <div id="main-content" class="main-content">
         <div class="page-background"></div>
         <iframe id="content-frame" src=""></iframe>
     </div>
-<div id="preferences-modal" class="modal">
+
+    <div id="preferences-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Preferences</h2>
                 <button class="modal-close" onclick="closePreferences()">×</button>
             </div>
-            
             <div class="modal-body">
                 <div class="preference-section">
                     <label for="theme-select">Theme</label>
                     <select id="theme-select" onchange="changeTheme(this.value)">
-                        <option value="default">Default</option>
+                        <option value="vitesse-dark">Vitesse Dark (Default)</option>
+                        <option value="original">Original</option>
                         <option value="evergreens">Evergreens</option>
                         <option value="gruvbox">Gruvbox</option>
                         <option value="ice-world">Ice World</option>
@@ -72,9 +73,14 @@
                         <option value="custom">Custom</option>
                     </select>
                 </div>
-
                 <button class="customize-btn" onclick="toggleCustomEditor()">Customize Theme</button>
-
+                <div class="preference-section">
+                    <label>Developer Options</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button id="show-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestReveal()">Show Hidden</button>
+                        <button id="hide-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestHide()">Hide Hidden</button>
+                    </div>
+                </div>
                 <div id="custom-theme-editor" style="display: none;">
                     <h3>Custom Theme Editor</h3>
                     <div class="color-mode-toggle">
@@ -87,7 +93,23 @@
         </div>
     </div>
 
-    <script src="storage/internal/theme-manager.js"></script>
-    <script src="storage/internal/main.js"></script>
+    <div id="lock-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Locked Page</h2>
+                <button class="modal-close" onclick="closeLockModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="preference-section">
+                    <label>Can Pineapple</label>
+                    <input type="text" id="lock-input" style="width: 100%; padding: 10px; background: hsl(var(--input)); border: 2px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit;">
+                </div>
+                <button class="customize-btn" onclick="checkLock()">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="/storage/internal/scripts/main.js"></script>
 </body>
 </html>

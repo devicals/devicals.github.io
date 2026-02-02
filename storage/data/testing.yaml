@@ -1,9 +1,0 @@
-items:
-  - id: 1
-    title: "test1"
-    path: "../assets/background.png"
-    description: "eawes"
-  - id: 2
-    title: "test2"
-    path: "../assets/Rubedo.mp3"
-    description: "nice"

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Page - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <style>
+        .breadcrumb { margin-bottom: 20px; padding: 12px 16px; background: hsl(var(--card)); border: 2px solid hsl(var(--border)); font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+        .breadcrumb-path { flex: 1; }
+        .breadcrumb-nav { display: flex; gap: 8px; }
+        .breadcrumb a { color: hsl(var(--accent)); text-decoration: none; }
+        .breadcrumb a:hover { text-decoration: underline; }
+        .breadcrumb span { color: hsl(var(--muted-foreground)); margin: 0 8px; }
+        .breadcrumb-btn { padding: 6px 12px; background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: 'JetBrains Mono', monospace; transition: opacity 0.2s; }
+        .breadcrumb-btn:hover:not(:disabled) { opacity: 0.9; }
+        .breadcrumb-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .scroll-to-top { position: fixed; bottom: 24px; right: 24px; padding: 12px 16px; background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); border: none; cursor: pointer; font-size: 16px; font-weight: 600; font-family: 'JetBrains Mono', monospace; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 1000; }
+        .scroll-to-top.visible { opacity: 1; pointer-events: auto; }
+        .section-grid { display: grid; gap: 16px; margin-bottom: 24px; }
+        .section-card { background: hsl(var(--card)); border: 2px solid hsl(var(--border)); padding: 24px; cursor: pointer; transition: all 0.2s; text-decoration: none; color: hsl(var(--foreground)); display: block; }
+        .section-card:hover { border-color: hsl(var(--accent)); transform: translateY(-2px); }
+        .section-card-title { font-size: 18px; font-weight: 700; color: hsl(var(--accent)); margin-bottom: 8px; }
+        .section-card-type { font-size: 12px; color: hsl(var(--muted-foreground)); text-transform: uppercase; }
+        .md-content { background: hsl(var(--card)); border: 2px solid hsl(var(--border)); padding: 24px; line-height: 1.8; overflow-x: hidden; }
+        .md-content p { white-space: pre-wrap; margin-bottom: 1rem; }
+        .md-content p:last-child { margin-bottom: 0; }
+        
+        .shiki-container { background: #121212; border: 1px solid #2d2e2e; margin: 1.5rem 0; overflow: hidden; }
+        .shiki-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; background: #181818; border-bottom: 1px solid #2d2e2e; }
+        .shiki-lang { color: #7e7e7e; font-size: 0.8rem; text-transform: uppercase; font-weight: 600; }
+        .shiki-actions { display: flex; gap: 8px; }
+        .shiki-btn { background: transparent; border: 1px solid #2d2e2e; color: #7e7e7e; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        .shiki-btn:hover { border-color: #dbd7ca; color: #dbd7ca; }
+        .shiki-btn.active { border-color: #4d937b; color: #4d937b; }
+        .shiki-container pre.shiki { margin: 0 !important; border: none !important; padding: 1rem !important; background-color: transparent !important; white-space: pre; overflow-x: auto; }
+        .shiki-container.wrap-enabled pre.shiki { white-space: pre-wrap; word-break: break-all; }
+        code.shiki-inline { background: #121212 !important; padding: 3px 6px !important; border: 1px solid #2d2e2e !important; font-family: 'JetBrains Mono', monospace !important; display: inline-block; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title" id="page-title">Loading...</h1>
+        <div id="breadcrumb" class="breadcrumb">
+            <div class="breadcrumb-path" id="breadcrumb-path"></div>
+            <div class="breadcrumb-nav">
+                <button class="breadcrumb-btn" id="prev-btn" disabled>← Prev</button>
+                <button class="breadcrumb-btn" id="next-btn" disabled>Next →</button>
+            </div>
+        </div>
+        <div id="content"></div>
+        <button class="scroll-to-top" id="scroll-to-top">↑ Top</button>
+    </div>
+
+    <script type="module">
+        import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
+
+        let currentPath = [];
+        let pagesData = [];
+        let customPageData = null;
+        let rootPageId = null;
+        let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
+
+        marked.use({
+            breaks: true, gfm: true, async: true,
+            async walkTokens(token) {
+                if (token.type === 'code') {
+                    const shikiHtml = await codeToHtml(token.text, { lang: token.lang || 'text', theme: 'vitesse-dark' });
+                    const header = `<div class="shiki-header"><span class="shiki-lang">${token.lang || 'text'}</span><div class="shiki-actions"><button class="shiki-btn wrap-btn">Wrap</button><button class="shiki-btn copy-btn">Copy</button></div></div>`;
+                    token.type = 'html';
+                    token.text = `<div class="shiki-container">${header}${shikiHtml}</div>`;
+                } else if (token.type === 'codespan') {
+                    const raw = await codeToHtml(token.text, { lang: 'text', theme: 'vitesse-dark' });
+                    const inline = raw.replace(/<pre[^>]*>/, '').replace('</pre>', '').replace('<code', '<code class="shiki-inline"');
+                    token.type = 'html';
+                    token.text = inline;
+                }
+            }
+        });
+
+        async function loadYAML(path) {
+            try {
+                const resp = await fetch(path);
+                if (!resp.ok) return null;
+                const text = await resp.text();
+                return jsyaml.load(text);
+            } catch (e) { return null; }
+        }
+
+        function getParentParams() { return new URLSearchParams(window.parent.location.hash.substring(1)); }
+        function buildNavURL(path) {
+            if (path.length === 0) return `#page=${rootPageId}`;
+            return `#page=${rootPageId}&nav=${path.map(p => p.id).join('>')}`;
+        }
+
+        function updateBreadcrumb() {
+            const container = document.getElementById('breadcrumb-path');
+            if (!customPageData) return;
+            let html = `<a href="${buildNavURL([])}" onclick="window.navigateTo([]); return false;">${customPageData.name || 'Root'}</a>`;
+            currentPath.forEach((item, i) => {
+                const url = buildNavURL(currentPath.slice(0, i + 1));
+                html += `<span>/</span><a href="${url}" onclick='window.navigateTo(${JSON.stringify(currentPath.slice(0, i + 1))}); return false;'>${item.name}</a>`;
+            });
+            container.innerHTML = html;
+        }
+
+        window.navigateTo = async function(path) {
+            currentPath = path;
+            updateBreadcrumb();
+            window.parent.history.replaceState(null, null, buildNavURL(path));
+
+            let siblingYaml = customPageData.path;
+            if (path.length > 0) {
+                const lastItem = path[path.length - 1];
+                if (lastItem.type === 'section') siblingYaml = lastItem.path;
+                else if (path.length > 1) siblingYaml = path[path.length - 2].path;
+            }
+
+            const dirData = await loadYAML('/storage/data/' + siblingYaml);
+            pagesData = dirData ? dirData.pages : [];
+
+            const content = document.getElementById('content');
+            if (path.length === 0) {
+                await renderSections(customPageData.path);
+            } else {
+                const item = path[path.length - 1];
+                if (item.type === 'section') {
+                    await renderSections(item.path);
+                } else if (item.type === 'md') {
+                    const resp = await fetch('/storage/data/' + item.path);
+                    const md = await resp.text();
+                    content.innerHTML = `<div class="md-content">${await marked.parse(md)}</div>`;
+                    setupShikiInteractions();
+                } else if (item.type === 'raw') {
+                    const resp = await fetch('/storage/data/' + item.path);
+                    const raw = await resp.text();
+                    content.innerHTML = `<pre style="background:#121212;padding:20px;border:1px solid #2d2e2e;color:#dbd7ca;white-space:pre-wrap;">${raw.replace(/</g, "&lt;")}</pre>`;
+                }
+            }
+            updateNavButtons();
+        };
+
+        function updateNavButtons() {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            if (currentPath.length === 0 || !pagesData.length) { prevBtn.disabled = nextBtn.disabled = true; return; }
+            const item = currentPath[currentPath.length - 1];
+            const idx = pagesData.findIndex(p => String(p.id) === String(item.id));
+            if (idx === -1) { prevBtn.disabled = nextBtn.disabled = true; return; }
+            const basePath = item.path.substring(0, item.path.lastIndexOf('/') + 1);
+            const setBtn = (btn, targetIdx) => {
+                btn.disabled = targetIdx < 0 || targetIdx >= pagesData.length;
+                btn.onclick = btn.disabled ? null : () => {
+                    const p = pagesData[targetIdx];
+                    const type = (typeof p.type === 'object' ? p.type.type : p.type) || (p.path.endsWith('.yaml') ? 'section' : 'md');
+                    window.navigateTo([...currentPath.slice(0, -1), { id: String(p.id), name: p.name, path: basePath + p.path, type }]);
+                };
+            };
+            setBtn(prevBtn, idx - 1);
+            setBtn(nextBtn, idx + 1);
+        }
+
+        async function parseURLNav() {
+            const params = getParentParams();
+            let nav = params.get('nav') || "";
+            nav = decodeURIComponent(nav).replace(/,/g, '>');
+            if (!nav) return [];
+            const ids = nav.split('>').filter(x => x);
+            const path = [];
+            let curYaml = customPageData.path;
+            for (const id of ids) {
+                const data = await loadYAML('/storage/data/' + curYaml);
+                if (!data || !data.pages) break;
+                const p = data.pages.find(x => String(x.id) === id);
+                if (!p) break;
+                const base = curYaml.substring(0, curYaml.lastIndexOf('/') + 1);
+                const full = base + p.path;
+                const type = (typeof p.type === 'object' ? p.type.type : p.type) || (p.path.endsWith('.yaml') ? 'section' : 'md');
+                path.push({ id: String(p.id), name: p.name, path: full, type });
+                if (type === 'section') curYaml = full;
+            }
+            return path;
+        }
+
+        async function renderSections(yaml) {
+            const data = await loadYAML('/storage/data/' + yaml);
+            if (!data) return;
+            const base = yaml.substring(0, yaml.lastIndexOf('/') + 1);
+            const grid = document.createElement('div');
+            grid.className = 'section-grid';
+            data.pages.forEach(p => {
+                const card = document.createElement('a');
+                card.className = 'section-card';
+                card.onclick = (e) => {
+                    e.preventDefault();
+                    const type = (typeof p.type === 'object' ? p.type.type : p.type) || (p.path.endsWith('.yaml') ? 'section' : 'md');
+                    window.navigateTo([...currentPath, { id: String(p.id), name: p.name, path: base + p.path, type }]);
+                };
+                card.innerHTML = `<div class="section-card-title">${p.name}</div><div class="section-card-type">${(typeof p.type === 'object' ? p.type.type : (p.type || 'SECTION')).toUpperCase()}</div>`;
+                grid.appendChild(card);
+            });
+            document.getElementById('content').innerHTML = '';
+            document.getElementById('content').appendChild(grid);
+        }
+
+        function setupShikiInteractions() {
+            document.querySelectorAll('.shiki-container').forEach(container => {
+                const wrapBtn = container.querySelector('.wrap-btn');
+                if (isShikiWrapEnabled) {
+                    container.classList.add('wrap-enabled');
+                    if (wrapBtn) { wrapBtn.classList.add('active'); wrapBtn.textContent = 'Wrap: On'; }
+                } else {
+                    if (wrapBtn) wrapBtn.textContent = 'Wrap: Off';
+                }
+            });
+        }
+
+        async function init() {
+            rootPageId = getParentParams().get('page');
+            const custom = await loadYAML('/storage/data/custom.yaml');
+            if (!custom || !custom.customPages) return;
+            for (const key in custom.customPages) {
+                const category = custom.customPages[key];
+                if (category.sub && Array.isArray(category.sub)) {
+                    const found = category.sub.find(p => p.id === rootPageId);
+                    if (found) { customPageData = found; break; }
+                }
+            }
+            if (!customPageData) return;
+            document.getElementById('page-title').textContent = customPageData.name;
+            await window.navigateTo(await parseURLNav());
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.shiki-btn.copy-btn')) {
+                const container = e.target.closest('.shiki-container');
+                const codeBlock = container?.querySelector('pre.shiki code');
+                if (codeBlock) navigator.clipboard.writeText(codeBlock.innerText).then(() => { e.target.textContent = 'Copied!'; setTimeout(() => e.target.textContent = 'Copy', 2000); });
+            }
+            if (e.target.matches('.shiki-btn.wrap-btn')) {
+                isShikiWrapEnabled = !isShikiWrapEnabled;
+                localStorage.setItem('shikiWrapEnabled', isShikiWrapEnabled);
+                document.querySelectorAll('.shiki-container').forEach(container => {
+                    const wrapBtn = container.querySelector('.wrap-btn');
+                    container.classList.toggle('wrap-enabled', isShikiWrapEnabled);
+                    if (wrapBtn) { wrapBtn.classList.toggle('active', isShikiWrapEnabled); wrapBtn.textContent = isShikiWrapEnabled ? 'Wrap: On' : 'Wrap: Off'; }
+                });
+            }
+        });
+
+        window.addEventListener('scroll', () => document.getElementById('scroll-to-top').classList.toggle('visible', window.scrollY > 300));
+        document.getElementById('scroll-to-top').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.addEventListener('hashchange', async () => await window.navigateTo(await parseURLNav()));
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

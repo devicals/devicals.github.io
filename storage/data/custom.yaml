@@ -1,28 +1,88 @@
 customPages:
-  - id: books
-    name: "Books"
-    path: books/definition.yaml
-    type:
-      type: section
-    locked: false
+  extra:
+    display: "Extra Content"
+    sub:
+      - id: books
+        name: "Books"
+        path: books/definition.yaml
+        type:
+          type: section
+  
+  archive:
+    display: "Archives"
+    sub:
+      - id: oricade
+        name: "Oricade Songs"
+        path: oricade.yaml
+        type:
+          type: gallery
+  
+  tests:
+    display: "Testing"
+    sub:
+      - id: 1
+        name: "Test Gallery"
+        path: tests/gallery.yaml
+        type:
+          type: gallery
+        hidden: true
 
-  - id: funcgen
-    name: null
-    path: ../../function_generator.html
-    type:
-      type: html
-    locked: true
-  
-  - id: test_gallery
-    name: "Fallery"
-    path: testing.yaml
-    type:
-      type: gallery
-    locked: true
-  
-  - id: test_raw
-    name: "Raw"
-    path: testing.yaml
-    type:
-      type: raw
-    locked: true
+      - id: 2
+        name: "Test Raw"
+        path: tests/raw.md
+        type:
+          type: raw
+        hidden: true
+
+      - id: 3
+        name: "Test Markdown"
+        path: tests/raw.md
+        type:
+          type: md
+        hidden: true
+
+      - id: 4
+        name: "Test Locked Gallery"
+        path: tests/gallery.yaml
+        type:
+          type: gallery
+        locked: true
+
+      - id: 5
+        name: "Test Locked Raw"
+        path: tests/raw.md
+        type:
+          type: raw
+        locked: true
+
+      - id: 6
+        name: "Test Locked Markdown"
+        path: tests/raw.md
+        type:
+          type: md
+        locked: true
+
+  feedback:
+    display: "Feedback"
+    sub:
+      - id: feedback
+        name: "Feedback"
+        path: /storage/internal/pages/feedback.html
+        type:
+          type: html
+      
+      - id: guestbook
+        name: "Guestbook"
+        path: /storage/internal/pages/guestbook.html
+        type:
+          type: html
+
+  other:
+    display: "Other"
+    sub:
+      - id: funcgen
+        name: "Function Generator"
+        path: /storage/internal/pages/custom/function_generator.html
+        type:
+          type: html
+        hidden: true

@@ -1,4 +1,20 @@
 blogs:
+  - id: 23
+    date: 03/02/2026
+    title: "mid big update"
+    content: |-
+      just a new update. changelog can be found on github.
+      a few main details are theres a new theme (based on Vitesse Dark) and its the new default (cuz i like it)
+      added some more sidebar categories and stuff, new pages, you can show or hide hidden/locked pages (if you read the github changelog for the pass)
+      and just a few little bug fixes
+      also gave it a new icon too so yay
+
+      the main new page type is what i call a gallery and it can display/play images videos and audio, you can download em, and theres a filter. and like the blogs, theres id.
+
+      big bug that was fixed was the fact that in nested sections (like the books tab/page) it doesnt save your progress, the url would reset itself to the first layer.
+
+      alr bye!
+
   - id: 22
     date: 19/01/2026
     title: "Really Quick Update"
@@ -104,7 +120,7 @@ blogs:
 
       **Change #2:** Instead of the jump-to feature for the blog page, I added a table of contents at the very top of the blog page, so you can quickly jump to whichever blog post you want, in seconds. You may have also seen that I changed the layout a bit, with each post having buttons that let you go to the very top, the last post, or the next post.
 
-      **Change #3:** Branding. Now, the `DEV.()`` branding still exists, but the website has an additional branding, *"Wormhole of Error Dev"*. Also you may have noticed the color scheme changed. Now it's orange and purple.
+      **Change #3:** Branding. Now, the `DEV.()` branding still exists, but the website has an additional branding, *"Wormhole of Error Dev"*. Also you may have noticed the color scheme changed. Now it's orange and purple.
 
       -------
 

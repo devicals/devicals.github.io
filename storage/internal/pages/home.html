@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <style>
+        .blog-preview-card {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .blog-preview-card:hover {
+            transform: translateY(-2px);
+            border-color: hsl(var(--accent));
+        }
+        .preview-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: hsl(var(--accent));
+        }
+        .preview-date {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-bottom: 1rem;
+        }
+        .preview-excerpt {
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Welcome</h1>
+        
+        <div id="about-me" class="section">
+            <h2>About Me</h2>
+            <div class="card bio-card"></div>
+        </div>
+
+        <div id="latest-blog" class="section">
+            <h2>Latest Blog Post</h2>
+            <div id="blog-preview-container">
+            </div>
+        </div>
+        
+        <div id="skills" class="section">
+            <h2>Skills</h2>
+            <div class="skills-grid"></div>
+        </div>
+        
+        <div id="socials" class="section">
+            <h2>Socials</h2>
+            <div class="socials-grid"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function loadYAML(path) {
+            const response = await fetch(path);
+            const text = await response.text();
+            return jsyaml.load(text);
+        }
+
+        function parseDate(dateStr) {
+            const [day, month, year] = dateStr.split('/').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const data = await loadYAML('/storage/data/home.yaml');
+                const homeData = data.home;
+                
+                if (homeData.bio) {
+                    const bioCard = document.querySelector('.bio-card');
+                    bioCard.innerHTML = marked.parse(homeData.bio);
+                }
+                
+                if (homeData.skills) {
+                    const skillsGrid = document.querySelector('.skills-grid');
+                    homeData.skills.forEach(skillItem => {
+                        const skillText = typeof skillItem === 'string' ? skillItem : skillItem.skill;
+                        const skillLink = typeof skillItem === 'object' ? skillItem.link : null;
+                        
+                        if (skillLink) {
+                            const card = document.createElement('a');
+                            card.className = 'skill-card skill-card-link';
+                            card.href = skillLink;
+                            card.target = '_blank';
+                            card.rel = 'noopener noreferrer';
+                            card.textContent = skillText;
+                            skillsGrid.appendChild(card);
+                        } else {
+                            const card = document.createElement('div');
+                            card.className = 'skill-card';
+                            card.textContent = skillText;
+                            skillsGrid.appendChild(card);
+                        }
+                    });
+                }
+                
+                if (homeData.socials) {
+                    const socialsGrid = document.querySelector('.socials-grid');
+                    homeData.socials.forEach(social => {
+                        const card = document.createElement('a');
+                        card.className = 'social-card';
+                        card.href = social.link;
+                        card.target = '_blank';
+                        card.rel = 'noopener noreferrer';
+                        card.textContent = social.name;
+                        socialsGrid.appendChild(card);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading home page:', error);
+            }
+
+            try {
+                const blogData = await loadYAML('/storage/data/blogs.yaml');
+                if (blogData && blogData.blogs && blogData.blogs.length > 0) {
+                    const sortedBlogs = blogData.blogs.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+                    const latest = sortedBlogs[0];
+
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = marked.parse(latest.content);
+                    const plainText = tempDiv.textContent || tempDiv.innerText || "";
+
+                    let excerpt = plainText.trim();
+                    if (excerpt.length > 100) {
+                        excerpt = excerpt.substring(0, 100).replace(/[ ,.]*$/, "") + "...";
+                    }
+
+                    const container = document.getElementById('blog-preview-container');
+                    
+                    container.innerHTML = `
+                        <div class="card blog-preview-card" style="cursor: pointer;" onclick="window.parent.location.hash = 'page=blogs'; window.parent.loadPage('blogs');">
+                            <div class="preview-title">${latest.title}</div>
+                            <div class="preview-date">${latest.date}</div>
+                            <div class="preview-excerpt">${excerpt}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading latest blog:', error);
+            }
+            
+            if (window.location.hash) {
+                const hash = window.location.hash.substring(1);
+                const target = document.getElementById(hash);
+                if (target) {
+                    setTimeout(() => {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

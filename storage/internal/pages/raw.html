@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #121212;
+            --border-color: #2d2e2e;
+            --text-main: #dbd7ca;
+            --text-muted: #7e7e7e;
+            --accent: #4d937b;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: url(/storage/assets/background.png);
+            background-attachment: fixed;
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .page-container {
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .code-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 0px;
+            width: 100%;
+            max-width: 1000px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1.2rem;
+            background: #181818;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .lang-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 5px 12px;
+            border-radius: 0px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(77, 147, 123, 0.05);
+        }
+
+        .btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+#code-content pre.shiki {
+            margin: 0;
+            padding: 1.5rem;
+            font-size: 14px;
+            line-height: 1.7;
+            background-color: transparent !important;
+white-space: pre; 
+            overflow-x: auto;
+        }
+.wrap-enabled #code-content pre.shiki {
+            white-space: pre-wrap !important;
+            word-break: break-all;
+            overflow-wrap: anywhere;
+        }
+#back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 45px;
+            height: 45px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 0%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        #back-to-top.visible { opacity: 1; visibility: visible; }
+        #back-to-top:hover { border-color: var(--accent); transform: translateY(-3px); }
+
+        .arrow-up {
+            border: solid var(--text-main);
+            border-width: 0 2px 2px 0;
+            display: inline-block;
+            padding: 3px;
+            transform: rotate(-135deg);
+        }
+    </style>
+</head>
+<body class="wrap-enabled">
+    <div class="page-container">
+        <div class="code-card" id="main-card">
+            <div class="code-header">
+                <span class="lang-label" id="lang-label">DETECTING...</span>
+                <div class="header-actions">
+                    <button class="btn" id="wrap-toggle">Wrap: On</button>
+                    <button class="btn" id="copy-btn">Copy</button>
+                </div>
+            </div>
+            <div id="code-content"></div>
+        </div>
+    </div>
+
+    <div id="back-to-top"><i class="arrow-up"></i></div>
+    
+    <script type="module">
+        import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
+        import jsyaml from 'https://esm.sh/js-yaml';
+
+        const card = document.getElementById('main-card');
+        const wrapBtn = document.getElementById('wrap-toggle');
+        const copyBtn = document.getElementById('copy-btn');
+        const langLabel = document.getElementById('lang-label');
+
+        let isWrapped = localStorage.getItem('wordWrap') !== 'false';
+        let config = { fileMappings: {}, mapDisplays: {} };
+
+        function updateWrapUI() {
+            if (isWrapped) {
+                card.classList.add('wrap-enabled');
+                wrapBtn.textContent = 'Wrap: On';
+                wrapBtn.classList.add('active');
+            } else {
+                card.classList.remove('wrap-enabled');
+                wrapBtn.textContent = 'Wrap: Off';
+                wrapBtn.classList.remove('active');
+            }
+        }
+
+        wrapBtn.onclick = () => {
+            isWrapped = !isWrapped;
+            localStorage.setItem('wordWrap', isWrapped);
+            updateWrapUI();
+        };
+        function getLangFromFilename(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            return config.fileMappings[ext] || 'text';
+        }
+        function getDisplayText(filename, detectedLang) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const displayName = config.mapDisplays[ext] || detectedLang;
+            return displayName.toUpperCase();
+        }
+
+        async function init() {
+            updateWrapUI();
+
+            const params = new URLSearchParams(window.location.search);
+            const filePath = params.get('file');
+            if (!filePath) return;
+
+            try {
+                try {
+                    const yamlResp = await fetch('/storage/data/raw.yaml');
+                    if (yamlResp.ok) {
+                        const yamlText = await yamlResp.text();
+                        config = jsyaml.load(yamlText) || config;
+                    }
+                } catch (e) {
+                    console.warn("raw.yaml not found, using default mappings");
+                }
+
+                const response = await fetch('/storage/data/' + filePath);
+                if (!response.ok) throw new Error(`File not found: ${filePath}`);
+                
+                const rawCode = await response.text();
+                const lang = getLangFromFilename(filePath);
+                langLabel.textContent = getDisplayText(filePath, lang);
+                
+                const html = await codeToHtml(rawCode, {
+                    lang: lang,
+                    theme: 'vitesse-dark'
+                });
+
+                document.getElementById('code-content').innerHTML = html;
+
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(rawCode);
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => copyBtn.textContent = originalText, 2000);
+                };
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('code-content').innerHTML = `<p style="padding:2rem; color:#f87171;">Error: ${err.message}</p>`;
+            }
+        }
+
+        const topBtn = document.getElementById('back-to-top');
+        window.onscroll = () => {
+            if (window.scrollY > 300) topBtn.classList.add('visible');
+            else topBtn.classList.remove('visible');
+        };
+        topBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        init();
+    </script>
+</body>
+</html>
