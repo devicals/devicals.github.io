@@ -405,6 +405,44 @@ a:hover {
     color: hsl(var(--foreground));
 }
 
+.download-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.download-left:hover {
+    opacity: 0.8;
+}
+
+.download-id {
+    font-size: 18px;
+    font-weight: 800;
+    color: hsl(var(--accent));
+}
+
+.download-id:hover {
+    text-decoration: underline;
+    text-decoration-color: hsl(var(--accent));
+}
+
+#copy-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+    padding: 8px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: bold;
+    display: none;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
 
 .info-grid {
     display: grid;

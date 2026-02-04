@@ -1,4 +1,14 @@
 blogs:
+  - id: 24
+    date: 04/02/2026
+    title: "new terminal just dropped"
+    content: |-
+      as a programmer obviously I use the terminal a lot, call me old-school if you'd like but cmd is wonderful, but we can make it better. Using [clink](https://github.com/chrisant996/clink) and [starship](https://github.com/starship/starship) I made a really cool terminal style, which you can all check out and download [here](./#page=downloads&id=6)!
+
+      here are some screenshots!
+
+      <img src="/storage/store/customization/terminal/screenshot_1.png" height="300"> <img src="/storage/store/customization/terminal/screenshot_2.png" height="300">
+
   - id: 23
     date: 03/02/2026
     title: "mid big update"
@@ -72,7 +82,7 @@ blogs:
       3. I have added back the fuctionality of using # to define where you want to be! Now you can add **#about**, **#blog**, or **#projects** at the end of the link to be on the Profile, Blog, or Projects tab respectively. Furthermore, blogs now had a numerical ID, displayed next to the date. With **#blog?id={ID}** where **{ID}** is the ID of the blog post, you can directly open to page to that post!
       4. Now practically everything are now defined using JSON, e.g. the blog posts, projects, even the books! This makes my life SO much easier making these posts and stuff, and makes my code just that tad bit cleaner and shorter! Hopefully because of this, I'll be making more blog posts now!
       5. As a Halloween special, I'm making a 3 chapter short psychological horror story that may release in a few weeks.
-      6. Also, I've added back the [RSS feed](&id=8) feature!
+      6. Also, I've added back the [RSS feed](~/&id=8) feature!
 
       Anyways, that's all for now, have a very happy Halloween guys!
 

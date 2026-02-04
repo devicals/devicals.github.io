@@ -1,20 +1,30 @@
 downloads:
-  - name: "Website Source Code"
+  - id: 1
+    name: "Website Source Code"
     description: "Error Dev's custom HTML/CSS/JS portfolio website"
     url: https://github.com/devicals/devicals.github.io
     
-  - name: "MC Badges Pack"
+  - id: 2
+    name: "MC Badges Pack"
     description: "Clean badge textures to put links on your modrinth page"
     url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/MC%20Badges.zip
 
-  - name: "ULTRAKILL Rainmeter Skin"
+  - id: 3
+    name: "ULTRAKILL Rainmeter Skin"
     description: "A Rainmeter skin inspired by ULTRAKILL"
     url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/ULTRAKILL.rmskin
   
-  - name: "YASB Config"
+  - id: 4
+    name: "YASB Config"
     description: "My YASB config file"
-    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/yasb/config.yaml
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/customization/yasb/config.yaml
   
-  - name: "YASB CSS"
+  - id: 5
+    name: "YASB CSS"
     description: "My YASB styles file"
-    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/yasb/styles.css
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/customization/yasb/styles.css
+  
+  - id: 6
+    name: "Custom Terminal Style"
+    description: "A .zip containing the .lua clink scripts, clink settings, and starship config for my terminal."
+    url: https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/store/customization/terminal/theme.zip

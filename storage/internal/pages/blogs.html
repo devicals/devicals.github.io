@@ -108,6 +108,17 @@
             });
         }
 
+        function scrollToBlogId(id) {
+            const el = document.getElementById(`blog-${id}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.borderColor = 'hsl(var(--accent))';
+                setTimeout(() => el.style.borderColor = 'hsl(var(--border))', 2000);
+            } else {
+                alert(`Blog #${id} not found.`);
+            }
+        }
+
         document.addEventListener('click', (e) => {
             if (e.target.matches('.shiki-btn.copy-btn')) {
                 const container = e.target.closest('.shiki-container');
@@ -131,10 +142,34 @@
                     }
                 });
             }
+
+            const link = e.target.closest('a');
+            if (link) {
+                const href = link.getAttribute('href');
+                if (!href) return;
+
+                if (href.match(/^~\/&id=(\d+)$/)) {
+                    e.preventDefault();
+                    const id = href.split('=')[1];
+                    scrollToBlogId(id);
+                    return;
+                }
+
+                if (href.startsWith('./#')) {
+                    e.preventDefault();
+                    const hash = href.substring(2); 
+                    window.parent.location.hash = hash;
+                    return;
+                }
+            }
         });
 
         window.copyBlogLink = (e, id) => { e.preventDefault(); const url = `https://devicals.github.io/#page=blogs&id=${id}`; navigator.clipboard.writeText(url).then(() => { e.target.textContent = "Link Copied!"; setTimeout(() => e.target.textContent = blogsData.find(b=>b.id===id).title, 2000); }); document.getElementById(`blog-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
-        window.jumpToBlog = () => { const id = document.getElementById('blog-id-input').value; if (!id) return; const el = document.getElementById(`blog-${id}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); else alert(`Blog #${id} not found.`); };
+        window.jumpToBlog = () => { 
+            const id = document.getElementById('blog-id-input').value; 
+            if (!id) return; 
+            scrollToBlogId(id);
+        };
         window.copyRSS = () => { const url = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml"; navigator.clipboard.writeText(url).then(() => { const btn = document.getElementById('rss-btn'); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'RSS URL'; }, 2000); }); };
 
         document.addEventListener('DOMContentLoaded', async () => {

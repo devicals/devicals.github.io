@@ -200,8 +200,19 @@ async function loadPage(pageName, args = '') {
             return;
         }
     }
+    
     const iframe = document.getElementById('content-frame');
-    iframe.src = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
+    const targetUrl = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
+    
+    const currentSrc = iframe.getAttribute('src');
+    const isSamePage = currentSrc && currentSrc.split('#')[0].endsWith(`${pageName}.html`);
+
+    iframe.src = targetUrl;
+    
+    if (isSamePage && iframe.contentWindow) {
+        iframe.contentWindow.location.reload();
+    }
+
     history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
 }
 

@@ -5,7 +5,7 @@ items:
   
   - id: 1
     title: "My Little Warden"
-    path: "../store/oricade/My Little Warden (Song) [QpEaTSHSK5w].mp3"
+    path: "../store/oricade/My Little Warden (Song).mp3"
   
   - id: 2
     title: "Placeholder | Say You Want Me Now"
@@ -22,7 +22,7 @@ items:
   
   - id: 5
     title: "My Little Warden (Instrumental)"
-    path: "../store/oricade/My Little Warden [Official Instrumental] [F9Xard79Pns].mp3"
+    path: "../store/oricade/My Little Warden [Official Instrumental].mp3"
   
   - id: 6
     title: "Placeholder | Oil Me Up"
@@ -35,7 +35,7 @@ items:
   
   - id: 9
     title: "FORGETTABLE SMILE"
-    path: "../store/oricade/FORGETTABLE SMILE ft. Ori [L5ePQKg-Z7Y].mp3"
+    path: "../store/oricade/FORGETTABLE SMILE ft. Ori.mp3"
     description: "please dont ask for the miku version + he removed that too idk why he keeps doing that"
   
   - id: 9
@@ -44,37 +44,53 @@ items:
 
   - id: 10
     title: "Absolute Aura"
-    path: "../store/oricade/ABSOLUTE AURA (not canon) [34UFa5ptkJs].mp3"
+    path: "../store/oricade/ABSOLUTE AURA (not canon).mp3"
   
   - id: 11
     title: "over and over and over again"
-    path: "../store/oricade/over and over and over again [-HMj37T7lyQ].mp3"
+    path: "../store/oricade/over and over and over again.mp3"
   
   - id: 12
     title: "[Taking] My Whole Life Tonight"
-    path: "../store/oricade/My Whole Life Tonight [OdKrK4p33A0].mp3"
+    path: "../store/oricade/My Whole Life Tonight.mp3"
   
   - id: 13
     title: "Eat Your Limbs (I Always Wanted You)"
-    path: "../store/oricade/Eat Your Limbs (I Always Wanted You) [7NF93L8xHmE].mp3"
+    path: "../store/oricade/Eat Your Limbs (I Always Wanted You).mp3"
   
   - id: 14
     title: "ABSOLUTE AURA"
-    path: "../store/oricade/ABSOLUTE AURA (not canon) [34UFa5ptkJs].mp3"
+    path: "../store/oricade/ABSOLUTE AURA (not canon).mp3"
   
   - id: 15
     title: "Never Pull Me Back"
-    path: "../store/oricade/Never Pull Me Back ft. Ori [VCMuHxQcfEo].mp3"
+    path: "../store/oricade/Never Pull Me Back ft. Ori.mp3"
     desceription: "STATUS: Deleted (i cant find it) but Archived :)"
   
   - id: 16
     title: "One Orange Braincell (Nobody made a song about orange cats so I did)"
-    path: "../store/oricade/Nobody made a song about orange cats so I did [Avn7sqTxIB0].mp3"
+    path: "../store/oricade/Nobody made a song about orange cats so I did.mp3"
   
   - id: 17
     title: "Sanity Depot"
-    path: "../store/oricade/Sanity Depot [cFsp6YU4bKw].mp3"
+    path: "../store/oricade/Sanity Depot.mp3"
   
   - id: 18
     title: "Now That's A Plot Twist"
-    path: "../store/oricade/Now That's A Plot Twist [rA32WZDa1pU].mp3"
+    path: "../store/oricade/Now That's A Plot Twist.mp3"
+
+  - id: 19
+    title: "Tyzi's Theme"
+    path: "../store/oricade/Tyzi's Theme - Oricade.mp3"
+
+  - id: 20
+    title: "Loxm's Theme"
+    path: "../store/oricade/Loxm's Theme - Oricade.mp3"
+
+  - id: 21
+    title: "Zyyn's Theme"
+    path: "../store/oricade/Zyyn's Theme - Oricade.mp3"
+
+  - id: 22
+    title: "Qyli's Theme"
+    path: "../store/oricade/Qyli's Theme - Oricade.mp3"

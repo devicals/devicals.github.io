@@ -145,7 +145,7 @@
                     const container = document.getElementById('blog-preview-container');
                     
                     container.innerHTML = `
-                        <div class="card blog-preview-card" style="cursor: pointer;" onclick="window.parent.location.hash = 'page=blogs'; window.parent.loadPage('blogs');">
+                        <div class="card blog-preview-card" style="cursor: pointer;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
                             <div class="preview-title">${latest.title}</div>
                             <div class="preview-date">${latest.date}</div>
                             <div class="preview-excerpt">${excerpt}</div>
