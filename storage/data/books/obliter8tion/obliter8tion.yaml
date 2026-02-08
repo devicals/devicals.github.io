@@ -1,6 +1,0 @@
-pages:
-  - id: retribution
-    name: "Angel of Retribution"
-    path: retribution/retribution.yaml
-    type:
-      type: section

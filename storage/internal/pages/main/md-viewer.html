@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <style>
+        .md-content { word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; max-width: 100%; overflow-x: hidden; }
+        .md-content img { max-width: 100%; height: auto; }
+        .md-content p, .md-content li, .md-content span { white-space: normal; }
+        
+        .shiki-container { background: #121212; border: 1px solid #2d2e2e; margin: 1.5rem 0; overflow: hidden; }
+        .shiki-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; background: #181818; border-bottom: 1px solid #2d2e2e; }
+        .shiki-lang { color: #7e7e7e; font-size: 0.8rem; text-transform: uppercase; font-weight: 600; }
+        .shiki-actions { display: flex; gap: 8px; }
+        .shiki-btn { background: transparent; border: 1px solid #2d2e2e; color: #7e7e7e; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        .shiki-btn:hover { border-color: #dbd7ca; color: #dbd7ca; }
+        .shiki-btn.active { border-color: #4d937b; color: #4d937b; }
+        .shiki-container pre.shiki { margin: 0 !important; border: none !important; padding: 1rem !important; background-color: transparent !important; white-space: pre; overflow-x: auto; }
+        .shiki-container.wrap-enabled pre.shiki { white-space: pre-wrap; word-break: break-all; }
+        code.shiki-inline { background: #121212 !important; padding: 3px 6px !important; border: 1px solid #2d2e2e !important; font-family: 'JetBrains Mono', monospace !important; display: inline-block; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="card bio-card">
+            <div class="md-content" id="md-content"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
+        
+        let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
+
+        marked.use({
+            breaks: true, gfm: true, async: true,
+            async walkTokens(token) {
+                if (token.type === 'code') {
+                    const shikiHtml = await codeToHtml(token.text, { lang: token.lang || 'text', theme: 'vitesse-dark' });
+                    const header = `<div class="shiki-header"><span class="shiki-lang">${token.lang || 'text'}</span><div class="shiki-actions"><button class="shiki-btn wrap-btn">Wrap</button><button class="shiki-btn copy-btn">Copy</button></div></div>`;
+                    token.type = 'html';
+                    token.text = `<div class="shiki-container">${header}${shikiHtml}</div>`;
+                } else if (token.type === 'codespan') {
+                    const raw = await codeToHtml(token.text, { lang: 'text', theme: 'vitesse-dark' });
+                    const inline = raw.replace(/<pre[^>]*>/, '').replace('</pre>', '').replace('<code', '<code class="shiki-inline"');
+                    token.type = 'html';
+                    token.text = inline;
+                }
+            }
+        });
+
+        async function loadMarkdown(path) {
+            const response = await fetch(path);
+            if (!response.ok) throw new Error('File not found');
+            return await response.text();
+        }
+
+        function setupShikiInteractions() {
+            document.querySelectorAll('.shiki-container').forEach(container => {
+                const wrapBtn = container.querySelector('.wrap-btn');
+                if (isShikiWrapEnabled) {
+                    container.classList.add('wrap-enabled');
+                    if (wrapBtn) { wrapBtn.classList.add('active'); wrapBtn.textContent = 'Wrap: On'; }
+                } else {
+                    if (wrapBtn) wrapBtn.textContent = 'Wrap: Off';
+                }
+            });
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.shiki-btn.copy-btn')) {
+                const container = e.target.closest('.shiki-container');
+                const codeBlock = container?.querySelector('pre.shiki code');
+                if (codeBlock) navigator.clipboard.writeText(codeBlock.innerText).then(() => { e.target.textContent = 'Copied!'; setTimeout(() => e.target.textContent = 'Copy', 2000); });
+            }
+            if (e.target.matches('.shiki-btn.wrap-btn')) {
+                isShikiWrapEnabled = !isShikiWrapEnabled;
+                localStorage.setItem('shikiWrapEnabled', isShikiWrapEnabled);
+                document.querySelectorAll('.shiki-container').forEach(container => {
+                    const wrapBtn = container.querySelector('.wrap-btn');
+                    container.classList.toggle('wrap-enabled', isShikiWrapEnabled);
+                    if (wrapBtn) { wrapBtn.classList.toggle('active', isShikiWrapEnabled); wrapBtn.textContent = isShikiWrapEnabled ? 'Wrap: On' : 'Wrap: Off'; }
+                });
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const filePath = params.get('file');
+                
+                if (!filePath) {
+                    document.getElementById('md-content').innerHTML = '<p>No file specified</p>';
+                    return;
+                }
+                
+                const markdown = await loadMarkdown('/storage/data/' + filePath);
+                document.getElementById('md-content').innerHTML = await marked.parse(markdown);
+                setupShikiInteractions();
+                
+            } catch (error) {
+                console.error('Error loading markdown:', error);
+                document.getElementById('md-content').innerHTML = `<p>Error loading file: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>

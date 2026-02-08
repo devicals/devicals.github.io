@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <style>
+        .template-box {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .template-box h3 {
+            margin-bottom: 12px;
+            color: hsl(var(--accent));
+            font-weight: 700;
+        }
+        
+        .template-content {
+            background: hsl(var(--background));
+            border: 2px solid hsl(var(--border));
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            white-space: pre;
+            margin-bottom: 12px;
+        }
+        
+        .copy-btn {
+            padding: 8px 16px;
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .copy-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .giscus-container {
+            margin-top: 32px;
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+        }
+        
+        .giscus-container h3 {
+            margin-bottom: 16px;
+            color: hsl(var(--accent));
+        }
+
+        .hide-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Feedback</h1>
+        
+        <div class="template-box">
+            <h3>Review Template</h3>
+            <div class="template-content">Rating: &lt;Your Rating&gt;/5 stars
+Feedback: &lt;Your Feedback&gt;</div>
+            <button class="copy-btn" onclick="copyTemplate()">Copy Template</button>
+        </div>
+        
+        <div class="giscus-container">
+            <h3>Comments</h3>
+            <div id="giscus-slot"></div>
+        </div>
+    </div>
+    
+    <script>
+        function loadGiscus() {
+            const script = document.createElement('script');
+            script.src = "https://giscus.app/client.js";
+            script.setAttribute('data-repo', "devicals/devicals.github.io");
+            script.setAttribute('data-repo-id', "R_kgDOOHsfMg");
+            script.setAttribute('data-category', "General");
+            script.setAttribute('data-category-id', "DIC_kwDOOHsfMs4C0rjJ");
+            script.setAttribute('data-mapping', "pathname");
+            script.setAttribute('data-strict', "0");
+            script.setAttribute('data-reactions-enabled', "0");
+            script.setAttribute('data-emit-metadata', "0");
+            script.setAttribute('data-input-position', "top");
+            script.setAttribute('data-lang', "en");
+            script.setAttribute('crossorigin', "anonymous");
+            script.async = true;
+
+            script.setAttribute('data-theme', 'noborder_dark');
+
+            document.getElementById('giscus-slot').appendChild(script);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(loadGiscus, 100);
+        });
+
+        function copyTemplate() {
+            const template = `Rating: <Your Rating>/5 stars
+Feedback: <Your Feedback>`;
+            
+            navigator.clipboard.writeText(template).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

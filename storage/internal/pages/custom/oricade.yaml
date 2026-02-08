@@ -1,0 +1,112 @@
+items:
+  - id: 0
+    body: |-
+      An archive of all Oricade songs except for a few *(labed **PLACEHOLDER**s)*. Unfortunately those were deleted before I had the chance to download them, no-one knew that he would delete them so... yeah.
+  
+  - id: 1
+    title: "My Little Warden"
+    path: "/storage/store/oricade/My Little Warden (Song).mp3"
+  
+  - id: 2
+    title: "Placeholder | Say You Want Me Now"
+    path: "/storage/store/oricade/NONE.mp3"
+  
+  - id: 3
+    title: "Placeholder | EZ EZ EZ EZ"
+    path: "/storage/store/oricade/NONE.mp3"
+  
+  - id: 4
+    title: "Placeholder | 99 Nights"
+    path: "/storage/store/oricade/NONE.mp3"
+    description: "I think thats what it was called anyway"
+  
+  - id: 5
+    title: "My Little Warden (Instrumental)"
+    path: "/storage/store/oricade/My Little Warden [Official Instrumental].mp3"
+  
+  - id: 6
+    title: "Placeholder | Oil Me Up"
+    path: "/storage/store/oricade/NONE.mp3"
+    description: "didnt download this one in time either"
+  
+  - id: 7
+    title: "Plot Twist 10"
+    path: "/storage/store/oricade/Plot Twist 10 (song) ft. Ori - Oricade.mp3"
+  
+  - id: 9
+    title: "FORGETTABLE SMILE"
+    path: "/storage/store/oricade/FORGETTABLE SMILE ft. Ori.mp3"
+    description: "please dont ask for the miku version + he removed that too idk why he keeps doing that"
+  
+  - id: 9
+    title: "Placeholder | FORGETTABLE SMILE (Ft. Hatsune Miku)"
+    path: "/storage/store/oricade/NONE.mp3"
+
+  - id: 10
+    title: "Absolute Aura"
+    path: "/storage/store/oricade/ABSOLUTE AURA (not canon).mp3"
+  
+  - id: 11
+    title: "over and over and over again"
+    path: "/storage/store/oricade/over and over and over again.mp3"
+  
+  - id: 12
+    title: "[Taking] My Whole Life Tonight"
+    path: "/storage/store/oricade/My Whole Life Tonight.mp3"
+  
+  - id: 13
+    title: "Eat Your Limbs (I Always Wanted You)"
+    path: "/storage/store/oricade/Eat Your Limbs (I Always Wanted You).mp3"
+  
+  - id: 14
+    title: "ABSOLUTE AURA"
+    path: "/storage/store/oricade/ABSOLUTE AURA (not canon).mp3"
+  
+  - id: 15
+    title: "Never Pull Me Back"
+    path: "/storage/store/oricade/Never Pull Me Back ft. Ori.mp3"
+    desceription: "STATUS: Deleted (i cant find it) but Archived :)"
+  
+  - id: 16
+    title: "One Orange Braincell (Nobody made a song about orange cats so I did)"
+    path: "/storage/store/oricade/Nobody made a song about orange cats so I did.mp3"
+  
+  - id: 17
+    title: "Sanity Depot"
+    path: "/storage/store/oricade/Sanity Depot.mp3"
+  
+  - id: 18
+    title: "Now That's A Plot Twist"
+    path: "/storage/store/oricade/Now That's A Plot Twist.mp3"
+
+  - id: 20
+    title: "Zyyn's Theme"
+    path: "/storage/store/oricade/Zyyn's Theme - Oricade.mp3"
+
+  - id: 21
+    title: "Hyqi's Theme"
+    path: "/storage/store/oricade/Hyqi's Theme - Oricade.mp3"
+
+  - id: 22
+    title: "Loxm's Theme"
+    path: "/storage/store/oricade/Loxm's Theme - Oricade.mp3"
+
+  - id: 23
+    title: "Tyzi's Theme"
+    path: "/storage/store/oricade/Tyzi's Theme - Oricade.mp3"
+
+  - id: 24
+    title: "Fiwu's Theme"
+    path: "/storage/store/oricade/Fiwu's Theme - Oricade.mp3"
+  
+  - id: 25
+    title: "Qyli's Theme"
+    path: "/storage/store/oricade/Qyli's Theme - Oricade.mp3"
+
+  - id: 27
+    title: "Ori's Theme"
+    path: "/storage/store/oricade/Ori's Theme - Oricade.mp3"
+
+  - id: 28
+    title: "Remarkable Speed"
+    path: "/storage/store/oricade/Remarkable Speed - Oricade.mp3"

@@ -1,0 +1,6 @@
+pages:
+  - id: omom
+    name: "O' Mother of Mine"
+    path: hs/omom.yaml
+    type:
+      type: section

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/main.js"></script>
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        .visitor-card {
+            margin-bottom: 20px;
+            padding: 15px 30px !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: auto !important;
+        }
+
+        .visitor-card h2 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .visitor-info-group {
+            text-align: right;
+            display: flex;
+            align-items: baseline;
+            gap: 15px;
+        }
+
+        #visit-count {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .visitor-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            .visitor-info-group {
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Repository Info</h1>
+
+        <div class="stat-card visitor-card">
+            <h2>Unique Visitors</h2>
+            <div class="visitor-info-group">
+                <div class="size-value" id="visit-count">000000</div>
+                <div class="stat-label">Total Visits</div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="stat-card">
+                <h2>Repository Stats</h2>
+                <div class="stats-group">
+                    <div class="stat-item">
+                        <div class="stat-value" id="stars">-</div>
+                        <div class="stat-label">Stars</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="forks">-</div>
+                        <div class="stat-label">Forks</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="watchers">-</div>
+                        <div class="stat-label">Watchers</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h2>Repo Size</h2>
+                <div class="size-display">
+                    <div class="size-value" id="size">-</div>
+                    <div class="stat-label">KB</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="languages-section">
+            <h2>Languages</h2>
+            <div class="stat-card" id="languages-container"></div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const renderStats = (data) => {
+                if (!data) return;
+                document.getElementById('stars').textContent = (data.stars ?? 0).toLocaleString();
+                document.getElementById('forks').textContent = (data.forks ?? 0).toLocaleString();
+                document.getElementById('watchers').textContent = (data.watchers ?? 0).toLocaleString();
+                document.getElementById('size').textContent = (data.size ?? 0).toLocaleString();
+
+                const container = document.getElementById('languages-container');
+                container.innerHTML = '';
+
+                if (data.languages) {
+                    data.languages.forEach(lang => {
+                        const langItem = document.createElement('div');
+                        langItem.className = 'language-item';
+                        langItem.innerHTML = `
+                            <div class="language-header">
+                                <span class="language-name">${lang.name}</span>
+                                <span class="language-percent">${lang.percent}%</span>
+                            </div>
+                            <div class="language-bar"><div class="language-fill" style="width: 0%"></div></div>
+                        `;
+                        container.appendChild(langItem);
+                        setTimeout(() => {
+                            const fill = langItem.querySelector('.language-fill');
+                            if (fill) fill.style.width = `${lang.percent}%`;
+                        }, 100);
+                    });
+                }
+            };
+
+            try {
+                const response = await fetch('/storage/internal/stats.yaml');
+                if (!response.ok) throw new Error("File not found");
+                
+                const yamlText = await response.text();
+                const stats = jsyaml.load(yamlText);
+                
+                if (!stats || stats.stars === undefined) throw new Error("Incomplete YAML");
+                
+                console.log("Loaded from YAML successfully");
+                renderStats(stats);
+
+            } catch (e) {
+                console.warn("Local YAML failed, falling back to Live API...", e);
+                try {
+                    const repoRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io');
+                    const repoData = await repoRes.json();
+                    const langRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
+                    const langData = await langRes.json();
+
+                    const total = Object.values(langData).reduce((a, b) => a + b, 0);
+                    const fallbackData = {
+                        stars: repoData.stargazers_count,
+                        forks: repoData.forks_count,
+                        watchers: repoData.subscribers_count,
+                        size: repoData.size,
+                        languages: Object.entries(langData).map(([name, bytes]) => ({
+                            name,
+                            percent: ((bytes / total) * 100).toFixed(1)
+                        }))
+                    };
+                    renderStats(fallbackData);
+                } catch (err) {
+                    ['stars', 'forks', 'watchers', 'size'].forEach(id => {
+                        document.getElementById(id).textContent = 'Error';
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

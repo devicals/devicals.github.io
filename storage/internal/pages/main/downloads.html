@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloads - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+</head>
+<body>
+    <div id="copy-toast">LINK COPIED TO CLIPBOARD</div>
+    
+    <div class="page-container">
+        <h1 class="page-title">Downloads</h1>
+        
+        <div class="downloads-list" id="downloads-list"></div>
+    </div>
+    
+    <script>
+        async function loadYAML(path) {
+            const response = await fetch(path);
+            const text = await response.text();
+            return jsyaml.load(text);
+        }
+
+        function copyLink(id) {
+            const baseUrl = window.parent.location.origin + window.parent.location.pathname;
+            const newHash = `page=downloads&id=${id}`;
+            const fullUrl = `${baseUrl}#${newHash}`;
+            
+            window.parent.history.replaceState(null, null, `#${newHash}`);
+            
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.textContent = `LINK COPIED [#${id}]`;
+                toast.style.display = 'block';
+                setTimeout(() => { toast.style.display = 'none'; }, 2000);
+            });
+
+            document.querySelectorAll('.download-card').forEach(card => card.style.borderColor = '');
+            
+            const activeCard = document.getElementById(`download-${id}`);
+            if (activeCard) {
+                activeCard.style.borderColor = 'hsl(var(--accent))';
+                setTimeout(() => {
+                    activeCard.style.borderColor = ''; 
+                }, 1000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const data = await loadYAML('/storage/data/downloads.yaml');
+                
+                if (!data || !data.downloads) {
+                    console.error('No downloads data found');
+                    return;
+                }
+                
+                const container = document.getElementById('downloads-list');
+                
+                data.downloads.forEach((download) => {
+                    const card = document.createElement('div');
+                    card.className = 'download-card';
+                    card.id = `download-${download.id}`;
+                    
+                    const header = document.createElement('div');
+                    header.className = 'download-header';
+                    
+                    const leftGroup = document.createElement('div');
+                    leftGroup.className = 'download-left';
+                    leftGroup.title = 'Click to copy link';
+                    leftGroup.onclick = () => copyLink(download.id);
+
+                    const idSpan = document.createElement('span');
+                    idSpan.className = 'download-id';
+                    idSpan.textContent = `#${download.id}`;
+
+                    const name = document.createElement('span');
+                    name.className = 'download-name';
+                    name.textContent = download.name;
+                    
+                    leftGroup.appendChild(idSpan);
+                    leftGroup.appendChild(name);
+
+                    const btn = document.createElement('a');
+                    btn.className = 'download-btn';
+                    btn.href = download.url;
+                    btn.target = '_blank';
+                    btn.rel = 'noopener noreferrer';
+                    btn.textContent = 'Download';
+                    
+                    header.appendChild(leftGroup);
+                    header.appendChild(btn);
+                    
+                    const description = document.createElement('div');
+                    description.className = 'download-description';
+                    description.textContent = download.description;
+                    
+                    card.appendChild(header);
+                    card.appendChild(description);
+                    container.appendChild(card);
+                });
+
+                const handleHash = () => {
+                    const hash = window.location.hash.substring(1);
+                    const params = new URLSearchParams(hash);
+                    const id = params.get('id');
+
+                    if (id) {
+                        setTimeout(() => {
+                            const element = document.getElementById(`download-${id}`);
+                            if (element) {
+                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                element.style.borderColor = 'hsl(var(--accent))';
+                                setTimeout(() => {
+                                    element.style.borderColor = ''; 
+                                }, 1000);
+                            }
+                        }, 300);
+                    }
+                };
+
+                handleHash();
+
+            } catch (error) {
+                console.error('Error loading downloads:', error);
+            }
+        });
+    </script>
+</body>
+</html>
