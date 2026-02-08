@@ -1,0 +1,13 @@
+pages:
+  - id: obliter8tion
+    name: "OBLITER8TION"
+    path: books/obliter8tion.yaml
+    type:
+      type: section
+    hidden: true
+
+  - id: hs
+    name: "Halloween Specials"
+    path: books/hs.yaml
+    type:
+      type: section

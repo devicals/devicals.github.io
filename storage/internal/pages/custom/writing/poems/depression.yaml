@@ -1,0 +1,75 @@
+pages:
+  - id: 1
+    name: "\"the song bird\""
+    path: c1/1.md
+    type:
+      type: md
+      display: "part I"
+  - id: 2
+    name: "\"waking\""
+    path: c1/2.md
+    type:
+      type: md
+      display: "part II"
+  - id: 3
+    name: "\"loss\""
+    path: c1/3.md
+    type:
+      type: md
+      display: "part III"
+  - id: 4
+    name: "\"    \""
+    path: c1/4.md
+    type:
+      type: md
+      display: "part IV"
+    hidden: true
+    locked: true
+  - id: 5
+    name: "\"warm\""
+    path: c1/5.md
+    type:
+      type: md
+      display: "part V"
+    hidden: true
+    locked: true
+  - id: 6
+    name: "\"stay.\""
+    path: c1/6.md
+    type:
+      type: md
+      display: "part VI"
+    hidden: true
+    locked: true
+  - id: 7
+    name: "\"river\""
+    path: c1/7.md
+    type:
+      type: md
+      display: "part VII"
+    hidden: true
+    locked: true
+  - id: 8
+    name: "\"again\""
+    path: c1/8.md
+    type:
+      type: md
+      display: "part VIII"
+    hidden: true
+    locked: true
+  - id: 9
+    name: "\"the aching grew worse\""
+    path: c1/9.md
+    type:
+      type: md
+      display: "part IX"
+    hidden: true
+    locked: true
+  - id: 10
+    name: "\"bridge...\""
+    path: c1/10.md
+    type:
+      type: md
+      display: "part X"
+    hidden: true
+    locked: true

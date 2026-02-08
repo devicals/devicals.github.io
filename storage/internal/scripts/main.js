@@ -161,7 +161,8 @@ async function loadPage(pageName, args = '') {
         const href = link.getAttribute('href');
         if (href && href.includes(`page=${pageName}`)) link.classList.add('active');
     });
-    const pageBase = '/storage/internal/pages/';
+    
+    const pageBase = '/storage/internal/pages/main/';
     const customData = await loadYAML('/storage/data/custom.yaml');
     if (customData && customData.customPages) {
         let customPage = null;
@@ -180,22 +181,41 @@ async function loadPage(pageName, args = '') {
                 return;
             }
 
+            let pagePath = customPage.path;
+            if (pagePath.startsWith('~/')) {
+                pagePath = '/storage/internal/pages/custom/' + pagePath.substring(2);
+                const pathParts = pagePath.split('/');
+                const resolvedParts = [];
+                for (const part of pathParts) {
+                    if (part === '..') {
+                        if (resolvedParts.length > 0) resolvedParts.pop();
+                    } else if (part !== '.' && part !== '') {
+                        resolvedParts.push(part);
+                    }
+                }
+                pagePath = (pagePath.startsWith('/') ? '/' : '') + resolvedParts.join('/');
+            }
+
             const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
             const pageType = typeInfo.type || 'raw';
             const iframe = document.getElementById('content-frame');
-            const encodedPath = encodeURIComponent(customPage.path);
-            if (pageType === 'section') {
-                iframe.src = `${pageBase}custom.html${args ? '#' + args : ''}`;
-            } else if (pageType === 'raw') {
-                iframe.src = `${pageBase}raw.html?file=${encodedPath}`;
-            } else if (pageType.startsWith('gallery')) {
-                iframe.src = `${pageBase}gallery.html?file=${encodedPath}&type=${pageType}${args ? '&' + args : ''}`;
-            } else if (pageType === 'md') {
-                iframe.src = `${pageBase}md-viewer.html?file=${encodedPath}`;
-            } else if (pageType === 'html') {
-                iframe.src = customPage.path;
-            }
+
+            let targetUrl = '';
+            const encodedPath = encodeURIComponent(pagePath);
             
+            if (pageType === 'section') {
+                targetUrl = `${pageBase}custom.html${args ? '#' + args : ''}`;
+            } else if (pageType === 'raw') {
+                targetUrl = `${pageBase}raw.html?file=${encodedPath}`;
+            } else if (pageType.startsWith('gallery')) {
+                targetUrl = `${pageBase}gallery.html?file=${encodedPath}&type=${pageType}${args ? '&' + args : ''}`;
+            } else if (pageType === 'md') {
+                targetUrl = `${pageBase}md-viewer.html?file=${encodedPath}`;
+            } else if (pageType === 'html') {
+                targetUrl = pagePath;
+            }
+
+            iframe.src = targetUrl;
             history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
             return;
         }
@@ -205,7 +225,7 @@ async function loadPage(pageName, args = '') {
     const targetUrl = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
     
     const currentSrc = iframe.getAttribute('src');
-    const isSamePage = currentSrc && currentSrc.split('#')[0].endsWith(`${pageName}.html`);
+    const isSamePage = currentSrc && currentSrc.split('#')[0].endsWith(targetUrl.split('#')[0].split('/').pop());
 
     iframe.src = targetUrl;
     
@@ -231,7 +251,6 @@ function requestHide() {
         }
     });
 
-    sessionStorage.removeItem('sidebar_expire');
     loadCustomPages();
     updatePreferenceButtons();
     
@@ -259,6 +278,11 @@ function requestHide() {
     closePreferences();
 }
 
+window.requestUnlock = function(pageId, fullHash) {
+    pendingPage = { id: pageId, args: fullHash, isDeepLink: true };
+    document.getElementById('lock-modal').classList.add('active');
+}
+
 function checkLock() {
     const input = document.getElementById('lock-input').value;
     if (input === "Canned Pineapple") {
@@ -267,6 +291,13 @@ function checkLock() {
             sessionStorage.setItem('sidebar_expire', expiryTime.toString());
             loadCustomPages();
             updatePreferenceButtons();
+            closeLockModal();
+        } else if (pendingPage && pendingPage.isDeepLink) {
+            sessionStorage.setItem('unlocked_' + pendingPage.id, 'true');
+            const iframe = document.getElementById('content-frame');
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.location.reload();
+            }
             closeLockModal();
         } else {
             sessionStorage.setItem('unlocked_' + pendingPage.id, 'true');

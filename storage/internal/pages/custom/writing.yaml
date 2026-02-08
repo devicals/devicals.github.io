@@ -1,0 +1,12 @@
+pages:
+  - id: books
+    name: "Books"
+    path: writing/books.yaml
+    type:
+      type: section
+
+  - id: poems
+    name: "Poems"
+    path: writing/poems.yaml
+    type:
+      type: section
