@@ -1,4 +1,13 @@
 blogs:
+  - id: 25
+    date: 10/02/2026
+    title: "mobile support"
+    content: |-
+      finally, mobile support is here!
+      well its not really like "finally" or whatever but because of the new sidebar system, on mobile its just completely broken, you couldn't access the sidebar whatsoever, so i fixed it.
+
+      ... yeah that's it cyall bye!!!!
+
   - id: 24
     date: 04/02/2026
     title: "new terminal just dropped"

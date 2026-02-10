@@ -129,10 +129,15 @@ async function loadCustomPages() {
                 if (!isRevealed && (page.hidden || page.locked || !page.name)) return;
                 const link = document.createElement('a');
                 link.href = `#page=${page.id}`;
-                link.textContent = page.name;
+                
+                link.textContent = page.display || page.name;
+                
                 link.onclick = (e) => {
                     e.preventDefault();
                     loadPage(page.id);
+                    if (window.innerWidth <= 768) {
+                        toggleMobileSidebar();
+                    }
                 };
                 section.appendChild(link);
             });
@@ -322,6 +327,29 @@ function toggleSidebar() {
     const icon = document.getElementById('toggle-icon');
     sidebar.classList.toggle('collapsed', sidebarCollapsed);
     icon.textContent = sidebarCollapsed ? '»' : '☰';
+}
+
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const isOpen = sidebar.classList.contains('mobile-open');
+    
+    if (isOpen) {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    } else {
+        sidebar.classList.add('mobile-open');
+        overlay.classList.add('active');
+    }
+}
+
+function closeMobileMenu() {
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+    }
 }
 
 function updatePreferenceButtons() {

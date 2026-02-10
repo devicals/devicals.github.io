@@ -37,6 +37,54 @@ a {
     color: hsl(var(--accent));
 }
 
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    background: hsl(var(--card));
+    border: 2px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.mobile-menu-toggle:hover {
+    background: hsl(var(--accent) / 0.2);
+    color: hsl(var(--accent));
+}
+
+.mobile-close-btn {
+    display: none;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: hsl(var(--foreground));
+    font-size: 32px;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 2;
+}
+
+.mobile-close-btn:hover {
+    background: hsl(var(--muted));
+}
+
 .announcement-banner {
     position: fixed;
     top: 0;
@@ -436,22 +484,67 @@ a {
 }
 
 @media (max-width: 768px) {
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
     .sidebar {
-        width: 100%;
+        width: 85%;
+        max-width: 320px;
         transform: translateX(-100%);
+        z-index: 1500;
     }
     
     .sidebar.mobile-open {
         transform: translateX(0);
     }
+
+    .sidebar.mobile-open .mobile-close-btn {
+        display: flex;
+    }
+
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.mobile-open.collapsed {
+        transform: translateX(0);
+    }
+
+    .sidebar-toggle {
+        display: none;
+    }
     
     .main-content {
+        left: 0;
+    }
+
+    .sidebar.collapsed ~ .main-content {
         left: 0;
     }
     
     .announcement-banner {
         left: 0;
     }
+
+    .sidebar.collapsed ~ .announcement-banner {
+        left: 0;
+    }
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1499;
+}
+
+.sidebar-overlay.active {
+    display: block;
 }
 
 .hide-scrollbar {

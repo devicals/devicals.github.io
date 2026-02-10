@@ -7,6 +7,20 @@ customPages:
         path: ~/writing.yaml
         type:
           type: section
+
+      - id: books
+        display: "| Books"
+        name: "Books"
+        path: ~/writing/books.yaml
+        type:
+          type: section
+
+      - id: poems
+        display: "└ Poems"
+        name: "Poems"
+        path: ~/writing/poems.yaml
+        type:
+          type: section
   
   archive:
     display: "Archives"

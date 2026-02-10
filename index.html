@@ -13,7 +13,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 </head>
 <body>
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
+
     <div id="sidebar" class="sidebar">
+        <button class="mobile-close-btn" onclick="toggleMobileSidebar()">×</button>
         <div class="sidebar-header">
             <h2 id="sidebar-title">Dev's Coffin</h2>
             <button class="sidebar-toggle" onclick="toggleSidebar()">
@@ -24,17 +27,17 @@
         <nav class="sidebar-nav">
             <div class="nav-section">
                 <h3>MAIN</h3>
-                <a href="#page=home" onclick="loadPage('home'); return false;">Home</a>
-                <a href="#page=blogs" onclick="loadPage('blogs'); return false;">Blogs</a>
+                <a href="#page=home" onclick="loadPage('home'); closeMobileMenu(); return false;">Home</a>
+                <a href="#page=blogs" onclick="loadPage('blogs'); closeMobileMenu(); return false;">Blogs</a>
                 <br><h3>CONTENT</h3>
-                <a href="#page=projects" onclick="loadPage('projects'); return false;">Projects</a>
-                <a href="#page=downloads" onclick="loadPage('downloads'); return false;">Downloads</a>
+                <a href="#page=projects" onclick="loadPage('projects'); closeMobileMenu(); return false;">Projects</a>
+                <a href="#page=downloads" onclick="loadPage('downloads'); closeMobileMenu(); return false;">Downloads</a>
             </div>
 
             <div id="custom-pages-container"></div>
 
             <div class="nav-section nav-bottom">
-                <a class="preferences-btn" href="#page=info" onclick="loadPage('info'); return false;">ⓘ Info</a>
+                <a class="preferences-btn" href="#page=info" onclick="loadPage('info'); closeMobileMenu(); return false;">ⓘ Info</a>
                 <button class="preferences-btn" onclick="openPreferences()">⚙ Preferences</button>
             </div>
         </nav>
@@ -45,6 +48,10 @@
         <button class="announcement-close" onclick="closeAnnouncement()">×</button>
     </div>
     
+    <button id="mobile-menu-toggle" class="mobile-menu-toggle" onclick="toggleMobileSidebar()">
+        <span>☰</span>
+    </button>
+
     <div id="main-content" class="main-content">
         <div class="page-background"></div>
         <iframe id="content-frame" src=""></iframe>
