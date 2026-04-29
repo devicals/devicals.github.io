@@ -42,3 +42,80 @@ home:
       link: https://error-offixial.itch.io/
     - name: "Wattpad"
       link: https://www.wattpad.com/user/error_dev
+
+  games:
+    favorites:
+      - title: Neva
+        comment: >-
+          IT IS SO PEAUTIFUL AND PEAK
+          AND I CRIED PLAYING THIS
+        tags:
+          skill:
+            display: true
+            level:
+              intermediate
+          
+          rating:
+            display: true
+            rating:
+              obsessed
+          
+          lf:
+            display: true
+            looking:
+              ltd
+
+      - title: Persona 3 Portable
+        comment: >-
+          (second) peakest game i'll ever play i love ts so much ^_^
+        tags:
+          skill:
+            display: true
+            level:
+              casual
+
+          rating:
+            display: true
+            rating:
+              loveit
+            
+          lf:
+            display: false
+
+      - title: Minecraft
+        comment: >-
+          this, is Minecraft.
+        tags:
+          skill:
+            display: true
+            level:
+              expert
+          
+          rating:
+            display: true
+            rating:
+              obsessed
+          
+          lf:
+            display: true
+            looking:
+              otp
+
+    liked:
+      - "Danganronpa: Trigger Happy Havoc"
+      - ULTRAKILL
+      - Persona 5 Royal
+      - Persona 4 Golden
+      - "Danganronpa 2: Goodbye Despair"
+      - Clustertruck
+      - CARRION
+      - Teardown
+      - Undertale
+      - Team Fortress 2
+
+    wanttoplay:
+      - "Danganronpa S: Ultimate Summer Camp"
+      - Danganronpa 1.2
+      - "Danganronpa V3: Killing Harmony"
+      - "Danganronpa Another Episode: Ultra Despair Girls"
+      - Aka Manto

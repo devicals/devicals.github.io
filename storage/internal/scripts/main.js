@@ -125,12 +125,35 @@ async function loadCustomPages() {
             header.textContent = (category.display || key).toUpperCase();
             section.appendChild(header);
 
-            category.sub.forEach(page => {
+            category.sub.forEach((page, index) => {
                 if (!isRevealed && (page.hidden || page.locked || !page.name)) return;
+                
+                const pageTypeData = typeof page.type === 'object' ? page.type : { type: page.type };
+                const isRef = pageTypeData.type === 'refsection';
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'nav-item-wrapper';
+                
+                if (isRef) {
+                    const connector = document.createElement('div');
+                    connector.className = 'tree-connector';
+                    
+                    const nextItem = category.sub[index + 1];
+                    const nextIsRef = nextItem && 
+                                     (typeof nextItem.type === 'object' ? nextItem.type.type : nextItem.type) === 'refsection' && 
+                                     nextItem.type.refid === pageTypeData.refid;
+                    
+                    if (!nextIsRef) {
+                        wrapper.classList.add('last-ref');
+                    }
+                    
+                    wrapper.appendChild(connector);
+                }
+
                 const link = document.createElement('a');
                 link.href = `#page=${page.id}`;
-                
                 link.textContent = page.display || page.name;
+                if (isRef) link.classList.add('is-ref');
                 
                 link.onclick = (e) => {
                     e.preventDefault();
@@ -139,7 +162,9 @@ async function loadCustomPages() {
                         toggleMobileSidebar();
                     }
                 };
-                section.appendChild(link);
+
+                wrapper.appendChild(link);
+                section.appendChild(wrapper);
             });
             container.appendChild(section);
         });
@@ -202,9 +227,13 @@ async function loadPage(pageName, args = '') {
             }
 
             const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
-            const pageType = typeInfo.type || 'raw';
-            const iframe = document.getElementById('content-frame');
+            let pageType = typeInfo.type || 'raw';
+            
+            if (pageType === 'refsection') {
+                pageType = 'section'; 
+            }
 
+            const iframe = document.getElementById('content-frame');
             let targetUrl = '';
             const encodedPath = encodeURIComponent(pagePath);
             
@@ -228,12 +257,10 @@ async function loadPage(pageName, args = '') {
     
     const iframe = document.getElementById('content-frame');
     const targetUrl = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
-    
     const currentSrc = iframe.getAttribute('src');
     const isSamePage = currentSrc && currentSrc.split('#')[0].endsWith(targetUrl.split('#')[0].split('/').pop());
 
     iframe.src = targetUrl;
-    
     if (isSamePage && iframe.contentWindow) {
         iframe.contentWindow.location.reload();
     }

@@ -1,4 +1,10 @@
 blogs:
+  - id: 29
+    date: 29/04/2026
+    title: "new content"
+    content: |-
+      okay so this was wip for a long time but anyway i finally decided to release it even tho it was done for a long time already see if you noticed anything different :p
+
   - id: 28
     date: 19/04/2026
     title: "im alive"

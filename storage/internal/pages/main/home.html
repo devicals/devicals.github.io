@@ -78,6 +78,49 @@
             return new Date(year, month - 1, day);
         }
 
+        async function fetchDiscordData(userId) {
+            try {
+                const response = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
+                const statusData = await response.json();
+
+                if (!statusData.success) throw new Error('Lanyard failed');
+
+                const statusMap = {
+                    'online': 'Online',
+                    'dnd': 'DND',
+                    'idle': 'Idle',
+                    'offline': 'Offline'
+                };
+                
+                const rawStatus = statusData.data?.discord_status || 'offline';
+                return { 
+                    statusText: statusMap[rawStatus] || 'Offline' 
+                };
+            } catch (error) {
+                console.error('Discord API Error:', error);
+                return { statusText: "Offline" };
+            }
+        }
+
+        async function refreshDiscordUI() {
+            const DISCORD_ID = '989414384679927838';
+            const socialsGrid = document.querySelector('.socials-grid');
+            
+            const data = await fetchDiscordData(DISCORD_ID);
+            
+            let discordCard = document.getElementById('discord-live-card');
+            if (!discordCard) {
+                discordCard = document.createElement('a');
+                discordCard.id = 'discord-live-card';
+                discordCard.className = 'social-card discord-status';
+                discordCard.target = '_blank';
+                discordCard.href = `https://discord.com/users/${DISCORD_ID}/`;
+                socialsGrid.prepend(discordCard);
+            }
+            
+            discordCard.textContent = `${data.statusText} on Discord`;
+        }
+
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const data = await loadYAML('/storage/data/home.yaml');
@@ -93,36 +136,30 @@
                     homeData.skills.forEach(skillItem => {
                         const skillText = typeof skillItem === 'string' ? skillItem : skillItem.skill;
                         const skillLink = typeof skillItem === 'object' ? skillItem.link : null;
-                        
-                        if (skillLink) {
-                            const card = document.createElement('a');
-                            card.className = 'skill-card skill-card-link';
-                            card.href = skillLink;
-                            card.target = '_blank';
-                            card.rel = 'noopener noreferrer';
-                            card.textContent = skillText;
-                            skillsGrid.appendChild(card);
-                        } else {
-                            const card = document.createElement('div');
-                            card.className = 'skill-card';
-                            card.textContent = skillText;
-                            skillsGrid.appendChild(card);
-                        }
+                        const card = document.createElement(skillLink ? 'a' : 'div');
+                        card.className = 'skill-card' + (skillLink ? ' skill-card-link' : '');
+                        if(skillLink) { card.href = skillLink; card.target = '_blank'; }
+                        card.textContent = skillText;
+                        skillsGrid.appendChild(card);
                     });
                 }
                 
                 if (homeData.socials) {
                     const socialsGrid = document.querySelector('.socials-grid');
                     homeData.socials.forEach(social => {
-                        const card = document.createElement('a');
-                        card.className = 'social-card';
-                        card.href = social.link;
-                        card.target = '_blank';
-                        card.rel = 'noopener noreferrer';
-                        card.textContent = social.name;
-                        socialsGrid.appendChild(card);
+                        if (social.name.toLowerCase() !== 'discord') {
+                            const card = document.createElement('a');
+                            card.className = 'social-card';
+                            card.href = social.link;
+                            card.target = '_blank';
+                            card.textContent = social.name;
+                            socialsGrid.appendChild(card);
+                        }
                     });
                 }
+
+                await refreshDiscordUI();
+                
             } catch (error) {
                 console.error('Error loading home page:', error);
             }

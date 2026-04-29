@@ -555,3 +555,49 @@ a {
 .hide-scrollbar::-webkit-scrollbar {
     display: none;
 }
+
+.nav-item-wrapper {
+    display: flex;
+    align-items: stretch;
+    margin-bottom: 4px;
+}
+
+.tree-connector {
+    width: 24px;
+    position: relative;
+    flex-shrink: 0;
+    margin-left: 12px;
+}
+
+.tree-connector::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: hsl(var(--border));
+}
+
+.tree-connector::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 10px;
+    height: 2px;
+    background: hsl(var(--border));
+}
+
+.nav-item-wrapper.last-ref .tree-connector::before {
+    height: 50%;
+}
+
+.nav-section .nav-item-wrapper a {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.nav-section a.is-ref {
+    padding-left: 8px;
+}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        * { border-radius: 0 !important; }
+
+        .game-section { margin-bottom: 3rem; }
+        .section-title { 
+            color: hsl(var(--accent)); 
+            margin-bottom: 1.2rem; 
+            font-size: 1rem; 
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .favorite-list { display: flex; flex-direction: column; gap: 12px; }
+        .fav-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+        .fav-info-group { flex: 1; }
+        .fav-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; }
+        
+        .fav-tags { 
+            display: flex; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            justify-content: flex-end;
+            max-width: 40%;
+        }
+        .tag-box {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border: 1px solid;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+        .tag-skill { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
+        .tag-rating { border-color: #ffcc00; color: #ffcc00; opacity: 0.8; }
+        .tag-lf { border-color: #ffffff; color: #ffffff; opacity: 0.7; }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .liked-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px;
+            text-align: center;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            height: 60px; 
+            overflow: hidden;
+            word-break: break-word;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 1000px) { .games-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 750px) { 
+            .games-grid { grid-template-columns: repeat(3, 1fr); } 
+            .fav-card { flex-direction: column; align-items: flex-start; }
+            .fav-tags { justify-content: flex-start; max-width: 100%; margin-top: 10px; }
+        }
+        @media (max-width: 500px) { .games-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Liked Games</h1>
+        
+        <div class="game-section">
+            <h2 class="section-title">Favorite</h2>
+            <div id="favorite-list" class="favorite-list"></div>
+        </div>
+        
+        <div class="game-section">
+            <h2 class="section-title">Games I Like</h2>
+            <div id="liked-games-grid" class="games-grid"></div>
+        </div>
+        
+        <div class="game-section">
+            <h2 class="section-title">Want to Play</h2>
+            <div id="wtp-games-grid" class="games-grid"></div>
+        </div>
+    </div>
+    
+    <script>
+        const MAPPINGS = {
+            'casual': 'Casual', 'intermediate': 'Intermediate', 'expert': 'Expert',
+            'betterthanyou': 'Better than you', 'obsessed': 'Obsessed', 'loveit': 'Love it',
+            'kindofloveit': 'Kind of love it', 'kindofhateit': 'Kind of hate it',
+            'ragequitting': 'Rage quitting', 'lfg': 'Looking for group',
+            'otp': 'Open to play', 'lft': 'Looking for tips',
+            'ott': 'Open to teach', 'ltd': 'Looking to discuss'
+        };
+
+        function fitText(el) {
+            let fontSize = 0.85;
+            el.style.fontSize = fontSize + 'rem';
+
+            while (el.scrollHeight > el.offsetHeight && fontSize > 0.5) {
+                fontSize -= 0.02;
+                el.style.fontSize = fontSize + 'rem';
+            }
+        }
+
+        async function init() {
+            try {
+                const response = await fetch('/storage/data/home.yaml');
+                const text = await response.text();
+                const data = jsyaml.load(text);
+                const games = data.home.games;
+
+                renderFavorites(games.favorites);
+                renderLiked(games.liked);
+                renderWTP(games.wanttoplay);
+
+                document.querySelectorAll('.liked-card').forEach(fitText);
+                
+                window.addEventListener('resize', () => {
+                    document.querySelectorAll('.liked-card').forEach(fitText);
+                });
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function renderFavorites(favs) {
+            const container = document.getElementById('favorite-list');
+            if (!favs) return;
+
+            favs.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'fav-card';
+                let tagsHTML = '';
+                if (game.tags.skill?.display) {
+                    const val = game.tags.skill.level;
+                    tagsHTML += `<span class="tag-box tag-skill">${MAPPINGS[val] || val}</span>`;
+                }
+                if (game.tags.rating?.display) {
+                    const val = game.tags.rating.rating;
+                    tagsHTML += `<span class="tag-box tag-rating">${MAPPINGS[val] || val}</span>`;
+                }
+                if (game.tags.lf?.display) {
+                    const val = game.tags.lf.looking;
+                    tagsHTML += `<span class="tag-box tag-lf">${MAPPINGS[val] || val}</span>`;
+                }
+                card.innerHTML = `
+                    <div class="fav-info-group">
+                        <div class="fav-title">${game.title}</div>
+                        ${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}
+                    </div>
+                    <div class="fav-tags">${tagsHTML}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderLiked(liked) {
+            const grid = document.getElementById('liked-games-grid');
+            if (!liked) return;
+            liked.forEach(title => {
+                const card = document.createElement('div');
+                card.className = 'liked-card';
+                card.textContent = title;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderWTP(wtp) {
+            const grid = document.getElementById('wtp-games-grid');
+            if (!wtp) return;
+            wtp.forEach(title => {
+                const card = document.createElement('div');
+                card.className = 'liked-card';
+                card.textContent = title;
+                grid.appendChild(card);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

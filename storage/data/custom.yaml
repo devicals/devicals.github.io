@@ -9,18 +9,20 @@ customPages:
           type: section
 
       - id: books
-        display: "| Books"
+        display: "Books"
         name: "Books"
         path: ~/writing/books.yaml
         type:
-          type: section
+          type: refsection
+          refid: writing
 
       - id: poems
-        display: "└ Poems"
+        display: "Poems"
         name: "Poems"
         path: ~/writing/poems.yaml
         type:
-          type: section
+          type: refsection
+          refid: writing
   
   archive:
     display: "Archives"
