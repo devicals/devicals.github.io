@@ -12,7 +12,12 @@
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <style>
-        * { border-radius: 0 !important; }
+        * { 
+            border-radius: 0 !important; 
+            -webkit-font-smoothing: antialiased;
+            /* Prevents blue tap highlight on mobile */
+            -webkit-tap-highlight-color: transparent;
+        }
 
         .game-section { margin-bottom: 3rem; }
         .section-title { 
@@ -24,57 +29,121 @@
             letter-spacing: 2px;
         }
 
-        .favorite-list { display: flex; flex-direction: column; gap: 12px; }
-        .fav-card {
+        /* --- 3D SYSTEM --- */
+        .tilt-wrapper {
+            display: block;
+            perspective: 1000px;
+            user-select: none;
+        }
+
+        .favorite-list .tilt-wrapper {
+            perspective: 2000px; 
+            margin-bottom: 12px;
+        }
+
+        .fav-card, .liked-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 16px;
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+            transform-style: preserve-3d;
+            pointer-events: none;
+            will-change: transform;
+            
+            backface-visibility: hidden;
+            outline: 1px solid transparent; 
+            transform: translateZ(1px); 
+        }
+
+        /* Active/Hover states */
+        .tilt-wrapper:hover .fav-card, 
+        .tilt-wrapper:hover .liked-card,
+        .tilt-wrapper.is-tapped .fav-card,
+        .tilt-wrapper.is-tapped .liked-card {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            z-index: 100;
+        }
+
+        /* --- DYNAMIC FLOATING TAGS --- */
+        .fav-tags { 
+            display: flex; 
+            gap: 12px; 
+            flex-wrap: wrap; 
+            justify-content: flex-end; 
+            max-width: 50%; 
+            transform-style: preserve-3d;
+        }
+
+        .tag-box { 
+            font-size: 0.7rem; 
+            padding: 4px 10px; 
+            border: 1px solid; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            background: rgba(10, 10, 10, 0.7);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+            will-change: transform;
+            backface-visibility: hidden;
+            outline: 1px solid transparent;
+        }
+
+        .tilt-wrapper:hover .tag-box,
+        .tilt-wrapper.is-tapped .tag-box {
+            transform: 
+                translateZ(var(--rand-z, 40px)) 
+                translateY(var(--rand-y, -2px)) 
+                rotateZ(var(--rand-r, 0deg));
+            filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.5));
+        }
+
+        .tag-skill { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
+        .tag-rating { border-color: #ffcc00; color: #ffcc00; }
+        .tag-lf { border-color: #ffffff; color: #ffffff; opacity: 0.8; }
+
+        /* --- LAYOUT --- */
+        .fav-card {
+            padding: 35px; 
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 20px;
+            overflow: hidden;
         }
-        .fav-info-group { flex: 1; }
-        .fav-title { font-size: 1.2rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
-        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; }
         
-        .fav-tags { 
-            display: flex; 
-            gap: 8px; 
-            flex-wrap: wrap; 
-            justify-content: flex-end;
-            max-width: 40%;
+        .fav-info-group { transform-style: preserve-3d; }
+
+        .fav-title { 
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            color: #fff; 
+            margin-bottom: 6px; 
+            transition: transform 0.4s ease;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
         }
-        .tag-box {
-            font-size: 0.7rem;
-            padding: 3px 8px;
-            border: 1px solid;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
+        
+        .tilt-wrapper:hover .fav-title,
+        .tilt-wrapper.is-tapped .fav-title { 
+            transform: translateZ(20px); 
         }
-        .tag-skill { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
-        .tag-rating { border-color: #ffcc00; color: #ffcc00; opacity: 0.8; }
-        .tag-lf { border-color: #ffffff; color: #ffffff; opacity: 0.7; }
+
+        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; }
 
         .games-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
+            gap: 15px;
         }
-
+        .games-grid .tilt-wrapper { height: 85px; }
         .liked-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            height: 100%;
             padding: 8px;
             text-align: center;
             color: #ccc;
             display: flex;
             align-items: center;
             justify-content: center;
-            
-            height: 60px; 
-            overflow: hidden;
             word-break: break-word;
             line-height: 1.2;
         }
@@ -82,26 +151,22 @@
         @media (max-width: 1000px) { .games-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 750px) { 
             .games-grid { grid-template-columns: repeat(3, 1fr); } 
-            .fav-card { flex-direction: column; align-items: flex-start; }
-            .fav-tags { justify-content: flex-start; max-width: 100%; margin-top: 10px; }
+            .fav-card { flex-direction: column; align-items: flex-start; padding: 25px; }
+            .fav-tags { justify-content: flex-start; max-width: 100%; margin-top: 25px; }
         }
-        @media (max-width: 500px) { .games-grid { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Liked Games</h1>
-        
         <div class="game-section">
             <h2 class="section-title">Favorite</h2>
             <div id="favorite-list" class="favorite-list"></div>
         </div>
-        
         <div class="game-section">
             <h2 class="section-title">Games I Like</h2>
             <div id="liked-games-grid" class="games-grid"></div>
         </div>
-        
         <div class="game-section">
             <h2 class="section-title">Want to Play</h2>
             <div id="wtp-games-grid" class="games-grid"></div>
@@ -118,15 +183,92 @@
             'ott': 'Open to teach', 'ltd': 'Looking to discuss'
         };
 
-        function fitText(el) {
-            let fontSize = 0.85;
-            el.style.fontSize = fontSize + 'rem';
-
-            while (el.scrollHeight > el.offsetHeight && fontSize > 0.5) {
-                fontSize -= 0.02;
-                el.style.fontSize = fontSize + 'rem';
-            }
+        function randomizeTags(wrapper) {
+            const tags = wrapper.querySelectorAll('.tag-box');
+            tags.forEach(tag => {
+                const z = Math.floor(Math.random() * 50) + 30;
+                const y = Math.floor(Math.random() * 12) * -1;
+                const r = Math.floor(Math.random() * 24) - 12;
+                tag.style.setProperty('--rand-z', `${z}px`);
+                tag.style.setProperty('--rand-y', `${y}px`);
+                tag.style.setProperty('--rand-r', `${r}deg`);
+            });
         }
+
+        function handleTilt(e) {
+            const wrapper = e.currentTarget;
+            const card = wrapper.querySelector('.fav-card, .liked-card');
+            const rect = wrapper.getBoundingClientRect();
+            
+            // Handle both touch and mouse
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            let rotX, rotY, scale;
+
+            if (card.classList.contains('fav-card')) {
+                rotX = (centerY - y) / 15; 
+                rotY = (x - centerX) / 80; 
+                rotX = Math.max(Math.min(rotX, 7), -7);
+                rotY = Math.max(Math.min(rotY, 7), -7);
+                scale = 1.03;
+            } else {
+                rotX = (centerY - y) / 6; 
+                rotY = (x - centerX) / 10;
+                scale = 1.1;
+            }
+
+            card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
+        }
+
+        function resetAllTilts() {
+            document.querySelectorAll('.fav-card, .liked-card').forEach(card => {
+                card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                card.parentElement.classList.remove('is-tapped');
+            });
+        }
+
+        function createTiltWrapper(contentClass, innerHTML) {
+            const wrap = document.createElement('div');
+            wrap.className = 'tilt-wrapper';
+            wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
+            
+            // Randomize on enter/tap
+            const startInteraction = () => {
+                if (contentClass === 'fav-card') randomizeTags(wrap);
+                wrap.classList.add('is-tapped');
+            };
+
+            wrap.addEventListener('mouseenter', startInteraction);
+            wrap.addEventListener('touchstart', (e) => {
+                resetAllTilts(); // Reset others before starting this one
+                startInteraction();
+                handleTilt(e);
+            }, {passive: true});
+
+            wrap.addEventListener('mousemove', handleTilt);
+            wrap.addEventListener('touchmove', handleTilt, {passive: true});
+
+            wrap.addEventListener('mouseleave', (e) => {
+                const card = wrap.querySelector('.fav-card, .liked-card');
+                card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                wrap.classList.remove('is-tapped');
+            });
+            
+            return wrap;
+        }
+
+        // GLOBAL RESET: When tapping the background/anything not a card
+        document.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('.tilt-wrapper')) {
+                resetAllTilts();
+            }
+        }, {passive: true});
 
         async function init() {
             try {
@@ -136,71 +278,40 @@
                 const games = data.home.games;
 
                 renderFavorites(games.favorites);
-                renderLiked(games.liked);
-                renderWTP(games.wanttoplay);
+                renderGrid(games.liked, 'liked-games-grid');
+                renderGrid(games.wanttoplay, 'wtp-games-grid');
 
                 document.querySelectorAll('.liked-card').forEach(fitText);
-                
-                window.addEventListener('resize', () => {
-                    document.querySelectorAll('.liked-card').forEach(fitText);
-                });
-
-            } catch (e) {
-                console.error(e);
-            }
+                window.addEventListener('resize', () => document.querySelectorAll('.liked-card').forEach(fitText));
+            } catch (e) { console.error(e); }
         }
 
         function renderFavorites(favs) {
             const container = document.getElementById('favorite-list');
             if (!favs) return;
-
             favs.forEach(game => {
-                const card = document.createElement('div');
-                card.className = 'fav-card';
                 let tagsHTML = '';
-                if (game.tags.skill?.display) {
-                    const val = game.tags.skill.level;
-                    tagsHTML += `<span class="tag-box tag-skill">${MAPPINGS[val] || val}</span>`;
-                }
-                if (game.tags.rating?.display) {
-                    const val = game.tags.rating.rating;
-                    tagsHTML += `<span class="tag-box tag-rating">${MAPPINGS[val] || val}</span>`;
-                }
-                if (game.tags.lf?.display) {
-                    const val = game.tags.lf.looking;
-                    tagsHTML += `<span class="tag-box tag-lf">${MAPPINGS[val] || val}</span>`;
-                }
-                card.innerHTML = `
-                    <div class="fav-info-group">
-                        <div class="fav-title">${game.title}</div>
-                        ${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}
-                    </div>
-                    <div class="fav-tags">${tagsHTML}</div>
-                `;
-                container.appendChild(card);
+                if (game.tags.skill?.display) tagsHTML += `<span class="tag-box tag-skill">${MAPPINGS[game.tags.skill.level] || game.tags.skill.level}</span>`;
+                if (game.tags.rating?.display) tagsHTML += `<span class="tag-box tag-rating">${MAPPINGS[game.tags.rating.rating] || game.tags.rating.rating}</span>`;
+                if (game.tags.lf?.display) tagsHTML += `<span class="tag-box tag-lf">${MAPPINGS[game.tags.lf.looking] || game.tags.lf.looking}</span>`;
+                const inner = `<div class="fav-info-group"><div class="fav-title">${game.title}</div>${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}</div><div class="fav-tags">${tagsHTML}</div>`;
+                container.appendChild(createTiltWrapper('fav-card', inner));
             });
         }
 
-        function renderLiked(liked) {
-            const grid = document.getElementById('liked-games-grid');
-            if (!liked) return;
-            liked.forEach(title => {
-                const card = document.createElement('div');
-                card.className = 'liked-card';
-                card.textContent = title;
-                grid.appendChild(card);
-            });
+        function renderGrid(list, containerId) {
+            const grid = document.getElementById(containerId);
+            if (!list) return;
+            list.forEach(title => grid.appendChild(createTiltWrapper('liked-card', title)));
         }
 
-        function renderWTP(wtp) {
-            const grid = document.getElementById('wtp-games-grid');
-            if (!wtp) return;
-            wtp.forEach(title => {
-                const card = document.createElement('div');
-                card.className = 'liked-card';
-                card.textContent = title;
-                grid.appendChild(card);
-            });
+        function fitText(el) {
+            let fontSize = 0.85;
+            el.style.fontSize = fontSize + 'rem';
+            while (el.scrollHeight > el.offsetHeight && fontSize > 0.5) {
+                fontSize -= 0.02;
+                el.style.fontSize = fontSize + 'rem';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', init);

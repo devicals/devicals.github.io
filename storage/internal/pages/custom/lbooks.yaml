@@ -1,0 +1,30 @@
+interests:
+  favorites:
+    - title: The Famous Five (Series)
+      comment: >-
+        peak stories, read it so many times all my books are completely worn out :P
+      tags:
+        - tag: "Yummy"
+          style: golden
+        - tag: "Looking to discuss"
+          style: gray
+
+  sections:
+    - display: "Books I Ate"
+      items:
+        - Down the Darkest Road
+        - The Catcher in the Rye
+        - City of the Sun
+        - The Scold's Bridle
+        - Awful Auntie
+        - New Illustrated Columbia Encyclopedia
+        - Bad Dad
+        - Billionaire Boy
+        - The Boy in the Dress
+        - Mr. Stink
+        - Ratburger
+        - Gangsta Granny
+        - Grandpa's Great Escape
+        - The Midnight Gang
+        - Demon Dentist
+        - The Naughtiest Girl (Series)

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interests - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        * { border-radius: 0 !important; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+        .interest-outer { margin-bottom: 3.5rem; }
+        .interest-title { color: hsl(var(--accent)); margin-bottom: 1.5rem; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .tilt-wrapper { display: block; perspective: 1000px; user-select: none; }
+        .interest-fav-list .tilt-wrapper { perspective: 2000px; margin-bottom: 15px; }
+        .fav-card, .interest-grid-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
+        .tilt-wrapper:hover .fav-card, .tilt-wrapper:hover .interest-grid-card, .tilt-wrapper.is-tapped .fav-card, .tilt-wrapper.is-tapped .interest-grid-card { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.06); box-shadow: 0 20px 50px rgba(0,0,0,0.7); z-index: 100; }
+        .fav-card { padding: 35px; display: flex; justify-content: space-between; align-items: center; gap: 20px; overflow: hidden; }
+        .fav-title { font-size: 1.4rem; font-weight: 700; color: #fff; transition: transform 0.4s ease; transform-style: preserve-3d; }
+        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; margin-top: 8px; white-space: pre-wrap; line-height: 1.4; }
+        .tilt-wrapper:hover .fav-title, .tilt-wrapper.is-tapped .fav-title { transform: translateZ(25px); }
+        .fav-tags { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; max-width: 50%; transform-style: preserve-3d; }
+        .tag-box { font-size: 0.7rem; padding: 4px 10px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(10, 10, 10, 0.8); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; }
+        .tilt-wrapper:hover .tag-box, .tilt-wrapper.is-tapped .tag-box { transform: translateZ(var(--rand-z, 40px)) translateY(var(--rand-y, -2px)) rotateZ(var(--rand-r, 0deg)); filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.5)); }
+        .tag-accent { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
+        .tag-golden { border-color: #ffcc00; color: #ffcc00; }
+        .tag-gray { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
+        .interest-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+        .interest-grid .tilt-wrapper { height: 85px; }
+        .interest-grid-card { height: 100%; padding: 10px; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.2; word-break: break-word; font-size: 0.85rem; color: #ccc; }
+        @media (max-width: 1000px) { .interest-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 750px) { .interest-grid { grid-template-columns: repeat(3, 1fr); } .fav-card { flex-direction: column; align-items: flex-start; padding: 25px; } .fav-tags { justify-content: flex-start; max-width: 100%; margin-top: 25px; } }
+        @media (max-width: 500px) { .interest-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div id="interests-content"></div>
+    </div>
+    <script>
+        function randomizeTags(wrapper) {
+            wrapper.querySelectorAll('.tag-box').forEach(tag => {
+                tag.style.setProperty('--rand-z', `${Math.floor(Math.random() * 50) + 30}px`);
+                tag.style.setProperty('--rand-y', `${Math.floor(Math.random() * 12) * -1}px`);
+                tag.style.setProperty('--rand-r', `${Math.floor(Math.random() * 24) - 12}deg`);
+            });
+        }
+        function handleTilt(e) {
+            const wrapper = e.currentTarget;
+            const card = wrapper.querySelector('.fav-card, .interest-grid-card');
+            const rect = wrapper.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const x = clientX - rect.left, y = clientY - rect.top;
+            const centerX = rect.width / 2, centerY = rect.height / 2;
+            let rotX, rotY, scale;
+            if (card.classList.contains('fav-card')) {
+                rotX = Math.max(Math.min((centerY - y) / 15, 7), -7);
+                rotY = Math.max(Math.min((x - centerX) / 80, 7), -7);
+                scale = 1.03;
+            } else {
+                rotX = (centerY - y) / 6; rotY = (x - centerX) / 10; scale = 1.1;
+            }
+            card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
+        }
+        function createTiltWrapper(contentClass, innerHTML) {
+            const wrap = document.createElement('div');
+            wrap.className = 'tilt-wrapper';
+            wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
+            const start = () => { if (contentClass === 'fav-card') randomizeTags(wrap); wrap.classList.add('is-tapped'); };
+            wrap.addEventListener('mouseenter', start);
+            wrap.addEventListener('touchstart', (e) => { document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped')); start(); handleTilt(e); }, {passive: true});
+            wrap.addEventListener('mousemove', handleTilt);
+            wrap.addEventListener('touchmove', handleTilt, {passive: true});
+            wrap.addEventListener('mouseleave', () => { wrap.querySelector('div').style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1,1,1)`; wrap.classList.remove('is-tapped'); });
+            return wrap;
+        }
+        function fitText(el) {
+            let fs = 0.85; el.style.fontSize = fs + 'rem';
+            while (el.scrollHeight > el.offsetHeight && fs > 0.5) { fs -= 0.02; el.style.fontSize = fs + 'rem'; }
+        }
+        async function init() {
+            const params = new URLSearchParams(window.location.search);
+            const file = params.get('file');
+            if (!file) return;
+            try {
+                const resp = await fetch(file);
+                const data = jsyaml.load(await resp.text());
+                const container = document.getElementById('interests-content');
+                if (data.interests.favorites) {
+                    const sec = document.createElement('div');
+                    sec.className = 'interest-outer';
+                    sec.innerHTML = `<h2 class="interest-title">Favorite</h2><div class="interest-fav-list"></div>`;
+                    const list = sec.querySelector('.interest-fav-list');
+                    data.interests.favorites.forEach(fav => {
+                        let tagsHTML = '';
+                        const tagList = fav.tags?.tags || (Array.isArray(fav.tags) ? fav.tags : []);
+                        tagList.forEach(t => { tagsHTML += `<span class="tag-box tag-${t.style || 'accent'}">${t.tag}</span>`; });
+                        const inner = `<div class="fav-info-group"><div class="fav-title">${fav.title}</div><span class="fav-comment">${fav.comment || ''}</span></div><div class="fav-tags">${tagsHTML}</div>`;
+                        list.appendChild(createTiltWrapper('fav-card', inner));
+                    });
+                    container.appendChild(sec);
+                }
+                if (data.interests.sections) {
+                    data.interests.sections.forEach(s => {
+                        const sec = document.createElement('div');
+                        sec.className = 'interest-outer';
+                        sec.innerHTML = `<h2 class="interest-title">${s.display}</h2><div class="interest-grid"></div>`;
+                        const grid = sec.querySelector('.interest-grid');
+                        s.items.forEach(item => grid.appendChild(createTiltWrapper('interest-grid-card', item)));
+                        container.appendChild(sec);
+                    });
+                }
+                document.querySelectorAll('.interest-grid-card').forEach(fitText);
+            } catch (e) { console.error(e); }
+        }
+        document.addEventListener('touchstart', (e) => { if (!e.target.closest('.tilt-wrapper')) document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped')); }, {passive: true});
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

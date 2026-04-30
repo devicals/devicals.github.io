@@ -13,7 +13,7 @@
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <style>
-        .visitor-card {
+        .creator-card {
             margin-bottom: 20px;
             padding: 15px 30px !important;
             display: flex;
@@ -22,19 +22,19 @@
             min-height: auto !important;
         }
 
-        .visitor-card h2 {
+        .creator-card h2 {
             margin: 0;
             font-size: 1.1rem;
         }
 
-        .visitor-info-group {
+        .creator-info-group {
             text-align: right;
             display: flex;
             align-items: baseline;
             gap: 15px;
         }
 
-        #visit-count {
+        #creator {
             font-size: 1.8rem;
             line-height: 1;
         }
@@ -46,12 +46,12 @@
         }
 
         @media (max-width: 600px) {
-            .visitor-card {
+            .creator-card {
                 flex-direction: column;
                 text-align: center;
                 gap: 10px;
             }
-            .visitor-info-group {
+            .creator-info-group {
                 flex-direction: column;
                 align-items: center;
                 gap: 5px;
@@ -60,36 +60,39 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .graph-section .stat-card img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 15px auto 0;
+            border-radius: 4px;
+        }
+
+        .graph-section .stat-card {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Repository Info</h1>
 
-        <div class="stat-card visitor-card">
-            <h2>Unique Visitors</h2>
-            <div class="visitor-info-group">
-                <div class="size-value" id="visit-count">000000</div>
-                <div class="stat-label">Total Visits</div>
+        <div class="stat-card creator-card">
+            <h2>Created By</h2>
+            <div class="creator-info-group">
+                <div class="size-value" id="creator"><a href="https://github.com/devicals" target="_blank">Error Dev</a></div>
             </div>
         </div>
 
         <div class="info-grid">
             <div class="stat-card">
-                <h2>Repository Stats</h2>
-                <div class="stats-group">
-                    <div class="stat-item">
-                        <div class="stat-value" id="stars">-</div>
-                        <div class="stat-label">Stars</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="forks">-</div>
-                        <div class="stat-label">Forks</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="watchers">-</div>
-                        <div class="stat-label">Watchers</div>
-                    </div>
+                <h2>Repo Commits</h2>
+                <div class="size-display">
+                    <div class="size-value" id="commits">-</div>
+                    <div class="stat-label">Commits</div>
                 </div>
             </div>
             
@@ -106,15 +109,21 @@
             <h2>Languages</h2>
             <div class="stat-card" id="languages-container"></div>
         </div>
+
+        <div class="graph-section">
+            <h2>‎ </h2>
+            <div class="stat-card">
+                <p id="graph-title">Last updated: <strong>2:29:53 AM // Thursday 30, 2026</strong></p><br>
+                <img src="/storage/store/contributions.png" alt="Commit Activity Graph"></div>
+            </div>
+        </div>
     </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const renderStats = (data) => {
                 if (!data) return;
-                document.getElementById('stars').textContent = (data.stars ?? 0).toLocaleString();
-                document.getElementById('forks').textContent = (data.forks ?? 0).toLocaleString();
-                document.getElementById('watchers').textContent = (data.watchers ?? 0).toLocaleString();
+                document.getElementById('commits').textContent = (data.commits ?? 0).toLocaleString();
                 document.getElementById('size').textContent = (data.size ?? 0).toLocaleString();
 
                 const container = document.getElementById('languages-container');
@@ -147,7 +156,7 @@
                 const yamlText = await response.text();
                 const stats = jsyaml.load(yamlText);
                 
-                if (!stats || stats.stars === undefined) throw new Error("Incomplete YAML");
+                if (!stats || stats.size === undefined) throw new Error("Incomplete YAML");
                 
                 console.log("Loaded from YAML successfully");
                 renderStats(stats);
@@ -157,25 +166,36 @@
                 try {
                     const repoRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io');
                     const repoData = await repoRes.json();
+                    
                     const langRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io/languages');
                     const langData = await langRes.json();
 
-                    const total = Object.values(langData).reduce((a, b) => a + b, 0);
+                    const commitRes = await fetch('https://api.github.com/repos/devicals/devicals.github.io/commits?per_page=1');
+                    const linkHeader = commitRes.headers.get('Link');
+                    let commitCount = 0;
+                    
+                    if (linkHeader) {
+                        const match = linkHeader.match(/page=(\d+)>; rel="last"/);
+                        commitCount = match ? match[1] : 1;
+                    } else {
+                        const commits = await commitRes.json();
+                        commitCount = commits.length;
+                    }
+
+                    const totalBytes = Object.values(langData).reduce((a, b) => a + b, 0);
                     const fallbackData = {
-                        stars: repoData.stargazers_count,
-                        forks: repoData.forks_count,
-                        watchers: repoData.subscribers_count,
+                        commits: commitCount,
                         size: repoData.size,
                         languages: Object.entries(langData).map(([name, bytes]) => ({
                             name,
-                            percent: ((bytes / total) * 100).toFixed(1)
+                            percent: ((bytes / totalBytes) * 100).toFixed(1)
                         }))
                     };
                     renderStats(fallbackData);
                 } catch (err) {
-                    ['stars', 'forks', 'watchers', 'size'].forEach(id => {
-                        document.getElementById(id).textContent = 'Error';
-                    });
+                    console.error(err);
+                    document.getElementById('commits').textContent = 'Error';
+                    document.getElementById('size').textContent = 'Error';
                 }
             }
         });

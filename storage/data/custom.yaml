@@ -1,4 +1,19 @@
 customPages:
+  interests:
+    display: "Interests"
+    sub:
+      - id: lgames
+        name: "Liked Games"
+        path: ~/../main/games.html
+        type:
+          type: html
+
+      - id: lbooks
+        name: "Liked Books"
+        path: ~/lbooks.yaml
+        type:
+          type: interests
+
   extra:
     display: "Extra Content"
     sub:
