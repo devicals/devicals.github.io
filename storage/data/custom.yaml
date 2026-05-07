@@ -8,6 +8,12 @@ customPages:
         type:
           type: html
 
+      - id: lmusic
+        name: "Liked Music"
+        path: ~/lmusic.yaml
+        type:
+          type: interests
+
       - id: lbooks
         name: "Liked Books"
         path: ~/lbooks.yaml

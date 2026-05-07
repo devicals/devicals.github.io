@@ -94,7 +94,7 @@
                 if (data.interests.favorites) {
                     const sec = document.createElement('div');
                     sec.className = 'interest-outer';
-                    sec.innerHTML = `<h2 class="interest-title">Favorite</h2><div class="interest-fav-list"></div>`;
+                    sec.innerHTML = `<h2 class="interest-title">Favorites</h2><div class="interest-fav-list"></div>`;
                     const list = sec.querySelector('.interest-fav-list');
                     data.interests.favorites.forEach(fav => {
                         let tagsHTML = '';
