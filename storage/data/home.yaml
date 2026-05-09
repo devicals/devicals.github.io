@@ -45,10 +45,31 @@ home:
 
   games:
     favorites:
+      - title: "Z.A.T.O. // I Love the World and Everything In It"
+        comment: >-
+          just pl�y �t and y�u￼�l s�e￼￼￼
+          lowk my new fav game
+        tags:
+          skill:
+            display: true
+            level:
+              casual
+          
+          rating:
+            display: true
+            rating:
+              obsessed
+            
+            lf:
+              display: false
+              looking: null
+
       - title: Neva
         comment: >-
           IT IS SO PEAUTIFUL AND PEAK
           AND I CRIED PLAYING THIS
+
+          ps now second most favorite
         tags:
           skill:
             display: true
@@ -64,23 +85,6 @@ home:
             display: true
             looking:
               ltd
-
-      - title: Persona 3 Portable
-        comment: >-
-          (second) peakest game i'll ever play i love ts so much ^_^
-        tags:
-          skill:
-            display: true
-            level:
-              casual
-
-          rating:
-            display: true
-            rating:
-              loveit
-            
-          lf:
-            display: false
 
       - title: Minecraft
         comment: >-
@@ -102,7 +106,7 @@ home:
               otp
 
     liked:
-      - "Z.A.T.O. // I Love the World and Everything In It"
+      - Persona 3 Portable
       - "Danganronpa: Trigger Happy Havoc"
       - ULTRAKILL
       - Persona 5 Royal
