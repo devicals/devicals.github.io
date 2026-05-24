@@ -124,6 +124,12 @@ customPages:
           type: html
         hidden: true
       
+      - id: ranking
+        name: "Tier List Maker"
+        path: ~/ranking.html
+        type:
+          type: html
+
       - id: globe
         name: "World Clock Viewer"
         path: ~/worldclock.html

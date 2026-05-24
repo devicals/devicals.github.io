@@ -1,0 +1,81 @@
+presets:
+  - id: simple
+    label: Simpler
+    tiers:
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+
+  - id: simple2
+    label: Simple
+    tiers:
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+
+  - id: standard
+    label: Standard
+    tiers:
+      - S
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+  
+  - id: extended
+    label: Extended
+    tiers:
+      - SSS
+      - SS
+      - S
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+      - Z
+      - EXECUTION
+  
+  - id: full
+    label: Full
+    tiers:
+      - SSS
+      - SS
+      - S
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+      - Z
+      - EXECUTION
+  
+  - id: complete
+    label: All a dat
+    tiers:
+      - SSS
+      - SS
+      - S
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+      - FF
+      - FFF
+      - Z
+      - ZZ
+      - ZZZ
+      - Q
+      - EXECUTION
