@@ -88,9 +88,15 @@ async function loadYAML(path) {
 async function loadAnnouncements() {
     try {
         const data = await loadYAML('/storage/data/announcements.yaml');
-        if (!data || !data.announcements) return;
+        if (!data || !data.announcements || data.announcements.length === 0) {
+            closeAnnouncement();
+            return;
+        }
         const announcements = data.announcements;
-        if (announcements.length === 0) return;
+        
+        document.getElementById('announcement-banner').classList.remove('hidden');
+        document.getElementById('main-content').classList.remove('no-banner');
+        
         displayAnnouncement(0, announcements);
         if (announcements.length > 1) {
             announcementInterval = setInterval(() => {
