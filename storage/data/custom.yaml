@@ -135,3 +135,9 @@ customPages:
         path: ~/worldclock.html
         type:
           type: html
+
+      - id: zato
+        name: "Z.A.T.O Live Tier List"
+        path: ~/zato.html
+        type:
+          type: html

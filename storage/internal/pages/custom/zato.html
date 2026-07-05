@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Z.A.T.O Live Tier List</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --foreground: 0 0% 93%;
+      --card: 0 0% 10%;
+      --secondary: 0 0% 13%;
+      --border: 0 0% 20%;
+      --muted-foreground: 0 0% 55%;
+      --accent: 160 84% 39%;
+      --accent-foreground: 0 0% 0%;
+    }
+    * { border-radius: 0 !important; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body { font-family: 'JetBrains Mono', monospace; background: transparent; color: hsl(var(--foreground)); margin: 0; padding: 0; overflow-x: hidden; height: 100vh; }
+    html { height: 100%; }
+
+    .tl-layout { display: flex; height: 100vh; }
+    .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
+    
+    .tl-sidebar { display: none; width: 260px; min-width: 260px; height: 100vh; overflow-y: auto; border-left: 1px solid hsl(var(--border)); background: hsl(var(--card)); padding: 14px; flex-direction: column; gap: 12px; flex-shrink: 0; }
+    body.is-admin .tl-sidebar { display: flex; }
+
+    .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .tl-title { font-size: 22px; font-weight: 700; color: hsl(var(--accent)); margin-bottom: 3px; display: flex; align-items: center; gap: 12px; }
+    
+    .live-badge { display: flex; align-items: center; gap: 6px; color: #ff3b3b; font-size: 12px; border: 1px solid #ff3b3b; padding: 4px 8px; }
+    .pulse { width: 8px; height: 8px; background: #ff3b3b; border-radius: 50%; animation: pulsing 1.5s infinite; }
+    @keyframes pulsing {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 59, 59, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0); }
+    }
+
+    button, select, input[type=text] {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 9px;
+      background: hsl(var(--secondary)); border: 1px solid hsl(var(--border));
+      color: hsl(var(--foreground)); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
+    }
+    button:hover { color: hsl(var(--accent)); border-color: hsl(var(--accent)); }
+    .btn-primary { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); border-color: hsl(var(--accent)); font-weight: 700; }
+    .btn-primary:hover { opacity: 0.85; color: hsl(var(--accent-foreground)); }
+    
+    .tier-list { display: grid; grid-template-columns: repeat(var(--tier-cols, 1), 1fr); grid-auto-flow: column; grid-template-rows: repeat(var(--tier-rows, 15), auto); gap: 3px; }
+    .tier-row { display: flex; align-items: stretch; border: 1px solid hsl(var(--border)); transition: border-color 0.2s; position: relative; }
+    .tier-label { width: 64px; min-width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px; }
+    .tier-items { flex: 1; display: flex; flex-direction: column; gap: 0; padding: 0; background: hsl(var(--card)); border-left: 1px solid hsl(var(--border)); min-height: 56px; }
+    .tier-items.drag-over { background: hsl(var(--accent) / 0.09); border-left-color: hsl(var(--accent)); }
+    .tier-item-row { display: flex; flex: 1; min-height: 56px; }
+    .tilt-wrapper { flex: 1; display: flex; flex-direction: column; perspective: 1000px; user-select: none; border-right: 1px solid hsl(var(--border)); min-width: 0; }
+    
+    .tl-item { width: 100%; flex: 1; min-height: 48px; display: flex; align-items: center; gap: 7px; padding: 5px 28px 5px 7px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: hsl(var(--foreground)); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; transform-style: preserve-3d; position: relative; overflow: hidden; }
+    body.is-admin .tl-item { cursor: grab; }
+    .tilt-wrapper:hover .tl-item { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.07); box-shadow: 0 12px 30px rgba(0,0,0,0.7); z-index: 100; }
+    
+    .tl-item-text-block { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .tl-item-label { font-size: clamp(10px, 1.1vw, 14px); line-height: 1.3; word-break: break-word; }
+    
+    .tl-item-img-full { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .tl-item-img-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); font-size: 10px; padding: 2px 4px; text-align: center; z-index: 1; }
+    
+    .tl-item-remove, .tl-item-edit, .tier-lbl-btn { display: none; }
+    body.is-admin .tl-item-remove, body.is-admin .tl-item-edit { display: block; position: absolute; background: none; border: none; cursor: pointer; font-size: 9px; padding: 1px 3px; z-index: 2; color: hsl(var(--muted-foreground)); }
+    body.is-admin .tl-item-remove { top: 2px; right: 2px; }
+    body.is-admin .tl-item-edit { top: 2px; left: 2px; }
+    body.is-admin .tl-item-remove:hover { color: #ff6b6b; }
+    body.is-admin .tl-item-edit:hover { color: hsl(var(--accent)); }
+    
+    .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); }
+    .pool-empty { font-size: 11px; color: hsl(var(--muted-foreground)); font-style: italic; width: 100%; text-align: center; padding: 12px 0; }
+    .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; max-width: 130px; }
+    .pool-area .tl-item { height: 56px; }
+
+    .sidebar-section { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+    .sidebar-label { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; border-bottom: 1px solid hsl(var(--border)); }
+    .add-panel input, .add-panel select { width: 100%; margin-bottom: 5px; }
+  </style>
+</head>
+<body>
+  <div class="tl-layout">
+    <div class="tl-main">
+      <div class="tl-header">
+        <div class="tl-title">
+          Z.A.T.O Tier List
+          <div class="live-badge"><span class="pulse"></span> LIVE</div>
+        </div>
+        <div>
+          <button id="auth-btn">Loading Auth...</button>
+        </div>
+      </div>
+      <div class="tier-list" id="tierList">
+         <p style="color: hsl(var(--muted-foreground)); font-style: italic;">Syncing with live database...</p>
+      </div>
+    </div>
+
+    <div class="tl-sidebar" id="admin-panel">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Unranked Pool</div>
+        <div class="pool-area" id="pool" data-tier="__pool__"></div>
+      </div>
+      <div class="sidebar-section add-panel">
+        <div class="sidebar-label">Add Item</div>
+        <select id="itemType">
+          <option value="text">Text</option>
+          <option value="image">Image URL</option>
+        </select>
+        <input type="text" id="itemInput" placeholder="Label or paste URL..." />
+        <input type="text" id="itemLabel" style="display:none" placeholder="Display label (optional)..." />
+        <button class="btn-primary" onclick="addItem()">+ Add Item</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+    import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkPuPqmvvLuJyBfj2eO3tUYlxrMYrqYH4",
+      authDomain: "zatocord-tierlist.firebaseapp.com",
+      databaseURL: "https://zatocord-tierlist-default-rtdb.firebaseio.com",
+      projectId: "zatocord-tierlist",
+      storageBucket: "zatocord-tierlist.firebasestorage.app",
+      messagingSenderId: "661100777621",
+      appId: "1:661100777621:web:4f1164ba0d09c36c880b9c"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const TIERS_BASE = [
+      { id:'S', label:'S', color:'#FF9A3B', text:'#fff' },
+      { id:'A', label:'A', color:'#FFD93B', text:'#2a1a00' },
+      { id:'B', label:'B', color:'#A8D63F', text:'#1a2a00' },
+      { id:'C', label:'C', color:'#3FD67A', text:'#003020' },
+      { id:'D', label:'D', color:'#3FBDD6', text:'#002030' },
+      { id:'F', label:'F', color:'#7B5EA7', text:'#fff' },
+    ];
+
+    let isAdmin = false;
+    let isDragging = false;
+    let pendingUpdate = false;
+    let dragItem = null, dragSrc = null;
+    
+    let allTiers = [];
+    let activeTierIds = [];
+    let columns = 1;
+    let tierItems = {};
+    let poolItems = [];
+    let idCounter = 0;
+
+    onAuthStateChanged(auth, (user) => {
+        const authBtn = document.getElementById('auth-btn');
+        if (user) {
+            const email = user.email || '';
+            
+            if (email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+                authBtn.textContent = `Logout (Admin)`;
+                authBtn.onclick = () => signOut(auth);
+                
+                if (window.pendingInitialSync) {
+                    syncToFirebase();
+                    window.pendingInitialSync = false;
+                }
+            } else {
+                alert("You are logged in, but you do not have Admin privileges.");
+                signOut(auth);
+            }
+        } else {
+            isAdmin = false;
+            document.body.classList.remove('is-admin');
+            authBtn.textContent = 'Admin Login';
+            authBtn.onclick = () => {
+                signInWithPopup(auth, provider).catch(err => alert("Login Failed: " + err.message));
+            };
+        }
+        renderAll();
+    });
+
+    onValue(ref(db, 'zatoTierList'), (snapshot) => {
+        if (!snapshot.exists()) {
+            allTiers = JSON.parse(JSON.stringify(TIERS_BASE));
+            activeTierIds = TIERS_BASE.map(t => t.id);
+            if (isAdmin) syncToFirebase();
+            else window.pendingInitialSync = true; 
+        } else {
+            const d = snapshot.val();
+            allTiers = d.allTiers || [];
+            activeTierIds = d.activeTierIds || [];
+            columns = d.columns || 1;
+            tierItems = d.tierItems || {};
+            poolItems = d.poolItems || [];
+            idCounter = d.idCounter || 0;
+        }
+
+        if (isDragging) pendingUpdate = true;
+        else renderAll();
+    });
+
+    function syncToFirebase() {
+        if (!isAdmin) return;
+        set(ref(db, 'zatoTierList'), {
+            allTiers, activeTierIds, columns, tierItems, poolItems, idCounter
+        });
+    }
+
+    function renderAll() {
+        document.documentElement.style.setProperty('--tier-cols', columns);
+        renderTiers(); 
+        renderPool();
+    }
+
+    function renderTiers() {
+        const list = document.getElementById('tierList'); 
+        list.innerHTML = '';
+        activeTierIds.forEach(id => {
+            const tier = allTiers.find(t => t.id === id);
+            if(!tier) return;
+            const row = document.createElement('div');
+            row.className = 'tier-row';
+            row.dataset.tierId = tier.id;
+
+            const lbl = document.createElement('div');
+            lbl.className = 'tier-label';
+            lbl.style.background = tier.color; 
+            lbl.style.color = tier.text;
+            lbl.textContent = tier.label;
+            row.appendChild(lbl);
+
+            const itemsDiv = document.createElement('div');
+            itemsDiv.className = 'tier-items';
+            itemsDiv.dataset.tier = tier.id;
+            setupDrop(itemsDiv);
+
+            const tierItemList = tierItems[tier.id] || [];
+            if (tierItemList.length === 0) {
+                const emptyRow = document.createElement('div');
+                emptyRow.className = 'tier-item-row';
+                itemsDiv.appendChild(emptyRow);
+            } else {
+                for (let i = 0; i < tierItemList.length; i += 5) {
+                    const chunk = tierItemList.slice(i, i + 5);
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'tier-item-row';
+                    chunk.forEach(item => rowDiv.appendChild(makeTiltWrapper(item, tier.id)));
+                    itemsDiv.appendChild(rowDiv);
+                }
+            }
+            row.appendChild(itemsDiv);
+            list.appendChild(row);
+        });
+    }
+
+    function renderPool() {
+        const pool = document.getElementById('pool'); 
+        pool.innerHTML = '';
+        if (!poolItems.length) {
+            const emp = document.createElement('div'); 
+            emp.className = 'pool-empty'; 
+            emp.textContent = 'Admin pool empty'; 
+            pool.appendChild(emp); 
+            return;
+        }
+        poolItems.forEach(item => pool.appendChild(makeTiltWrapper(item, '__pool__')));
+        setupDrop(pool);
+    }
+
+    function makeTiltWrapper(item, tier) {
+        const wrap = document.createElement('div'); 
+        wrap.className = 'tilt-wrapper';
+        wrap.dataset.itemId = item.id; 
+        wrap.dataset.fromTier = tier; 
+        
+        if(isAdmin) wrap.draggable = true;
+
+        const card = document.createElement('div');
+        card.className = 'tl-item';
+
+        if (item.type === 'image') {
+            card.style.padding = '0'; 
+            if (item.url) card.innerHTML = `<img class="tl-item-img-full" src="${item.url}">`;
+            if (item.label && item.label !== item.url) card.innerHTML += `<div class="tl-item-img-label">${item.label}</div>`;
+        } else {
+            card.innerHTML = `<div class="tl-item-text-block"><div class="tl-item-label">${item.label}</div></div>`;
+        }
+
+        const rem = document.createElement('button'); 
+        rem.className = 'tl-item-remove'; 
+        rem.textContent = '✕';
+        rem.onclick = (e) => { e.stopPropagation(); removeItem(item.id, tier); }; 
+        card.appendChild(rem);
+        
+        wrap.appendChild(card);
+
+        wrap.addEventListener('dragstart', e => {
+            if(!isAdmin) { e.preventDefault(); return; }
+            isDragging = true; 
+            dragItem = item; 
+            dragSrc = tier; 
+            setTimeout(() => wrap.style.opacity = '0.3', 0); 
+            e.dataTransfer.effectAllowed = 'move'; 
+        });
+        wrap.addEventListener('dragend', () => { 
+            isDragging = false; 
+            wrap.style.opacity = ''; 
+            if(pendingUpdate) { pendingUpdate = false; renderAll(); }
+        });
+        
+        return wrap;
+    }
+
+    function setupDrop(el) {
+        el.addEventListener('dragover', e => { 
+            if(!isAdmin) return;
+            e.preventDefault(); 
+            el.classList.add('drag-over'); 
+        });
+        el.addEventListener('dragleave', e => { 
+            if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); 
+        });
+        el.addEventListener('drop', e => {
+            if(!isAdmin) return;
+            e.preventDefault(); 
+            el.classList.remove('drag-over'); 
+            if (!dragItem) return;
+            
+            const dest = el.dataset.tier;
+            if (dest === dragSrc) { dragItem = null; dragSrc = null; return; }
+            
+            if (dragSrc === '__pool__') poolItems = poolItems.filter(i => i.id !== dragItem.id);
+            else tierItems[dragSrc] = (tierItems[dragSrc] || []).filter(i => i.id !== dragItem.id);
+            
+            if (dest === '__pool__') poolItems.push(dragItem);
+            else { 
+                if (!tierItems[dest]) tierItems[dest] = []; 
+                tierItems[dest].push(dragItem); 
+            }
+            
+            dragItem = null; 
+            dragSrc = null; 
+            syncToFirebase();
+        });
+    }
+
+    function removeItem(id, tier) {
+        if(!isAdmin) return;
+        if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
+        else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
+        syncToFirebase();
+    }
+
+    window.addItem = () => {
+        if(!isAdmin) return;
+        const type = document.getElementById('itemType').value;
+        const input = document.getElementById('itemInput').value.trim();
+        const labelIn = document.getElementById('itemLabel').value.trim();
+        
+        if (!input) return;
+        
+        const item = { id: 'item_' + (++idCounter), type, url: null, label: '' };
+        if (type === 'text') { item.label = input; }
+        else { item.url = input; item.label = labelIn; }
+        
+        poolItems.push(item);
+        document.getElementById('itemInput').value = ''; 
+        document.getElementById('itemLabel').value = '';
+        syncToFirebase();
+    };
+
+    document.getElementById('itemType').addEventListener('change', function() {
+        document.getElementById('itemLabel').style.display = (this.value !== 'text') ? 'block' : 'none';
+        document.getElementById('itemInput').placeholder = this.value === 'text' ? 'Label...' : 'Paste Image URL...';
+    });
+  </script>
+</body>
+</html>
