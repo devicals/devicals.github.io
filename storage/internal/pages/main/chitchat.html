@@ -52,7 +52,7 @@
             margin-bottom: 6px;
             font-weight: 600;
             position: relative;
-            padding-right: 65px;
+            padding-right: 35px;
         }
         .chat-meta strong {
             color: hsl(var(--accent));
@@ -203,35 +203,47 @@
         }
         .chat-bubble-actions {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 12px;
+            right: 12px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
+            line-height: 1;
         }
         .chat-bubble-del {
             background: none;
             border: none;
-            color: hsl(var(--destructive));
+            color: hsl(var(--muted-foreground));
             cursor: pointer;
             font-size: 14px;
             padding: 0;
             line-height: 1;
+            width: 14px;
+            height: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             pointer-events: auto !important;
+        }
+        .chat-bubble-del:hover {
+            color: hsl(var(--destructive));
         }
         .delete-warning-container {
             position: relative;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             cursor: help;
             pointer-events: auto !important;
         }
         .delete-warning-container .warning-icon {
-            font-size: 12px;
+            font-size: 16px;
             color: hsl(var(--muted-foreground));
         }
         .delete-warning-container .warning-tooltip {
             visibility: hidden;
-            width: 200px;
+            width: 220px;
             background-color: hsl(var(--card));
             color: hsl(var(--foreground));
             border: 1px solid hsl(var(--border));
@@ -256,7 +268,7 @@
         }
         .ip-tooltip {
             visibility: hidden;
-            width: 180px;
+            width: 130px;
             background-color: hsl(var(--card));
             color: hsl(var(--foreground));
             border: 1px solid hsl(var(--border));
@@ -329,7 +341,13 @@
                     </div>
                 </div>
                 
-                <button class="btn-primary" onclick="sendChitChat()">Send Chit-Chat</button>
+                <div style="display:flex; gap:10px; width:100%; margin-top:15px; align-items: stretch;">
+                    <button class="btn-primary" onclick="sendChitChat()" style="flex:1; margin-top:0;">Send Chit-Chat</button>
+                    <div class="delete-warning-container" style="width:40px; height:40px; background:hsl(var(--secondary)); border:1px solid hsl(var(--border)); display:flex; align-items:center; justify-content:center; cursor:help;">
+                        <span class="warning-icon">ⓘ</span>
+                        <span class="warning-tooltip">You cannot delete your messages once sent. Only an Admin can delete or moderate posts.</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -533,8 +551,6 @@
             const container = document.getElementById('chat-messages');
             container.innerHTML = '';
             
-            const localSaved = JSON.parse(localStorage.getItem('posted_messages') || '[]');
-            
             messagesList.sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).forEach((msg) => {
                 const bubble = document.createElement('div');
                 const isOwn = msg.name === 'Error Dev' || msg.is_creator;
@@ -544,21 +560,15 @@
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
 
-                const isDeletable = isAdmin || localSaved.includes(msg.id);
-
                 bubble.innerHTML = `
+                    ${isAdmin ? `
                     <div class="chat-bubble-actions">
-                        ${(!isAdmin && localSaved.includes(msg.id)) ? `
-                        <div class="delete-warning-container">
-                            <span class="warning-icon">ⓘ</span>
-                            <span class="warning-tooltip">You can delete this message as long as you do not clear your browser data.</span>
-                        </div>` : ''}
-                        ${isDeletable ? `<button class="chat-bubble-del" onclick="deleteMessage(${msg.id})">✕</button>` : ''}
-                    </div>
+                        <button class="chat-bubble-del" onclick="deleteMessage(${msg.id})">✕</button>
+                    </div>` : ''}
                     <div class="chat-meta">
                         <span class="poster-name-wrapper">
                             <strong>${escapeHTML(msg.name)}</strong>
-                            <span class="ip-tooltip">IP: ${msg.ip_address || 'Hidden'}<br>VPN: ${msg.is_vpn ? 'Yes' : 'No'}</span>
+                            <span class="ip-tooltip">IP: ${msg.ip_address || 'Hidden'}</span>
                         </span>
                         ${msg.is_creator ? `<span class="creator-badge">Creator</span>` : ''}
                         ${msg.country && msg.country !== 'Unknown' ? `<span class="country-badge">${escapeHTML(msg.country)}</span>` : ''}
@@ -627,11 +637,6 @@
             if (error) {
                 alert("Error sending message: " + error.message);
             } else {
-                if (data && data.id) {
-                    const localSaved = JSON.parse(localStorage.getItem('posted_messages') || '[]');
-                    localSaved.push(data.id);
-                    localStorage.setItem('posted_messages', JSON.stringify(localSaved));
-                }
                 msgInput.value = '';
                 if (document.getElementById('canvas-section').classList.contains('active')) {
                     toggleCanvas();
@@ -642,10 +647,7 @@
         };
 
         window.deleteMessage = async (id) => {
-            const localSaved = JSON.parse(localStorage.getItem('posted_messages') || '[]');
-            const isDeletable = isAdmin || localSaved.includes(id);
-            if (!isDeletable) return;
-
+            if (!isAdmin) return;
             if (!confirm("Are you sure you want to delete this message?")) return;
             
             const { error } = await supabaseClient
@@ -655,9 +657,6 @@
 
             if (error) {
                 alert("Error deleting: " + error.message);
-            } else {
-                const updatedLocal = localSaved.filter(x => x !== id);
-                localStorage.setItem('posted_messages', JSON.stringify(updatedLocal));
             }
         };
 
