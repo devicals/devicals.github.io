@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chits & Chats - Error Dev</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+        * { 
+            border-radius: 0 !important; 
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+        .chat-bubble {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 16px;
+            position: relative;
+            max-width: 85%;
+            align-self: flex-start;
+        }
+        .chat-bubble.is-own {
+            align-self: flex-end;
+            border-color: hsl(var(--accent));
+        }
+        .chat-meta {
+            font-size: 11px;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .chat-meta strong {
+            color: hsl(var(--accent));
+        }
+        .chat-text {
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .chat-drawing {
+            margin-top: 10px;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--secondary));
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .chat-input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-field {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .chat-field:focus {
+            border-color: hsl(var(--accent));
+        }
+        .canvas-section {
+            border: 1px solid hsl(var(--border));
+            padding: 12px;
+            background: hsl(var(--secondary) / 0.3);
+        }
+        .canvas-section label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+        .canvas-wrapper {
+            background: #fff;
+            border: 2px solid hsl(var(--border));
+            width: 100%;
+            height: 200px;
+            position: relative;
+        }
+        #drawing-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+        .canvas-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .canvas-controls input[type=color] {
+            width: 38px;
+            height: 38px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            padding: 2px;
+            cursor: pointer;
+        }
+        .canvas-controls input[type=range] {
+            flex: 1;
+            min-width: 100px;
+            accent-color: hsl(var(--accent));
+        }
+        .admin-btn {
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            cursor: pointer;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+        }
+        .admin-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        .admin-btn.danger-btn {
+            color: hsl(var(--destructive));
+            border-color: hsl(var(--destructive) / 0.4);
+        }
+        .admin-btn.danger-btn:hover {
+            border-color: hsl(var(--destructive));
+            background: hsl(var(--destructive) / 0.05);
+        }
+        .btn-primary {
+            background: hsl(var(--accent)) !important;
+            color: hsl(var(--accent-foreground)) !important;
+            border: 1px solid hsl(var(--accent)) !important;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .chat-bubble-del {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: hsl(var(--destructive));
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+        }
+        body.is-admin .chat-bubble-del {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <h1 class="page-title">Chits & Chats</h1>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages"></div>
+            
+            <div class="card chat-input-area">
+                <input type="text" id="chat-name" class="chat-field" placeholder="Your Name (optional)">
+                <textarea id="chat-msg" class="chat-field" style="min-height: 80px; resize: vertical;" placeholder="Type a message..."></textarea>
+                
+                <div class="canvas-section">
+                    <label>Draw something for me</label>
+                    <div class="canvas-wrapper">
+                        <canvas id="drawing-canvas"></canvas>
+                    </div>
+                    <div class="canvas-controls">
+                        <input type="color" id="brush-color" value="#000000">
+                        <input type="range" id="brush-size" min="1" max="20" value="5">
+                        <button class="admin-btn" onclick="clearCanvas()">Clear</button>
+                    </div>
+                </div>
+                
+                <button class="btn-primary" onclick="sendChitChat()">Send Chit-Chat</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let messagesList = [];
+        let isAdmin = false;
+        
+        const canvas = document.getElementById('drawing-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let isCanvasDirty = false;
+
+        function resizeCanvas() {
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            clearCanvas();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            isCanvasDirty = false;
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            isCanvasDirty = true;
+            const pos = getMousePos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            draw(e);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.strokeStyle = document.getElementById('brush-color').value;
+            ctx.lineWidth = document.getElementById('brush-size').value;
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        window.addEventListener('touchend', stopDrawing);
+
+        window.clearCanvas = clearCanvas;
+
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleUserSession(session);
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
+        }
+
+        function handleUserSession(session) {
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+            renderMessages();
+        }
+
+        async function initDatabase() {
+            const { data } = await supabaseClient
+                .from('guestbook')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (data) {
+                messagesList = data;
+                renderMessages();
+            }
+
+            supabaseClient
+                .channel('guestbook-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'guestbook' },
+                    async () => {
+                        const { data: newData } = await supabaseClient
+                            .from('guestbook')
+                            .select('*')
+                            .order('created_at', { ascending: true });
+                        if (newData) {
+                            messagesList = newData;
+                            renderMessages();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+            
+            messagesList.forEach((msg) => {
+                const bubble = document.createElement('div');
+                const isOwn = msg.name === 'Error Dev';
+                bubble.className = 'chat-bubble' + (isOwn ? ' is-own' : '');
+                
+                const date = new Date(msg.created_at).toLocaleDateString(undefined, {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+
+                bubble.innerHTML = `
+                    <button class="chat-bubble-del" onclick="deleteMessage(${msg.id})">✕</button>
+                    <div class="chat-meta"><strong>${msg.name}</strong> • ${date}</div>
+                    ${msg.message ? `<div class="chat-text">${escapeHTML(msg.message)}</div>` : ''}
+                    ${msg.drawing ? `<img class="chat-drawing" src="${msg.drawing}">` : ''}
+                `;
+                container.appendChild(bubble);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        window.sendChitChat = async () => {
+            const nameInput = document.getElementById('chat-name');
+            const msgInput = document.getElementById('chat-msg');
+            
+            const name = nameInput.value.trim() || 'Anonymous';
+            const message = msgInput.value.trim();
+            
+            let drawing = null;
+            if (isCanvasDirty) {
+                drawing = canvas.toDataURL('image/png');
+            }
+
+            if (!message && !drawing) return;
+
+            const { error } = await supabaseClient
+                .from('guestbook')
+                .insert({ name, message: message || null, drawing });
+
+            if (error) {
+                alert("Error sending message: " + error.message);
+            } else {
+                msgInput.value = '';
+                clearCanvas();
+            }
+        };
+
+        window.deleteMessage = async (id) => {
+            if (!isAdmin) return;
+            if (!confirm("Are you sure you want to delete this message?")) return;
+            
+            const { error } = await supabaseClient
+                .from('guestbook')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                alert("Error deleting: " + error.message);
+            }
+        };
+
+        window.addEventListener('resize', resizeCanvas);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            initAuth();
+            setTimeout(resizeCanvas, 100);
+        });
+    </script>
+</body>
+</html>

@@ -55,12 +55,12 @@ customPages:
           type: gallery
         hidden: true
 
-  feedback:
-    display: "Feedback"
+  community:
+    display: "Community"
     sub:
-      - id: feedback
-        name: "Feedback"
-        path: ~/../main/feedback.html
+      - id: chitchat
+        name: "Chits & Chats"
+        path: ~/../main/chitchat.html
         type:
           type: html
 
