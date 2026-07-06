@@ -69,8 +69,7 @@
         cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px;
       }
       .tier-label.long-label { font-size: 9px; letter-spacing: 0.5px; }
-      .tier-label-btns { display: none; position: absolute; bottom: 2px; left: 0; right: 0; justify-content: center; }
-      .tier-row:hover .tier-label-btns { display: flex; }
+      .tier-label-btns { display: flex; position: absolute; bottom: 2px; left: 0; right: 0; justify-content: center; }
       .tier-lbl-btn { background: rgba(0,0,0,0.55); border: none; color: rgba(255,255,255,0.75); font-size: 9px; padding: 1px 6px; cursor: pointer; line-height: 1; pointer-events: auto; }
       .tier-lbl-btn:hover { color: #fff; border: none; }
 
@@ -120,7 +119,7 @@
         word-break: break-word;
         height: 100%;
         transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-        transform-style: preserve-3d; pointer-events: none;
+        transform-style: preserve-3d;
         will-change: transform; backface-visibility: hidden;
         outline: 1px solid transparent; transform: translateZ(1px);
         position: relative; overflow: hidden;
@@ -294,6 +293,22 @@
     let PRESETS = {};
     let PRESET_LIST = [];
 
+    const AUTOSAVE_KEY = 'tierlist_autosave';
+    const SAVES_KEY    = 'tierlist_saves';
+
+    let allTiers      = JSON.parse(JSON.stringify(TIERS_BASE));
+    let activeTierIds = TIERS_BASE.map(t => t.id);
+    let columns       = 1;
+    let tierItems     = {};
+    let poolItems     = [];
+    let idCounter     = 0;
+    let revivalTint   = false;
+    let revivedSet    = new Set();
+
+    function getTier(id)      { return allTiers.find(t => t.id === id); }
+    function getActiveTiers() { return activeTierIds.map(id => getTier(id)).filter(Boolean); }
+    function isExecTier(id)   { const t = getTier(id); return t && t.isExec; }
+
     function parseRankingDat(yaml) {
       const lines = yaml.split(/\r?\n/);
       const presets = [];
@@ -358,26 +373,16 @@
       sel.appendChild(customOpt);
     }
 
-    const AUTOSAVE_KEY = 'tierlist_autosave';
-    const SAVES_KEY    = 'tierlist_saves';
-
-    let allTiers      = JSON.parse(JSON.stringify(TIERS_BASE));
-    let activeTierIds = TIERS_BASE.map(t => t.id);
-    let columns       = 1;
-    let tierItems     = {};
-    let poolItems     = [];
-    let dragItem = null, dragSrc = null;
-    let idCounter     = 0;
-    let revivalTint   = false;
-    let revivedSet    = new Set();
-
-    function getTier(id)      { return allTiers.find(t => t.id === id); }
-    function getActiveTiers() { return activeTierIds.map(id => getTier(id)).filter(Boolean); }
-    function isExecTier(id)   { const t = getTier(id); return t && t.isExec; }
+    function syncPresetSel() {
+      const ids = JSON.stringify(activeTierIds);
+      const m = PRESET_LIST.find(p => JSON.stringify(PRESETS[p.id]) === ids);
+      document.getElementById('presetSel').value = m ? m.id : 'custom';
+    }
 
     function autoSave() {
       try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify({ allTiers, activeTierIds, columns, tierItems, poolItems, idCounter, revivalTint, revivedSet:[...revivedSet] })); } catch(e){}
     }
+
     function autoLoad() {
       try {
         const raw = localStorage.getItem(AUTOSAVE_KEY); if (!raw) return false;
@@ -393,12 +398,9 @@
         syncPresetSel(); return true;
       } catch(e) { return false; }
     }
-    function syncPresetSel() {
-      const ids = JSON.stringify(activeTierIds);
-      const m = PRESET_LIST.find(p => JSON.stringify(PRESETS[p.id]) === ids);
-      document.getElementById('presetSel').value = m ? m.id : 'custom';
-    }
+
     function getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY) || '{}'); } catch(e) { return {}; } }
+
     function saveNamedList() {
       const name = document.getElementById('saveNameInput').value.trim(); if (!name) return;
       const saves = getSaves();
@@ -406,6 +408,7 @@
       try { localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); } catch(e){}
       document.getElementById('saveNameInput').value = ''; renderSavesList();
     }
+
     function loadNamedList(name) {
       const d = getSaves()[name]; if (!d) return;
       if (d.allTiers)      allTiers = d.allTiers;
@@ -417,10 +420,12 @@
       if (d.revivedSet)    revivedSet = new Set(d.revivedSet);
       syncPresetSel(); renderAll();
     }
+
     function deleteNamedList(name) {
       const saves = getSaves(); delete saves[name];
       try { localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); } catch(e){} renderSavesList();
     }
+
     function renderSavesList() {
       const el = document.getElementById('savesList'), saves = getSaves(), keys = Object.keys(saves);
       if (!keys.length) { el.innerHTML = '<div style="font-size:11px;color:hsl(var(--muted-foreground));font-style:italic;padding:4px 0">No saved lists</div>'; return; }
@@ -433,145 +438,37 @@
       });
     }
 
-    function encodeDat7(plainText) {
-      const bytes = new TextEncoder().encode(plainText);
-      let encoded = '';
-      for (const b of bytes) encoded += '?[' + b.toString(16).toUpperCase().padStart(2, '0');
-      return btoa(encoded);
-    }
-    function decodeDat7(dat7str) {
-      const raw = atob(dat7str.trim());
-      let result = '', i = 0;
-      while (i < raw.length) {
-        if (raw[i] === '?' && raw[i+1] === '[') {
-          result += String.fromCharCode(parseInt(raw[i+2] + raw[i+3], 16));
-          i += 4;
-        } else { result += raw[i]; i++; }
-      }
-      return result;
-    }
-    function b64h(s) { return btoa(unescape(encodeURIComponent(s))); }
-    function findPresetNum() {
-      const ids = JSON.stringify(activeTierIds);
-      const idx = PRESET_LIST.findIndex(p => JSON.stringify(PRESETS[p.id]) === ids);
-      return idx >= 0 ? idx + 1 : PRESET_LIST.length + 1;
-    }
-    function buildDat7(mode) {
-      const lines = [];
-      lines.push(b64h('Tiers') + ' # <tier>:<hexColor>');
-      const tiers = getActiveTiers();
-      for (const t of tiers) {
-        lines.push(t.label + ':' + t.color.replace('#', '').toLowerCase());
-      }
-      lines.push('');
-      if (mode === 'full') {
-        lines.push(b64h('Content') + ' #format is <tier>:<itemType>:<data>:<revivalTint>');
-        for (const t of tiers) {
-          const items = tierItems[t.id] || [];
-          for (const item of items) {
-            const revived = revivedSet.has(item.id) ? 'true' : 'false';
-            if (item.type === 'image') lines.push(t.label + ':image:' + (item.url || item.label || '<imgData>') + ':' + revived);
-            else if (item.type === 'text') lines.push(t.label + ':text:' + item.label + ':' + revived);
-            else lines.push(t.label + ':' + item.type + ':' + (item.label || item.url || '') + ':' + revived);
-          }
-        }
-        lines.push('');
-        lines.push(b64h('Unranked'));
-        for (const item of poolItems) {
-          const revived = revivedSet.has(item.id) ? 'true' : 'false';
-          if (item.type === 'image') lines.push('unranked:image:' + (item.url || item.label || '<imgData>') + ':' + revived);
-          else lines.push('unranked:text:' + (item.label || '') + ':' + revived);
-        }
-      }
-      lines.push('');
-      lines.push(b64h('Other'));
-      lines.push('preset:' + findPresetNum() + ' #preset index from ranking.dat');
-      lines.push('col:' + columns + ' #tier format columns number');
-      lines.push('rt:' + (revivalTint ? 'true' : 'false') + ' #<revivalTint>');
-      return lines.join('\r\n');
-    }
-    function parseDat7(plain, mode) {
-      const lines = plain.split(/\r?\n/);
-      let section = null;
-      const parsedTiers = [], parsedContent = [], parsedUnranked = [];
-      let parsedCol = columns, parsedRt = false, parsedPreset = PRESET_LIST.length + 1;
-      for (const rawLine of lines) {
-        const line = rawLine.trim();
-        if (!line || line.startsWith('#')) continue;
-        try { const decoded = atob(line.split(' ')[0]); if (['Tiers','Content','Unranked','Other'].includes(decoded)) { section = decoded; continue; } } catch(e){}
-        if (section === 'Tiers') {
-          const [lbl, hex] = line.split(':'); if (lbl && hex) parsedTiers.push({ label: lbl, color: '#' + hex });
-        } else if (section === 'Content' && mode === 'full') {
-          const parts = line.split(':'); if (parts.length >= 4) parsedContent.push({ tier: parts[0], type: parts[1], data: parts.slice(2, -1).join(':'), revived: parts[parts.length-1] === 'true' });
-        } else if (section === 'Unranked' && mode === 'full') {
-          const parts = line.split(':'); if (parts.length >= 4) parsedUnranked.push({ type: parts[1], data: parts.slice(2, -1).join(':'), revived: parts[parts.length-1] === 'true' });
-        } else if (section === 'Other') {
-          const [k, ...rest] = line.split(':'); const v = rest.join(':').trim().split(' ')[0];
-          if (k === 'col') parsedCol = parseInt(v) || 1;
-          if (k === 'rt') parsedRt = v === 'true';
-          if (k === 'preset') parsedPreset = parseInt(v) || PRESET_LIST.length + 1;
-        }
-      }
-      return { parsedTiers, parsedContent, parsedUnranked, parsedCol, parsedRt, parsedPreset };
-    }
-    function applyParsedDat7(parsed, mode) {
-      if (parsed.parsedTiers.length) {
-        const labelMap = {};
-        for (const t of allTiers) labelMap[t.label] = t;
-        const newActive = [];
-        for (const pt of parsed.parsedTiers) {
-          const existing = labelMap[pt.label];
-          if (existing) { existing.color = pt.color; newActive.push(existing.id); }
-          else {
-            const id = 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-            const brightness = parseInt(pt.color.slice(1,3),16)*0.299 + parseInt(pt.color.slice(3,5),16)*0.587 + parseInt(pt.color.slice(5,7),16)*0.114;
-            allTiers.push({ id, label: pt.label, color: pt.color, text: brightness > 128 ? '#1a1a1a' : '#ffffff', isExec: false });
-            newActive.push(id);
-          }
-        }
-        activeTierIds = newActive;
-      }
-      if (mode === 'full') {
-        tierItems = {}; revivedSet = new Set();
-        const labelToId = {};
-        for (const t of getActiveTiers()) labelToId[t.label] = t.id;
-        for (const c of parsed.parsedContent) {
-          const tid = labelToId[c.tier]; if (!tid) continue;
-          if (!tierItems[tid]) tierItems[tid] = [];
-          const id = 'item_' + (++idCounter);
-          if (c.revived) revivedSet.add(id);
-          if (c.type === 'image') tierItems[tid].push({ id, type: 'image', url: c.data, label: '' });
-          else tierItems[tid].push({ id, type: c.type === 'text' ? 'text' : c.type, label: c.data, url: null });
-        }
-        poolItems = [];
-        for (const u of parsed.parsedUnranked) {
-          const id = 'item_' + (++idCounter);
-          if (u.revived) revivedSet.add(id);
-          poolItems.push({ id, type: u.type === 'image' ? 'image' : 'text', label: u.data, url: u.type === 'image' ? u.data : null });
-        }
-        columns = parsed.parsedCol; document.getElementById('colSel').value = columns;
-        revivalTint = parsed.parsedRt; document.getElementById('bonusRevival').checked = revivalTint;
-      }
-      syncPresetSel(); renderAll();
-    }
     function downloadDat7(filename, content) {
       const blob = new Blob([content], { type: 'application/octet-stream' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
     }
-    function readDat7File(file, callback) {
-      const reader = new FileReader();
-      reader.onload = ev => { try { callback(decodeDat7(ev.target.result.trim())); } catch(e) { alert('Could not read file.'); } };
-      reader.readAsText(file);
-    }
+
     function doExport(mode) {
-      const plain = buildDat7(mode);
-      const encoded = encodeDat7(plain);
+      let dataToExport;
+      if (mode === 'full') {
+        dataToExport = {
+          allTiers,
+          activeTierIds,
+          columns,
+          tierItems,
+          poolItems,
+          idCounter,
+          revivalTint,
+          revivedSet: [...revivedSet]
+        };
+      } else {
+        dataToExport = {
+          allTiers,
+          activeTierIds
+        };
+      }
+      const jsonStr = JSON.stringify(dataToExport, null, 2);
       const fname = mode === 'full' ? 'tierlist.dat7' : 'preset.dat7';
       const modal = document.getElementById('modalBox');
       modal.innerHTML = `
         <div class="modal-title">${mode === 'full' ? 'Export Tierlist' : 'Export Preset'}</div>
         <div class="modal-row" style="font-size:11px;color:hsl(var(--muted-foreground))">Your ${fname} is ready to download, or copy the code below.</div>
-        <div class="modal-row"><label>Code</label><textarea id="b64out" readonly onclick="this.select()" style="font-size:9px;word-break:break-all">${escHtml(encoded)}</textarea></div>
+        <div class="modal-row"><label>Code</label><textarea id="b64out" readonly onclick="this.select()" style="font-size:9px;word-break:break-all">${escHtml(jsonStr)}</textarea></div>
         <div class="b64-copy-row">
           <button class="btn-primary" onclick="downloadDat7('${fname}', document.getElementById('b64out').value)">Download ${fname}</button>
           <button onclick="navigator.clipboard.writeText(document.getElementById('b64out').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Code',1500)})">Copy Code</button>
@@ -579,6 +476,7 @@
         </div>`;
       openModal();
     }
+
     function doImport(mode) {
       const modal = document.getElementById('modalBox');
       modal.innerHTML = `
@@ -586,25 +484,42 @@
         <div class="modal-row"><label>Upload .dat7 file</label>
           <input type="file" id="dat7file" accept=".dat7" style="width:100%;background:transparent;border:none;padding:0;color:hsl(var(--foreground));font-size:11px">
         </div>
-        <div class="modal-row"><label>Or paste code</label><textarea id="b64in" placeholder="Paste exported code..."></textarea></div>
+        <div class="modal-row"><label>Or paste code</label><textarea id="b64in" placeholder="Paste exported JSON code..."></textarea></div>
         <div class="modal-btns">
           <button onclick="closeModal()">Cancel</button>
           <button class="btn-primary" onclick="applyImport('${mode}')">Import</button>
         </div>`;
       document.getElementById('dat7file').addEventListener('change', function() {
         const file = this.files[0]; if (!file) return;
-        readDat7File(file, plain => { document.getElementById('b64in').value = encodeDat7(plain); });
+        const reader = new FileReader();
+        reader.onload = ev => { document.getElementById('b64in').value = ev.target.result; };
+        reader.readAsText(file);
       });
       openModal();
     }
+
     function applyImport(mode) {
       try {
         const raw = document.getElementById('b64in').value.trim();
-        const plain = decodeDat7(raw);
-        const parsed = parseDat7(plain, mode);
-        applyParsedDat7(parsed, mode);
+        const parsed = JSON.parse(raw);
+        if (parsed.allTiers) allTiers = parsed.allTiers;
+        if (parsed.activeTierIds) activeTierIds = parsed.activeTierIds;
+        if (mode === 'full') {
+          columns = parsed.columns || 1;
+          tierItems = parsed.tierItems || {};
+          poolItems = parsed.poolItems || [];
+          idCounter = parsed.idCounter || 0;
+          revivalTint = parsed.revivalTint || false;
+          revivedSet = new Set(parsed.revivedSet || []);
+          document.getElementById('colSel').value = columns;
+          document.getElementById('bonusRevival').checked = revivalTint;
+        }
         closeModal();
-      } catch(e) { alert('Invalid file or code. Make sure it is a valid .dat7 export.'); }
+        syncPresetSel();
+        renderAll();
+      } catch(e) { 
+        alert('Invalid JSON. Make sure you pasted the exact exported code.'); 
+      }
     }
 
     function renderAll() {
