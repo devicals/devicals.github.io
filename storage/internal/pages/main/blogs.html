@@ -10,18 +10,48 @@
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .blog-controls { position: fixed; top: 50px; right: 50px; z-index: 1000; background: hsla(var(--card), 0.8); backdrop-filter: blur(12px); border: 1px solid hsla(var(--primary), 0.2); padding: 10px 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); animation: floatIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes floatIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .blog-controls { position: fixed; top: 50px; right: 50px; z-index: 1000; background: hsla(var(--card), 0.8); backdrop-filter: blur(12px); border: 1px solid hsla(var(--primary), 0.2); padding: 10px 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
         .blog-jump { display: flex; align-items: center; gap: 10px; }
         .blog-jump label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: hsl(var(--primary)); }
         #blog-id-input { width: 50px; background: hsla(var(--background), 0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none; }
         .blog-content { word-wrap: break-word; line-height: 1.6; }
         .blog-id { position: absolute; top: 24px; right: 24px; font-size: 12px; color: hsl(var(--muted-foreground)); font-weight: 600; }
-        .blog-post { position: relative; }
-        
+        .blog-post { position: relative; border: 2px solid hsl(var(--border)); padding: 24px; margin-bottom: 24px; background: hsl(var(--card)); }
+        .admin-action-row {
+            display: none;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed hsl(var(--border));
+        }
+        body.is-admin .admin-action-row {
+            display: flex;
+        }
+        .admin-btn {
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            cursor: pointer;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+        }
+        .admin-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        .admin-btn.danger-btn {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.2);
+        }
+        .admin-btn.danger-btn:hover {
+            border-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.05);
+        }
         .shiki-container { background: #121212; border: 1px solid #2d2e2e; margin: 1.5rem 0; overflow: hidden; }
         .shiki-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; background: #181818; border-bottom: 1px solid #2d2e2e; }
         .shiki-lang { color: #7e7e7e; font-size: 0.8rem; text-transform: uppercase; font-weight: 600; }
@@ -32,11 +62,84 @@
         .shiki-container pre.shiki { margin: 0 !important; border: none !important; padding: 1rem !important; background-color: transparent !important; white-space: pre; overflow-x: auto; }
         .shiki-container.wrap-enabled pre.shiki { white-space: pre-wrap; word-break: break-all; }
         code.shiki-inline { background: #121212 !important; padding: 3px 6px !important; border: 1px solid #2d2e2e !important; font-family: 'JetBrains Mono', monospace !important; display: inline-block; vertical-align: middle; }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid hsl(var(--border));
+        }
+        .modal-header h2 {
+            font-size: 18px;
+            margin: 0;
+            color: hsl(var(--accent));
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: hsl(var(--foreground));
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+        .modal input[type=text], .modal textarea {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .modal textarea {
+            min-height: 250px;
+            resize: vertical;
+        }
+        .modal input:focus, .modal textarea:focus {
+            border-color: hsl(var(--accent));
+        }
+        #add-blog-container {
+            display: none;
+            margin-bottom: 24px;
+        }
+        body.is-admin #add-blog-container {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Blogs</h1>
+        
         <div class="blog-controls" id="floating-jump-card">
             <div class="blog-jump">
                 <label>Jump to</label>
@@ -45,13 +148,40 @@
                 <button onclick="window.copyRSS()" class="copy-btn" id="rss-btn" style="padding: 4px 10px; background: transparent; border: 1px solid hsla(var(--primary), 0.5);">RSS URL</button>
             </div>
         </div>
+
+        <div id="add-blog-container">
+            <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddBlogModal()">+ Create New Blog Post</button>
+        </div>
+
         <div class="blog-posts" id="blog-posts"></div>
+    </div>
+
+    <!-- Blog Editor Modal -->
+    <div id="blog-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-label">Create Blog Post</h2>
+                <button class="modal-close" onclick="closeBlogModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="blog-title-input" placeholder="Title">
+                <textarea id="blog-content-input" placeholder="Content (Markdown supported)"></textarea>
+                <button class="btn-primary" id="blog-save-submit" style="width: 100%; padding: 10px;">Save Post</button>
+            </div>
+        </div>
     </div>
     
     <script type="module">
         import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
 
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         let blogsData = [];
+        let isAdmin = false;
+        let activeEditId = null;
         let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
 
         marked.use({
@@ -71,10 +201,23 @@
             }
         });
 
-        async function loadYAML(path) {
-            const response = await fetch(path);
-            const text = await response.text();
-            return jsyaml.load(text);
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleUserSession(session);
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
+        }
+
+        function handleUserSession(session) {
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+            renderBlogs(blogsData);
         }
 
         function parseDate(dateStr) {
@@ -90,8 +233,34 @@
                 blogPost.className = 'blog-post';
                 blogPost.id = `blog-${blog.id}`;
                 const htmlContent = await marked.parse(blog.content);
-                blogPost.innerHTML = `<div class="blog-id">#${blog.id}</div><div class="blog-header"><a href="#" class="blog-title" onclick="window.copyBlogLink(event, ${blog.id})">${blog.title}</a><div class="blog-date">${blog.date}</div></div><div class="blog-content">${htmlContent}</div>`;
+                blogPost.innerHTML = `
+                    <div class="blog-id">#${blog.id}</div>
+                    <div class="blog-header">
+                        <a href="#" class="blog-title" id="title-anchor-${blog.id}">${blog.title}</a>
+                        <div class="blog-date">${blog.date}</div>
+                    </div>
+                    <div class="blog-content">${htmlContent}</div>
+                    <div class="admin-action-row">
+                        <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
+                        <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
+                    </div>
+                `;
                 container.appendChild(blogPost);
+
+                const titleAnchor = document.getElementById(`title-anchor-${blog.id}`);
+                if (titleAnchor) {
+                    titleAnchor.onclick = (e) => window.copyBlogLink(e, blog.id);
+                }
+
+                const editBtn = document.getElementById(`edit-btn-${blog.id}`);
+                if (editBtn) {
+                    editBtn.onclick = () => openEditBlogModal(blog);
+                }
+
+                const delBtn = document.getElementById(`del-btn-${blog.id}`);
+                if (delBtn) {
+                    delBtn.onclick = () => deleteBlogPost(blog.id);
+                }
             }
             setupShikiInteractions();
         }
@@ -117,6 +286,70 @@
             } else {
                 alert(`Blog #${id} not found.`);
             }
+        }
+
+        async function syncToSupabase() {
+            const { error } = await supabaseClient
+                .from('site_content')
+                .update({ data: blogsData })
+                .eq('key', 'blogs');
+            if (error) {
+                alert("Error saving: " + error.message);
+            }
+        }
+
+        window.openAddBlogModal = () => {
+            activeEditId = null;
+            document.getElementById('modal-title-label').textContent = "Create Blog Post";
+            document.getElementById('blog-title-input').value = "";
+            document.getElementById('blog-content-input').value = "";
+            document.getElementById('blog-modal').classList.add('active');
+        };
+
+        function openEditBlogModal(blog) {
+            activeEditId = blog.id;
+            document.getElementById('modal-title-label').textContent = `Edit Blog Post #${blog.id}`;
+            document.getElementById('blog-title-input').value = blog.title;
+            document.getElementById('blog-content-input').value = blog.content;
+            document.getElementById('blog-modal').classList.add('active');
+        }
+
+        window.closeBlogModal = () => {
+            document.getElementById('blog-modal').classList.remove('active');
+        };
+
+        async function handleSaveBlog() {
+            const title = document.getElementById('blog-title-input').value.trim();
+            const content = document.getElementById('blog-content-input').value.trim();
+            if (!title || !content) return;
+
+            if (activeEditId !== null) {
+                const blog = blogsData.find(b => b.id === activeEditId);
+                if (blog) {
+                    blog.title = title;
+                    blog.content = content;
+                }
+            } else {
+                const nextId = blogsData.length > 0 ? Math.max(...blogsData.map(b => b.id)) + 1 : 1;
+                const today = new Date();
+                const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+                
+                blogsData.unshift({
+                    id: nextId,
+                    date: dateStr,
+                    title,
+                    content
+                });
+            }
+
+            closeBlogModal();
+            await syncToSupabase();
+        }
+
+        async function deleteBlogPost(id) {
+            if (!confirm(`Are you sure you want to delete Blog Post #${id}?`)) return;
+            blogsData = blogsData.filter(b => b.id !== id);
+            await syncToSupabase();
         }
 
         document.addEventListener('click', (e) => {
@@ -164,7 +397,7 @@
             }
         });
 
-        window.copyBlogLink = (e, id) => { e.preventDefault(); const url = `https://devicals.github.io/#page=blogs&id=${id}`; navigator.clipboard.writeText(url).then(() => { e.target.textContent = "Link Copied!"; setTimeout(() => e.target.textContent = blogsData.find(b=>b.id===id).title, 2000); }); document.getElementById(`blog-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+        window.copyBlogLink = (e, id) => { e.preventDefault(); const url = `https://devicals.github.io/#page=blogs&id=${id}`; navigator.clipboard.writeText(url).then(() => { e.target.textContent = "Link Copied!"; setTimeout(() => { e.target.textContent = blogsData.find(b=>b.id===id).title; }, 2000); }); document.getElementById(`blog-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
         window.jumpToBlog = () => { 
             const id = document.getElementById('blog-id-input').value; 
             if (!id) return; 
@@ -172,12 +405,37 @@
         };
         window.copyRSS = () => { const url = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml"; navigator.clipboard.writeText(url).then(() => { const btn = document.getElementById('rss-btn'); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'RSS URL'; }, 2000); }); };
 
+        document.getElementById('blog-save-submit').onclick = handleSaveBlog;
+
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const data = await loadYAML('/storage/data/blogs.yaml');
-                if (!data || !data.blogs) return;
-                blogsData = data.blogs.sort((a, b) => parseDate(b.date) - parseDate(a.date));
-                await renderBlogs(blogsData);
+                const { data, error } = await supabaseClient
+                    .from('site_content')
+                    .select('data')
+                    .eq('key', 'blogs')
+                    .single();
+
+                if (data && data.data) {
+                    blogsData = data.data.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+                    await renderBlogs(blogsData);
+                }
+
+                supabaseClient
+                    .channel('blogs-realtime')
+                    .on(
+                        'postgres_changes',
+                        { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.blogs' },
+                        async (payload) => {
+                            if (payload.new && payload.new.data) {
+                                blogsData = payload.new.data.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+                                await renderBlogs(blogsData);
+                            }
+                        }
+                    )
+                    .subscribe();
+
+                await initAuth();
+
                 const params = new URLSearchParams(window.location.hash.substring(1));
                 const id = params.get('id');
                 if (id) setTimeout(() => { const el = document.getElementById(`blog-${id}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500);

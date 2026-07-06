@@ -13,19 +13,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .announcement-edit-btn {
-            display: none;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            color: #fff;
-            padding: 2px 8px;
+        .setting-field {
+            width: 100%;
+            padding: 8px 10px;
+            background: hsl(var(--input));
+            border: 2px solid hsl(var(--border));
+            color: hsl(var(--foreground));
             font-family: inherit;
-            font-size: 11px;
-            cursor: pointer;
-            margin-left: 15px;
+            font-size: 13px;
+            outline: none;
+            margin-bottom: 8px;
         }
-        body.is-admin .announcement-edit-btn {
-            display: inline-block;
+        .ann-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .ann-list-item button {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -43,7 +57,7 @@
                 <div class="nav-section nav-top-actions">
                     <div style="display: flex; gap: 4px; align-items: stretch;">
                         <a class="action-btn" href="#page=info" onclick="loadPage('info'); toggleSidebar(); return false;">ⓘ Info</a>
-                        <button class="action-btn" onclick="openPreferences()">⚙ Preferences</button>
+                        <button class="action-btn" onclick="openPreferences()">⚙ Settings</button>
                     </div>
                 </div>
 
@@ -66,7 +80,6 @@
     
     <div id="announcement-banner" class="announcement-banner hidden">
         <div class="announcement-content"></div>
-        <button class="announcement-edit-btn" id="edit-ann-btn">Edit</button>
         <button class="announcement-close" onclick="closeAnnouncement()">×</button>
     </div>
 
@@ -78,7 +91,7 @@
     <div id="preferences-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Preferences</h2>
+                <h2>Settings</h2>
                 <button class="modal-close" onclick="closePreferences()">×</button>
             </div>
             <div class="modal-body">
@@ -99,13 +112,11 @@
                     </select>
                 </div>
                 <button class="customize-btn" onclick="toggleCustomEditor()">Customize Theme</button>
-                <div class="preference-section">
-                    <label>Developer Options</label>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button id="show-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestReveal()">Show Hidden</button>
-                        <button id="hide-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestHide()">Hide Hidden</button>
-                    </div>
+                
+                <div id="settings-admin-portal" class="preference-section" style="border-top: 1px solid hsl(var(--border)); padding-top: 15px;">
+                    <!-- Admin elements inject dynamically here -->
                 </div>
+
                 <div id="custom-theme-editor" style="display: none;">
                     <h3>Custom Theme Editor</h3>
                     <div class="color-mode-toggle">
