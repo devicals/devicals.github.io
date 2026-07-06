@@ -3,11 +3,11 @@ languages:
 - name: HTML
   percent: 80.1
 - name: CSS
-  percent: 10.7
+  percent: 10.8
 - name: JavaScript
-  percent: 8.2
+  percent: 8.3
 - name: Python
-  percent: 1.0
-size: 113814
+  percent: 0.8
+size: 113825
 stars: 2
 watchers: 1
