@@ -1,9 +1,9 @@
 forks: 0
 languages:
 - name: HTML
-  percent: 77.3
+  percent: 77.4
 - name: CSS
-  percent: 12.2
+  percent: 12.1
 - name: JavaScript
   percent: 9.3
 - name: Python
