@@ -22,8 +22,15 @@
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
         }
-        .interest-outer { margin-bottom: 3.5rem; position: relative; }
-        .interest-title { color: hsl(var(--accent)); margin-bottom: 1.5rem; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
+        .game-section { margin-bottom: 3rem; position: relative; }
+        .section-title { 
+            color: hsl(var(--accent)); 
+            margin-bottom: 1.2rem; 
+            font-size: 1rem; 
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
         .tilt-wrapper { display: block; perspective: 1000px; user-select: none; position: relative; }
         .interest-fav-list .tilt-wrapper { perspective: 2000px; margin-bottom: 15px; }
         .fav-card, .interest-grid-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
@@ -41,7 +48,7 @@
         .tag-gray { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
         .interest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
         .interest-grid .tilt-wrapper { height: 85px; }
-        .interest-grid-card { height: 100%; padding: 10px; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.2; word-break: break-word; font-size: 0.85rem; color: #ccc; pointer-events: auto !important; cursor: pointer; }
+        .interest-grid-card { height: 100%; padding: 10px; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.2; word-break: break-word; font-size: 0.85rem; color: #ccc; pointer-events: auto !important; cursor: pointer; position: relative; }
         
         .admin-action-btn {
             display: none;
@@ -227,13 +234,10 @@
             gap: 10px;
             align-items: center;
         }
-        .tooltip-container {
+        .interest-grid-card.tooltip-container {
             position: relative;
-            display: inline-block;
-            width: 100%;
-            height: 100%;
         }
-        .tooltip-container .tooltip-text {
+        .interest-grid-card .tooltip-text {
             visibility: hidden;
             width: 200px;
             background-color: hsl(var(--card));
@@ -252,8 +256,9 @@
             pointer-events: none;
             white-space: normal;
             line-height: 1.4;
+            font-weight: 500;
         }
-        .tooltip-container .tooltip-text::after {
+        .interest-grid-card .tooltip-text::after {
             content: "";
             position: absolute;
             top: 100%;
@@ -263,7 +268,7 @@
             border-style: solid;
             border-color: hsl(var(--card)) transparent transparent transparent;
         }
-        .tooltip-container:hover .tooltip-text {
+        .interest-grid-card:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
         }
@@ -274,6 +279,7 @@
         <div id="interests-content"></div>
     </div>
 
+    <!-- Edit Favorites Modal -->
     <div id="fav-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -546,14 +552,12 @@
             
             spotifyTracks.forEach((track) => {
                 const inner = `
-                    <div class="tooltip-container">
-                        <div class="interest-grid-card" onclick="window.open('https://open.spotify.com/track/${track.id}', '_blank')">
-                            ${track.title}
-                        </div>
+                    <div class="interest-grid-card tooltip-container" onclick="window.open('https://open.spotify.com/track/${track.id}', '_blank')">
+                        ${track.title}
                         <span class="tooltip-text">${track.artists.join(', ')}</span>
                     </div>
                 `;
-                grid.appendChild(createTiltWrapper('interest-grid-card-container', inner));
+                grid.appendChild(createTiltWrapper('interest-grid-card', inner));
             });
             container.appendChild(sec);
 
@@ -601,10 +605,10 @@
 
             const favObj = { title, comment, tags };
             if (activeEditIdx !== null) {
-                interestsData.favorites[activeEditIdx] = favObj;
+                musicData.favorites[activeEditIdx] = favObj;
             } else {
-                if (!interestsData.favorites) interestsData.favorites = [];
-                interestsData.favorites.push(favObj);
+                if (!musicData.favorites) musicData.favorites = [];
+                musicData.favorites.push(favObj);
             }
             closeFavModal();
             await syncToSupabase();
