@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Z.A.T.O Live Tier List</title>
+  <title>Z.A.T.O Tier List</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0); }
     }
 
-    button, select, input[type=text] {
+    button, select, input[type=text], input[type=password] {
       font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 9px;
       background: hsl(var(--secondary)); border: 1px solid hsl(var(--border));
       color: hsl(var(--foreground)); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
@@ -80,6 +80,15 @@
     .sidebar-section { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
     .sidebar-label { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; border-bottom: 1px solid hsl(var(--border)); }
     .add-panel input, .add-panel select { width: 100%; margin-bottom: 5px; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: hsl(var(--card)); border: 2px solid hsl(var(--border)); padding: 20px; width: 90%; max-width: 320px; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .modal-header h2 { font-size: 16px; margin: 0; color: hsl(var(--accent)); }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--foreground)); }
+    .modal-content input { width: 100%; padding: 8px; margin-bottom: 10px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); outline: none; }
+    .modal-content input:focus { border-color: hsl(var(--accent)); }
   </style>
 </head>
 <body>
@@ -91,7 +100,7 @@
           <div class="live-badge"><span class="pulse"></span> LIVE</div>
         </div>
         <div>
-          <button id="auth-btn">Loading Auth...</button>
+          <button id="auth-btn">Connecting...</button>
         </div>
       </div>
       <div class="tier-list" id="tierList">
@@ -117,39 +126,30 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
-    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
-    import { getAuth, signInWithPopup, GithubAuthProvider, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js";
+  <div id="login-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Admin Login</h2>
+        <button class="modal-close" onclick="closeLoginModal()">×</button>
+      </div>
+      <input type="text" id="login-email" placeholder="Email" value="3rr0r.d3v@gmail.com" readonly>
+      <input type="password" id="login-password" placeholder="Password">
+      <button class="btn-primary" onclick="submitLogin()" style="width: 100%; padding: 8px;">Login</button>
+    </div>
+  </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAKpuPqmvvLuJyBfj2e03tUYlxrMYrqYH4",
-      authDomain: "zatocord-tierlist.firebaseapp.com",
-      databaseURL: "https://zatocord-tierlist-default-rtdb.firebaseio.com",
-      projectId: "zatocord-tierlist",
-      storageBucket: "zatocord-tierlist.firebasestorage.app",
-      messagingSenderId: "661100777621",
-      appId: "1:661100777621:web:4f1164ba0d09c36c880b9c"
-    };
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    const TIERS_BASE = [
-      { id:'S', label:'S', color:'#FF9A3B', text:'#fff' },
-      { id:'A', label:'A', color:'#FFD93B', text:'#2a1a00' },
-      { id:'B', label:'B', color:'#A8D63F', text:'#1a2a00' },
-      { id:'C', label:'C', color:'#3FD67A', text:'#003020' },
-      { id:'D', label:'D', color:'#3FBDD6', text:'#002030' },
-      { id:'F', label:'F', color:'#7B5EA7', text:'#fff' },
-    ];
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let isAdmin = false;
     let isDragging = false;
     let pendingUpdate = false;
     let dragItem = null, dragSrc = null;
+    let cachedState = null;
     
     let allTiers = [];
     let activeTierIds = [];
@@ -158,61 +158,102 @@
     let poolItems = [];
     let idCounter = 0;
 
-    onAuthStateChanged(auth, (user) => {
+    async function initAuth() {
         const authBtn = document.getElementById('auth-btn');
-        if (user) {
-            const email = user.email || '';
-            
-            if (email.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                isAdmin = true;
-                document.body.classList.add('is-admin');
-                authBtn.textContent = `Logout (Admin)`;
-                authBtn.onclick = () => signOut(auth);
-                
-                if (window.pendingInitialSync) {
-                    syncToFirebase();
-                    window.pendingInitialSync = false;
-                }
-            } else {
-                alert("You are logged in, but you do not have Admin privileges.");
-                signOut(auth);
-            }
+        
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        handleUserSession(session);
+
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            handleUserSession(session);
+        });
+    }
+
+    function handleUserSession(session) {
+        const authBtn = document.getElementById('auth-btn');
+        if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+            isAdmin = true;
+            document.body.classList.add('is-admin');
+            authBtn.textContent = 'Logout (Admin)';
+            authBtn.onclick = () => supabaseClient.auth.signOut();
         } else {
             isAdmin = false;
             document.body.classList.remove('is-admin');
             authBtn.textContent = 'Admin Login';
             authBtn.onclick = () => {
-                signInWithPopup(auth, provider).catch(err => alert("Login Failed: " + err.message));
+                document.getElementById('login-modal').classList.add('active');
             };
         }
         renderAll();
-    });
+    }
 
-    onValue(ref(db, 'zatoTierList'), (snapshot) => {
-        if (!snapshot.exists()) {
-            allTiers = JSON.parse(JSON.stringify(TIERS_BASE));
-            activeTierIds = TIERS_BASE.map(t => t.id);
-            if (isAdmin) syncToFirebase();
-            else window.pendingInitialSync = true; 
+    window.closeLoginModal = () => {
+        document.getElementById('login-modal').classList.remove('active');
+    };
+
+    window.submitLogin = async () => {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        if (!password) return;
+
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            alert("Login Failed: " + error.message);
         } else {
-            const d = snapshot.val();
-            allTiers = d.allTiers || [];
-            activeTierIds = d.activeTierIds || [];
-            columns = d.columns || 1;
-            tierItems = d.tierItems || {};
-            poolItems = d.poolItems || [];
-            idCounter = d.idCounter || 0;
+            closeLoginModal();
+            document.getElementById('login-password').value = '';
+        }
+    };
+
+    async function initDatabase() {
+        const { data, error } = await supabaseClient
+            .from('zato_tierlist')
+            .select('state')
+            .eq('id', 1)
+            .single();
+
+        if (data && data.state) {
+            applyState(data.state);
         }
 
-        if (isDragging) pendingUpdate = true;
-        else renderAll();
-    });
+        supabaseClient
+            .channel('schema-db-changes')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'zato_tierlist', filter: 'id=eq.1' },
+                (payload) => {
+                    if (payload.new && payload.new.state) {
+                        if (isDragging) {
+                            pendingUpdate = true;
+                            cachedState = payload.new.state;
+                        } else {
+                            applyState(payload.new.state);
+                        }
+                    }
+                }
+            )
+            .subscribe();
+    }
 
-    function syncToFirebase() {
+    function applyState(state) {
+        allTiers = state.allTiers || [];
+        activeTierIds = state.activeTierIds || [];
+        columns = state.columns || 1;
+        tierItems = state.tierItems || {};
+        poolItems = state.poolItems || [];
+        idCounter = state.idCounter || 0;
+        renderAll();
+    }
+
+    async function syncToSupabase() {
         if (!isAdmin) return;
-        set(ref(db, 'zatoTierList'), {
-            allTiers, activeTierIds, columns, tierItems, poolItems, idCounter
-        });
+        const state = { allTiers, activeTierIds, columns, tierItems, poolItems, idCounter };
+        const { error } = await supabaseClient
+            .from('zato_tierlist')
+            .update({ state })
+            .eq('id', 1);
+        
+        if (error) console.error("Error saving state:", error.message);
     }
 
     function renderAll() {
@@ -314,7 +355,13 @@
         wrap.addEventListener('dragend', () => { 
             isDragging = false; 
             wrap.style.opacity = ''; 
-            if(pendingUpdate) { pendingUpdate = false; renderAll(); }
+            if(pendingUpdate) { 
+                pendingUpdate = false; 
+                if(cachedState) {
+                    applyState(cachedState);
+                    cachedState = null;
+                }
+            }
         });
         
         return wrap;
@@ -349,7 +396,7 @@
             
             dragItem = null; 
             dragSrc = null; 
-            syncToFirebase();
+            syncToSupabase();
         });
     }
 
@@ -357,7 +404,7 @@
         if(!isAdmin) return;
         if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
         else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
-        syncToFirebase();
+        syncToSupabase();
     }
 
     window.addItem = () => {
@@ -375,13 +422,16 @@
         poolItems.push(item);
         document.getElementById('itemInput').value = ''; 
         document.getElementById('itemLabel').value = '';
-        syncToFirebase();
+        syncToSupabase();
     };
 
     document.getElementById('itemType').addEventListener('change', function() {
         document.getElementById('itemLabel').style.display = (this.value !== 'text') ? 'block' : 'none';
         document.getElementById('itemInput').placeholder = this.value === 'text' ? 'Label...' : 'Paste Image URL...';
     });
+
+    initAuth();
+    initDatabase();
   </script>
 </body>
 </html>
