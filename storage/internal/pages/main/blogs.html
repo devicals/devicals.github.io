@@ -134,6 +134,23 @@
         body.is-admin #add-blog-container {
             display: block;
         }
+        .btn-primary {
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            border: 1px solid hsl(var(--accent));
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
     </style>
 </head>
 <body>
@@ -156,7 +173,6 @@
         <div class="blog-posts" id="blog-posts"></div>
     </div>
 
-    <!-- Blog Editor Modal -->
     <div id="blog-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -174,7 +190,7 @@
     <script type="module">
         import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
 
-        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_URL = "https://wtasesmqwpRegisterbzdynnas.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -183,6 +199,7 @@
         let isAdmin = false;
         let activeEditId = null;
         let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
+        let currentRenderId = 0;
 
         marked.use({
             breaks: true, gfm: true, async: true,
@@ -226,13 +243,16 @@
         }
 
         async function renderBlogs(blogs) {
+            const renderId = ++currentRenderId;
             const container = document.getElementById('blog-posts');
             container.innerHTML = '';
             for (const blog of blogs) {
+                if (renderId !== currentRenderId) return;
                 const blogPost = document.createElement('div');
                 blogPost.className = 'blog-post';
                 blogPost.id = `blog-${blog.id}`;
                 const htmlContent = await marked.parse(blog.content);
+                if (renderId !== currentRenderId) return;
                 blogPost.innerHTML = `
                     <div class="blog-id">#${blog.id}</div>
                     <div class="blog-header">

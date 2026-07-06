@@ -136,14 +136,11 @@
         .admin-action-btn {
             display: none;
             position: absolute;
-            top: 10px;
-            right: 10px;
             background: none;
             border: none;
-            color: hsl(var(--destructive));
-            font-size: 14px;
             cursor: pointer;
             z-index: 10;
+            pointer-events: auto !important;
         }
         body.is-admin .admin-action-btn {
             display: block;
@@ -161,11 +158,16 @@
         }
         .add-grid-item-container input {
             flex: 1;
-            padding: 6px 12px;
+            padding: 8px 12px;
             background: hsl(var(--secondary));
             border: 1px solid hsl(var(--border));
             color: hsl(var(--foreground));
             font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .add-grid-item-container input:focus {
+            border-color: hsl(var(--accent));
         }
         .admin-section-btn {
             display: none;
@@ -243,11 +245,57 @@
             min-height: 100px;
             resize: vertical;
         }
+        .modal input:focus, .modal textarea:focus, .modal select:focus {
+            border-color: hsl(var(--accent));
+        }
         .modal-check-row {
             display: flex;
             align-items: center;
             gap: 8px;
             font-size: 12px;
+        }
+        .modal-check-row input[type=checkbox] {
+            accent-color: hsl(var(--accent));
+        }
+        .btn-primary {
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            border: 1px solid hsl(var(--accent));
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .grid-add-btn {
+            background: hsl(var(--secondary) / 0.3);
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            width: 38px;
+            height: 38px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            backdrop-filter: blur(8px);
+        }
+        .grid-add-btn:hover {
+            background: hsl(var(--accent) / 0.1);
+            color: hsl(var(--accent));
+            border-color: hsl(var(--accent));
+        }
+        .grid-add-btn:active {
+            transform: scale(0.95);
         }
     </style>
 </head>
@@ -265,7 +313,7 @@
             <h2 class="section-title">Games I Like</h2>
             <div class="add-grid-item-container">
                 <input type="text" id="add-liked-input" placeholder="Add game to 'Games I Like' list...">
-                <button class="btn-primary" onclick="addGridItem('liked')">+ Add</button>
+                <button class="grid-add-btn" onclick="addGridItem('liked')">+</button>
             </div>
             <div id="liked-games-grid" class="games-grid"></div>
         </div>
@@ -274,13 +322,12 @@
             <h2 class="section-title">Want to Play</h2>
             <div class="add-grid-item-container">
                 <input type="text" id="add-wtp-input" placeholder="Add game to 'Want to Play' list...">
-                <button class="btn-primary" onclick="addGridItem('wanttoplay')">+ Add</button>
+                <button class="grid-add-btn" onclick="addGridItem('wanttoplay')">+</button>
             </div>
             <div id="wtp-games-grid" class="games-grid"></div>
         </div>
     </div>
 
-    <!-- Favorite Game Modal -->
     <div id="fav-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -347,6 +394,8 @@
         let gamesData = null;
         let isAdmin = false;
         let activeEditIdx = null;
+        let dragItemIdx = null;
+        let dragCategory = null;
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -422,8 +471,9 @@
                 if (game.tags.lf?.display) tagsHTML += `<span class="tag-box tag-lf">${MAPPINGS[game.tags.lf.looking] || game.tags.lf.looking}</span>`;
                 
                 const inner = `
-                    <button class="admin-action-btn" id="fav-del-btn-${idx}">✕</button>
-                    <div class="fav-info-group" id="fav-edit-trigger-${idx}">
+                    <button class="admin-action-btn" id="edit-fav-btn-${idx}" style="top:4px; left:4px;">✎</button>
+                    <button class="admin-action-btn" id="del-fav-btn-${idx}" style="top:4px; right:4px;">✕</button>
+                    <div class="fav-info-group">
                         <div class="fav-title">${game.title}</div>
                         ${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}
                     </div>
@@ -431,17 +481,40 @@
                 `;
                 
                 const wrap = createTiltWrapper('fav-card', inner);
+                wrap.dataset.index = idx;
+                
+                if (isAdmin) {
+                    wrap.draggable = true;
+                    wrap.addEventListener('dragstart', (e) => {
+                        dragItemIdx = idx;
+                        dragCategory = 'favorites';
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    wrap.addEventListener('dragover', (e) => {
+                        if (dragCategory !== 'favorites') return;
+                        e.preventDefault();
+                    });
+                    wrap.addEventListener('drop', async (e) => {
+                        if (dragCategory !== 'favorites') return;
+                        e.preventDefault();
+                        const targetIdx = idx;
+                        if (dragItemIdx === targetIdx) return;
+                        const [reorderedItem] = gamesData.favorites.splice(dragItemIdx, 1);
+                        gamesData.favorites.splice(targetIdx, 0, reorderedItem);
+                        await syncToSupabase();
+                    });
+                }
+
                 container.appendChild(wrap);
 
-                const delBtn = document.getElementById(`fav-del-btn-${idx}`);
+                const delBtn = document.getElementById(`del-fav-btn-${idx}`);
                 if (delBtn) {
                     delBtn.onclick = (e) => { e.stopPropagation(); deleteFavorite(idx); };
                 }
 
-                const editTrigger = document.getElementById(`fav-edit-trigger-${idx}`);
-                if (editTrigger && isAdmin) {
-                    editTrigger.style.cursor = 'pointer';
-                    editTrigger.onclick = () => openEditFavModal(game, idx);
+                const editBtn = document.getElementById(`edit-fav-btn-${idx}`);
+                if (editBtn) {
+                    editBtn.onclick = (e) => { e.stopPropagation(); openEditFavModal(game, idx); };
                 }
             });
         }
@@ -452,14 +525,47 @@
             if (!list) return;
             list.forEach((title, idx) => {
                 const inner = `
+                    <button class="admin-action-btn" style="top:5px; left:5px; font-size:10px;" id="grid-edit-${categoryKey}-${idx}">✎</button>
                     <button class="admin-action-btn" style="top:5px; right:5px; font-size:10px;" id="grid-del-${categoryKey}-${idx}">✕</button>
                     ${title}
                 `;
-                grid.appendChild(createTiltWrapper('liked-card', inner));
+                
+                const wrap = createTiltWrapper('liked-card', inner);
+                wrap.dataset.index = idx;
+
+                if (isAdmin) {
+                    wrap.draggable = true;
+                    wrap.addEventListener('dragstart', (e) => {
+                        dragItemIdx = idx;
+                        dragCategory = categoryKey;
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    wrap.addEventListener('dragover', (e) => {
+                        if (dragCategory !== categoryKey) return;
+                        e.preventDefault();
+                    });
+                    wrap.addEventListener('drop', async (e) => {
+                        if (dragCategory !== categoryKey) return;
+                        e.preventDefault();
+                        const targetIdx = idx;
+                        if (dragItemIdx === targetIdx) return;
+                        const listArr = categoryKey === 'liked' ? gamesData.liked : gamesData.wanttoplay;
+                        const [reorderedItem] = listArr.splice(dragItemIdx, 1);
+                        listArr.splice(targetIdx, 0, reorderedItem);
+                        await syncToSupabase();
+                    });
+                }
+
+                grid.appendChild(wrap);
 
                 const delBtn = document.getElementById(`grid-del-${categoryKey}-${idx}`);
                 if (delBtn) {
                     delBtn.onclick = (e) => { e.stopPropagation(); deleteGridItem(categoryKey, idx); };
+                }
+
+                const editBtn = document.getElementById(`grid-edit-${categoryKey}-${idx}`);
+                if (editBtn) {
+                    editBtn.onclick = (e) => { e.stopPropagation(); editGridItem(categoryKey, idx); };
                 }
             });
             document.querySelectorAll('.liked-card').forEach(fitText);
@@ -651,6 +757,15 @@
             }
             await syncToSupabase();
         }
+
+        window.editGridItem = async (categoryKey, idx) => {
+            const listArr = categoryKey === 'liked' ? gamesData.liked : gamesData.wanttoplay;
+            const newVal = prompt("Edit Game Title:", listArr[idx]);
+            if (newVal !== null && newVal.trim() !== '') {
+                listArr[idx] = newVal.trim();
+                await syncToSupabase();
+            }
+        };
 
         document.addEventListener('touchstart', (e) => {
             if (!e.target.closest('.tilt-wrapper')) {
