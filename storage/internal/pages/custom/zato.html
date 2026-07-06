@@ -1,114 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Z.A.T.O Tier List</title>
+  <title>Z.A.T.O Live Tier List</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --foreground: 0 0% 93%;
-      --card: 0 0% 10%;
-      --secondary: 0 0% 13%;
-      --border: 0 0% 20%;
-      --muted-foreground: 0 0% 55%;
-      --accent: 160 84% 39%;
-      --accent-foreground: 0 0% 0%;
-    }
-    * { border-radius: 0 !important; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-    body { font-family: 'JetBrains Mono', monospace; background: transparent; color: hsl(var(--foreground)); margin: 0; padding: 0; overflow-x: hidden; height: 100vh; }
-    html { height: 100%; }
+    <style>
+      :root {
+        --foreground: 0 0% 93%;
+        --card: 0 0% 10%;
+        --secondary: 0 0% 13%;
+        --border: 0 0% 20%;
+        --muted-foreground: 0 0% 55%;
+        --accent: 160 84% 39%;
+        --accent-foreground: 0 0% 0%;
+      }
+      * { border-radius: 0 !important; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+      body { font-family: 'JetBrains Mono', monospace; background: transparent; color: hsl(var(--foreground)); margin: 0; padding: 0; overflow-x: hidden; height: 100vh; }
+      html { height: 100%; }
 
-    .tl-layout { display: flex; height: 100vh; }
-    .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
-    
-    .tl-sidebar { display: none; width: 260px; min-width: 260px; height: 100vh; overflow-y: auto; border-left: 1px solid hsl(var(--border)); background: hsl(var(--card)); padding: 14px; flex-direction: column; gap: 12px; flex-shrink: 0; }
-    body.is-admin .tl-sidebar { display: flex; }
+      .tl-layout { display: flex; height: 100vh; }
+      .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
+      
+      .tl-sidebar { display: none; width: 260px; min-width: 260px; height: 100vh; overflow-y: auto; border-left: 1px solid hsl(var(--border)); background: hsl(var(--card)); padding: 14px; flex-direction: column; gap: 12px; flex-shrink: 0; }
+      body.is-admin .tl-sidebar { display: flex; }
 
-    .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
-    .tl-title { font-size: 22px; font-weight: 700; color: hsl(var(--accent)); margin-bottom: 3px; display: flex; align-items: center; gap: 12px; }
-    
-    .live-badge { display: flex; align-items: center; gap: 6px; color: #ff3b3b; font-size: 12px; border: 1px solid #ff3b3b; padding: 4px 8px; }
-    .pulse { width: 8px; height: 8px; background: #ff3b3b; border-radius: 50%; animation: pulsing 1.5s infinite; }
-    @keyframes pulsing {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 59, 59, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0); }
-    }
+      .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid hsl(var(--border)); padding-bottom: 10px; }
+      .tl-title { font-size: 22px; font-weight: 700; color: hsl(var(--accent)); margin-bottom: 3px; display: flex; align-items: center; gap: 12px; }
+      .tl-sub { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 2px; }
+      
+      .top-bar { display: none; gap: 7px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid hsl(var(--border)); }
+      body.is-admin .top-bar { display: flex; }
+      .top-bar label { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 1px; }
 
-    button, select, input[type=text], input[type=password] {
-      font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 9px;
-      background: hsl(var(--secondary)); border: 1px solid hsl(var(--border));
-      color: hsl(var(--foreground)); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
-    }
-    button:hover { color: hsl(var(--accent)); border-color: hsl(var(--accent)); }
-    .btn-primary { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); border-color: hsl(var(--accent)); font-weight: 700; }
-    .btn-primary:hover { opacity: 0.85; color: hsl(var(--accent-foreground)); }
-    
-    .tier-list { display: grid; grid-template-columns: repeat(var(--tier-cols, 1), 1fr); grid-auto-flow: column; grid-template-rows: repeat(var(--tier-rows, 15), auto); gap: 3px; }
-    .tier-row { display: flex; align-items: stretch; border: 1px solid hsl(var(--border)); transition: border-color 0.2s; position: relative; }
-    .tier-label { width: 64px; min-width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px; }
-    .tier-items { flex: 1; display: flex; flex-direction: column; gap: 0; padding: 0; background: hsl(var(--card)); border-left: 1px solid hsl(var(--border)); min-height: 56px; }
-    .tier-items.drag-over { background: hsl(var(--accent) / 0.09); border-left-color: hsl(var(--accent)); }
-    .tier-item-row { display: flex; flex: 1; min-height: 56px; }
-    .tilt-wrapper { flex: 1; display: flex; flex-direction: column; perspective: 1000px; user-select: none; border-right: 1px solid hsl(var(--border)); min-width: 0; }
-    
-    .tl-item { width: 100%; flex: 1; min-height: 48px; display: flex; align-items: center; gap: 7px; padding: 5px 28px 5px 7px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: hsl(var(--foreground)); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; transform-style: preserve-3d; position: relative; overflow: hidden; }
-    body.is-admin .tl-item { cursor: grab; }
-    .tilt-wrapper:hover .tl-item { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.07); box-shadow: 0 12px 30px rgba(0,0,0,0.7); z-index: 100; }
-    
-    .tl-item-text-block { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-    .tl-item-label { font-size: clamp(10px, 1.1vw, 14px); line-height: 1.3; word-break: break-word; }
-    
-    .tl-item-img-full { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-    .tl-item-img-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); font-size: 10px; padding: 2px 4px; text-align: center; z-index: 1; }
-    
-    .tl-item-remove, .tl-item-edit, .tier-lbl-btn { display: none; }
-    body.is-admin .tl-item-remove, body.is-admin .tl-item-edit { display: block; position: absolute; background: none; border: none; cursor: pointer; font-size: 9px; padding: 1px 3px; z-index: 2; color: hsl(var(--muted-foreground)); }
-    body.is-admin .tl-item-remove { top: 2px; right: 2px; }
-    body.is-admin .tl-item-edit { top: 2px; left: 2px; }
-    body.is-admin .tl-item-remove:hover { color: #ff6b6b; }
-    body.is-admin .tl-item-edit:hover { color: hsl(var(--accent)); }
-    
-    .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); }
-    .pool-empty { font-size: 11px; color: hsl(var(--muted-foreground)); font-style: italic; width: 100%; text-align: center; padding: 12px 0; }
-    .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; max-width: 130px; }
-    .pool-area .tl-item { height: 56px; }
+      .live-badge { display: flex; align-items: center; gap: 6px; color: #ff3b3b; font-size: 12px; border: 1px solid #ff3b3b; padding: 4px 8px; font-weight: 700; }
+      .pulse { width: 8px; height: 8px; background: #ff3b3b; border-radius: 50%; animation: pulsing 1.5s infinite; }
+      @keyframes pulsing {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 59, 59, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 59, 59, 0); }
+      }
 
-    .sidebar-section { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
-    .sidebar-label { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; border-bottom: 1px solid hsl(var(--border)); }
-    .add-panel input, .add-panel select { width: 100%; margin-bottom: 5px; }
+      select, input[type=text], input[type=password], button {
+        font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 5px 9px;
+        background: hsl(var(--secondary)); border: 1px solid hsl(var(--border));
+        color: hsl(var(--foreground)); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
+      }
+      select:hover, input[type=text]:hover, button:hover { border-color: hsl(var(--accent)); }
+      select:focus, input[type=text]:focus { border-color: hsl(var(--accent)); }
+      button:hover { color: hsl(var(--accent)); }
+      input[type=color] { width: 30px; height: 30px; padding: 2px; cursor: pointer; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); -webkit-appearance: none; appearance: none; }
+      input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+      input[type=color]::-webkit-color-swatch { border: none; }
+      input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; accent-color: hsl(var(--accent)); }
 
-    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
-    .modal.active { display: flex; }
-    .modal-content { background: hsl(var(--card)); border: 2px solid hsl(var(--border)); padding: 20px; width: 90%; max-width: 320px; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .modal-header h2 { font-size: 16px; margin: 0; color: hsl(var(--accent)); }
-    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--foreground)); }
-    .modal-content input { width: 100%; padding: 8px; margin-bottom: 10px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); outline: none; }
-    .modal-content input:focus { border-color: hsl(var(--accent)); }
-  </style>
-</head>
-<body>
+      .btn-primary { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); border-color: hsl(var(--accent)); font-weight: 700; }
+      .btn-primary:hover { opacity: 0.85; color: hsl(var(--accent-foreground)); }
+      .btn-sm { font-size: 10px; padding: 3px 6px; }
+      .btn-danger { color: #ff6b6b; border-color: #8B0000; }
+      .btn-danger:hover { background: rgba(139,0,0,0.2); color: #ff6b6b; border-color: #ff6b6b; }
+
+      .tier-list {
+        display: grid;
+        grid-template-columns: repeat(var(--tier-cols, 1), 1fr);
+        grid-auto-flow: column;
+        grid-template-rows: repeat(var(--tier-rows, 15), auto);
+        gap: 3px;
+      }
+
+      .tier-row { display: flex; align-items: stretch; border: 1px solid hsl(var(--border)); transition: border-color 0.2s; position: relative; }
+      .tier-row.is-exec-row .tier-items { background: rgba(139,0,0,0.13); }
+      .tier-row:hover { border-color: hsl(var(--accent) / 0.4); }
+
+      .tier-label {
+        width: 64px; min-width: 64px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+        font-size: 18px; font-weight: 700; letter-spacing: 1px;
+        cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px;
+      }
+      .tier-label.long-label { font-size: 9px; letter-spacing: 0.5px; }
+      
+      .tier-label-btns { display: none; position: absolute; bottom: 2px; left: 0; right: 0; justify-content: center; }
+      body.is-admin .tier-row:hover .tier-label-btns { display: flex; }
+      .tier-lbl-btn { background: rgba(0,0,0,0.55); border: none; color: rgba(255,255,255,0.75); font-size: 9px; padding: 1px 6px; cursor: pointer; line-height: 1; pointer-events: auto; }
+      .tier-lbl-btn:hover { color: #fff; border: none; }
+
+      .tier-items {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        padding: 0;
+        background: hsl(var(--card));
+        border-left: 1px solid hsl(var(--border));
+        transition: background 0.15s;
+        min-height: 56px;
+      }
+      .tier-items.drag-over { background: hsl(var(--accent) / 0.09); border-left-color: hsl(var(--accent)); }
+      .tier-item-row {
+        display: flex;
+        flex: 1;
+        min-height: 56px;
+      }
+      .tilt-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        perspective: 1000px;
+        user-select: none;
+        border-right: 1px solid hsl(var(--border));
+        min-width: 0;
+      }
+      .tier-item-row .tilt-wrapper:last-child { border-right: none; }
+      .tier-item-row + .tier-item-row { border-top: 1px solid hsl(var(--border)); }
+
+      .tl-item {
+        width: 100%;
+        flex: 1;
+        min-height: 48px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 28px 5px 7px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: hsl(var(--foreground));
+        text-align: left;
+        word-break: break-word;
+        height: 100%;
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        transform-style: preserve-3d;
+        will-change: transform; backface-visibility: hidden;
+        outline: 1px solid transparent; transform: translateZ(1px);
+        position: relative; overflow: hidden;
+      }
+      body.is-admin .tl-item { cursor: grab; }
+      .tl-item.revived { background: rgba(255,230,80,0.10); border-color: rgba(255,220,50,0.3); }
+      .tilt-wrapper:hover .tl-item, .tilt-wrapper.is-tapped .tl-item { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.07); box-shadow: 0 12px 30px rgba(0,0,0,0.7); z-index: 100; }
+      .tilt-wrapper:hover .tl-item.revived { background: rgba(255,230,80,0.18); }
+
+      .tl-item-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+      .icon-spotify { background: #1DB954; }
+      .icon-yt { background: #FF0000; }
+      .icon-video { background: #2a2a2a; border: 1px solid #555; }
+      .tl-item-img { width: 36px; height: 36px; object-fit: cover; flex-shrink: 0; }
+
+      .tl-item-text-block { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+      .tl-item-label { font-size: clamp(10px, 1.1vw, 14px); line-height: 1.3; word-break: break-word; overflow-wrap: break-word; }
+      .tl-item-type { font-size: 8px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 0.5px; }
+
+      .tl-item-img-full { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+      .tl-item-img-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); font-size: 10px; padding: 2px 4px; text-align: center; z-index: 1; line-height: 1.2; }
+
+      .tl-item-remove, .tl-item-edit { display: none; }
+      body.is-admin .tl-item-remove { position: absolute; top: 2px; right: 2px; background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer; font-size: 9px; padding: 1px 3px; line-height: 1; pointer-events: auto; transition: color 0.15s; z-index: 2; display: block; }
+      body.is-admin .tl-item-remove:hover { color: #c0392b; border: none; }
+      body.is-admin .tl-item-edit { position: absolute; top: 2px; left: 2px; background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer; font-size: 9px; padding: 1px 3px; line-height: 1; pointer-events: auto; transition: color 0.15s; z-index: 2; display: block; }
+      body.is-admin .tl-item-edit:hover { color: hsl(var(--accent)); border: none; }
+
+      .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); transition: background 0.15s; }
+      .pool-area.drag-over { background: hsl(var(--accent) / 0.09); border-color: hsl(var(--accent)); }
+      .pool-empty { font-size: 11px; color: hsl(var(--muted-foreground)); font-style: italic; width: 100%; text-align: center; padding: 12px 0; }
+      .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; max-width: 130px; }
+      .pool-area .tl-item { height: 56px; }
+
+      .sidebar-section { display: flex; flex-direction: column; gap: 7px; }
+      .sidebar-label { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 5px; border-bottom: 1px solid hsl(var(--border)); }
+      .add-panel { display: flex; flex-direction: column; gap: 5px; }
+      .add-panel input[type=text], .add-panel select { width: 100%; }
+      .add-panel #itemLabel { display: none; }
+      .export-btns { display: flex; flex-direction: column; gap: 5px; }
+      .export-btns button { width: 100%; text-align: center; }
+      .saves-section { display: flex; flex-direction: column; gap: 5px; }
+      .saves-list { display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto; }
+      .save-entry { display: flex; align-items: center; gap: 4px; padding: 3px 6px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); font-size: 11px; }
+      .save-entry-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+      .save-entry-name:hover { color: hsl(var(--accent)); }
+      .save-entry-del { background: none; border: none; color: hsl(var(--muted-foreground)); font-size: 10px; padding: 1px 3px; cursor: pointer; flex-shrink: 0; }
+      .save-entry-del:hover { color: #c0392b; border: none; }
+      .save-new-row { display: flex; gap: 4px; }
+      .save-new-row input { flex: 1; }
+
+      .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 1000; align-items: center; justify-content: center; }
+      .modal-overlay.open { display: flex; }
+      .modal { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); padding: 18px; min-width: 300px; max-width: 440px; width: 94%; display: flex; flex-direction: column; gap: 11px; max-height: 92vh; overflow-y: auto; }
+      .modal-title { font-size: 14px; font-weight: 700; color: hsl(var(--accent)); }
+      .modal-row { display: flex; flex-direction: column; gap: 4px; }
+      .modal-row label { font-size: 10px; color: hsl(var(--muted-foreground)); text-transform: uppercase; letter-spacing: 1px; }
+      .modal-row input[type=text], .modal-row select, .modal-row textarea { width: 100%; }
+      .modal-row textarea { resize: vertical; min-height: 80px; font-family: 'JetBrains Mono', monospace; font-size: 11px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); padding: 6px; outline: none; }
+      .modal-row textarea:focus { border-color: hsl(var(--accent)); }
+      .modal-color-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+      .color-preset { width: 22px; height: 22px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; }
+      .color-preset.active, .color-preset:hover { border-color: #fff; }
+      .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+      .modal-check-row { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+      .modal-check-row label { cursor: pointer; }
+      .tier-manage-list { display: flex; flex-direction: column; gap: 3px; max-height: 280px; overflow-y: auto; }
+      .tier-manage-entry { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); }
+      .tier-manage-entry .swatch { width: 20px; height: 20px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
+      .tier-manage-entry .lbl { flex: 1; font-size: 12px; font-weight: 700; }
+      .tier-manage-entry .exec-badge { font-size: 9px; color: #ff6b6b; padding: 1px 4px; border: 1px solid #8B0000; }
+      .tier-manage-btns { display: flex; gap: 3px; }
+      .b64-copy-row { display: flex; gap: 6px; }
+      .b64-copy-row button { flex-shrink: 0; }
+    </style>
+  </head>
+
+  <body>
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modalBox"></div>
+  </div>
+
   <div class="tl-layout">
     <div class="tl-main">
       <div class="tl-header">
-        <div class="tl-title">
-          Z.A.T.O Tier List
-          <div class="live-badge"><span class="pulse"></span> LIVE</div>
-        </div>
-        <div>
-          <button id="auth-btn">Connecting...</button>
+        <div class="tl-title" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+          <span>Z.A.T.O Tier List</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="live-badge"><span class="pulse"></span> LIVE</div>
+            <button id="auth-btn">Connecting...</button>
+          </div>
         </div>
       </div>
-      <div class="tier-list" id="tierList">
-         <p style="color: hsl(var(--muted-foreground)); font-style: italic;">Syncing with live database...</p>
+      <div class="top-bar">
+        <label>Preset</label>
+        <select id="presetSel">
+          <option value="full">Full</option>
+        </select>
+        <label style="margin-left:6px">Tier Cols</label>
+        <select id="colSel">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
+        <button onclick="openManageTiers()" style="margin-left:4px">Edit Tiers</button>
       </div>
+      <div class="tier-list" id="tierList"></div>
     </div>
 
-    <div class="tl-sidebar" id="admin-panel">
+    <div class="tl-sidebar">
       <div class="sidebar-section">
         <div class="sidebar-label">Unranked Pool</div>
         <div class="pool-area" id="pool" data-tier="__pool__"></div>
@@ -118,23 +253,39 @@
         <select id="itemType">
           <option value="text">Text</option>
           <option value="image">Image URL</option>
+          <option value="spotify">Spotify</option>
+          <option value="ytmusic">YT Music</option>
+          <option value="video">Video URL</option>
         </select>
         <input type="text" id="itemInput" placeholder="Label or paste URL..." />
-        <input type="text" id="itemLabel" style="display:none" placeholder="Display label (optional)..." />
-        <button class="btn-primary" onclick="addItem()">+ Add Item</button>
+        <input type="text" id="itemLabel" placeholder="Display label (optional)..." />
+        <button class="btn-primary" onclick="addItem()">+ Add</button>
+        <div style="font-size:9px;color:hsl(var(--muted-foreground));text-align:center">Ctrl+V to paste image or URL</div>
       </div>
-    </div>
-  </div>
-
-  <div id="login-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Admin Login</h2>
-        <button class="modal-close" onclick="closeLoginModal()">×</button>
+      <div class="sidebar-section saves-section">
+        <div class="sidebar-label">Saved Lists</div>
+        <div class="save-new-row">
+          <input type="text" id="saveNameInput" placeholder="List name..." />
+          <button class="btn-primary" onclick="saveNamedList()">Save</button>
+        </div>
+        <div class="saves-list" id="savesList"></div>
       </div>
-      <input type="text" id="login-email" placeholder="Email" value="3rr0r.d3v@gmail.com" readonly>
-      <input type="password" id="login-password" placeholder="Password">
-      <button class="btn-primary" onclick="submitLogin()" style="width: 100%; padding: 8px;">Login</button>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Revival Tint</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px">
+          <input type="checkbox" id="bonusRevival">
+          <label for="bonusRevival" style="cursor:pointer">Enable Revival Tint</label>
+        </div>
+      </div>
+      <div class="sidebar-section export-btns">
+        <div class="sidebar-label">Tierlist</div>
+        <button onclick="doExport('full')">Export Tierlist</button>
+        <button onclick="doImport('full')">Import Tierlist</button>
+        <div class="sidebar-label" style="margin-top:4px">Preset</div>
+        <button onclick="doExport('preset')">Export Preset</button>
+        <button onclick="doImport('preset')">Import Preset</button>
+        <button class="btn-primary" onclick="saveImage()" style="margin-top:4px">Save Image</button>
+      </div>
     </div>
   </div>
 
@@ -145,22 +296,52 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    const PRESET_COLORS = ['#FF3B3B','#FF6B3B','#FF9A3B','#FFD93B','#A8D63F','#3FD67A','#3FBDD6','#3F7ED6','#7B5EA7','#5A4080','#3D2B60','#4A4A4A','#2E2E2E','#1A1A1A','#8B0000','#C0392B','#E67E22','#27AE60','#2980B9','#8E44AD','#2C3E50','#ECF0F1'];
+
+    const TIERS_BASE = [
+      { id:'SSS',  label:'SSS',       color:'#FF3B3B', text:'#fff',    isExec:false },
+      { id:'SS',   label:'SS',        color:'#FF6B3B', text:'#fff',    isExec:false },
+      { id:'S',    label:'S',         color:'#FF9A3B', text:'#fff',    isExec:false },
+      { id:'A',    label:'A',         color:'#FFD93B', text:'#2a1a00', isExec:false },
+      { id:'B',    label:'B',         color:'#A8D63F', text:'#1a2a00', isExec:false },
+      { id:'C',    label:'C',         color:'#3FD67A', text:'#003020', isExec:false },
+      { id:'D',    label:'D',         color:'#3FBDD6', text:'#002030', isExec:false },
+      { id:'E',    label:'E',         color:'#3F7ED6', text:'#fff',    isExec:false },
+      { id:'F',    label:'F',         color:'#7B5EA7', text:'#fff',    isExec:false },
+      { id:'FF',   label:'FF',        color:'#5A4080', text:'#fff',    isExec:false },
+      { id:'FFF',  label:'FFF',       color:'#3D2B60', text:'#ccc',    isExec:false },
+      { id:'Z',    label:'Z',         color:'#4A4A4A', text:'#fff',    isExec:false },
+      { id:'ZZ',   label:'ZZ',        color:'#2E2E2E', text:'#aaa',    isExec:false },
+      { id:'ZZZ',  label:'ZZZ',       color:'#1A1A1A', text:'#777',    isExec:false },
+      { id:'Q',    label:'Q',         color:'#b53333', text:'#ffcccc', isExec:true  },
+      { id:'EXEC', label:'EXECUTION', color:'#8B0000', text:'#ff6b6b', isExec:true  },
+    ];
+
+    let PRESETS = {};
+    let PRESET_LIST = [];
+
     let isAdmin = false;
     let isDragging = false;
     let pendingUpdate = false;
     let dragItem = null, dragSrc = null;
     let cachedState = null;
-    
-    let allTiers = [];
-    let activeTierIds = [];
-    let columns = 1;
-    let tierItems = {};
-    let poolItems = [];
-    let idCounter = 0;
+
+    const SAVES_KEY = 'tierlist_saves';
+
+    let allTiers      = JSON.parse(JSON.stringify(TIERS_BASE));
+    let activeTierIds = TIERS_BASE.map(t => t.id);
+    let columns       = 1;
+    let tierItems     = {};
+    let poolItems     = [];
+    let idCounter     = 0;
+    let revivalTint   = false;
+    let revivedSet    = new Set();
+
+    function getTier(id)      { return allTiers.find(t => t.id === id); }
+    function getActiveTiers() { return activeTierIds.map(id => getTier(id)).filter(Boolean); }
+    function isExecTier(id)   { const t = getTier(id); return t && t.isExec; }
 
     async function initAuth() {
-        const authBtn = document.getElementById('auth-btn');
-        
         const { data: { session } } = await supabaseClient.auth.getSession();
         handleUserSession(session);
 
@@ -180,18 +361,33 @@
             isAdmin = false;
             document.body.classList.remove('is-admin');
             authBtn.textContent = 'Admin Login';
-            authBtn.onclick = () => {
-                document.getElementById('login-modal').classList.add('active');
-            };
+            authBtn.onclick = () => openLoginModal();
         }
         renderAll();
     }
 
-    window.closeLoginModal = () => {
-        document.getElementById('login-modal').classList.remove('active');
-    };
+    function openLoginModal() {
+        const modal = document.getElementById('modalBox');
+        modal.innerHTML = `
+            <div class="modal-title">Admin Login</div>
+            <div class="modal-row">
+                <label>Email</label>
+                <input type="text" id="login-email" value="3rr0r.d3v@gmail.com" readonly>
+            </div>
+            <div class="modal-row">
+                <label>Password</label>
+                <input type="password" id="login-password">
+            </div>
+            <div class="modal-btns">
+                <button onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" id="login-submit">Login</button>
+            </div>
+        `;
+        document.getElementById('login-submit').onclick = submitLogin;
+        openModal();
+    }
 
-    window.submitLogin = async () => {
+    async function submitLogin() {
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
         if (!password) return;
@@ -200,10 +396,9 @@
         if (error) {
             alert("Login Failed: " + error.message);
         } else {
-            closeLoginModal();
-            document.getElementById('login-password').value = '';
+            closeModal();
         }
-    };
+    }
 
     async function initDatabase() {
         const { data, error } = await supabaseClient
@@ -242,12 +437,27 @@
         tierItems = state.tierItems || {};
         poolItems = state.poolItems || [];
         idCounter = state.idCounter || 0;
+        revivalTint = state.revivalTint || false;
+        revivedSet = new Set(state.revivedSet || []);
+        
+        document.getElementById('colSel').value = columns;
+        document.getElementById('bonusRevival').checked = revivalTint;
+        syncPresetSel();
         renderAll();
     }
 
     async function syncToSupabase() {
         if (!isAdmin) return;
-        const state = { allTiers, activeTierIds, columns, tierItems, poolItems, idCounter };
+        const state = { 
+            allTiers, 
+            activeTierIds, 
+            columns, 
+            tierItems, 
+            poolItems, 
+            idCounter, 
+            revivalTint, 
+            revivedSet: [...revivedSet] 
+        };
         const { error } = await supabaseClient
             .from('zato_tierlist')
             .update({ state })
@@ -256,182 +466,648 @@
         if (error) console.error("Error saving state:", error.message);
     }
 
+    function parseRankingDat(yaml) {
+      const lines = yaml.split(/\r?\n/);
+      const presets = [];
+      let current = null, inTiers = false;
+      for (const raw of lines) {
+        const line = raw.trimEnd(), trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        if (trimmed === 'presets:') continue;
+        if (/^  - id:/.test(line)) {
+          if (current) presets.push(current);
+          current = { id: trimmed.replace('- id:', '').trim(), label: '', tiers: [] };
+          inTiers = false;
+        } else if (current && /^    label:/.test(line)) {
+          current.label = trimmed.replace('label:', '').trim();
+          inTiers = false;
+        } else if (current && /^    tiers:/.test(line)) {
+          inTiers = true;
+        } else if (current && inTiers && /^      - /.test(line)) {
+          current.tiers.push(trimmed.replace('- ', '').trim());
+        }
+      }
+      if (current) presets.push(current);
+      return presets;
+    }
+
+    async function loadRankingDat() {
+      try {
+        const resp = await fetch('ranking.dat');
+        if (!resp.ok) throw new Error('not found');
+        const yaml = await resp.text();
+        const parsed = parseRankingDat(yaml);
+        PRESET_LIST = parsed.map(p => ({
+          id: p.id,
+          label: p.label,
+          tierIds: p.tiers.map(lbl => TIERS_BASE.find(t => t.label === lbl)?.id).filter(Boolean),
+        }));
+        PRESETS = {};
+        for (const p of PRESET_LIST) PRESETS[p.id] = p.tierIds;
+      } catch(e) {
+        PRESET_LIST = [
+          { id:'standard', label:'Standard', tierIds: ['S','A','B','C','D','F'].map(lbl => TIERS_BASE.find(t => t.label === lbl)?.id).filter(Boolean) },
+          { id:'full',     label:'Full',     tierIds: TIERS_BASE.map(t => t.id) },
+        ];
+        PRESETS = {};
+        for (const p of PRESET_LIST) PRESETS[p.id] = p.tierIds;
+      }
+      buildPresetSelector();
+    }
+
+    function buildPresetSelector() {
+      const sel = document.getElementById('presetSel');
+      sel.innerHTML = '';
+      for (const p of PRESET_LIST) {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.label;
+        sel.appendChild(opt);
+      }
+      const customOpt = document.createElement('option');
+      customOpt.value = 'custom';
+      customOpt.textContent = 'Custom';
+      sel.appendChild(customOpt);
+    }
+
+    function syncPresetSel() {
+      const ids = JSON.stringify(activeTierIds);
+      const m = PRESET_LIST.find(p => JSON.stringify(PRESETS[p.id]) === ids);
+      document.getElementById('presetSel').value = m ? m.id : 'custom';
+    }
+    function getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY) || '{}'); } catch(e) { return {}; } }
+    function saveNamedList() {
+      const name = document.getElementById('saveNameInput').value.trim(); if (!name) return;
+      const saves = getSaves();
+      saves[name] = { allTiers, activeTierIds, columns, tierItems, poolItems, idCounter, revivedSet:[...revivedSet], savedAt: Date.now() };
+      try { localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); } catch(e){}
+      document.getElementById('saveNameInput').value = ''; renderSavesList();
+    }
+    function loadNamedList(name) {
+      const d = getSaves()[name]; if (!d) return;
+      if (d.allTiers)      allTiers = d.allTiers;
+      if (d.activeTierIds) activeTierIds = d.activeTierIds;
+      if (d.columns)       { columns = d.columns; document.getElementById('colSel').value = columns; }
+      if (d.tierItems)     tierItems = d.tierItems;
+      if (d.poolItems)     poolItems = d.poolItems;
+      if (d.idCounter)     idCounter = d.idCounter;
+      if (d.revivedSet)    revivedSet = new Set(d.revivedSet);
+      syncPresetSel(); renderAll(); syncToSupabase();
+    }
+    function deleteNamedList(name) {
+      const saves = getSaves(); delete saves[name];
+      try { localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); } catch(e){} renderSavesList();
+    }
+    function renderSavesList() {
+      const el = document.getElementById('savesList'), saves = getSaves(), keys = Object.keys(saves);
+      if (!keys.length) { el.innerHTML = '<div style="font-size:11px;color:hsl(var(--muted-foreground));font-style:italic;padding:4px 0">No saved lists</div>'; return; }
+      el.innerHTML = '';
+      keys.sort((a,b) => (saves[b].savedAt||0) - (saves[a].savedAt||0)).forEach(name => {
+        const entry = document.createElement('div'); entry.className = 'save-entry';
+        const nameEl = document.createElement('div'); nameEl.className = 'save-entry-name'; nameEl.textContent = name; nameEl.title = 'Click to load'; nameEl.onclick = () => loadNamedList(name);
+        const del = document.createElement('button'); del.className = 'save-entry-del'; del.textContent = '✕'; del.onclick = () => deleteNamedList(name);
+        entry.appendChild(nameEl); entry.appendChild(del); el.appendChild(entry);
+      });
+    }
+
+    function encodeDat7(plainText) {
+      const bytes = new TextEncoder().encode(plainText);
+      let encoded = '';
+      for (const b of bytes) encoded += '?[' + b.toString(16).toUpperCase().padStart(2, '0');
+      return btoa(encoded);
+    }
+    function decodeDat7(dat7str) {
+      const raw = atob(dat7str.trim());
+      let result = '', i = 0;
+      while (i < raw.length) {
+        if (raw[i] === '?' && raw[i+1] === '[') {
+          result += String.fromCharCode(parseInt(raw[i+2] + raw[i+3], 16));
+          i += 4;
+        } else { result += raw[i]; i++; }
+      }
+      return result;
+    }
+    function b64h(s) { return btoa(unescape(encodeURIComponent(s))); }
+    function findPresetNum() {
+      const ids = JSON.stringify(activeTierIds);
+      const idx = PRESET_LIST.findIndex(p => JSON.stringify(PRESETS[p.id]) === ids);
+      return idx >= 0 ? idx + 1 : PRESET_LIST.length + 1;
+    }
+    function buildDat7(mode) {
+      const lines = [];
+      lines.push(b64h('Tiers') + ' # <tier>:<hexColor>');
+      const tiers = getActiveTiers();
+      for (const t of tiers) {
+        lines.push(t.label + ':' + t.color.replace('#', '').toLowerCase());
+      }
+      lines.push('');
+      if (mode === 'full') {
+        lines.push(b64h('Content') + ' #format is <tier>:<itemType>:<data>:<revivalTint>');
+        for (const t of tiers) {
+          const items = tierItems[t.id] || [];
+          for (const item of items) {
+            const revived = revivedSet.has(item.id) ? 'true' : 'false';
+            if (item.type === 'image') lines.push(t.label + ':image:' + (item.url || item.label || '<imgData>') + ':' + revived);
+            else if (item.type === 'text') lines.push(t.label + ':text:' + item.label + ':' + revived);
+            else lines.push(t.label + ':' + item.type + ':' + (item.label || item.url || '') + ':' + revived);
+          }
+        }
+        lines.push('');
+        lines.push(b64h('Unranked'));
+        for (const item of poolItems) {
+          const revived = revivedSet.has(item.id) ? 'true' : 'false';
+          if (item.type === 'image') lines.push('unranked:image:' + (item.url || item.label || '<imgData>') + ':' + revived);
+          else lines.push('unranked:text:' + (item.label || '') + ':' + revived);
+        }
+      }
+      lines.push('');
+      lines.push(b64h('Other'));
+      lines.push('preset:' + findPresetNum() + ' #preset index from ranking.dat');
+      lines.push('col:' + columns + ' #tier format columns number');
+      lines.push('rt:' + (revivalTint ? 'true' : 'false') + ' #<revivalTint>');
+      return lines.join('\r\n');
+    }
+    function parseDat7(plain, mode) {
+      const lines = plain.split(/\r?\n/);
+      let section = null;
+      const parsedTiers = [], parsedContent = [], parsedUnranked = [];
+      let parsedCol = columns, parsedRt = false, parsedPreset = PRESET_LIST.length + 1;
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) continue;
+        try { const decoded = atob(line.split(' ')[0]); if (['Tiers','Content','Unranked','Other'].includes(decoded)) { section = decoded; continue; } } catch(e){}
+        if (section === 'Tiers') {
+          const [lbl, hex] = line.split(':'); if (lbl && hex) parsedTiers.push({ label: lbl, color: '#' + hex });
+        } else if (section === 'Content' && mode === 'full') {
+          const parts = line.split(':'); if (parts.length >= 4) parsedContent.push({ tier: parts[0], type: parts[1], data: parts.slice(2, -1).join(':'), revived: parts[parts.length-1] === 'true' });
+        } else if (section === 'Unranked' && mode === 'full') {
+          const parts = line.split(':'); if (parts.length >= 4) parsedUnranked.push({ type: parts[1], data: parts.slice(2, -1).join(':'), revived: parts[parts.length-1] === 'true' });
+        } else if (section === 'Other') {
+          const [k, ...rest] = line.split(':'); const v = rest.join(':').trim().split(' ')[0];
+          if (k === 'col') parsedCol = parseInt(v) || 1;
+          if (k === 'rt') parsedRt = v === 'true';
+          if (k === 'preset') parsedPreset = parseInt(v) || PRESET_LIST.length + 1;
+        }
+      }
+      return { parsedTiers, parsedContent, parsedUnranked, parsedCol, parsedRt, parsedPreset };
+    }
+    function applyParsedDat7(parsed, mode) {
+      if (parsed.parsedTiers.length) {
+        const labelMap = {};
+        for (const t of allTiers) labelMap[t.label] = t;
+        const newActive = [];
+        for (const pt of parsed.parsedTiers) {
+          const existing = labelMap[pt.label];
+          if (existing) { existing.color = pt.color; newActive.push(existing.id); }
+          else {
+            const id = 'custom_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const brightness = parseInt(pt.color.slice(1,3),16)*0.299 + parseInt(pt.color.slice(3,5),16)*0.587 + parseInt(pt.color.slice(5,7),16)*0.114;
+            allTiers.push({ id, label: pt.label, color: pt.color, text: brightness > 128 ? '#1a1a1a' : '#ffffff', isExec: false });
+            newActive.push(id);
+          }
+        }
+        activeTierIds = newActive;
+      }
+      if (mode === 'full') {
+        tierItems = {}; revivedSet = new Set();
+        const labelToId = {};
+        for (const t of getActiveTiers()) labelToId[t.label] = t.id;
+        for (const c of parsed.parsedContent) {
+          const tid = labelToId[c.tier]; if (!tid) continue;
+          if (!tierItems[tid]) tierItems[tid] = [];
+          const id = 'item_' + (++idCounter);
+          if (c.revived) revivedSet.add(id);
+          if (c.type === 'image') tierItems[tid].push({ id, type: 'image', url: c.data, label: '' });
+          else tierItems[tid].push({ id, type: c.type === 'text' ? 'text' : c.type, label: c.data, url: null });
+        }
+        poolItems = [];
+        for (const u of parsed.parsedUnranked) {
+          const id = 'item_' + (++idCounter);
+          if (u.revived) revivedSet.add(id);
+          poolItems.push({ id, type: u.type === 'image' ? 'image' : 'text', label: u.data, url: u.type === 'image' ? u.data : null });
+        }
+        columns = parsed.parsedCol; document.getElementById('colSel').value = columns;
+        revivalTint = parsed.parsedRt; document.getElementById('bonusRevival').checked = revivalTint;
+      }
+      syncPresetSel(); renderAll();
+    }
+    function downloadDat7(filename, content) {
+      const blob = new Blob([content], { type: 'application/octet-stream' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click();
+    }
+    function readDat7File(file, callback) {
+      const reader = new FileReader();
+      reader.onload = ev => { try { callback(decodeDat7(ev.target.result.trim())); } catch(e) { alert('Could not read file.'); } };
+      reader.readAsText(file);
+    }
+    function doExport(mode) {
+      const plain = buildDat7(mode);
+      const encoded = encodeDat7(plain);
+      const fname = mode === 'full' ? 'tierlist.dat7' : 'preset.dat7';
+      const modal = document.getElementById('modalBox');
+      modal.innerHTML = `
+        <div class="modal-title">${mode === 'full' ? 'Export Tierlist' : 'Export Preset'}</div>
+        <div class="modal-row" style="font-size:11px;color:hsl(var(--muted-foreground))">Your ${fname} is ready to download, or copy the code below.</div>
+        <div class="modal-row"><label>Code</label><textarea id="b64out" readonly onclick="this.select()" style="font-size:9px;word-break:break-all">${escHtml(encoded)}</textarea></div>
+        <div class="b64-copy-row">
+          <button class="btn-primary" onclick="downloadDat7('${fname}', document.getElementById('b64out').value)">Download ${fname}</button>
+          <button onclick="navigator.clipboard.writeText(document.getElementById('b64out').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Code',1500)})">Copy Code</button>
+          <button onclick="closeModal()">Close</button>
+        </div>`;
+      openModal();
+    }
+    function doImport(mode) {
+      const modal = document.getElementById('modalBox');
+      modal.innerHTML = `
+        <div class="modal-title">${mode === 'full' ? 'Import Tierlist' : 'Import Preset'}</div>
+        <div class="modal-row"><label>Upload .dat7 file</label>
+          <input type="file" id="dat7file" accept=".dat7" style="width:100%;background:transparent;border:none;padding:0;color:hsl(var(--foreground));font-size:11px">
+        </div>
+        <div class="modal-row"><label>Or paste code</label><textarea id="b64in" placeholder="Paste exported code..."></textarea></div>
+        <div class="modal-btns">
+          <button onclick="closeModal()">Cancel</button>
+          <button class="btn-primary" onclick="applyImport('${mode}')">Import</button>
+        </div>`;
+      document.getElementById('dat7file').addEventListener('change', function() {
+        const file = this.files[0]; if (!file) return;
+        readDat7File(file, plain => { document.getElementById('b64in').value = encodeDat7(plain); });
+      });
+      openModal();
+    }
+    function applyImport(mode) {
+      try {
+        const raw = document.getElementById('b64in').value.trim();
+        const plain = decodeDat7(raw);
+        const parsed = parseDat7(plain, mode);
+        applyParsedDat7(parsed, mode);
+        closeModal();
+        syncToSupabase();
+      } catch(e) { alert('Invalid file or code. Make sure it is a valid .dat7 export.'); }
+    }
+
     function renderAll() {
-        document.documentElement.style.setProperty('--tier-cols', columns);
-        renderTiers(); 
-        renderPool();
+      document.documentElement.style.setProperty('--tier-cols', columns);
+      document.documentElement.style.setProperty('--tier-rows', String(Math.ceil(activeTierIds.length / columns)));
+      renderTiers(); renderPool();
     }
 
     function renderTiers() {
-        const list = document.getElementById('tierList'); 
-        list.innerHTML = '';
-        activeTierIds.forEach(id => {
-            const tier = allTiers.find(t => t.id === id);
-            if(!tier) return;
-            const row = document.createElement('div');
-            row.className = 'tier-row';
-            row.dataset.tierId = tier.id;
+      const list = document.getElementById('tierList'); list.innerHTML = '';
+      getActiveTiers().forEach(tier => {
+        const row = document.createElement('div');
+        row.className = 'tier-row' + (tier.isExec ? ' is-exec-row' : '');
+        row.dataset.tierId = tier.id;
 
-            const lbl = document.createElement('div');
-            lbl.className = 'tier-label';
-            lbl.style.background = tier.color; 
-            lbl.style.color = tier.text;
-            lbl.textContent = tier.label;
-            row.appendChild(lbl);
+        const lbl = document.createElement('div');
+        lbl.className = 'tier-label' + (tier.label.length > 4 ? ' long-label' : '');
+        lbl.style.background = tier.color; lbl.style.color = tier.text;
+        const lblText = document.createElement('span'); lblText.textContent = tier.label; lbl.appendChild(lblText);
+        const lblBtns = document.createElement('div'); lblBtns.className = 'tier-label-btns';
+        const editBtn = document.createElement('button'); editBtn.className = 'tier-lbl-btn'; editBtn.textContent = '✎';
+        editBtn.onclick = e => { e.stopPropagation(); openEditTier(tier.id); };
+        lblBtns.appendChild(editBtn); lbl.appendChild(lblBtns); row.appendChild(lbl);
 
-            const itemsDiv = document.createElement('div');
-            itemsDiv.className = 'tier-items';
-            itemsDiv.dataset.tier = tier.id;
-            setupDrop(itemsDiv);
-
-            const tierItemList = tierItems[tier.id] || [];
-            if (tierItemList.length === 0) {
-                const emptyRow = document.createElement('div');
-                emptyRow.className = 'tier-item-row';
-                itemsDiv.appendChild(emptyRow);
-            } else {
-                for (let i = 0; i < tierItemList.length; i += 5) {
-                    const chunk = tierItemList.slice(i, i + 5);
-                    const rowDiv = document.createElement('div');
-                    rowDiv.className = 'tier-item-row';
-                    chunk.forEach(item => rowDiv.appendChild(makeTiltWrapper(item, tier.id)));
-                    itemsDiv.appendChild(rowDiv);
-                }
-            }
-            row.appendChild(itemsDiv);
-            list.appendChild(row);
-        });
+        const itemsDiv = document.createElement('div');
+        itemsDiv.className = 'tier-items';
+        itemsDiv.dataset.tier = tier.id;
+        setupDrop(itemsDiv);
+        const tierItemList = tierItems[tier.id] || [];
+        const MAX_PER_ROW = 5;
+        if (tierItemList.length === 0) {
+          const emptyRow = document.createElement('div');
+          emptyRow.className = 'tier-item-row';
+          itemsDiv.appendChild(emptyRow);
+        } else {
+          const chunks = [];
+          for (let i = 0; i < tierItemList.length; i += MAX_PER_ROW) chunks.push(tierItemList.slice(i, i + MAX_PER_ROW));
+          chunks.forEach(chunk => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'tier-item-row';
+            chunk.forEach(item => rowDiv.appendChild(makeTiltWrapper(item, tier.id)));
+            itemsDiv.appendChild(rowDiv);
+          });
+        }
+        row.appendChild(itemsDiv);
+        list.appendChild(row);
+      });
     }
 
     function renderPool() {
-        const pool = document.getElementById('pool'); 
-        pool.innerHTML = '';
-        if (!poolItems.length) {
-            const emp = document.createElement('div'); 
-            emp.className = 'pool-empty'; 
-            emp.textContent = 'Admin pool empty'; 
-            pool.appendChild(emp); 
-            return;
-        }
-        poolItems.forEach(item => pool.appendChild(makeTiltWrapper(item, '__pool__')));
-        setupDrop(pool);
+      const pool = document.getElementById('pool'); pool.innerHTML = '';
+      if (!poolItems.length) {
+        const emp = document.createElement('div'); emp.className = 'pool-empty'; emp.textContent = 'add items below'; pool.appendChild(emp); return;
+      }
+      poolItems.forEach(item => pool.appendChild(makeTiltWrapper(item, '__pool__')));
+      setupDrop(pool);
+    }
+
+    function handleTilt(e, wrapper) {
+      const card = wrapper.querySelector('.tl-item');
+      const rect = wrapper.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const x = clientX - rect.left, y = clientY - rect.top;
+      const cx = rect.width / 2, cy = rect.height / 2;
+      card.style.transform = 'rotateX(' + ((cy-y)/6) + 'deg) rotateY(' + ((x-cx)/10) + 'deg) scale3d(1.06,1.06,1.06)';
     }
 
     function makeTiltWrapper(item, tier) {
-        const wrap = document.createElement('div'); 
-        wrap.className = 'tilt-wrapper';
-        wrap.dataset.itemId = item.id; 
-        wrap.dataset.fromTier = tier; 
-        
-        if(isAdmin) wrap.draggable = true;
+      const wrap = document.createElement('div'); wrap.className = 'tilt-wrapper';
+      wrap.dataset.itemId = item.id; wrap.dataset.fromTier = tier;
+      if (isAdmin) wrap.draggable = true;
+      const card = makeItemCard(item, tier); wrap.appendChild(card);
+      wrap.addEventListener('mouseenter', () => wrap.classList.add('is-tapped'));
+      wrap.addEventListener('mouseleave', () => { wrap.classList.remove('is-tapped'); card.style.transform = 'rotateX(0deg) rotateY(0deg) scale3d(1,1,1)'; });
+      wrap.addEventListener('mousemove', e => handleTilt(e, wrap));
+      wrap.addEventListener('touchstart', e => {
+        document.querySelectorAll('.tilt-wrapper.is-tapped').forEach(w => { w.classList.remove('is-tapped'); const c = w.querySelector('.tl-item'); if (c) c.style.transform = 'rotateX(0deg) rotateY(0deg) scale3d(1,1,1)'; });
+        wrap.classList.add('is-tapped'); handleTilt(e, wrap);
+      }, { passive: true });
+      wrap.addEventListener('touchmove', e => handleTilt(e, wrap), { passive: true });
+      wrap.addEventListener('touchend', () => { wrap.classList.remove('is-tapped'); card.style.transform = 'rotateX(0deg) rotateY(0deg) scale3d(1,1,1)'; });
+      wrap.addEventListener('dragstart', e => { if (!isAdmin) { e.preventDefault(); return; } isDragging = true; dragItem = item; dragSrc = tier; setTimeout(() => wrap.style.opacity = '0.3', 0); e.dataTransfer.effectAllowed = 'move'; });
+      wrap.addEventListener('dragend', () => { wrap.style.opacity = ''; isDragging = false; if (pendingUpdate) { pendingUpdate = false; if (cachedState) { applyState(cachedState); cachedState = null; } } });
+      return wrap;
+    }
 
-        const card = document.createElement('div');
-        card.className = 'tl-item';
+    function makeItemCard(item, tier) {
+      const card = document.createElement('div');
+      const isRevived = revivalTint && revivedSet.has(item.id) && tier !== '__pool__' && !isExecTier(tier);
+      card.className = 'tl-item' + (isRevived ? ' revived' : '');
 
-        if (item.type === 'image') {
-            card.style.padding = '0'; 
-            if (item.url) card.innerHTML = `<img class="tl-item-img-full" src="${item.url}">`;
-            if (item.label && item.label !== item.url) card.innerHTML += `<div class="tl-item-img-label">${item.label}</div>`;
-        } else {
-            card.innerHTML = `<div class="tl-item-text-block"><div class="tl-item-label">${item.label}</div></div>`;
+      if (item.type === 'image') {
+        card.style.padding = '0'; card.style.overflow = 'hidden';
+        if (item.url) {
+          const img = document.createElement('img'); img.className = 'tl-item-img-full'; img.src = item.url;
+          img.onerror = () => { img.style.display = 'none'; };
+          card.appendChild(img);
         }
+        if (item.label && item.label !== item.url) {
+          const lbl = document.createElement('div'); lbl.className = 'tl-item-img-label'; lbl.textContent = item.label;
+          card.appendChild(lbl);
+        }
+      } else {
+        if (item.type === 'spotify' || item.type === 'ytmusic' || item.type === 'video') {
+          const ic = document.createElement('div');
+          if (item.type === 'spotify') { ic.className = 'tl-item-icon icon-spotify'; ic.textContent = '♫'; }
+          else if (item.type === 'ytmusic') { ic.className = 'tl-item-icon icon-yt'; ic.textContent = '▶'; }
+          else { ic.className = 'tl-item-icon icon-video'; ic.textContent = '▶'; }
+          card.appendChild(ic);
+        }
+        const block = document.createElement('div'); block.className = 'tl-item-text-block';
+        const lbl = document.createElement('div'); lbl.className = 'tl-item-label'; lbl.textContent = item.label;
+        if (item.url) { lbl.style.cursor = 'pointer'; lbl.onclick = e => { e.stopPropagation(); window.open(item.url, '_blank'); }; }
+        block.appendChild(lbl);
+        if (item.type !== 'text') {
+          const tp = document.createElement('div'); tp.className = 'tl-item-type'; tp.textContent = item.type; block.appendChild(tp);
+        }
+        card.appendChild(block);
+      }
 
-        const rem = document.createElement('button'); 
-        rem.className = 'tl-item-remove'; 
-        rem.textContent = '✕';
-        rem.onclick = (e) => { e.stopPropagation(); removeItem(item.id, tier); }; 
-        card.appendChild(rem);
-        
-        wrap.appendChild(card);
-
-        wrap.addEventListener('dragstart', e => {
-            if(!isAdmin) { e.preventDefault(); return; }
-            isDragging = true; 
-            dragItem = item; 
-            dragSrc = tier; 
-            setTimeout(() => wrap.style.opacity = '0.3', 0); 
-            e.dataTransfer.effectAllowed = 'move'; 
-        });
-        wrap.addEventListener('dragend', () => { 
-            isDragging = false; 
-            wrap.style.opacity = ''; 
-            if(pendingUpdate) { 
-                pendingUpdate = false; 
-                if(cachedState) {
-                    applyState(cachedState);
-                    cachedState = null;
-                }
-            }
-        });
-        
-        return wrap;
+      const editBtn = document.createElement('button'); editBtn.className = 'tl-item-edit'; editBtn.textContent = '✎';
+      editBtn.onclick = e => { e.stopPropagation(); openEditItem(item, tier); }; card.appendChild(editBtn);
+      const rem = document.createElement('button'); rem.className = 'tl-item-remove'; rem.textContent = '✕';
+      rem.onclick = e => { e.stopPropagation(); removeItem(item.id, tier); }; card.appendChild(rem);
+      return card;
     }
 
     function setupDrop(el) {
-        el.addEventListener('dragover', e => { 
-            if(!isAdmin) return;
-            e.preventDefault(); 
-            el.classList.add('drag-over'); 
-        });
-        el.addEventListener('dragleave', e => { 
-            if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); 
-        });
-        el.addEventListener('drop', e => {
-            if(!isAdmin) return;
-            e.preventDefault(); 
-            el.classList.remove('drag-over'); 
-            if (!dragItem) return;
-            
-            const dest = el.dataset.tier;
-            if (dest === dragSrc) { dragItem = null; dragSrc = null; return; }
-            
-            if (dragSrc === '__pool__') poolItems = poolItems.filter(i => i.id !== dragItem.id);
-            else tierItems[dragSrc] = (tierItems[dragSrc] || []).filter(i => i.id !== dragItem.id);
-            
-            if (dest === '__pool__') poolItems.push(dragItem);
-            else { 
-                if (!tierItems[dest]) tierItems[dest] = []; 
-                tierItems[dest].push(dragItem); 
-            }
-            
-            dragItem = null; 
-            dragSrc = null; 
-            syncToSupabase();
-        });
+      el.addEventListener('dragover', e => { if (!isAdmin) return; e.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+      el.addEventListener('drop', e => {
+        if (!isAdmin) return;
+        e.preventDefault(); el.classList.remove('drag-over'); if (!dragItem) return;
+        const dest = el.dataset.tier;
+        if (dest === dragSrc) { dragItem = null; dragSrc = null; return; }
+        if (revivalTint && isExecTier(dest)) revivedSet.add(dragItem.id);
+        removeFromSrc(dragItem.id, dragSrc);
+        if (dest === '__pool__') poolItems.push(dragItem);
+        else { if (!tierItems[dest]) tierItems[dest] = []; tierItems[dest].push(dragItem); }
+        dragItem = null; dragSrc = null; renderAll(); syncToSupabase();
+      });
     }
-
     function removeItem(id, tier) {
-        if(!isAdmin) return;
-        if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
-        else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
-        syncToSupabase();
+      if (!isAdmin) return;
+      if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
+      else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
+      renderAll();
+      syncToSupabase();
+    }
+    function removeFromSrc(id, tier) {
+      if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
+      else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
+    }
+    function findItem(id) {
+      for (const item of poolItems) if (item.id === id) return item;
+      for (const arr of Object.values(tierItems)) for (const item of arr) if (item.id === id) return item;
+      return null;
     }
 
-    window.addItem = () => {
-        if(!isAdmin) return;
-        const type = document.getElementById('itemType').value;
-        const input = document.getElementById('itemInput').value.trim();
-        const labelIn = document.getElementById('itemLabel').value.trim();
-        
-        if (!input) return;
-        
-        const item = { id: 'item_' + (++idCounter), type, url: null, label: '' };
-        if (type === 'text') { item.label = input; }
-        else { item.url = input; item.label = labelIn; }
-        
-        poolItems.push(item);
-        document.getElementById('itemInput').value = ''; 
-        document.getElementById('itemLabel').value = '';
-        syncToSupabase();
-    };
+    function addItem(overrides = {}) {
+      if (!isAdmin) return;
+      const type    = overrides.type  ?? document.getElementById('itemType').value;
+      const input   = overrides.input !== undefined ? overrides.input : document.getElementById('itemInput').value.trim();
+      const labelIn = overrides.label !== undefined ? overrides.label : document.getElementById('itemLabel').value.trim();
+      if (!input && !overrides.dataUrl) return;
+      const item = { id: 'item_' + (++idCounter), type, url: null, label: '' };
+      if (overrides.dataUrl) { item.type = 'image'; item.url = overrides.dataUrl; item.label = ''; }
+      else if (type === 'text') { item.label = input; item.url = null; }
+      else { item.url = input; item.label = labelIn; }
+      poolItems.push(item);
+      if (!overrides.dataUrl) { document.getElementById('itemInput').value = ''; document.getElementById('itemLabel').value = ''; }
+      renderAll();
+      syncToSupabase();
+    }
+
+    function openEditItem(item, tier) {
+      if (!isAdmin) return;
+      const showRevive = revivalTint && revivedSet.has(item.id);
+      const modal = document.getElementById('modalBox');
+      modal.innerHTML = `
+        <div class="modal-title">Edit Item</div>
+        <div class="modal-row"><label>Label</label><input type="text" id="ei-label" value="${escHtml(item.label)}"></div>
+        <div class="modal-row"><label>URL (optional)</label><input type="text" id="ei-url" value="${escHtml(item.url||'')}"></div>
+        ${showRevive ? `<div class="modal-check-row"><input type="checkbox" id="ei-clearrevive"><label for="ei-clearrevive">Clear revival tint</label></div>` : ''}
+        <div class="modal-btns">
+          <button onclick="closeModal()">Cancel</button>
+          <button class="btn-primary" onclick="saveEditItem('${item.id}')">Save</button>
+        </div>`;
+      openModal();
+    }
+    function saveEditItem(id) {
+      if (!isAdmin) return;
+      const item = findItem(id); if (!item) { closeModal(); return; }
+      const lv = document.getElementById('ei-label').value.trim(); if (lv) item.label = lv;
+      const uv = document.getElementById('ei-url'); if (uv) item.url = uv.value.trim() || null;
+      const cv = document.getElementById('ei-clearrevive'); if (cv && cv.checked) revivedSet.delete(id);
+      closeModal(); renderAll(); syncToSupabase();
+    }
+
+    function openEditTier(id) {
+      if (!isAdmin) return;
+      const tier = getTier(id); if (!tier) return;
+      const modal = document.getElementById('modalBox');
+      modal.innerHTML = `
+        <div class="modal-title">Edit Tier</div>
+        <div class="modal-row"><label>Label</label><input type="text" id="et-label" value="${escHtml(tier.label)}" maxlength="12"></div>
+        <div class="modal-row">
+          <label>Color</label>
+          <div class="modal-color-row" id="et-presets">
+            ${PRESET_COLORS.map(c => `<div class="color-preset${tier.color===c?' active':''}" style="background:${c}" data-c="${c}" onclick="pickPresetColor('${c}')"></div>`).join('')}
+            <input type="color" id="et-color" value="${tier.color}">
+          </div>
+        </div>
+        <div class="modal-row"><label>Tint Color</label><input type="color" id="et-text" value="${tier.text.startsWith('#') ? tier.text : '#ffffff'}"></div>
+        <div class="modal-check-row">
+          <input type="checkbox" id="et-exec" ${tier.isExec ? 'checked' : ''}>
+          <label for="et-exec">Execution Rank</label>
+        </div>
+        <div class="modal-btns">
+          <button onclick="closeModal()">Cancel</button>
+          <button class="btn-danger btn-sm" onclick="deleteTier('${id}')">Delete</button>
+          <button class="btn-primary" onclick="saveEditTier('${id}')">Save</button>
+        </div>`;
+      document.getElementById('et-color').addEventListener('input', () => document.querySelectorAll('#et-presets .color-preset').forEach(el => el.classList.remove('active')));
+      openModal();
+    }
+    function pickPresetColor(c) {
+      if (!isAdmin) return;
+      document.getElementById('et-color').value = c;
+      document.querySelectorAll('#et-presets .color-preset').forEach(el => el.classList.toggle('active', el.dataset.c === c));
+    }
+    function saveEditTier(id) {
+      if (!isAdmin) return;
+      const tier = getTier(id); if (!tier) { closeModal(); return; }
+      tier.label  = document.getElementById('et-label').value.trim() || tier.label;
+      tier.color  = document.getElementById('et-color').value;
+      tier.text   = document.getElementById('et-text').value;
+      tier.isExec = document.getElementById('et-exec').checked;
+      closeModal(); syncPresetSel(); renderAll(); syncToSupabase();
+    }
+    function deleteTier(id) {
+      if (!isAdmin) return;
+      allTiers = allTiers.filter(t => t.id !== id);
+      activeTierIds = activeTierIds.filter(i => i !== id);
+      poolItems.push(...(tierItems[id] || []));
+      delete tierItems[id];
+      closeModal(); syncPresetSel(); renderAll(); syncToSupabase();
+    }
+
+    function openManageTiers() {
+      if (!isAdmin) return;
+      const modal = document.getElementById('modalBox'); modal.innerHTML = '';
+      const title = document.createElement('div'); title.className = 'modal-title'; title.textContent = 'Manage Tiers'; modal.appendChild(title);
+      const list = document.createElement('div'); list.className = 'tier-manage-list';
+      function rebuildList() {
+        list.innerHTML = '';
+        getActiveTiers().forEach((tier, idx) => {
+          const entry = document.createElement('div'); entry.className = 'tier-manage-entry';
+          const swatch = document.createElement('div'); swatch.className = 'swatch'; swatch.style.background = tier.color;
+          const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = tier.label;
+          const btns = document.createElement('div'); btns.className = 'tier-manage-btns';
+          if (tier.isExec) { const badge = document.createElement('span'); badge.className = 'exec-badge'; badge.textContent = 'EXEC'; btns.appendChild(badge); }
+          const upBtn = document.createElement('button'); upBtn.className = 'btn-sm'; upBtn.textContent = '↑';
+          upBtn.onclick = () => { if (idx > 0) { [activeTierIds[idx-1], activeTierIds[idx]] = [activeTierIds[idx], activeTierIds[idx-1]]; rebuildList(); } };
+          const dnBtn = document.createElement('button'); dnBtn.className = 'btn-sm'; dnBtn.textContent = '↓';
+          dnBtn.onclick = () => { if (idx < activeTierIds.length-1) { [activeTierIds[idx], activeTierIds[idx+1]] = [activeTierIds[idx+1], activeTierIds[idx]]; rebuildList(); } };
+          const edBtn = document.createElement('button'); edBtn.className = 'btn-sm'; edBtn.textContent = '✎';
+          edBtn.onclick = () => { closeModal(); openEditTier(tier.id); };
+          btns.appendChild(upBtn); btns.appendChild(dnBtn); btns.appendChild(edBtn);
+          entry.appendChild(swatch); entry.appendChild(lbl); entry.appendChild(btns); list.appendChild(entry);
+        });
+      }
+      rebuildList(); modal.appendChild(list);
+      const addTitle = document.createElement('div');
+      addTitle.style.cssText = 'font-size:10px;color:hsl(var(--muted-foreground));text-transform:uppercase;letter-spacing:1px;padding-top:8px;border-top:1px solid hsl(var(--border))';
+      addTitle.textContent = 'Add New Tier'; modal.appendChild(addTitle);
+      const newRow = document.createElement('div'); newRow.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap';
+      const newLabel = document.createElement('input'); newLabel.type = 'text'; newLabel.id = 'tm-newlabel'; newLabel.placeholder = 'Label'; newLabel.style.cssText = 'flex:1;min-width:60px';
+      const newColor = document.createElement('input'); newColor.type = 'color'; newColor.id = 'tm-newcolor'; newColor.value = '#888888';
+      const newExecWrap = document.createElement('label'); newExecWrap.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer';
+      const newExecCb = document.createElement('input'); newExecCb.type = 'checkbox'; newExecCb.id = 'tm-newexec';
+      newExecWrap.appendChild(newExecCb); newExecWrap.appendChild(document.createTextNode('Exec'));
+      const addBtn = document.createElement('button'); addBtn.className = 'btn-primary btn-sm'; addBtn.textContent = '+ Add';
+      addBtn.onclick = () => {
+        const lbl = document.getElementById('tm-newlabel').value.trim(); if (!lbl) return;
+        const color = document.getElementById('tm-newcolor').value;
+        const isExec = document.getElementById('tm-newexec').checked;
+        const brightness = parseInt(color.slice(1,3),16)*0.299 + parseInt(color.slice(3,5),16)*0.587 + parseInt(color.slice(5,7),16)*0.114;
+        const text = brightness > 128 ? '#1a1a1a' : '#ffffff';
+        const newId = 'custom_' + Date.now();
+        allTiers.push({ id: newId, label: lbl, color, text, isExec });
+        activeTierIds.push(newId);
+        document.getElementById('tm-newlabel').value = ''; rebuildList();
+      };
+      newRow.appendChild(newLabel); newRow.appendChild(newColor); newRow.appendChild(newExecWrap); newRow.appendChild(addBtn); modal.appendChild(newRow);
+      const btns = document.createElement('div'); btns.className = 'modal-btns';
+      const doneBtn = document.createElement('button'); doneBtn.className = 'btn-primary'; doneBtn.textContent = 'Done';
+      doneBtn.onclick = () => { closeModal(); syncPresetSel(); renderAll(); syncToSupabase(); };
+      btns.appendChild(doneBtn); modal.appendChild(btns);
+      openModal();
+    }
+
+    function openModal()  { document.getElementById('modalOverlay').classList.add('open'); }
+    function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+    document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); });
+    function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function saveImage() {
+      const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = () => { html2canvas(document.getElementById('tierList'), { backgroundColor: '#1a1a1a', scale: 2, useCORS: true }).then(canvas => { const a = document.createElement('a'); a.download = 'tierlist.png'; a.href = canvas.toDataURL('image/png'); a.click(); }); };
+      document.head.appendChild(s);
+    }
 
     document.getElementById('itemType').addEventListener('change', function() {
-        document.getElementById('itemLabel').style.display = (this.value !== 'text') ? 'block' : 'none';
-        document.getElementById('itemInput').placeholder = this.value === 'text' ? 'Label...' : 'Paste Image URL...';
+      document.getElementById('itemLabel').style.display = (this.value !== 'text' && this.value !== 'image') ? 'block' : 'none';
+      document.getElementById('itemInput').placeholder = this.value === 'text' ? 'Label...' : 'Paste URL...';
+    });
+    document.getElementById('itemInput').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+    document.getElementById('presetSel').addEventListener('change', function() {
+      const v = this.value; if (v === 'custom') return;
+      if (!PRESETS[v]) return;
+      allTiers = JSON.parse(JSON.stringify(TIERS_BASE)); activeTierIds = [...PRESETS[v]]; renderAll(); syncToSupabase();
+    });
+    document.getElementById('colSel').addEventListener('change', function() { columns = parseInt(this.value); renderAll(); syncToSupabase(); });
+    document.getElementById('bonusRevival').addEventListener('change', function() { revivalTint = this.checked; renderAll(); syncToSupabase(); });
+
+    document.addEventListener('paste', e => {
+      if (!isAdmin) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          const reader = new FileReader();
+          reader.onload = ev => addItem({ dataUrl: ev.target.result });
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+      const text = e.clipboardData.getData('text/plain').trim();
+      if (!text) return;
+      const active = document.activeElement;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+      const isUrl = /^https?:\/\//.test(text);
+      if (isUrl) {
+        const isImg = /\.(jpg|jpeg|png|gif|webp|svg|avif)(\?|$)/i.test(text);
+        addItem({ type: isImg ? 'image' : 'text', input: text, label: '' });
+      } else {
+        addItem({ type: 'text', input: text, label: '' });
+      }
     });
 
-    initAuth();
-    initDatabase();
+    document.addEventListener('touchstart', e => {
+      if (!e.target.closest('.tilt-wrapper')) document.querySelectorAll('.tilt-wrapper.is-tapped').forEach(w => { w.classList.remove('is-tapped'); const c = w.querySelector('.tl-item'); if (c) c.style.transform = 'rotateX(0deg) rotateY(0deg) scale3d(1,1,1)'; });
+    }, { passive: true });
+
+    document.getElementById('pool').dataset.tier = '__pool__';
+    setupDrop(document.getElementById('pool'));
+
+    loadRankingDat().then(() => {
+      renderSavesList();
+      initAuth();
+      initDatabase();
+    });
   </script>
-</body>
+  </body>
 </html>
