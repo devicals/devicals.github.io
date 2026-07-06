@@ -12,10 +12,15 @@
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
         * { 
             border-radius: 0 !important; 
             -webkit-font-smoothing: antialiased;
             -webkit-tap-highlight-color: transparent;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
         }
         .game-section { margin-bottom: 3rem; position: relative; }
         .section-title { 
@@ -55,6 +60,9 @@
             background: rgba(255, 255, 255, 0.06);
             box-shadow: 0 20px 50px rgba(0,0,0,0.7);
             z-index: 100;
+        }
+        body.is-admin .tilt-wrapper {
+            cursor: grab;
         }
         .fav-tags { 
             display: flex; 
@@ -109,7 +117,7 @@
         .tilt-wrapper.is-tapped .fav-title { 
             transform: translateZ(20px); 
         }
-        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; white-space: pre-wrap; }
+        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; white-space: pre-wrap; line-height: 1.4; }
         .games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -141,6 +149,16 @@
             cursor: pointer;
             z-index: 10;
             pointer-events: auto !important;
+            color: hsl(var(--foreground));
+        }
+        .admin-action-btn:hover {
+            color: hsl(var(--accent));
+        }
+        .admin-action-btn.del-btn {
+            color: hsl(var(--muted-foreground));
+        }
+        .admin-action-btn.del-btn:hover {
+            color: hsl(var(--destructive));
         }
         body.is-admin .admin-action-btn {
             display: block;
@@ -248,6 +266,24 @@
         .modal input:focus, .modal textarea:focus, .modal select:focus {
             border-color: hsl(var(--accent));
         }
+        .modal select {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .modal select:focus {
+            border-color: hsl(var(--accent));
+        }
+        .modal select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .modal-check-row {
             display: flex;
             align-items: center;
@@ -255,12 +291,15 @@
             font-size: 12px;
         }
         .modal-check-row input[type=checkbox] {
-            accent-color: hsl(var(--accent));
+            accent-color: hsl(var(--accent)) !important;
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
         }
         .btn-primary {
-            background: hsl(var(--accent));
-            color: hsl(var(--accent-foreground));
-            border: 1px solid hsl(var(--accent));
+            background: hsl(var(--accent)) !important;
+            color: hsl(var(--accent-foreground)) !important;
+            border: 1px solid hsl(var(--accent)) !important;
             padding: 10px 20px;
             font-family: inherit;
             font-size: 13px;
@@ -472,7 +511,7 @@
                 
                 const inner = `
                     <button class="admin-action-btn" id="edit-fav-btn-${idx}" style="top:4px; left:4px;">✎</button>
-                    <button class="admin-action-btn" id="del-fav-btn-${idx}" style="top:4px; right:4px;">✕</button>
+                    <button class="admin-action-btn del-btn" id="del-fav-btn-${idx}" style="top:4px; right:4px;">✕</button>
                     <div class="fav-info-group">
                         <div class="fav-title">${game.title}</div>
                         ${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}
@@ -526,13 +565,13 @@
             list.forEach((title, idx) => {
                 const inner = `
                     <button class="admin-action-btn" style="top:5px; left:5px; font-size:10px;" id="grid-edit-${categoryKey}-${idx}">✎</button>
-                    <button class="admin-action-btn" style="top:5px; right:5px; font-size:10px;" id="grid-del-${categoryKey}-${idx}">✕</button>
+                    <button class="admin-action-btn del-btn" style="top:5px; right:5px; font-size:10px;" id="grid-del-${categoryKey}-${idx}">✕</button>
                     ${title}
                 `;
                 
                 const wrap = createTiltWrapper('liked-card', inner);
                 wrap.dataset.index = idx;
-
+                
                 if (isAdmin) {
                     wrap.draggable = true;
                     wrap.addEventListener('dragstart', (e) => {

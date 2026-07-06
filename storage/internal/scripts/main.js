@@ -107,7 +107,7 @@ function renderLoginPortal() {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
         <label>Admin Login</label>
-        <input type="text" id="admin-email-field" class="setting-field" placeholder="Email" value="3rr0r.d3v@gmail.com" readonly style="margin-top:5px;">
+        <input type="text" id="admin-email-field" class="setting-field" placeholder="Email" value="3rr0r.d3v@gmail.com" readonly>
         <input type="password" id="admin-password-field" class="setting-field" placeholder="Password">
         <button class="customize-btn" style="margin-top:5px; margin-bottom:0;" onclick="submitAdminLogin()">Login</button>
     `;
@@ -117,6 +117,7 @@ async function submitAdminLogin() {
     const email = document.getElementById('admin-email-field').value;
     const password = document.getElementById('admin-password-field').value;
     if (!password) return;
+
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) {
         alert("Login Failed: " + error.message);
@@ -127,7 +128,7 @@ function renderAdminPortal(email) {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
         <label>Logged in as ${email}</label>
-        <button class="customize-btn" style="background:hsl(var(--destructive)); color:hsl(var(--destructive-foreground)); margin-top:5px; margin-bottom:15px; border:none;" onclick="supabaseClient.auth.signOut()">Logout</button>
+        <button class="customize-btn" style="background:hsl(var(--destructive)); color:hsl(var(--destructive-foreground)); margin-bottom:15px;" onclick="supabaseClient.auth.signOut()">Logout</button>
         
         <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px; margin-bottom:15px;">
             <label>Developer Options</label>
@@ -196,9 +197,11 @@ async function loadAnnouncements() {
             .select('data')
             .eq('key', 'announcements')
             .single();
+
         if (data && data.data) {
             applyAnnouncements(data.data);
         }
+
         supabaseClient
             .channel('ann-realtime')
             .on(

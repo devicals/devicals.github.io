@@ -13,6 +13,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+        * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .nav-top-actions > div {
+            display: grid !important;
+            grid-template-columns: 2fr 3fr !important;
+            gap: 4px !important;
+            width: 100% !important;
+        }
         .setting-field {
             width: 100%;
             padding: 8px 10px;

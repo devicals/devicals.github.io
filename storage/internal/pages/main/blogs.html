@@ -13,6 +13,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+        * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
         .blog-controls { position: fixed; top: 50px; right: 50px; z-index: 1000; background: hsla(var(--card), 0.8); backdrop-filter: blur(12px); border: 1px solid hsla(var(--primary), 0.2); padding: 10px 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
         .blog-jump { display: flex; align-items: center; gap: 10px; }
         .blog-jump label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: hsl(var(--primary)); }
@@ -135,9 +142,9 @@
             display: block;
         }
         .btn-primary {
-            background: hsl(var(--accent));
-            color: hsl(var(--accent-foreground));
-            border: 1px solid hsl(var(--accent));
+            background: hsl(var(--accent)) !important;
+            color: hsl(var(--accent-foreground)) !important;
+            border: 1px solid hsl(var(--accent)) !important;
             padding: 10px 20px;
             font-family: inherit;
             font-size: 13px;
@@ -190,7 +197,7 @@
     <script type="module">
         import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
 
-        const SUPABASE_URL = "https://wtasesmqwpRegisterbzdynnas.supabase.co";
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
