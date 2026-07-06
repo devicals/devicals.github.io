@@ -53,51 +53,7 @@ customPages:
         path: ~/oricade.yaml
         type:
           type: gallery
-  
-  tests:
-    display: "Testing"
-    sub:
-      - id: 1
-        name: "Test Gallery"
-        path: tests/gallery.yaml
-        type:
-          type: gallery
         hidden: true
-
-      - id: 2
-        name: "Test Raw"
-        path: tests/raw.md
-        type:
-          type: raw
-        hidden: true
-
-      - id: 3
-        name: "Test Markdown"
-        path: tests/raw.md
-        type:
-          type: md
-        hidden: true
-
-      - id: 4
-        name: "Test Locked Gallery"
-        path: tests/gallery.yaml
-        type:
-          type: gallery
-        locked: true
-
-      - id: 5
-        name: "Test Locked Raw"
-        path: tests/raw.md
-        type:
-          type: raw
-        locked: true
-
-      - id: 6
-        name: "Test Locked Markdown"
-        path: tests/raw.md
-        type:
-          type: md
-        locked: true
 
   feedback:
     display: "Feedback"
