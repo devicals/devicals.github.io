@@ -1,4 +1,13 @@
 customPages:
+  community:
+    display: "Community"
+    sub:
+      - id: chitchat
+        name: "Chits & Chats"
+        path: ~/../main/chitchat.html
+        type:
+          type: html
+
   interests:
     display: "Interests"
     sub:
@@ -54,15 +63,6 @@ customPages:
         type:
           type: gallery
         hidden: true
-
-  community:
-    display: "Community"
-    sub:
-      - id: chitchat
-        name: "Chits & Chats"
-        path: ~/../main/chitchat.html
-        type:
-          type: html
 
   other:
     display: "Other"
