@@ -21,9 +21,7 @@
             -ms-overflow-style: none !important;
         }
         .nav-top-actions > div {
-            display: grid !important;
-            grid-template-columns: 2fr 3fr !important;
-            gap: 4px !important;
+            display: block !important;
             width: 100% !important;
         }
         .setting-field {
@@ -68,9 +66,8 @@
         <div class="sidebar-container">
             <nav class="sidebar-nav">
                 <div class="nav-section nav-top-actions">
-                    <div style="display: flex; gap: 4px; align-items: stretch;">
-                        <a class="action-btn" href="#page=info" onclick="loadPage('info'); toggleSidebar(); return false;">ⓘ Info</a>
-                        <button class="action-btn" onclick="openPreferences()">⚙ Settings</button>
+                    <div style="display: block; width: 100%;">
+                        <button class="action-btn" onclick="openPreferences()" style="width: 100%;">⚙ Settings</button>
                     </div>
                 </div>
 

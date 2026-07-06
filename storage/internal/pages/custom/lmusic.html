@@ -420,7 +420,13 @@
                 const resp = await fetch('/music.json');
                 const json = await resp.json();
                 if (json && json[0] && json[0].tracks) {
-                    spotifyTracks = json[0].tracks;
+                    const rawTracks = json[0].tracks;
+                    const seenIds = new Set();
+                    spotifyTracks = rawTracks.filter(t => {
+                        if (seenIds.has(t.id)) return false;
+                        seenIds.add(t.id);
+                        return true;
+                    });
                 }
             } catch(e) {
                 console.error(e);

@@ -10,28 +10,243 @@
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+        * { 
+            border-radius: 0 !important; 
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .admin-action-row {
+            display: none;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed hsl(var(--border));
+        }
+        body.is-admin .admin-action-row {
+            display: flex;
+        }
+        .admin-btn {
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            cursor: pointer;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+        }
+        .admin-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        .admin-btn.danger-btn {
+            color: hsl(var(--destructive));
+            border-color: hsl(var(--destructive) / 0.4);
+        }
+        .admin-btn.danger-btn:hover {
+            border-color: hsl(var(--destructive));
+            background: hsl(var(--destructive) / 0.05);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            width: 90%;
+            max-width: 440px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid hsl(var(--border));
+        }
+        .modal-header h2 {
+            font-size: 16px;
+            margin: 0;
+            color: hsl(var(--accent));
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: hsl(var(--foreground));
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal input[type=text], .modal textarea {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .modal textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .modal input:focus, .modal textarea:focus {
+            border-color: hsl(var(--accent));
+        }
+        .btn-primary {
+            background: hsl(var(--accent)) !important;
+            color: hsl(var(--accent-foreground)) !important;
+            border: 1px solid hsl(var(--accent)) !important;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        #add-project-container {
+            display: none;
+            margin-bottom: 24px;
+        }
+        body.is-admin #add-project-container {
+            display: block;
+        }
+        .project-card {
+            position: relative;
+        }
+        body.is-admin .project-card {
+            cursor: grab;
+        }
+    </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Projects</h1>
         
         <div class="project-tabs" id="project-tabs"></div>
+
+        <div id="add-project-container">
+            <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddProjectModal()">+ Create New Project Card</button>
+        </div>
         
         <div id="tab-container"></div>
     </div>
+
+    <!-- Project Editor Modal -->
+    <div id="project-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-label">Create Project Card</h2>
+                <button class="modal-close" onclick="closeProjectModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="proj-name-input" placeholder="Project Name">
+                <textarea id="proj-desc-input" placeholder="Description"></textarea>
+                <input type="text" id="proj-link-input" placeholder="Project URL">
+                <button class="btn-primary" onclick="handleSaveProject()" style="width: 100%; padding: 10px;">Save Project</button>
+            </div>
+        </div>
+    </div>
     
     <script>
-        let currentTab = null;
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
 
-        async function loadYAML(path) {
-            const response = await fetch(path);
-            const text = await response.text();
-            return jsyaml.load(text);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let projectsData = null;
+        let currentTab = null;
+        let isAdmin = false;
+        let activeEditIdx = null;
+        let dragItemIdx = null;
+
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleUserSession(session);
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
         }
 
-        function renderTabs(tabs) {
+        function handleUserSession(session) {
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+            if (projectsData) renderAll();
+        }
+
+        async function initDatabase() {
+            const { data, error } = await supabaseClient
+                .from('site_content')
+                .select('data')
+                .eq('key', 'projects')
+                .single();
+
+            if (data && data.data) {
+                projectsData = data.data;
+                renderAll();
+            }
+
+            supabaseClient
+                .channel('projects-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.projects' },
+                    (payload) => {
+                        if (payload.new && payload.new.data) {
+                            projectsData = payload.new.data;
+                            renderAll();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        async function syncToSupabase() {
+            if (!isAdmin) return;
+            const { error } = await supabaseClient
+                .from('site_content')
+                .update({ data: projectsData })
+                .eq('key', 'projects');
+            if (error) {
+                alert("Error saving: " + error.message);
+            }
+        }
+
+        function renderAll() {
+            const tabs = projectsData.tabs;
             const tabsContainer = document.getElementById('project-tabs');
+            tabsContainer.innerHTML = '';
             
             Object.keys(tabs).forEach(tabKey => {
                 const tabData = tabs[tabKey];
@@ -40,49 +255,76 @@
                 tabBtn.textContent = tabData.display;
                 tabBtn.onclick = () => switchTab(tabKey);
                 tabBtn.dataset.tab = tabKey;
-                
                 tabsContainer.appendChild(tabBtn);
             });
-        }
 
-        function renderTabContent(tabKey, tabData) {
             const container = document.getElementById('tab-container');
-            
-            const tabContent = document.createElement('div');
-            tabContent.className = 'tab-content';
-            tabContent.dataset.tab = tabKey;
-            
-            const projectsGrid = document.createElement('div');
-            projectsGrid.className = 'projects-grid';
-            
-            tabData.projects.forEach(project => {
-                const card = document.createElement('div');
-                card.className = 'project-card';
+            container.innerHTML = '';
+
+            Object.keys(tabs).forEach(tabKey => {
+                const tabData = tabs[tabKey];
+                const tabContent = document.createElement('div');
+                tabContent.className = 'tab-content';
+                tabContent.dataset.tab = tabKey;
                 
-                const title = document.createElement('a');
-                title.className = 'project-title';
-                title.href = project.link;
-                title.target = '_blank';
-                title.rel = 'noopener noreferrer';
-                title.textContent = project.name;
+                const projectsGrid = document.createElement('div');
+                projectsGrid.className = 'projects-grid';
                 
-                const description = document.createElement('div');
-                description.className = 'project-description';
-                description.textContent = project.description;
+                tabData.projects.forEach((project, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    card.dataset.index = idx;
+                    
+                    if (isAdmin) {
+                        card.draggable = true;
+                        card.addEventListener('dragstart', (e) => {
+                            dragItemIdx = idx;
+                            e.dataTransfer.effectAllowed = 'move';
+                        });
+                        card.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                        });
+                        card.addEventListener('drop', async (e) => {
+                            e.preventDefault();
+                            const targetIdx = idx;
+                            if (dragItemIdx === targetIdx) return;
+                            const [reorderedItem] = projectsData.tabs[currentTab].projects.splice(dragItemIdx, 1);
+                            projectsData.tabs[currentTab].projects.splice(targetIdx, 0, reorderedItem);
+                            await syncToSupabase();
+                        });
+                    }
+
+                    card.innerHTML = `
+                        <a class="project-title" href="${project.link}" target="_blank" rel="noopener noreferrer">${project.name}</a>
+                        <div class="project-description">${project.description}</div>
+                        <div class="admin-action-row">
+                            <button class="admin-btn" onclick="openEditProjectModal(${idx})">Edit</button>
+                            <button class="admin-btn danger-btn" onclick="deleteProject(${idx})">Delete</button>
+                        </div>
+                    `;
+                    projectsGrid.appendChild(card);
+                });
                 
-                card.appendChild(title);
-                card.appendChild(description);
-                projectsGrid.appendChild(card);
+                tabContent.appendChild(projectsGrid);
+                container.appendChild(tabContent);
             });
-            
-            tabContent.appendChild(projectsGrid);
-            container.appendChild(tabContent);
+
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const params = new URLSearchParams(hash);
+                const tab = params.get('tab');
+                if (tab && tabs[tab]) {
+                    switchTab(tab);
+                } else {
+                    switchTab(currentTab || Object.keys(tabs)[0]);
+                }
+            } else {
+                switchTab(currentTab || Object.keys(tabs)[0]);
+            }
         }
 
         function switchTab(tabKey) {
             currentTab = tabKey;
-            
-            console.log('Switching to tab:', tabKey);
             document.querySelectorAll('.project-tab').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabKey);
             });
@@ -92,38 +334,59 @@
             window.parent.location.hash = `page=projects&tab=${tabKey}`;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const data = await loadYAML('/storage/data/projects.yaml');
-                
-                console.log('Projects data loaded:', data);
-                
-                if (!data || !data.projects || !data.projects.tabs) {
-                    console.error('No projects data found');
-                    return;
+        window.openAddProjectModal = () => {
+            activeEditIdx = null;
+            document.getElementById('modal-title-label').textContent = `Create Project Card [${projectsData.tabs[currentTab].display}]`;
+            document.getElementById('proj-name-input').value = "";
+            document.getElementById('proj-desc-input').value = "";
+            document.getElementById('proj-link-input').value = "";
+            document.getElementById('project-modal').classList.add('active');
+        };
+
+        window.openEditProjectModal = (idx) => {
+            const proj = projectsData.tabs[currentTab].projects[idx];
+            activeEditIdx = idx;
+            document.getElementById('modal-title-label').textContent = `Edit Project Card [${projectsData.tabs[currentTab].display}]`;
+            document.getElementById('proj-name-input').value = proj.name;
+            document.getElementById('proj-desc-input').value = proj.description;
+            document.getElementById('proj-link-input').value = proj.link;
+            document.getElementById('project-modal').classList.add('active');
+        };
+
+        window.closeProjectModal = () => {
+            document.getElementById('project-modal').classList.remove('active');
+        };
+
+        window.handleSaveProject = async () => {
+            const name = document.getElementById('proj-name-input').value.trim();
+            const description = document.getElementById('proj-desc-input').value.trim();
+            const link = document.getElementById('proj-link-input').value.trim();
+            if (!name || !link) return;
+
+            if (activeEditIdx !== null) {
+                const proj = projectsData.tabs[currentTab].projects[activeEditIdx];
+                if (proj) {
+                    proj.name = name;
+                    proj.description = description;
+                    proj.link = link;
                 }
-                
-                const tabs = data.projects.tabs;
-                renderTabs(tabs);
-                Object.keys(tabs).forEach(tabKey => {
-                    renderTabContent(tabKey, tabs[tabKey]);
-                });
-                const hash = window.location.hash.substring(1);
-                if (hash) {
-                    const params = new URLSearchParams(hash);
-                    const tab = params.get('tab');
-                    
-                    if (tab && tabs[tab]) {
-                        switchTab(tab);
-                    } else {
-                        switchTab(Object.keys(tabs)[0]);
-                    }
-                } else {
-                    switchTab(Object.keys(tabs)[0]);
-                }
-            } catch (error) {
-                console.error('Error loading projects:', error);
+            } else {
+                projectsData.tabs[currentTab].projects.push({ name, description, link });
             }
+
+            closeProjectModal();
+            await syncToSupabase();
+        };
+
+        window.deleteProject = async (idx) => {
+            if (!confirm(`Are you sure you want to delete this project card?`)) return;
+            projectsData.tabs[currentTab].projects.splice(idx, 1);
+            await syncToSupabase();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            initAuth();
         });
     </script>
 </body>
