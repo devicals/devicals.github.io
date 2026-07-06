@@ -428,3 +428,17 @@ a {
         width: 100%;
     }
 }
+
+::-webkit-scrollbar {
+    display: none !important;
+}
+* {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+.nav-top-actions > div {
+    display: grid;
+    grid-template-columns: 2fr 3fr !important;
+    gap: 4px;
+    width: 100%;
+}

@@ -37,7 +37,7 @@
         .ann-list-item button {
             background: none;
             border: none;
-            color: #ff6b6b;
+            color: hsl(var(--destructive));
             cursor: pointer;
             font-size: 14px;
         }
@@ -111,19 +111,8 @@
                         <option value="custom">Custom</option>
                     </select>
                 </div>
-                <button class="customize-btn" onclick="toggleCustomEditor()">Customize Theme</button>
                 
                 <div id="settings-admin-portal" class="preference-section" style="border-top: 1px solid hsl(var(--border)); padding-top: 15px;">
-                    <!-- Admin elements inject dynamically here -->
-                </div>
-
-                <div id="custom-theme-editor" style="display: none;">
-                    <h3>Custom Theme Editor</h3>
-                    <div class="color-mode-toggle">
-                        <button onclick="setColorMode('hex')" class="active" data-mode="hex">HEX</button>
-                        <button onclick="setColorMode('hsl')" data-mode="hsl">HSL</button>
-                    </div>
-                    <div class="theme-colors" id="theme-colors"></div>
                 </div>
             </div>
         </div>

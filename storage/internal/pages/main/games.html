@@ -10,16 +10,14 @@
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { 
             border-radius: 0 !important; 
             -webkit-font-smoothing: antialiased;
-            /* Prevents blue tap highlight on mobile */
             -webkit-tap-highlight-color: transparent;
         }
-
-        .game-section { margin-bottom: 3rem; }
+        .game-section { margin-bottom: 3rem; position: relative; }
         .section-title { 
             color: hsl(var(--accent)); 
             margin-bottom: 1.2rem; 
@@ -28,19 +26,16 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-
-        /* --- 3D SYSTEM --- */
         .tilt-wrapper {
             display: block;
             perspective: 1000px;
             user-select: none;
+            position: relative;
         }
-
         .favorite-list .tilt-wrapper {
             perspective: 2000px; 
             margin-bottom: 12px;
         }
-
         .fav-card, .liked-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -48,13 +43,10 @@
             transform-style: preserve-3d;
             pointer-events: none;
             will-change: transform;
-            
             backface-visibility: hidden;
             outline: 1px solid transparent; 
             transform: translateZ(1px); 
         }
-
-        /* Active/Hover states */
         .tilt-wrapper:hover .fav-card, 
         .tilt-wrapper:hover .liked-card,
         .tilt-wrapper.is-tapped .fav-card,
@@ -64,8 +56,6 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.7);
             z-index: 100;
         }
-
-        /* --- DYNAMIC FLOATING TAGS --- */
         .fav-tags { 
             display: flex; 
             gap: 12px; 
@@ -74,7 +64,6 @@
             max-width: 50%; 
             transform-style: preserve-3d;
         }
-
         .tag-box { 
             font-size: 0.7rem; 
             padding: 4px 10px; 
@@ -87,7 +76,6 @@
             backface-visibility: hidden;
             outline: 1px solid transparent;
         }
-
         .tilt-wrapper:hover .tag-box,
         .tilt-wrapper.is-tapped .tag-box {
             transform: 
@@ -96,12 +84,9 @@
                 rotateZ(var(--rand-r, 0deg));
             filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.5));
         }
-
         .tag-skill { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
         .tag-rating { border-color: #ffcc00; color: #ffcc00; }
         .tag-lf { border-color: #ffffff; color: #ffffff; opacity: 0.8; }
-
-        /* --- LAYOUT --- */
         .fav-card {
             padding: 35px; 
             display: flex;
@@ -110,9 +95,7 @@
             gap: 20px;
             overflow: hidden;
         }
-        
         .fav-info-group { transform-style: preserve-3d; }
-
         .fav-title { 
             font-size: 1.4rem; 
             font-weight: 700; 
@@ -122,17 +105,14 @@
             transform-style: preserve-3d;
             backface-visibility: hidden;
         }
-        
         .tilt-wrapper:hover .fav-title,
         .tilt-wrapper.is-tapped .fav-title { 
             transform: translateZ(20px); 
         }
-
-        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; }
-
+        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; white-space: pre-wrap; }
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 15px;
         }
         .games-grid .tilt-wrapper { height: 85px; }
@@ -147,33 +127,214 @@
             word-break: break-word;
             line-height: 1.2;
         }
-
         @media (max-width: 1000px) { .games-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 750px) { 
             .games-grid { grid-template-columns: repeat(3, 1fr); } 
             .fav-card { flex-direction: column; align-items: flex-start; padding: 25px; }
             .fav-tags { justify-content: flex-start; max-width: 100%; margin-top: 25px; }
         }
+        .admin-action-btn {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: hsl(var(--destructive));
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        body.is-admin .admin-action-btn {
+            display: block;
+        }
+        .add-grid-item-container {
+            display: none;
+            width: 100%;
+            border: 2px dashed hsl(var(--border));
+            padding: 10px;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        body.is-admin .add-grid-item-container {
+            display: flex;
+        }
+        .add-grid-item-container input {
+            flex: 1;
+            padding: 6px 12px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+        }
+        .admin-section-btn {
+            display: none;
+            background: none;
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            padding: 4px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            margin-bottom: 12px;
+        }
+        .admin-section-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        body.is-admin .admin-section-btn {
+            display: inline-block;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            width: 90%;
+            max-width: 440px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid hsl(var(--border));
+        }
+        .modal-header h2 {
+            font-size: 16px;
+            margin: 0;
+            color: hsl(var(--accent));
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: hsl(var(--foreground));
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal input[type=text], .modal textarea, .modal select {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .modal textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .modal-check-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Liked Games</h1>
+        
         <div class="game-section">
             <h2 class="section-title">Favorite</h2>
+            <button class="admin-section-btn" onclick="openAddFavModal()">+ Add Favorite Game</button>
             <div id="favorite-list" class="favorite-list"></div>
         </div>
+
         <div class="game-section">
             <h2 class="section-title">Games I Like</h2>
+            <div class="add-grid-item-container">
+                <input type="text" id="add-liked-input" placeholder="Add game to 'Games I Like' list...">
+                <button class="btn-primary" onclick="addGridItem('liked')">+ Add</button>
+            </div>
             <div id="liked-games-grid" class="games-grid"></div>
         </div>
+
         <div class="game-section">
             <h2 class="section-title">Want to Play</h2>
+            <div class="add-grid-item-container">
+                <input type="text" id="add-wtp-input" placeholder="Add game to 'Want to Play' list...">
+                <button class="btn-primary" onclick="addGridItem('wanttoplay')">+ Add</button>
+            </div>
             <div id="wtp-games-grid" class="games-grid"></div>
+        </div>
+    </div>
+
+    <!-- Favorite Game Modal -->
+    <div id="fav-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-label">Manage Favorite Game</h2>
+                <button class="modal-close" onclick="closeFavModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="fav-title-input" placeholder="Game Title">
+                <textarea id="fav-comment-input" placeholder="Comment"></textarea>
+                
+                <div style="border-top:1px dashed hsl(var(--border)); padding-top:12px; display:flex; flex-direction:column; gap:8px;">
+                    <div class="modal-check-row">
+                        <input type="checkbox" id="fav-skill-display" onchange="toggleSelectState('skill')">
+                        <label for="fav-skill-display">Display Skill Tag</label>
+                    </div>
+                    <select id="fav-skill-level" disabled>
+                        <option value="casual">Casual</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="expert">Expert</option>
+                    </select>
+
+                    <div class="modal-check-row" style="margin-top:5px;">
+                        <input type="checkbox" id="fav-rating-display" onchange="toggleSelectState('rating')">
+                        <label for="fav-rating-display">Display Rating Tag</label>
+                    </div>
+                    <select id="fav-rating-value" disabled>
+                        <option value="loveit">Love it</option>
+                        <option value="obsessed">Obsessed</option>
+                        <option value="betterthanyou">Better than you</option>
+                    </select>
+
+                    <div class="modal-check-row" style="margin-top:5px;">
+                        <input type="checkbox" id="fav-lf-display" onchange="toggleSelectState('lf')">
+                        <label for="fav-lf-display">Display LFG Tag</label>
+                    </div>
+                    <select id="fav-lf-value" disabled>
+                        <option value="lfg">Looking for group</option>
+                        <option value="otp">Open to play</option>
+                        <option value="lft">Looking for tips</option>
+                        <option value="ltd">Looking to discuss</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="saveFavorite()" style="width: 100%; padding: 10px; margin-top:5px;">Save Favorite</button>
+            </div>
         </div>
     </div>
     
     <script>
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         const MAPPINGS = {
             'casual': 'Casual', 'intermediate': 'Intermediate', 'expert': 'Expert',
             'betterthanyou': 'Better than you', 'obsessed': 'Obsessed', 'loveit': 'Love it',
@@ -182,6 +343,127 @@
             'otp': 'Open to play', 'lft': 'Looking for tips',
             'ott': 'Open to teach', 'ltd': 'Looking to discuss'
         };
+
+        let gamesData = null;
+        let isAdmin = false;
+        let activeEditIdx = null;
+
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleUserSession(session);
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
+        }
+
+        function handleUserSession(session) {
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+            if (gamesData) renderPage();
+        }
+
+        async function initDatabase() {
+            const { data, error } = await supabaseClient
+                .from('site_content')
+                .select('data')
+                .eq('key', 'games')
+                .single();
+
+            if (data && data.data) {
+                gamesData = data.data;
+                renderPage();
+            }
+
+            supabaseClient
+                .channel('games-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.games' },
+                    (payload) => {
+                        if (payload.new && payload.new.data) {
+                            gamesData = payload.new.data;
+                            renderPage();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        async function syncToSupabase() {
+            if (!isAdmin) return;
+            const { error } = await supabaseClient
+                .from('site_content')
+                .update({ data: gamesData })
+                .eq('key', 'games');
+            if (error) {
+                alert("Error saving: " + error.message);
+            }
+        }
+
+        function renderPage() {
+            renderFavorites(gamesData.favorites);
+            renderGrid(gamesData.liked, 'liked-games-grid', 'liked');
+            renderGrid(gamesData.wanttoplay, 'wtp-games-grid', 'wanttoplay');
+        }
+
+        function renderFavorites(favs) {
+            const container = document.getElementById('favorite-list');
+            container.innerHTML = '';
+            if (!favs) return;
+            favs.forEach((game, idx) => {
+                let tagsHTML = '';
+                if (game.tags.skill?.display) tagsHTML += `<span class="tag-box tag-skill">${MAPPINGS[game.tags.skill.level] || game.tags.skill.level}</span>`;
+                if (game.tags.rating?.display) tagsHTML += `<span class="tag-box tag-rating">${MAPPINGS[game.tags.rating.rating] || game.tags.rating.rating}</span>`;
+                if (game.tags.lf?.display) tagsHTML += `<span class="tag-box tag-lf">${MAPPINGS[game.tags.lf.looking] || game.tags.lf.looking}</span>`;
+                
+                const inner = `
+                    <button class="admin-action-btn" id="fav-del-btn-${idx}">✕</button>
+                    <div class="fav-info-group" id="fav-edit-trigger-${idx}">
+                        <div class="fav-title">${game.title}</div>
+                        ${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}
+                    </div>
+                    <div class="fav-tags">${tagsHTML}</div>
+                `;
+                
+                const wrap = createTiltWrapper('fav-card', inner);
+                container.appendChild(wrap);
+
+                const delBtn = document.getElementById(`fav-del-btn-${idx}`);
+                if (delBtn) {
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteFavorite(idx); };
+                }
+
+                const editTrigger = document.getElementById(`fav-edit-trigger-${idx}`);
+                if (editTrigger && isAdmin) {
+                    editTrigger.style.cursor = 'pointer';
+                    editTrigger.onclick = () => openEditFavModal(game, idx);
+                }
+            });
+        }
+
+        function renderGrid(list, containerId, categoryKey) {
+            const grid = document.getElementById(containerId);
+            grid.innerHTML = '';
+            if (!list) return;
+            list.forEach((title, idx) => {
+                const inner = `
+                    <button class="admin-action-btn" style="top:5px; right:5px; font-size:10px;" id="grid-del-${categoryKey}-${idx}">✕</button>
+                    ${title}
+                `;
+                grid.appendChild(createTiltWrapper('liked-card', inner));
+
+                const delBtn = document.getElementById(`grid-del-${categoryKey}-${idx}`);
+                if (delBtn) {
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteGridItem(categoryKey, idx); };
+                }
+            });
+            document.querySelectorAll('.liked-card').forEach(fitText);
+        }
 
         function randomizeTags(wrapper) {
             const tags = wrapper.querySelectorAll('.tag-box');
@@ -199,16 +481,12 @@
             const wrapper = e.currentTarget;
             const card = wrapper.querySelector('.fav-card, .liked-card');
             const rect = wrapper.getBoundingClientRect();
-            
-            // Handle both touch and mouse
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
             const x = clientX - rect.left;
             const y = clientY - rect.top;
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
-
             let rotX, rotY, scale;
 
             if (card.classList.contains('fav-card')) {
@@ -222,7 +500,6 @@
                 rotY = (x - centerX) / 10;
                 scale = 1.1;
             }
-
             card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
         }
 
@@ -237,8 +514,6 @@
             const wrap = document.createElement('div');
             wrap.className = 'tilt-wrapper';
             wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
-            
-            // Randomize on enter/tap
             const startInteraction = () => {
                 if (contentClass === 'fav-card') randomizeTags(wrap);
                 wrap.classList.add('is-tapped');
@@ -246,63 +521,19 @@
 
             wrap.addEventListener('mouseenter', startInteraction);
             wrap.addEventListener('touchstart', (e) => {
-                resetAllTilts(); // Reset others before starting this one
+                resetAllTilts();
                 startInteraction();
                 handleTilt(e);
             }, {passive: true});
 
             wrap.addEventListener('mousemove', handleTilt);
             wrap.addEventListener('touchmove', handleTilt, {passive: true});
-
-            wrap.addEventListener('mouseleave', (e) => {
+            wrap.addEventListener('mouseleave', () => {
                 const card = wrap.querySelector('.fav-card, .liked-card');
                 card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
                 wrap.classList.remove('is-tapped');
             });
-            
             return wrap;
-        }
-
-        // GLOBAL RESET: When tapping the background/anything not a card
-        document.addEventListener('touchstart', (e) => {
-            if (!e.target.closest('.tilt-wrapper')) {
-                resetAllTilts();
-            }
-        }, {passive: true});
-
-        async function init() {
-            try {
-                const response = await fetch('/storage/data/home.yaml');
-                const text = await response.text();
-                const data = jsyaml.load(text);
-                const games = data.home.games;
-
-                renderFavorites(games.favorites);
-                renderGrid(games.liked, 'liked-games-grid');
-                renderGrid(games.wanttoplay, 'wtp-games-grid');
-
-                document.querySelectorAll('.liked-card').forEach(fitText);
-                window.addEventListener('resize', () => document.querySelectorAll('.liked-card').forEach(fitText));
-            } catch (e) { console.error(e); }
-        }
-
-        function renderFavorites(favs) {
-            const container = document.getElementById('favorite-list');
-            if (!favs) return;
-            favs.forEach(game => {
-                let tagsHTML = '';
-                if (game.tags.skill?.display) tagsHTML += `<span class="tag-box tag-skill">${MAPPINGS[game.tags.skill.level] || game.tags.skill.level}</span>`;
-                if (game.tags.rating?.display) tagsHTML += `<span class="tag-box tag-rating">${MAPPINGS[game.tags.rating.rating] || game.tags.rating.rating}</span>`;
-                if (game.tags.lf?.display) tagsHTML += `<span class="tag-box tag-lf">${MAPPINGS[game.tags.lf.looking] || game.tags.lf.looking}</span>`;
-                const inner = `<div class="fav-info-group"><div class="fav-title">${game.title}</div>${game.comment ? `<span class="fav-comment">${game.comment}</span>` : ''}</div><div class="fav-tags">${tagsHTML}</div>`;
-                container.appendChild(createTiltWrapper('fav-card', inner));
-            });
-        }
-
-        function renderGrid(list, containerId) {
-            const grid = document.getElementById(containerId);
-            if (!list) return;
-            list.forEach(title => grid.appendChild(createTiltWrapper('liked-card', title)));
         }
 
         function fitText(el) {
@@ -314,7 +545,123 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', init);
+        window.toggleSelectState = (key) => {
+            const displayChecked = document.getElementById(`fav-${key}-display`).checked;
+            let el;
+            if (key === 'skill') el = document.getElementById('fav-skill-level');
+            else if (key === 'rating') el = document.getElementById('fav-rating-value');
+            else if (key === 'lf') el = document.getElementById('fav-lf-value');
+            if (el) el.disabled = !displayChecked;
+        };
+
+        window.openAddFavModal = () => {
+            activeEditIdx = null;
+            document.getElementById('modal-title-label').textContent = "Add Favorite Game";
+            document.getElementById('fav-title-input').value = '';
+            document.getElementById('fav-comment-input').value = '';
+            document.getElementById('fav-skill-display').checked = false;
+            document.getElementById('fav-rating-display').checked = false;
+            document.getElementById('fav-lf-display').checked = false;
+            toggleSelectState('skill');
+            toggleSelectState('rating');
+            toggleSelectState('lf');
+            document.getElementById('fav-modal').classList.add('active');
+        };
+
+        function openEditFavModal(game, idx) {
+            activeEditIdx = idx;
+            document.getElementById('modal-title-label').textContent = "Edit Favorite Game";
+            document.getElementById('fav-title-input').value = game.title;
+            document.getElementById('fav-comment-input').value = game.comment || '';
+            document.getElementById('fav-skill-display').checked = game.tags.skill?.display || false;
+            document.getElementById('fav-skill-level').value = game.tags.skill?.level || 'casual';
+            document.getElementById('fav-rating-display').checked = game.tags.rating?.display || false;
+            document.getElementById('fav-rating-value').value = game.tags.rating?.rating || 'loveit';
+            document.getElementById('fav-lf-display').checked = game.tags.lf?.display || false;
+            document.getElementById('fav-lf-value').value = game.tags.lf?.looking || 'lfg';
+            toggleSelectState('skill');
+            toggleSelectState('rating');
+            toggleSelectState('lf');
+            document.getElementById('fav-modal').classList.add('active');
+        }
+
+        window.closeFavModal = () => {
+            document.getElementById('fav-modal').classList.remove('active');
+        };
+
+        window.saveFavorite = async () => {
+            const title = document.getElementById('fav-title-input').value.trim();
+            const comment = document.getElementById('fav-comment-input').value.trim();
+            if (!title) return;
+
+            const favObj = {
+                title,
+                comment,
+                tags: {
+                    skill: {
+                        display: document.getElementById('fav-skill-display').checked,
+                        level: document.getElementById('fav-skill-level').value
+                    },
+                    rating: {
+                        display: document.getElementById('fav-rating-display').checked,
+                        rating: document.getElementById('fav-rating-value').value
+                    },
+                    lf: {
+                        display: document.getElementById('fav-lf-display').checked,
+                        looking: document.getElementById('fav-lf-value').value
+                    }
+                }
+            };
+
+            if (activeEditIdx !== null) {
+                gamesData.favorites[activeEditIdx] = favObj;
+            } else {
+                gamesData.favorites.push(favObj);
+            }
+
+            closeFavModal();
+            await syncToSupabase();
+        };
+
+        async function deleteFavorite(idx) {
+            if (!confirm(`Are you sure you want to delete this favorite game?`)) return;
+            gamesData.favorites = gamesData.favorites.filter((_, i) => i !== idx);
+            await syncToSupabase();
+        }
+
+        window.addGridItem = async (categoryKey) => {
+            const input = document.getElementById(categoryKey === 'liked' ? 'add-liked-input' : 'add-wtp-input');
+            const val = input.value.trim();
+            if (!val) return;
+            if (categoryKey === 'liked') {
+                gamesData.liked.push(val);
+            } else {
+                gamesData.wanttoplay.push(val);
+            }
+            input.value = '';
+            await syncToSupabase();
+        };
+
+        async function deleteGridItem(categoryKey, idx) {
+            if (!confirm(`Are you sure you want to delete this item?`)) return;
+            if (categoryKey === 'liked') {
+                gamesData.liked = gamesData.liked.filter((_, i) => i !== idx);
+            } else {
+                gamesData.wanttoplay = gamesData.wanttoplay.filter((_, i) => i !== idx);
+            }
+            await syncToSupabase();
+        }
+
+        document.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('.tilt-wrapper')) {
+                resetAllTilts();
+            }
+        }, {passive: true});
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            initAuth();
+        });
     </script>
 </body>
 </html>

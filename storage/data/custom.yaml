@@ -107,12 +107,6 @@ customPages:
         path: ~/../main/feedback.html
         type:
           type: html
-      
-      - id: guestbook
-        name: "Guestbook"
-        path: ~/../main/guestbook.html
-        type:
-          type: html
 
   other:
     display: "Other"

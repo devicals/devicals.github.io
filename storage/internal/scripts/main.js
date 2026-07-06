@@ -88,17 +88,93 @@ async function initAuth() {
 }
 
 function handleUserSession(session) {
+    const portal = document.getElementById('settings-admin-portal');
+    if (!portal) return;
+
     if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
         isAdmin = true;
         document.body.classList.add('is-admin');
-        const editBtn = document.getElementById('edit-ann-btn');
-        if (editBtn) {
-            editBtn.onclick = () => editAnnouncements();
-        }
+        renderAdminPortal(session.user.email);
     } else {
         isAdmin = false;
         document.body.classList.remove('is-admin');
+        renderLoginPortal();
     }
+    loadCustomPages();
+}
+
+function renderLoginPortal() {
+    const portal = document.getElementById('settings-admin-portal');
+    portal.innerHTML = `
+        <label>Admin Login</label>
+        <input type="text" id="admin-email-field" class="setting-field" placeholder="Email" value="3rr0r.d3v@gmail.com" readonly style="margin-top:5px;">
+        <input type="password" id="admin-password-field" class="setting-field" placeholder="Password">
+        <button class="customize-btn" style="margin-top:5px; margin-bottom:0;" onclick="submitAdminLogin()">Login</button>
+    `;
+}
+
+async function submitAdminLogin() {
+    const email = document.getElementById('admin-email-field').value;
+    const password = document.getElementById('admin-password-field').value;
+    if (!password) return;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+        alert("Login Failed: " + error.message);
+    }
+}
+
+function renderAdminPortal(email) {
+    const portal = document.getElementById('settings-admin-portal');
+    portal.innerHTML = `
+        <label>Logged in as ${email}</label>
+        <button class="customize-btn" style="background:hsl(var(--destructive)); color:hsl(var(--destructive-foreground)); margin-top:5px; margin-bottom:15px; border:none;" onclick="supabaseClient.auth.signOut()">Logout</button>
+        
+        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px; margin-bottom:15px;">
+            <label>Developer Options</label>
+            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <button id="show-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestReveal()">Show Hidden</button>
+                <button id="hide-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestHide()">Hide Hidden</button>
+            </div>
+        </div>
+
+        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px;">
+            <label>Manage Announcements</label>
+            <div id="ann-manager-list" style="margin-top:8px; max-height:150px; overflow-y:auto; margin-bottom:10px;"></div>
+            <input type="text" id="new-ann-input" class="setting-field" placeholder="Add new announcement...">
+            <button class="customize-btn" style="margin-bottom:0;" onclick="addNewAnnouncement()">+ Add Announcement</button>
+        </div>
+    `;
+    updatePreferenceButtons();
+    renderManagerAnnouncements();
+}
+
+function renderManagerAnnouncements() {
+    const listContainer = document.getElementById('ann-manager-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+    currentAnnouncements.forEach((ann, idx) => {
+        const item = document.createElement('div');
+        item.className = 'ann-list-item';
+        item.innerHTML = `
+            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:10px;">${ann}</div>
+            <button onclick="deleteAnnouncement(${idx})">✕</button>
+        `;
+        listContainer.appendChild(item);
+    });
+}
+
+function addNewAnnouncement() {
+    const input = document.getElementById('new-ann-input');
+    const val = input.value.trim();
+    if (!val) return;
+    const newList = [...currentAnnouncements, val];
+    saveAnnouncements(newList);
+    input.value = '';
+}
+
+function deleteAnnouncement(idx) {
+    const newList = currentAnnouncements.filter((_, i) => i !== idx);
+    saveAnnouncements(newList);
 }
 
 async function loadYAML(path) {
@@ -120,11 +196,9 @@ async function loadAnnouncements() {
             .select('data')
             .eq('key', 'announcements')
             .single();
-
         if (data && data.data) {
             applyAnnouncements(data.data);
         }
-
         supabaseClient
             .channel('ann-realtime')
             .on(
@@ -144,6 +218,7 @@ async function loadAnnouncements() {
 
 function applyAnnouncements(data) {
     currentAnnouncements = data;
+    renderManagerAnnouncements();
     if (currentAnnouncements.length === 0) {
         closeAnnouncement();
         return;
@@ -166,19 +241,6 @@ async function displayAnnouncement(index, announcements) {
     const renderer = new marked.Renderer();
     renderer.codespan = (code) => `<code style="background:rgba(0,0,0,0.2);padding:2px 4px;font-family:monospace;">${code}</code>`;
     content.innerHTML = marked.parse(announcement, { renderer });
-}
-
-function editAnnouncements() {
-    if (!isAdmin) return;
-    if (announcementInterval) clearInterval(announcementInterval);
-    const textValue = currentAnnouncements.join('\n');
-    const newText = prompt("Edit Announcements (one per line):", textValue);
-    if (newText === null) {
-        applyAnnouncements(currentAnnouncements);
-        return;
-    }
-    const updated = newText.split('\n').map(x => x.trim()).filter(x => x.length > 0);
-    saveAnnouncements(updated);
 }
 
 async function saveAnnouncements(updatedList) {
@@ -321,8 +383,17 @@ async function loadPage(pageName, args = '') {
     history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
 }
 
-function requestReveal() { pendingPage = { id: 'reveal_sidebar' }; closePreferences(); document.getElementById('lock-modal').classList.add('active'); }
-function requestHide() { sessionStorage.removeItem('sidebar_expire'); loadCustomPages(); updatePreferenceButtons(); closePreferences(); }
+function requestReveal() {
+    sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
+    loadCustomPages();
+    updatePreferenceButtons();
+}
+
+function requestHide() {
+    sessionStorage.removeItem('sidebar_expire');
+    loadCustomPages();
+    updatePreferenceButtons();
+}
 
 function checkLock() {
     const input = document.getElementById('lock-input').value;
@@ -358,7 +429,7 @@ function updatePreferenceButtons() {
     hideBtn.disabled = !isRevealed;
 }
 
-function openPreferences() { document.getElementById('preferences-modal').classList.add('active'); updatePreferenceButtons(); }
+function openPreferences() { document.getElementById('preferences-modal').classList.add('active'); }
 function closePreferences() { document.getElementById('preferences-modal').classList.remove('active'); }
 function toggleCustomEditor() { 
     const editor = document.getElementById('custom-theme-editor');
@@ -381,3 +452,9 @@ async function updateVisitorCount() {
     } catch (err) { if (display) display.textContent = "??????"; }
 }
 document.addEventListener('DOMContentLoaded', updateVisitorCount);
+
+window.submitAdminLogin = submitAdminLogin;
+window.addNewAnnouncement = addNewAnnouncement;
+window.deleteAnnouncement = deleteAnnouncement;
+window.requestReveal = requestReveal;
+window.requestHide = requestHide;
