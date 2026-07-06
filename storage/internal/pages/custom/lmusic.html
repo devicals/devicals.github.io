@@ -22,12 +22,19 @@
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
         }
-        .interest-outer { margin-bottom: 3.5rem; position: relative; }
-        .interest-title { color: hsl(var(--accent)); margin-bottom: 1.5rem; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-        .tilt-wrapper { display: block; perspective: 1000px; user-select: none; position: relative; }
+        .game-section { margin-bottom: 3rem; position: relative; }
+        .section-title { 
+            color: hsl(var(--accent)); 
+            margin-bottom: 1.2rem; 
+            font-size: 1rem; 
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .tilt-wrapper { display: block; perspective: 1000px; user-select: none; position: relative; overflow: visible; }
         .interest-fav-list .tilt-wrapper { perspective: 2000px; margin-bottom: 15px; }
-        .fav-card, .interest-grid-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
-        .tilt-wrapper:hover .fav-card, .tilt-wrapper:hover .interest-grid-card, .tilt-wrapper.is-tapped .fav-card, .tilt-wrapper.is-tapped .interest-grid-card { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.06); box-shadow: 0 20px 50px rgba(0,0,0,0.7); z-index: 100; }
+        .fav-card, .liked-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
+        .tilt-wrapper:hover .fav-card, .tilt-wrapper:hover .liked-card, .tilt-wrapper.is-tapped .fav-card, .tilt-wrapper.is-tapped .liked-card { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.06); box-shadow: 0 20px 50px rgba(0,0,0,0.7); z-index: 100; }
         body.is-admin .tilt-wrapper { cursor: grab; }
         .fav-card { padding: 35px; display: flex; justify-content: space-between; align-items: center; gap: 20px; overflow: hidden; }
         .fav-title { font-size: 1.4rem; font-weight: 700; color: #fff; transition: transform 0.4s ease; transform-style: preserve-3d; }
@@ -67,30 +74,6 @@
         }
         body.is-admin .admin-action-btn {
             display: block;
-        }
-        .add-grid-item-container {
-            display: none;
-            width: 100%;
-            border: 2px dashed hsl(var(--border));
-            padding: 10px;
-            margin-bottom: 15px;
-            gap: 10px;
-        }
-        body.is-admin .add-grid-item-container {
-            display: flex;
-        }
-        .add-grid-item-container input {
-            flex: 1;
-            padding: 8px 12px;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .add-grid-item-container input:focus {
-            border-color: hsl(var(--accent));
         }
         .admin-section-btn {
             display: none;
@@ -185,10 +168,6 @@
         .modal select:focus {
             border-color: hsl(var(--accent));
         }
-        .modal select:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
         .btn-primary {
             background: hsl(var(--accent)) !important;
             color: hsl(var(--accent-foreground)) !important;
@@ -206,33 +185,40 @@
         .btn-primary:active {
             transform: scale(0.98);
         }
-        .grid-add-btn {
-            background: hsl(var(--secondary) / 0.3);
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            width: 38px;
-            height: 38px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            backdrop-filter: blur(8px);
-        }
-        .grid-add-btn:hover {
-            background: hsl(var(--accent) / 0.1);
-            color: hsl(var(--accent));
-            border-color: hsl(var(--accent));
-        }
-        .grid-add-btn:active {
-            transform: scale(0.95);
-        }
         .tag-row-input {
             display: flex;
             gap: 10px;
             align-items: center;
+        }
+        .tooltip {
+            display: none;
+            position: absolute;
+            background: #161920;
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            padding: 6px 12px;
+            font-size: 11px;
+            font-family: inherit;
+            white-space: nowrap;
+            z-index: 1000;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #161920 transparent transparent transparent;
+        }
+        .tilt-wrapper:hover .tooltip {
+            display: block;
         }
     </style>
 </head>
@@ -241,7 +227,6 @@
         <div id="interests-content"></div>
     </div>
 
-    <!-- Edit Favorites Modal -->
     <div id="fav-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -300,51 +285,6 @@
         let activeEditIdx = null;
         let dragItemIdx = null;
         let dragCategory = null;
-
-        function randomizeTags(wrapper) {
-            wrapper.querySelectorAll('.tag-box').forEach(tag => {
-                tag.style.setProperty('--rand-z', `${Math.floor(Math.random() * 50) + 30}px`);
-                tag.style.setProperty('--rand-y', `${Math.floor(Math.random() * 12) * -1}px`);
-                tag.style.setProperty('--rand-r', `${Math.floor(Math.random() * 24) - 12}deg`);
-            });
-        }
-
-        function handleTilt(e) {
-            const wrapper = e.currentTarget;
-            const card = wrapper.querySelector('.fav-card, .interest-grid-card');
-            const rect = wrapper.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = clientX - rect.left, y = clientY - rect.top;
-            const centerX = rect.width / 2, centerY = rect.height / 2;
-            let rotX, rotY, scale;
-            if (card.classList.contains('fav-card')) {
-                rotX = Math.max(Math.min((centerY - y) / 15, 7), -7);
-                rotY = Math.max(Math.min((x - centerX) / 80, 7), -7);
-                scale = 1.03;
-            } else {
-                rotX = (centerY - y) / 6; rotY = (x - centerX) / 10; scale = 1.1;
-            }
-            card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
-        }
-
-        function createTiltWrapper(contentClass, innerHTML) {
-            const wrap = document.createElement('div');
-            wrap.className = 'tilt-wrapper';
-            wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
-            const start = () => { if (contentClass === 'fav-card') randomizeTags(wrap); wrap.classList.add('is-tapped'); };
-            wrap.addEventListener('mouseenter', start);
-            wrap.addEventListener('touchstart', (e) => { document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped')); start(); handleTilt(e); }, {passive: true});
-            wrap.addEventListener('mousemove', handleTilt);
-            wrap.addEventListener('touchmove', handleTilt, {passive: true});
-            wrap.addEventListener('mouseleave', () => { wrap.querySelector('div').style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1,1,1)`; wrap.classList.remove('is-tapped'); });
-            return wrap;
-        }
-
-        function fitText(el) {
-            let fs = 0.85; el.style.fontSize = fs + 'rem';
-            while (el.scrollHeight > el.offsetHeight && fs > 0.5) { fs -= 0.02; el.style.fontSize = fs + 'rem'; }
-        }
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -420,7 +360,7 @@
             await initAuth();
         }
 
-        function renderPage() {
+        async function renderPage() {
             const container = document.getElementById('interests-content');
             container.innerHTML = '';
 
@@ -468,13 +408,13 @@
                             e.preventDefault();
                             const targetIdx = idx;
                             if (dragItemIdx === targetIdx) return;
-                            const [reorderedItem] = interestsData.favorites.splice(dragItemIdx, 1);
-                            interestsData.favorites.splice(targetIdx, 0, reorderedItem);
+                            const [reorderedItem] = musicData.favorites.splice(dragItemIdx, 1);
+                            musicData.favorites.splice(targetIdx, 0, reorderedItem);
                             await syncToSupabase();
                         });
                     }
 
-                    list.appendChild(wrap);
+                    container.appendChild(wrap);
 
                     const delBtn = document.getElementById(`del-fav-btn-${idx}`);
                     if (delBtn) {
@@ -489,67 +429,35 @@
                 container.appendChild(sec);
             }
 
-            if (interestsData.sections) {
-                interestsData.sections.forEach((s, secIdx) => {
+            try {
+                const musicFileResp = await fetch('/music.json');
+                const musicJson = await musicFileResp.json();
+                const tracks = (musicJson && musicJson[0] && musicJson[0].tracks) ? musicJson[0].tracks : [];
+
+                if (tracks.length > 0) {
                     const sec = document.createElement('div');
                     sec.className = 'interest-outer';
                     sec.innerHTML = `
-                        <h2 class="interest-title">${s.display}</h2>
-                        <div class="add-grid-item-container">
-                            <input type="text" id="add-item-input-${secIdx}" placeholder="Add item to '${s.display}' list...">
-                            <button class="grid-add-btn" onclick="addGridItem(${secIdx})">+</button>
-                        </div>
-                        <div class="interest-grid" id="grid-container-${secIdx}"></div>
+                        <h2 class="interest-title">Music I Drank</h2>
+                        <div class="interest-grid" id="liked-music-grid"></div>
                     `;
-                    const grid = sec.querySelector('.interest-grid');
-                    
-                    s.items.forEach((item, idx) => {
-                        const inner = `
-                            <button class="admin-action-btn" style="top:5px; left:5px; font-size:10px;" id="grid-edit-${secIdx}-${idx}">✎</button>
-                            <button class="admin-action-btn del-btn" style="top:5px; right:5px; font-size:10px;" id="grid-del-${secIdx}-${idx}">✕</button>
-                            ${item}
-                        `;
-                        
-                        const wrap = createTiltWrapper('interest-grid-card', inner);
-                        wrap.dataset.index = idx;
-
-                        if (isAdmin) {
-                            wrap.draggable = true;
-                            wrap.addEventListener('dragstart', (e) => {
-                                dragItemIdx = idx;
-                                dragCategory = `section-${secIdx}`;
-                                e.dataTransfer.effectAllowed = 'move';
-                            });
-                            wrap.addEventListener('dragover', (e) => {
-                                if (dragCategory !== `section-${secIdx}`) return;
-                                e.preventDefault();
-                            });
-                            wrap.addEventListener('drop', async (e) => {
-                                if (dragCategory !== `section-${secIdx}`) return;
-                                e.preventDefault();
-                                const targetIdx = idx;
-                                if (dragItemIdx === targetIdx) return;
-                                const [reorderedItem] = interestsData.sections[secIdx].items.splice(dragItemIdx, 1);
-                                interestsData.sections[secIdx].items.splice(targetIdx, 0, reorderedItem);
-                                await syncToSupabase();
-                            });
-                        }
-
-                        grid.appendChild(wrap);
-
-                        const delBtn = document.getElementById(`grid-del-${secIdx}-${idx}`);
-                        if (delBtn) {
-                            delBtn.onclick = (e) => { e.stopPropagation(); deleteGridItem(secIdx, idx); };
-                        }
-
-                        const editBtn = document.getElementById(`grid-edit-${secIdx}-${idx}`);
-                        if (editBtn) {
-                            editBtn.onclick = (e) => { e.stopPropagation(); editGridItem(secIdx, idx); };
-                        }
-                    });
                     container.appendChild(sec);
-                });
+                    
+                    const grid = document.getElementById('liked-music-grid');
+                    tracks.forEach((track) => {
+                        const artists = Array.isArray(track.artists) ? track.artists.join(', ') : track.artists;
+                        const inner = `
+                            ${track.title}
+                            <div class="tooltip">${artists}</div>
+                        `;
+                        const wrap = createTiltWrapper('interest-grid-card', inner, track.id);
+                        grid.appendChild(wrap);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading music.json:", err);
             }
+
             document.querySelectorAll('.interest-grid-card').forEach(fitText);
         }
 
@@ -568,15 +476,12 @@
             activeEditIdx = idx;
             document.getElementById('fav-title-input').value = fav.title;
             document.getElementById('fav-comment-input').value = fav.comment || '';
-            
             const tag0 = fav.tags?.[0] || { tag: '', style: 'accent' };
             const tag1 = fav.tags?.[1] || { tag: '', style: 'accent' };
-            
             document.getElementById('tag-0-text').value = tag0.tag;
             document.getElementById('tag-0-style').value = tag0.style;
             document.getElementById('tag-1-text').value = tag1.tag;
             document.getElementById('tag-1-style').value = tag1.style;
-            
             document.getElementById('fav-modal').classList.add('active');
         }
 
@@ -592,23 +497,16 @@
             const tags = [];
             const tag0Text = document.getElementById('tag-0-text').value.trim();
             const tag1Text = document.getElementById('tag-1-text').value.trim();
-            
-            if (tag0Text) {
-                tags.push({ tag: tag0Text, style: document.getElementById('tag-0-style').value });
-            }
-            if (tag1Text) {
-                tags.push({ tag: tag1Text, style: document.getElementById('tag-1-style').value });
-            }
+            if (tag0Text) tags.push({ tag: tag0Text, style: document.getElementById('tag-0-style').value });
+            if (tag1Text) tags.push({ tag: tag1Text, style: document.getElementById('tag-1-style').value });
 
             const favObj = { title, comment, tags };
-
             if (activeEditIdx !== null) {
                 interestsData.favorites[activeEditIdx] = favObj;
             } else {
                 if (!interestsData.favorites) interestsData.favorites = [];
                 interestsData.favorites.push(favObj);
             }
-
             closeFavModal();
             await syncToSupabase();
         };
@@ -619,29 +517,26 @@
             await syncToSupabase();
         }
 
-        window.addGridItem = async (secIdx) => {
-            const input = document.getElementById(`add-item-input-${secIdx}`);
-            const val = input.value.trim();
-            if (!val) return;
-            interestsData.sections[secIdx].items.push(val);
-            input.value = '';
-            await syncToSupabase();
-        };
-
-        async function deleteGridItem(secIdx, idx) {
-            if (!confirm(`Are you sure you want to delete this item?`)) return;
-            interestsData.sections[secIdx].items = interestsData.sections[secIdx].items.filter((_, i) => i !== idx);
-            await syncToSupabase();
-        }
-
-        window.editGridItem = async (secIdx, idx) => {
-            const currentVal = interestsData.sections[secIdx].items[idx];
-            const newVal = prompt("Edit Item Text:", currentVal);
-            if (newVal !== null && newVal.trim() !== '') {
-                interestsData.sections[secIdx].items[idx] = newVal.trim();
-                await syncToSupabase();
+        function createTiltWrapper(contentClass, innerHTML, spotifyId = null) {
+            const wrap = document.createElement('div');
+            wrap.className = 'tilt-wrapper';
+            wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
+            
+            if (spotifyId) {
+                wrap.style.cursor = 'pointer';
+                wrap.onclick = () => {
+                    window.open(`https://open.spotify.com/track/${spotifyId}`, '_blank');
+                };
             }
-        };
+
+            const start = () => { if (contentClass === 'fav-card') randomizeTags(wrap); wrap.classList.add('is-tapped'); };
+            wrap.addEventListener('mouseenter', start);
+            wrap.addEventListener('touchstart', (e) => { document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped')); start(); handleTilt(e); }, {passive: true});
+            wrap.addEventListener('mousemove', handleTilt);
+            wrap.addEventListener('touchmove', handleTilt, {passive: true});
+            wrap.addEventListener('mouseleave', () => { wrap.querySelector('div').style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1,1,1)`; wrap.classList.remove('is-tapped'); });
+            return wrap;
+        }
 
         document.addEventListener('touchstart', (e) => {
             if (!e.target.closest('.tilt-wrapper')) document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped'));
