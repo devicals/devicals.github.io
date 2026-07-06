@@ -10,7 +10,134 @@
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+        * { 
+            border-radius: 0 !important; 
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .admin-action-row {
+            display: none;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px dashed hsl(var(--border));
+        }
+        body.is-admin .admin-action-row {
+            display: flex;
+        }
+        .admin-btn {
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            cursor: pointer;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+        }
+        .admin-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        .admin-btn.danger-btn {
+            color: hsl(var(--destructive));
+            border-color: hsl(var(--destructive) / 0.4);
+        }
+        .admin-btn.danger-btn:hover {
+            border-color: hsl(var(--destructive));
+            background: hsl(var(--destructive) / 0.05);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            width: 90%;
+            max-width: 440px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid hsl(var(--border));
+        }
+        .modal-header h2 {
+            font-size: 16px;
+            margin: 0;
+            color: hsl(var(--accent));
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: hsl(var(--foreground));
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal input[type=text], .modal textarea {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .modal textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .modal input:focus, .modal textarea:focus {
+            border-color: hsl(var(--accent));
+        }
+        .btn-primary {
+            background: hsl(var(--accent)) !important;
+            color: hsl(var(--accent-foreground)) !important;
+            border: 1px solid hsl(var(--accent)) !important;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        #add-download-container {
+            display: none;
+            margin-bottom: 24px;
+        }
+        body.is-admin #add-download-container {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div id="copy-toast">LINK COPIED TO CLIPBOARD</div>
@@ -18,14 +145,122 @@
     <div class="page-container">
         <h1 class="page-title">Downloads</h1>
         
+        <div id="add-download-container">
+            <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddDownloadModal()">+ Create New Download Card</button>
+        </div>
+
         <div class="downloads-list" id="downloads-list"></div>
+    </div>
+
+    <!-- Download Editor Modal -->
+    <div id="download-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-label">Create Download Card</h2>
+                <button class="modal-close" onclick="closeDownloadModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="dl-name-input" placeholder="Title/Name">
+                <textarea id="dl-desc-input" placeholder="Description"></textarea>
+                <input type="text" id="dl-url-input" placeholder="Download URL">
+                <button class="btn-primary" onclick="handleSaveDownload()" style="width: 100%; padding: 10px;">Save Download</button>
+            </div>
+        </div>
     </div>
     
     <script>
-        async function loadYAML(path) {
-            const response = await fetch(path);
-            const text = await response.text();
-            return jsyaml.load(text);
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let downloadsData = [];
+        let isAdmin = false;
+        let activeEditId = null;
+
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleUserSession(session);
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
+        }
+
+        function handleUserSession(session) {
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+            renderDownloads();
+        }
+
+        async function initDatabase() {
+            const { data, error } = await supabaseClient
+                .from('site_content')
+                .select('data')
+                .eq('key', 'downloads')
+                .single();
+
+            if (data && data.data) {
+                downloadsData = data.data;
+                renderDownloads();
+            }
+
+            supabaseClient
+                .channel('downloads-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.downloads' },
+                    (payload) => {
+                        if (payload.new && payload.new.data) {
+                            downloadsData = payload.new.data;
+                            renderDownloads();
+                        }
+                    }
+                )
+                .subscribe();
+        }
+
+        async function syncToSupabase() {
+            if (!isAdmin) return;
+            const { error } = await supabaseClient
+                .from('site_content')
+                .update({ data: downloadsData })
+                .eq('key', 'downloads');
+            if (error) {
+                alert("Error saving: " + error.message);
+            }
+        }
+
+        function renderDownloads() {
+            const container = document.getElementById('downloads-list');
+            container.innerHTML = '';
+            
+            downloadsData.forEach((download, idx) => {
+                const card = document.createElement('div');
+                card.className = 'download-card';
+                card.id = `download-${download.id}`;
+                
+                card.innerHTML = `
+                    <div class="download-header">
+                        <div class="download-left" onclick="copyLink(${download.id})" title="Click to copy link">
+                            <span class="download-id">#${download.id}</span>
+                            <span class="download-name">${download.name}</span>
+                        </div>
+                        <a href="${download.url}" target="_blank" rel="noopener noreferrer" class="download-btn">Download</a>
+                    </div>
+                    <div class="download-description">${download.description}</div>
+                    <div class="admin-action-row">
+                        <button class="admin-btn" onclick="openEditDownloadModal(${idx})">Edit</button>
+                        <button class="admin-btn danger-btn" onclick="deleteDownload(${download.id})">Delete</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            handleHash();
         }
 
         function copyLink(id) {
@@ -47,90 +282,80 @@
             const activeCard = document.getElementById(`download-${id}`);
             if (activeCard) {
                 activeCard.style.borderColor = 'hsl(var(--accent))';
-                setTimeout(() => {
-                    activeCard.style.borderColor = ''; 
-                }, 1000);
+                setTimeout(() => { activeCard.style.borderColor = ''; }, 1000);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const data = await loadYAML('/storage/data/downloads.yaml');
-                
-                if (!data || !data.downloads) {
-                    console.error('No downloads data found');
-                    return;
-                }
-                
-                const container = document.getElementById('downloads-list');
-                
-                data.downloads.forEach((download) => {
-                    const card = document.createElement('div');
-                    card.className = 'download-card';
-                    card.id = `download-${download.id}`;
-                    
-                    const header = document.createElement('div');
-                    header.className = 'download-header';
-                    
-                    const leftGroup = document.createElement('div');
-                    leftGroup.className = 'download-left';
-                    leftGroup.title = 'Click to copy link';
-                    leftGroup.onclick = () => copyLink(download.id);
-
-                    const idSpan = document.createElement('span');
-                    idSpan.className = 'download-id';
-                    idSpan.textContent = `#${download.id}`;
-
-                    const name = document.createElement('span');
-                    name.className = 'download-name';
-                    name.textContent = download.name;
-                    
-                    leftGroup.appendChild(idSpan);
-                    leftGroup.appendChild(name);
-
-                    const btn = document.createElement('a');
-                    btn.className = 'download-btn';
-                    btn.href = download.url;
-                    btn.target = '_blank';
-                    btn.rel = 'noopener noreferrer';
-                    btn.textContent = 'Download';
-                    
-                    header.appendChild(leftGroup);
-                    header.appendChild(btn);
-                    
-                    const description = document.createElement('div');
-                    description.className = 'download-description';
-                    description.textContent = download.description;
-                    
-                    card.appendChild(header);
-                    card.appendChild(description);
-                    container.appendChild(card);
-                });
-
-                const handleHash = () => {
-                    const hash = window.location.hash.substring(1);
-                    const params = new URLSearchParams(hash);
-                    const id = params.get('id');
-
-                    if (id) {
-                        setTimeout(() => {
-                            const element = document.getElementById(`download-${id}`);
-                            if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                element.style.borderColor = 'hsl(var(--accent))';
-                                setTimeout(() => {
-                                    element.style.borderColor = ''; 
-                                }, 1000);
-                            }
-                        }, 300);
+        function handleHash() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            const id = params.get('id');
+            if (id) {
+                setTimeout(() => {
+                    const element = document.getElementById(`download-${id}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        element.style.borderColor = 'hsl(var(--accent))';
+                        setTimeout(() => { element.style.borderColor = ''; }, 1000);
                     }
-                };
-
-                handleHash();
-
-            } catch (error) {
-                console.error('Error loading downloads:', error);
+                }, 300);
             }
+        }
+
+        window.openAddDownloadModal = () => {
+            activeEditId = null;
+            document.getElementById('modal-title-label').textContent = "Create Download Card";
+            document.getElementById('dl-name-input').value = "";
+            document.getElementById('dl-desc-input').value = "";
+            document.getElementById('dl-url-input').value = "";
+            document.getElementById('download-modal').classList.add('active');
+        };
+
+        window.openEditDownloadModal = (idx) => {
+            const dl = downloadsData[idx];
+            activeEditId = dl.id;
+            document.getElementById('modal-title-label').textContent = `Edit Download Card #${dl.id}`;
+            document.getElementById('dl-name-input').value = dl.name;
+            document.getElementById('dl-desc-input').value = dl.description;
+            document.getElementById('dl-url-input').value = dl.url;
+            document.getElementById('download-modal').classList.add('active');
+        };
+
+        window.closeDownloadModal = () => {
+            document.getElementById('download-modal').classList.remove('active');
+        };
+
+        window.handleSaveDownload = async () => {
+            const name = document.getElementById('dl-name-input').value.trim();
+            const description = document.getElementById('dl-desc-input').value.trim();
+            const url = document.getElementById('dl-url-input').value.trim();
+            if (!name || !url) return;
+
+            if (activeEditId !== null) {
+                const dl = downloadsData.find(d => d.id === activeEditId);
+                if (dl) {
+                    dl.name = name;
+                    dl.description = description;
+                    dl.url = url;
+                }
+            } else {
+                const nextId = downloadsData.length > 0 ? Math.max(...downloadsData.map(d => d.id)) + 1 : 1;
+                downloadsData.push({ id: nextId, name, description, url });
+            }
+
+            closeDownloadModal();
+            await syncToSupabase();
+        };
+
+        window.deleteDownload = async (id) => {
+            if (!confirm(`Are you sure you want to delete download card #${id}?`)) return;
+            downloadsData = downloadsData.filter(d => d.id !== id);
+            await syncToSupabase();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            initAuth();
         });
     </script>
 </body>

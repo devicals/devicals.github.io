@@ -552,12 +552,15 @@
             
             spotifyTracks.forEach((track) => {
                 const inner = `
-                    <div class="interest-grid-card tooltip-container" onclick="window.open('https://open.spotify.com/track/${track.id}', '_blank')">
-                        ${track.title}
-                        <span class="tooltip-text">${track.artists.join(', ')}</span>
-                    </div>
+                    ${track.title}
+                    <span class="tooltip-text">${track.artists.join(', ')}</span>
                 `;
-                grid.appendChild(createTiltWrapper('interest-grid-card', inner));
+                const wrap = createTiltWrapper('interest-grid-card tooltip-container', inner);
+                const card = wrap.querySelector('.interest-grid-card');
+                if (card) {
+                    card.onclick = () => window.open(`https://open.spotify.com/track/${track.id}`, '_blank');
+                }
+                grid.appendChild(wrap);
             });
             container.appendChild(sec);
 
