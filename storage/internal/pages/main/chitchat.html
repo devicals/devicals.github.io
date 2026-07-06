@@ -52,6 +52,7 @@
             margin-bottom: 6px;
             font-weight: 600;
             position: relative;
+            padding-right: 65px;
         }
         .chat-meta strong {
             color: hsl(var(--accent));
@@ -283,6 +284,12 @@
             display: inline-block;
             pointer-events: auto !important;
         }
+        #creator-badge-toggle-container {
+            display: none;
+        }
+        body.is-admin #creator-badge-toggle-container {
+            display: flex !important;
+        }
     </style>
 </head>
 <body>
@@ -295,7 +302,7 @@
             <div class="card chat-input-area">
                 <div style="display:flex; gap:10px; align-items:center; width:100%; flex-wrap:wrap;">
                     <input type="text" id="chat-name" class="chat-field" style="flex:1; min-width:150px; margin-bottom:0;" placeholder="Your Name (optional)">
-                    <div id="creator-badge-toggle-container" style="display:none; align-items:center; gap:6px; font-size:12px;">
+                    <div id="creator-badge-toggle-container" style="align-items:center; gap:6px; font-size:12px;">
                         <input type="checkbox" id="creator-badge-cb" style="accent-color:hsl(var(--accent)); width:14px; height:14px; cursor:pointer;">
                         <label for="creator-badge-cb" style="cursor:pointer; user-select:none;">Creator Badge</label>
                     </div>
@@ -471,7 +478,9 @@
 
         canvas.addEventListener('touchstart', startDraw, { passive: false });
         canvas.addEventListener('touchmove', draw, { passive: false });
-        canvas.addEventListener('touchend', stopDrawing, { passive: true });
+        window.addEventListener('touchend', stopDrawing, { passive: true });
+
+        window.clearCanvas = clearCanvas;
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -482,300 +491,10 @@
         }
 
         function handleUserSession(session) {
-            const cb = document.getElementById('settings-admin-portal');
             if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
                 isAdmin = true;
                 document.body.classList.add('is-admin');
                 document.getElementById('creator-badge-cb').checked = true;
-                document.getElementById('auth-btn'); 
-                document.getElementById('developer-opts'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal'); 
-                document.getElementById('settings-admin-portal');
-                document.getElementById('settings-admin-portal').style.display = 'block';
-                document.getElementById('creator').style.display = 'none';
             } else {
                 isAdmin = false;
                 document.body.classList.remove('is-admin');
@@ -943,6 +662,12 @@
         };
 
         window.addEventListener('resize', resizeCanvas);
+
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'auth-sync') {
+                handleUserSession(e.data.session);
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', () => {
             const savedName = localStorage.getItem('chitchat_user_name');

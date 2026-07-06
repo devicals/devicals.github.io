@@ -101,6 +101,11 @@ function handleUserSession(session) {
         renderLoginPortal();
     }
     loadCustomPages();
+
+    const iframe = document.getElementById('content-frame');
+    if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
+    }
 }
 
 function renderLoginPortal() {
