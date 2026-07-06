@@ -370,6 +370,15 @@
             
             contentKey = fileParam.split('/').pop().replace('.yaml', '');
 
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+
             const { data, error } = await supabaseClient
                 .from('site_content')
                 .select('data')
@@ -379,6 +388,21 @@
             if (data && data.data) {
                 interestsData = data.data;
                 renderPage();
+            } else if (error && error.code === 'PGRST116') {
+                if (isAdmin) {
+                    interestsData = { 
+                        favorites: [], 
+                        sections: [{ display: "New Section", items: [] }] 
+                    };
+                    await supabaseClient
+                        .from('site_content')
+                        .insert({ key: contentKey, data: interestsData });
+                    renderPage();
+                } else {
+                    document.getElementById('interests-content').innerHTML = `
+                        <p style="color: hsl(var(--muted-foreground)); font-style: italic; text-align: center; margin-top: 50px;">This interest page is currently empty.</p>
+                    `;
+                }
             }
 
             supabaseClient
@@ -395,7 +419,9 @@
                 )
                 .subscribe();
 
-            await initAuth();
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
         }
 
         function renderPage() {
