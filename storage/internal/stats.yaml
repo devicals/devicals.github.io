@@ -1,11 +1,11 @@
 forks: 0
 languages:
 - name: HTML
-  percent: 80.6
+  percent: 80.7
 - name: CSS
-  percent: 10.6
+  percent: 10.5
 - name: JavaScript
-  percent: 8.1
+  percent: 8.0
 - name: Python
   percent: 0.8
 size: 113825
