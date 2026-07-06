@@ -12,7 +12,7 @@ customPages:
         name: "Liked Music"
         path: ~/lmusic.html
         type:
-          type: interests
+          type: html
 
       - id: lbooks
         name: "Liked Books"
