@@ -1,9 +1,16 @@
+const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 let currentAnnouncementIndex = 0;
 let announcementInterval;
 let sidebarOpen = false;
 let pendingPage = null;
 let titleIdx = 0;
 const rawTitle = "painful existence, silent suffering ";
+let isAdmin = false;
+let currentAnnouncements = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initializeApp();
@@ -16,9 +23,7 @@ function startTitleAnimation() {
         document.title = slice.substring(0, 14);
         titleIdx = (titleIdx + 1) % rawTitle.length;
     };
-    
     let interval = setInterval(updateTitle, 200);
-    
     document.addEventListener('visibilitychange', () => {
         clearInterval(interval);
         interval = setInterval(updateTitle, document.hidden ? 1000 : 200);
@@ -31,6 +36,7 @@ function toggleSection(header) {
 }
 
 async function initializeApp() {
+    initAuth();
     await loadAnnouncements();
     await loadCustomPages();
     handleHashNavigation();
@@ -73,6 +79,28 @@ async function initializeApp() {
     }, 5000);
 }
 
+async function initAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    handleUserSession(session);
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+        handleUserSession(session);
+    });
+}
+
+function handleUserSession(session) {
+    if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+        isAdmin = true;
+        document.body.classList.add('is-admin');
+        const editBtn = document.getElementById('edit-ann-btn');
+        if (editBtn) {
+            editBtn.onclick = () => editAnnouncements();
+        }
+    } else {
+        isAdmin = false;
+        document.body.classList.remove('is-admin');
+    }
+}
+
 async function loadYAML(path) {
     try {
         const response = await fetch(path);
@@ -87,25 +115,48 @@ async function loadYAML(path) {
 
 async function loadAnnouncements() {
     try {
-        const data = await loadYAML('/storage/data/announcements.yaml');
-        if (!data || !data.announcements || data.announcements.length === 0) {
-            closeAnnouncement();
-            return;
+        const { data, error } = await supabaseClient
+            .from('site_content')
+            .select('data')
+            .eq('key', 'announcements')
+            .single();
+
+        if (data && data.data) {
+            applyAnnouncements(data.data);
         }
-        const announcements = data.announcements;
-        
-        document.getElementById('announcement-banner').classList.remove('hidden');
-        document.getElementById('main-content').classList.remove('no-banner');
-        
-        displayAnnouncement(0, announcements);
-        if (announcements.length > 1) {
-            announcementInterval = setInterval(() => {
-                currentAnnouncementIndex = (currentAnnouncementIndex + 1) % announcements.length;
-                displayAnnouncement(currentAnnouncementIndex, announcements);
-            }, 3000);
-        }
+
+        supabaseClient
+            .channel('ann-realtime')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.announcements' },
+                (payload) => {
+                    if (payload.new && payload.new.data) {
+                        applyAnnouncements(payload.new.data);
+                    }
+                }
+            )
+            .subscribe();
     } catch (error) {
         console.error('Error loading announcements:', error);
+    }
+}
+
+function applyAnnouncements(data) {
+    currentAnnouncements = data;
+    if (currentAnnouncements.length === 0) {
+        closeAnnouncement();
+        return;
+    }
+    document.getElementById('announcement-banner').classList.remove('hidden');
+    document.getElementById('main-content').classList.remove('no-banner');
+    displayAnnouncement(0, currentAnnouncements);
+    if (announcementInterval) clearInterval(announcementInterval);
+    if (currentAnnouncements.length > 1) {
+        announcementInterval = setInterval(() => {
+            currentAnnouncementIndex = (currentAnnouncementIndex + 1) % currentAnnouncements.length;
+            displayAnnouncement(currentAnnouncementIndex, currentAnnouncements);
+        }, 3000);
     }
 }
 
@@ -115,6 +166,29 @@ async function displayAnnouncement(index, announcements) {
     const renderer = new marked.Renderer();
     renderer.codespan = (code) => `<code style="background:rgba(0,0,0,0.2);padding:2px 4px;font-family:monospace;">${code}</code>`;
     content.innerHTML = marked.parse(announcement, { renderer });
+}
+
+function editAnnouncements() {
+    if (!isAdmin) return;
+    if (announcementInterval) clearInterval(announcementInterval);
+    const textValue = currentAnnouncements.join('\n');
+    const newText = prompt("Edit Announcements (one per line):", textValue);
+    if (newText === null) {
+        applyAnnouncements(currentAnnouncements);
+        return;
+    }
+    const updated = newText.split('\n').map(x => x.trim()).filter(x => x.length > 0);
+    saveAnnouncements(updated);
+}
+
+async function saveAnnouncements(updatedList) {
+    const { error } = await supabaseClient
+        .from('site_content')
+        .update({ data: updatedList })
+        .eq('key', 'announcements');
+    if (error) {
+        alert("Error saving: " + error.message);
+    }
 }
 
 function closeAnnouncement() {
@@ -143,7 +217,7 @@ async function loadCustomPages() {
             section.className = 'nav-section';
             const header = document.createElement('h3');
             header.textContent = (category.display || key).toUpperCase();
-            header.onclick = () => toggleSection(header); // Collapsible trigger
+            header.onclick = () => toggleSection(header);
             section.appendChild(header);
 
             category.sub.forEach((page, index) => {

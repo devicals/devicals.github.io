@@ -11,6 +11,23 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .announcement-edit-btn {
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #fff;
+            padding: 2px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: 15px;
+        }
+        body.is-admin .announcement-edit-btn {
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
     <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -49,6 +66,7 @@
     
     <div id="announcement-banner" class="announcement-banner hidden">
         <div class="announcement-content"></div>
+        <button class="announcement-edit-btn" id="edit-ann-btn">Edit</button>
         <button class="announcement-close" onclick="closeAnnouncement()">×</button>
     </div>
 
