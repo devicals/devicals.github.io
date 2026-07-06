@@ -10,7 +10,7 @@ customPages:
 
       - id: lmusic
         name: "Liked Music"
-        path: ~/lmusic.yaml
+        path: ~/lmusic.html
         type:
           type: interests
 
