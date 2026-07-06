@@ -10,9 +10,17 @@
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        ::-webkit-scrollbar {
+            display: none !important;
+        }
+        * { 
+            border-radius: 0 !important; 
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
         .blog-preview-card {
             display: block;
             text-decoration: none;
@@ -38,6 +46,177 @@
             line-height: 1.5;
             font-size: 0.9rem;
         }
+        .admin-action-btn {
+            display: none;
+            position: absolute;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 10;
+            pointer-events: auto !important;
+            color: hsl(var(--foreground));
+        }
+        .admin-action-btn:hover {
+            color: hsl(var(--accent));
+        }
+        .admin-action-btn.del-btn {
+            color: hsl(var(--muted-foreground));
+        }
+        .admin-action-btn.del-btn:hover {
+            color: hsl(var(--destructive));
+        }
+        body.is-admin .admin-action-btn {
+            display: block;
+        }
+        .admin-section-btn {
+            display: none;
+            background: none;
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            padding: 4px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            margin-bottom: 12px;
+        }
+        .admin-section-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        body.is-admin .admin-section-btn {
+            display: inline-block;
+        }
+        .add-grid-item-container {
+            display: none;
+            width: 100%;
+            border: 2px dashed hsl(var(--border));
+            padding: 10px;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        body.is-admin .add-grid-item-container {
+            display: flex;
+        }
+        .add-grid-item-container input {
+            flex: 1;
+            padding: 8px 12px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .add-grid-item-container input:focus {
+            border-color: hsl(var(--accent));
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: hsl(var(--card));
+            border: 2px solid hsl(var(--border));
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid hsl(var(--border));
+        }
+        .modal-header h2 {
+            font-size: 16px;
+            margin: 0;
+            color: hsl(var(--accent));
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: hsl(var(--foreground));
+        }
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal input[type=text], .modal textarea {
+            width: 100%;
+            padding: 10px;
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+        .modal textarea {
+            min-height: 250px;
+            resize: vertical;
+        }
+        .modal input:focus, .modal textarea:focus {
+            border-color: hsl(var(--accent));
+        }
+        .btn-primary {
+            background: hsl(var(--accent)) !important;
+            color: hsl(var(--accent-foreground)) !important;
+            border: 1px solid hsl(var(--accent)) !important;
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .grid-add-btn {
+            background: hsl(var(--secondary) / 0.3);
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            width: 38px;
+            height: 38px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            backdrop-filter: blur(8px);
+        }
+        .grid-add-btn:hover {
+            background: hsl(var(--accent) / 0.1);
+            color: hsl(var(--accent));
+            border-color: hsl(var(--accent));
+        }
+        .grid-add-btn:active {
+            transform: scale(0.95);
+        }
+        .skill-card, .social-card {
+            position: relative;
+        }
+        body.is-admin .skill-card, body.is-admin .social-card {
+            cursor: grab;
+        }
     </style>
 </head>
 <body>
@@ -46,31 +225,78 @@
         
         <div id="about-me" class="section">
             <h2>About Me</h2>
+            <button class="admin-section-btn" onclick="openBioModal()">Edit Biography</button>
             <div class="card bio-card"></div>
         </div>
 
         <div id="latest-blog" class="section">
             <h2>Latest Blog Post</h2>
-            <div id="blog-preview-container">
-            </div>
+            <div id="blog-preview-container"></div>
         </div>
         
         <div id="skills" class="section">
             <h2>Skills</h2>
+            <div class="add-grid-item-container">
+                <input type="text" id="skill-name-input" placeholder="Skill Name (e.g. JavaScript)">
+                <input type="text" id="skill-link-input" placeholder="Resource Link (optional)">
+                <button class="grid-add-btn" onclick="addNewSkill()">+</button>
+            </div>
             <div class="skills-grid"></div>
         </div>
         
         <div id="socials" class="section">
             <h2>Socials</h2>
+            <div class="add-grid-item-container">
+                <input type="text" id="social-name-input" placeholder="Social Name (e.g. YouTube)">
+                <input type="text" id="social-link-input" placeholder="Profile Link">
+                <button class="grid-add-btn" onclick="addNewSocial()">+</button>
+            </div>
             <div class="socials-grid"></div>
+        </div>
+    </div>
+
+    <!-- Biography Modal -->
+    <div id="bio-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Biography</h2>
+                <button class="modal-close" onclick="closeBioModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="bio-textarea-input" placeholder="Biography Markdown..."></textarea>
+                <button class="btn-primary" onclick="saveBio()" style="width: 100%; padding: 10px;">Save Bio</button>
+            </div>
         </div>
     </div>
     
     <script>
-        async function loadYAML(path) {
-            const response = await fetch(path);
-            const text = await response.text();
-            return jsyaml.load(text);
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let homeData = null;
+        let isAdmin = false;
+        let dragItemIdx = null;
+        let dragCategory = null;
+
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            handleUserSession(session);
+            supabaseClient.auth.onAuthStateChange((_event, session) => {
+                handleUserSession(session);
+            });
+        }
+
+        function handleUserSession(session) {
+            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+            } else {
+                isAdmin = false;
+                document.body.classList.remove('is-admin');
+            }
+            if (homeData) renderPage();
         }
 
         function parseDate(dateStr) {
@@ -82,20 +308,9 @@
             try {
                 const response = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
                 const statusData = await response.json();
-
                 if (!statusData.success) throw new Error('Lanyard failed');
-
-                const statusMap = {
-                    'online': 'Online',
-                    'dnd': 'DND',
-                    'idle': 'Idle',
-                    'offline': 'Offline'
-                };
-                
-                const rawStatus = statusData.data?.discord_status || 'offline';
-                return { 
-                    statusText: statusMap[rawStatus] || 'Offline' 
-                };
+                const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
+                return { statusText: statusMap[statusData.data?.discord_status || 'offline'] || 'Offline' };
             } catch (error) {
                 console.error('Discord API Error:', error);
                 return { statusText: "Offline" };
@@ -105,9 +320,7 @@
         async function refreshDiscordUI() {
             const DISCORD_ID = '989414384679927838';
             const socialsGrid = document.querySelector('.socials-grid');
-            
             const data = await fetchDiscordData(DISCORD_ID);
-            
             let discordCard = document.getElementById('discord-live-card');
             if (!discordCard) {
                 discordCard = document.createElement('a');
@@ -117,70 +330,217 @@
                 discordCard.href = `https://discord.com/users/${DISCORD_ID}/`;
                 socialsGrid.prepend(discordCard);
             }
-            
             discordCard.textContent = `${data.statusText} on Discord`;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const data = await loadYAML('/storage/data/home.yaml');
-                const homeData = data.home;
-                
-                if (homeData.bio) {
-                    const bioCard = document.querySelector('.bio-card');
-                    bioCard.innerHTML = marked.parse(homeData.bio);
-                }
-                
-                if (homeData.skills) {
-                    const skillsGrid = document.querySelector('.skills-grid');
-                    homeData.skills.forEach(skillItem => {
-                        const skillText = typeof skillItem === 'string' ? skillItem : skillItem.skill;
-                        const skillLink = typeof skillItem === 'object' ? skillItem.link : null;
-                        const card = document.createElement(skillLink ? 'a' : 'div');
-                        card.className = 'skill-card' + (skillLink ? ' skill-card-link' : '');
-                        if(skillLink) { card.href = skillLink; card.target = '_blank'; }
-                        card.textContent = skillText;
-                        skillsGrid.appendChild(card);
-                    });
-                }
-                
-                if (homeData.socials) {
-                    const socialsGrid = document.querySelector('.socials-grid');
-                    homeData.socials.forEach(social => {
-                        if (social.name.toLowerCase() !== 'discord') {
-                            const card = document.createElement('a');
-                            card.className = 'social-card';
-                            card.href = social.link;
-                            card.target = '_blank';
-                            card.textContent = social.name;
-                            socialsGrid.appendChild(card);
-                        }
-                    });
-                }
+        async function initDatabase() {
+            const { data, error } = await supabaseClient
+                .from('site_content')
+                .select('data')
+                .eq('key', 'home')
+                .single();
 
-                await refreshDiscordUI();
-                
-            } catch (error) {
-                console.error('Error loading home page:', error);
+            if (data && data.data) {
+                homeData = data.data;
+                renderPage();
             }
 
-            try {
-                const blogData = await loadYAML('/storage/data/blogs.yaml');
-                if (blogData && blogData.blogs && blogData.blogs.length > 0) {
-                    const sortedBlogs = blogData.blogs.sort((a, b) => parseDate(b.date) - parseDate(a.date));
-                    const latest = sortedBlogs[0];
+            supabaseClient
+                .channel('home-realtime')
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.home' },
+                    (payload) => {
+                        if (payload.new && payload.new.data) {
+                            homeData = payload.new.data;
+                            renderPage();
+                        }
+                    }
+                )
+                .subscribe();
+        }
 
+        async function syncToSupabase() {
+            if (!isAdmin) return;
+            const { error } = await supabaseClient
+                .from('site_content')
+                .update({ data: homeData })
+                .eq('key', 'home');
+            if (error) {
+                alert("Error saving: " + error.message);
+            }
+        }
+
+        function renderPage() {
+            if (homeData.bio) {
+                document.querySelector('.bio-card').innerHTML = marked.parse(homeData.bio);
+            }
+            renderSkills(homeData.skills);
+            renderSocials(homeData.socials);
+            loadLatestBlogPreview();
+        }
+
+        function renderSkills(skills) {
+            const grid = document.querySelector('.skills-grid');
+            grid.innerHTML = '';
+            if (!skills) return;
+            skills.forEach((item, idx) => {
+                const card = document.createElement(item.link ? 'a' : 'div');
+                card.className = 'skill-card' + (item.link ? ' skill-card-link' : '');
+                if (item.link) { card.href = item.link; card.target = '_blank'; }
+                card.innerHTML = `
+                    <button class="admin-action-btn" style="top:5px; left:5px; font-size:10px;" onclick="editSkill(${idx})">✎</button>
+                    <button class="admin-action-btn del-btn" style="top:5px; right:5px; font-size:10px;" onclick="deleteSkill(${idx})">✕</button>
+                    ${item.skill}
+                `;
+                if (isAdmin) {
+                    card.draggable = true;
+                    card.addEventListener('dragstart', (e) => {
+                        dragItemIdx = idx; dragCategory = 'skills';
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    card.addEventListener('dragover', (e) => e.preventDefault());
+                    card.addEventListener('drop', async (e) => {
+                        e.preventDefault(); if (dragCategory !== 'skills') return;
+                        const targetIdx = idx; if (dragItemIdx === targetIdx) return;
+                        const [reorderedItem] = homeData.skills.splice(dragItemIdx, 1);
+                        homeData.skills.splice(targetIdx, 0, reorderedItem);
+                        await syncToSupabase();
+                    });
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        function renderSocials(socials) {
+            const grid = document.querySelector('.socials-grid');
+            grid.innerHTML = '';
+            if (!socials) return;
+            socials.forEach((item, idx) => {
+                const card = document.createElement('a');
+                card.className = 'social-card';
+                card.href = item.link;
+                card.target = '_blank';
+                card.innerHTML = `
+                    <button class="admin-action-btn" style="top:5px; left:5px; font-size:10px;" onclick="editSocial(${idx})">✎</button>
+                    <button class="admin-action-btn del-btn" style="top:5px; right:5px; font-size:10px;" onclick="deleteSocial(${idx})">✕</button>
+                    ${item.name}
+                `;
+                if (isAdmin) {
+                    card.draggable = true;
+                    card.addEventListener('dragstart', (e) => {
+                        dragItemIdx = idx; dragCategory = 'socials';
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    card.addEventListener('dragover', (e) => e.preventDefault());
+                    card.addEventListener('drop', async (e) => {
+                        e.preventDefault(); if (dragCategory !== 'socials') return;
+                        const targetIdx = idx; if (dragItemIdx === targetIdx) return;
+                        const [reorderedItem] = homeData.socials.splice(dragItemIdx, 1);
+                        homeData.socials.splice(targetIdx, 0, reorderedItem);
+                        await syncToSupabase();
+                    });
+                }
+                grid.appendChild(card);
+            });
+            refreshDiscordUI();
+        }
+
+        window.openBioModal = () => {
+            document.getElementById('bio-textarea-input').value = homeData.bio || '';
+            document.getElementById('bio-modal').classList.add('active');
+        };
+
+        window.closeBioModal = () => {
+            document.getElementById('bio-modal').classList.remove('active');
+        };
+
+        window.saveBio = async () => {
+            const bioText = document.getElementById('bio-textarea-input').value.trim();
+            if (!bioText) return;
+            homeData.bio = bioText;
+            closeBioModal();
+            await syncToSupabase();
+        };
+
+        window.addNewSkill = async () => {
+            const nameInput = document.getElementById('skill-name-input');
+            const linkInput = document.getElementById('skill-link-input');
+            const skill = nameInput.value.trim();
+            const link = linkInput.value.trim() || null;
+            if (!skill) return;
+            homeData.skills.push({ skill, link });
+            nameInput.value = ''; linkInput.value = '';
+            await syncToSupabase();
+        };
+
+        window.deleteSkill = async (idx) => {
+            event.stopPropagation(); event.preventDefault();
+            if (!confirm(`Delete skill?`)) return;
+            homeData.skills = homeData.skills.filter((_, i) => i !== idx);
+            await syncToSupabase();
+        };
+
+        window.editSkill = async (idx) => {
+            event.stopPropagation(); event.preventDefault();
+            const current = homeData.skills[idx];
+            const name = prompt("Edit Skill Name:", current.skill);
+            if (name !== null && name.trim() !== '') {
+                const link = prompt("Edit Skill Link:", current.link || '');
+                current.skill = name.trim();
+                current.link = link ? link.trim() : null;
+                await syncToSupabase();
+            }
+        };
+
+        window.addNewSocial = async () => {
+            const nameInput = document.getElementById('social-name-input');
+            const linkInput = document.getElementById('social-link-input');
+            const name = nameInput.value.trim();
+            const link = linkInput.value.trim();
+            if (!name || !link) return;
+            homeData.socials.push({ name, link });
+            nameInput.value = ''; linkInput.value = '';
+            await syncToSupabase();
+        };
+
+        window.deleteSocial = async (idx) => {
+            event.stopPropagation(); event.preventDefault();
+            if (!confirm(`Delete social link?`)) return;
+            homeData.socials = homeData.socials.filter((_, i) => i !== idx);
+            await syncToSupabase();
+        };
+
+        window.editSocial = async (idx) => {
+            event.stopPropagation(); event.preventDefault();
+            const current = homeData.socials[idx];
+            const name = prompt("Edit Social Name:", current.name);
+            if (name !== null && name.trim() !== '') {
+                const link = prompt("Edit Social Link:", current.link);
+                if (link && link.trim() !== '') {
+                    current.name = name.trim();
+                    current.link = link.trim();
+                    await syncToSupabase();
+                }
+            }
+        };
+
+        async function loadLatestBlogPreview() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('site_content')
+                    .select('data')
+                    .eq('key', 'blogs')
+                    .single();
+
+                if (data && data.data && data.data.length > 0) {
+                    const sortedBlogs = data.data.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+                    const latest = sortedBlogs[0];
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = marked.parse(latest.content);
-                    const plainText = tempDiv.textContent || tempDiv.innerText || "";
-
-                    let excerpt = plainText.trim();
-                    if (excerpt.length > 100) {
-                        excerpt = excerpt.substring(0, 100).replace(/[ ,.]*$/, "") + "...";
-                    }
-
+                    let excerpt = (tempDiv.textContent || tempDiv.innerText || "").trim();
+                    if (excerpt.length > 100) excerpt = excerpt.substring(0, 100).replace(/[ ,.]*$/, "") + "...";
                     const container = document.getElementById('blog-preview-container');
-                    
                     container.innerHTML = `
                         <div class="card blog-preview-card" style="cursor: pointer;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
                             <div class="preview-title">${latest.title}</div>
@@ -189,19 +549,12 @@
                         </div>
                     `;
                 }
-            } catch (error) {
-                console.error('Error loading latest blog:', error);
-            }
-            
-            if (window.location.hash) {
-                const hash = window.location.hash.substring(1);
-                const target = document.getElementById(hash);
-                if (target) {
-                    setTimeout(() => {
-                        target.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                }
-            }
+            } catch (e) { console.error(e); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            initAuth();
         });
     </script>
 </body>

@@ -143,12 +143,28 @@
         body.is-admin .project-card {
             cursor: grab;
         }
+        .admin-tab-actions {
+            display: none;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        body.is-admin .admin-tab-actions {
+            display: flex;
+        }
     </style>
 </head>
 <body>
     <div class="page-container">
         <h1 class="page-title">Projects</h1>
+        
         <div class="project-tabs" id="project-tabs"></div>
+
+        <div class="admin-tab-actions">
+            <button class="admin-btn" onclick="renameActiveTab()">Rename Active Tab</button>
+            <button class="admin-btn danger-btn" onclick="deleteActiveTab()">Delete Active Tab</button>
+            <button class="admin-btn" onclick="createNewTab()">+ Create New Tab</button>
+        </div>
+
         <div id="add-project-container">
             <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddProjectModal()">+ Create New Project Card</button>
         </div>
@@ -156,7 +172,6 @@
         <div id="tab-container"></div>
     </div>
 
-    <!-- Project Editor Modal -->
     <div id="project-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -242,7 +257,7 @@
         }
 
         function renderAll() {
-            const tabs = projectsData.tabs;
+            const tabs = projectsData.tabs || {};
             const tabsContainer = document.getElementById('project-tabs');
             tabsContainer.innerHTML = '';
             
@@ -331,6 +346,41 @@
             });
             window.parent.location.hash = `page=projects&tab=${tabKey}`;
         }
+
+        window.createNewTab = async () => {
+            const name = prompt("Enter new tab name:");
+            if (!name) return;
+            const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            if (projectsData.tabs[key]) {
+                alert("A tab with that name already exists!");
+                return;
+            }
+            if (!projectsData.tabs) projectsData.tabs = {};
+            projectsData.tabs[key] = {
+                display: name,
+                projects: []
+            };
+            currentTab = key;
+            await syncToSupabase();
+        };
+
+        window.renameActiveTab = async () => {
+            if (!currentTab || !projectsData.tabs[currentTab]) return;
+            const newName = prompt("Rename active tab to:", projectsData.tabs[currentTab].display);
+            if (newName && newName.trim() !== '') {
+                projectsData.tabs[currentTab].display = newName.trim();
+                await syncToSupabase();
+            }
+        };
+
+        window.deleteActiveTab = async () => {
+            if (!currentTab || !projectsData.tabs[currentTab]) return;
+            if (!confirm(`Are you sure you want to delete the tab "${projectsData.tabs[currentTab].display}" and all of its project cards?`)) return;
+            
+            delete projectsData.tabs[currentTab];
+            currentTab = Object.keys(projectsData.tabs)[0] || null;
+            await syncToSupabase();
+        };
 
         window.openAddProjectModal = () => {
             activeEditIdx = null;
