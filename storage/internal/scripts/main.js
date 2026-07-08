@@ -9,17 +9,18 @@ let titleIdx = 0;
 const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
 let currentAnnouncements = [];
+let flatPagesMap = {};
 window.highestZ = 100;
-let customConfig = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     makeDraggable('nav-window', 'nav-drag');
     makeDraggable('announcement-window', 'ann-drag');
-    makeDraggable('terminal-window', 'term-drag');
+    makeDraggable('settings-window', 'set-drag');
     makeDraggable('lock-window', 'lock-drag');
     
     await initializeApp();
     startTitleAnimation();
+    setupTerminal();
 });
 
 function makeDraggable(winId, handleId) {
@@ -32,7 +33,7 @@ function makeDraggable(winId, handleId) {
     handle.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('ascii-close')) return;
         e.preventDefault();
         win.style.zIndex = ++window.highestZ;
         if (e.type === 'touchstart') {
@@ -61,8 +62,8 @@ function makeDraggable(winId, handleId) {
         document.ontouchend = null; document.ontouchmove = null;
     }
     
-    win.addEventListener('mousedown', () => win.style.zIndex = ++window.highestZ);
-    win.addEventListener('touchstart', () => win.style.zIndex = ++window.highestZ, {passive: true});
+    win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
+    win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
 }
 
 function startTitleAnimation() {
@@ -86,10 +87,9 @@ async function initializeApp() {
     window.addEventListener('hashchange', handleHashNavigation);
     
     const savedTheme = localStorage.getItem('selected-theme') || 'original';
-    changeTheme(savedTheme);
+    window.changeTheme(savedTheme);
     
     sessionStorage.removeItem('announcement-closed');
-    setupTerminal();
 
     setInterval(async () => {
         const expire = sessionStorage.getItem('sidebar_expire');
@@ -114,8 +114,8 @@ function handleUserSession(session) {
         isAdmin = false;
         document.body.classList.remove('is-admin');
     }
-    document.getElementById('term-prompt-prefix').textContent = `${isAdmin ? 'A' : 'U'} > github\\pages\\devicals >`;
     loadCustomPages();
+    updateTerminalPrefix();
 
     const iframe = document.getElementById('content-frame');
     if (iframe && iframe.contentWindow) {
@@ -143,7 +143,7 @@ async function loadAnnouncements() {
 }
 
 function applyAnnouncements(data) {
-    currentAnnouncements = data;
+    currentAnnouncements = data || [];
     const win = document.getElementById('announcement-window');
     if (currentAnnouncements.length === 0) {
         win.style.display = 'none';
@@ -173,72 +173,101 @@ window.closeAnnouncement = function() {
     if (announcementInterval) clearInterval(announcementInterval);
 }
 
-function renderTreeNodes(nodes, container, prefix = '') {
-    nodes.forEach((node, index) => {
-        const isLast = index === nodes.length - 1;
-        const nodePrefix = prefix + (isLast ? '└─ ' : '├─ ');
-        
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'nav-item';
-        
-        if (node.type === 'category') {
-            itemDiv.innerHTML = `<span style="color:hsl(var(--accent)); font-weight:600; margin-top:10px; display:inline-block; cursor:default;">${node.name}/</span>`;
-            container.appendChild(itemDiv);
-            renderTreeNodes(node.children, container, '');
-        } else {
-            const link = document.createElement('span');
-            link.textContent = node.name;
-            link.onclick = () => loadPage(node.id);
-            
-            itemDiv.appendChild(document.createTextNode(nodePrefix));
-            itemDiv.appendChild(link);
-            container.appendChild(itemDiv);
-            
-            if (node.children && node.children.length > 0) {
-                const childPrefix = prefix + (isLast ? '   ' : '│  ');
-                renderTreeNodes(node.children, container, childPrefix);
-            }
-        }
-    });
-}
-
 async function loadCustomPages() {
-    customConfig = await loadYAML('/storage/data/custom.yaml');
-    if (!customConfig || !customConfig.customPages) return;
+    const data = await loadYAML('/storage/data/custom.yaml');
+    if (!data || !data.customPages) return;
 
     const container = document.getElementById('nav-tree-content');
-    container.innerHTML = '';
+    container.innerHTML = `
+        <div class="nav-folder">Main/</div>
+        <div class="nav-item">├─ <span onclick="loadPage('home')">Home</span></div>
+        <div class="nav-item">└─ <span onclick="loadPage('blogs')">Blogs</span></div>
+        <br>
+        <div class="nav-folder">Content/</div>
+        <div class="nav-item">├─ <span onclick="loadPage('projects')">Projects</span></div>
+        <div class="nav-item">└─ <span onclick="loadPage('downloads')">Downloads</span></div>
+        <br>
+    `;
 
     const expire = sessionStorage.getItem('sidebar_expire');
     const isRevealed = expire && Date.now() < parseInt(expire);
 
-    let tree = [];
-    Object.entries(customConfig.customPages).forEach(([key, category]) => {
-        let catNode = { name: category.display || key, type: 'category', children: [] };
+    flatPagesMap = {
+        'home': { id: 'home', path: '/storage/internal/pages/main/home.html', type: 'html' },
+        'blogs': { id: 'blogs', path: '/storage/internal/pages/main/blogs.html', type: 'html' },
+        'projects': { id: 'projects', path: '/storage/internal/pages/main/projects.html', type: 'html' },
+        'downloads': { id: 'downloads', path: '/storage/internal/pages/main/downloads.html', type: 'html' }
+    };
+
+    let orderedSections = [];
+    Object.entries(data.customPages).forEach(([key, category]) => {
+        let items = [];
         if (category.sub) {
-            let nodeMap = {};
-            category.sub.forEach(p => {
-                if (isRevealed || (!p.hidden && !p.locked)) {
-                    nodeMap[p.id] = { ...p, children: [] };
-                }
-            });
-            Object.values(nodeMap).forEach(p => {
-                let pType = typeof p.type === 'object' ? p.type.type : p.type;
-                if (pType === 'refsection' && p.type.refid && nodeMap[p.type.refid]) {
-                    nodeMap[p.type.refid].children.push(p);
+            category.sub.forEach(page => {
+                flatPagesMap[page.id] = page;
+                if (page.type && page.type.type === 'refsection') {
+                    const parent = items.find(i => i.id === page.type.refid);
+                    if (parent) {
+                        if (!parent.children) parent.children = [];
+                        parent.children.push(page);
+                    }
                 } else {
-                    catNode.children.push(p);
+                    items.push(page);
                 }
             });
         }
-        if (catNode.children.length > 0) tree.push(catNode);
+        orderedSections.push({ key, display: category.display || key, items });
     });
 
-    renderTreeNodes(tree, container);
+    orderedSections.forEach(section => {
+        const visibleItems = section.items.filter(p => isRevealed || (!p.hidden && !p.locked));
+        if (visibleItems.length === 0) return;
+
+        const folder = document.createElement('div');
+        folder.className = 'nav-folder';
+        folder.textContent = section.display + '/';
+        container.appendChild(folder);
+
+        visibleItems.forEach((page, index) => {
+            const isLast = index === visibleItems.length - 1;
+            const prefix = isLast ? '└─ ' : '├─ ';
+            
+            const item = document.createElement('div');
+            item.className = 'nav-item';
+            
+            const link = document.createElement('span');
+            link.textContent = page.display || page.name;
+            link.onclick = () => loadPage(page.id);
+
+            item.appendChild(document.createTextNode(prefix));
+            item.appendChild(link);
+            container.appendChild(item);
+
+            if (page.children && page.children.length > 0) {
+                const subContainer = document.createElement('div');
+                subContainer.className = 'nav-sub';
+                page.children.forEach((child, cIndex) => {
+                    if (!isRevealed && (child.hidden || child.locked)) return;
+                    const cIsLast = cIndex === page.children.length - 1;
+                    const cPrefix = cIsLast ? '└─ ' : '├─ ';
+                    const cItem = document.createElement('div');
+                    cItem.className = 'nav-item';
+                    const cLink = document.createElement('span');
+                    cLink.textContent = child.display || child.name;
+                    cLink.onclick = () => loadPage(child.id);
+                    cItem.appendChild(document.createTextNode(cPrefix));
+                    cItem.appendChild(cLink);
+                    subContainer.appendChild(cItem);
+                });
+                container.appendChild(subContainer);
+            }
+        });
+        container.appendChild(document.createElement('br'));
+    });
 
     container.innerHTML += `
         <div class="nav-folder">System/</div>
-        <div class="nav-item">└─ <span onclick="window.openTerminal()">Terminal</span></div>
+        <div class="nav-item">└─ <span onclick="openPreferences()">Settings</span></div>
     `;
 }
 
@@ -251,44 +280,38 @@ function handleHashNavigation() {
     loadPage(page, params.toString());
 }
 
-async function loadPage(pageName, args = '') {
+window.loadPage = function(pageName, args = '') {
     const pageBase = '/storage/internal/pages/main/';
-    if (!customConfig) customConfig = await loadYAML('/storage/data/custom.yaml');
-    if (customConfig && customConfig.customPages) {
-        let customPage = null;
-        for (const key in customConfig.customPages) {
-            const found = customConfig.customPages[key].sub.find(p => String(p.id) === String(pageName));
-            if (found) { customPage = found; break; }
-        }
-        
-        if (customPage) {
-            if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
-                pendingPage = { id: pageName, args: args };
-                document.getElementById('lock-window').style.display = 'flex';
-                return;
-            }
-
-            let pagePath = customPage.path;
-            if (pagePath.startsWith('~/')) {
-                pagePath = '/storage/internal/pages/custom/' + pagePath.substring(2);
-            }
-            const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
-            let pageType = typeInfo.type || 'raw';
-            if (pageType === 'refsection') pageType = 'section'; 
-
-            const iframe = document.getElementById('content-frame');
-            let targetUrl = '';
-            if (pageType === 'section' || pageType === 'interests') targetUrl = `${pageBase}custom.html${args ? '#' + args : ''}`;
-            else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(pagePath)}`;
-            else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
-            else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(pagePath)}`;
-            else if (pageType === 'html') targetUrl = pagePath;
-
-            iframe.src = targetUrl;
-            history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
+    const customPage = flatPagesMap[pageName];
+    
+    if (customPage && customPage.id !== 'home' && customPage.id !== 'blogs' && customPage.id !== 'projects' && customPage.id !== 'downloads') {
+        if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
+            pendingPage = { id: pageName, args: args };
+            document.getElementById('lock-window').style.display = 'flex';
             return;
         }
+
+        let pagePath = customPage.path.startsWith('~/') ? '/storage/internal/pages/custom/' + customPage.path.substring(2) : customPage.path;
+        const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
+        let pageType = typeInfo.type || 'raw';
+        if (pageType === 'refsection') pageType = 'section'; 
+
+        const iframe = document.getElementById('content-frame');
+        let targetUrl = '';
+        if (pageType === 'section' || pageType === 'interests') targetUrl = `${pageBase}custom.html${args ? '#' + args : ''}`;
+        else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(pagePath)}`;
+        else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
+        else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(pagePath)}`;
+        else if (pageType === 'html') targetUrl = pagePath;
+
+        iframe.src = targetUrl;
+        history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
+        return;
     }
+    
+    const iframe = document.getElementById('content-frame');
+    iframe.src = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
+    history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
 }
 
 window.checkLock = () => {
@@ -304,153 +327,246 @@ window.checkLock = () => {
         closeLockModal();
     } else alert("Incorrect.");
 }
-window.closeLockModal = () => { document.getElementById('lock-window').style.display = 'none'; document.getElementById('lock-input').value = ''; pendingPage = null; }
 
-window.openTerminal = () => {
-    const win = document.getElementById('terminal-window');
+window.closeLockModal = () => { 
+    document.getElementById('lock-window').style.display = 'none'; 
+    document.getElementById('lock-input').value = ''; 
+    pendingPage = null; 
+}
+
+window.openPreferences = () => {
+    const win = document.getElementById('settings-window');
     win.style.display = 'flex';
     win.style.zIndex = ++window.highestZ;
-    document.getElementById('term-input').focus();
+    document.getElementById('term-in').focus();
 };
-window.closeTerminal = () => { document.getElementById('terminal-window').style.display = 'none'; };
 
-function escapeHTML(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+window.closePreferences = () => {
+    document.getElementById('settings-window').style.display = 'none';
+};
+
+/* Terminal Engine */
+const termOut = document.getElementById('term-out');
+const termIn = document.getElementById('term-in');
+const termPrefix = document.getElementById('term-prefix');
+
+function updateTerminalPrefix() {
+    if (termPrefix) termPrefix.textContent = (isAdmin ? 'A' : 'U') + ' > github\\pages\\devicals > ';
+}
+
+function printToTerminal(text) {
+    termOut.textContent += `\n${text}`;
+    termOut.scrollTop = termOut.scrollHeight;
+}
 
 function setupTerminal() {
-    const termInput = document.getElementById('term-input');
-    const termOutput = document.getElementById('term-output');
-    
-    const print = (text, breakline = false) => {
-        const div = document.createElement('div');
-        div.innerHTML = escapeHTML(text).replace(/\n/g, '<br>');
-        termOutput.appendChild(div);
-        if (breakline) termOutput.appendChild(document.createElement('br'));
-        termOutput.scrollTop = termOutput.scrollHeight;
-    };
-
-    termInput.addEventListener('keydown', async (e) => {
+    if (!termIn) return;
+    termIn.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
-            const val = termInput.value.trim();
-            termInput.value = '';
-            if (!val) return;
+            const raw = termIn.value.trim();
+            termIn.value = '';
             
-            let maskedVal = val;
-            if (val.startsWith('user login ')) {
-                const parts = val.split(' ');
-                if (parts[2]) maskedVal = `user login ${'*'.repeat(parts[2].length)}`;
+            let displayCmd = raw;
+            if (raw.startsWith('user login ')) {
+                displayCmd = 'user login **********';
             }
             
-            const promptSymbol = isAdmin ? 'A' : 'U';
-            print(`${promptSymbol} > github\\pages\\devicals > ${maskedVal}`);
-            await processCommand(val, print);
+            printToTerminal(`\n${termPrefix.textContent} ${displayCmd}`);
+            if (raw) await executeTerminalCommand(raw);
         }
     });
 }
 
-async function processCommand(cmdLine, print) {
-    const args = cmdLine.split(' ');
+async function executeTerminalCommand(cmdStr) {
+    const args = cmdStr.split(' ');
     const cmd = args[0].toLowerCase();
-    const fullArgs = cmdLine.substring(cmd.length).trim();
-
-    switch(cmd) {
+    
+    switch (cmd) {
         case 'help':
-            print(`┌ HELP\n├ lists all commands,\n└ displays this message\n\n┌ USER\n├ displays current user information and/or\n│ perform admin login or logout actions\n│ usage: user [login <password> | logout]\n└ note: login password will be redacted as * in input\n\n┌ SOURCE\n└ origin > website source code\n\n┌ NAVIGATE\n├ navigate to a different page\n│ usage: navigate [path]\n│ example: navigate community/chitchat\n│          moves to 'Chits & Chats' page\n│ example: navigate extra/writing/books\n│          moves to 'Books' page\n└ aliases: nav\n\n┌ MESSAGE\n├ send a message in 'Chits & Chats'\n│ usage: message [user:<name>; msg:<message> | message:<message> badge*:<true|false>]\n│        username is optional | badge* is [A] admin only\n│ aliases: msg\n└ notes: drawings cannot be added via terminal\n\n┌ THEME\n├ manages current theme\n│ usage: theme [apply <theme> | index]\n└ aliases: c, color\n\n┌ PAGE\n├ show or hide @hidden pages\n│ [A] admin only\n└ usage: page [show | hide]\n\n┌ BROADCAST\n├ manages announcements\n│ [A] admin only\n│ usage: broadcast [create <message> | index | delete <indexID>]\n│        no arguments will default to 'index' argument\n└ aliases: bc`, true);
+            printToTerminal(`
+┌ HELP
+├ lists all commands,
+└ displays this message
+
+┌ USER
+├ displays current user information and/or
+│ perform admin login or logout actions
+│ usage: user [login <password> | logout]
+└ note: login password will be redacted as * in input history
+
+┌ SOURCE
+└ origin > website source code
+
+┌ NAVIGATE
+├ navigate to a different page
+│ usage: navigate [path]
+│ example: navigate chitchat
+│          moves to 'Chits & Chats' page
+└ aliases: nav
+
+┌ MESSAGE
+├ send a message in 'Chits & Chats'
+│ usage: message [user:<name>; msg:<message> | message:<message> badge*:<true|false>]
+│        username is optional | badge* is [A] admin only
+│ aliases: msg
+└ notes: drawings cannot be added via terminal
+
+┌ THEME
+├ manages current theme
+│ usage: theme <theme_name>
+└ aliases: c, color
+
+┌ PAGE
+├ show or hide @hidden pages
+│ [A] admin only
+└ usage: page [show | hide]
+
+┌ BROADCAST
+├ manages announcements
+│ [A] admin only
+│ usage: broadcast [create <message> | index | delete <indexID>]
+│        no arguments will default to 'index' argument
+└ aliases: bc`);
             break;
+            
         case 'user':
-            if (args[1] === 'login' && args[2]) {
-                const { error } = await supabaseClient.auth.signInWithPassword({ email: '3rr0r.d3v@gmail.com', password: args[2] });
-                if (error) print(`Error: ${error.message}`, true);
-                else print(`Successfully logged in as Administrator status`, true);
+            if (args[1] === 'login') {
+                const password = args.slice(2).join(' ');
+                if (!password) { printToTerminal("Error: missing password"); break; }
+                const { error } = await supabaseClient.auth.signInWithPassword({ email: '3rr0r.d3v@gmail.com', password });
+                if (error) printToTerminal("Login Failed: " + error.message);
+                else printToTerminal("Successfully logged in as Administrator status");
             } else if (args[1] === 'logout') {
                 await supabaseClient.auth.signOut();
-                print(`Logged out.`, true);
+                printToTerminal("Logged out.");
             } else {
-                print(`Current status: ${isAdmin ? 'Administrator' : 'User'}`, true);
+                printToTerminal(isAdmin ? "Current User: Administrator" : "Current User: Guest");
             }
             break;
+            
         case 'source':
-            window.open('https://github.com/devicals/devicals.github.io', '_blank');
-            print(`Opening source...`, true);
+            window.open('https://github.com/devicals/devicals.github.io');
+            printToTerminal("Opened source repository.");
             break;
-        case 'navigate':
+            
         case 'nav':
-            if (fullArgs) {
-                const parts = fullArgs.split('/');
-                const id = parts[parts.length - 1];
-                loadPage(id);
-                print(`Navigated to ${id}`, true);
+        case 'navigate':
+            const target = args[1];
+            if (!target) { printToTerminal("Usage: navigate <pageID>"); break; }
+            const pageId = target.split('/').pop();
+            if (flatPagesMap[pageId] || pageId === 'home' || pageId === 'blogs') {
+                loadPage(pageId);
+                printToTerminal(`Navigating to ${pageId}...`);
             } else {
-                print(`usage: navigate [path]`, true);
+                printToTerminal(`Error: Page '${pageId}' not found.`);
             }
             break;
-        case 'message':
-        case 'msg':
-            if (!fullArgs) { print(`usage: message [user:<name>; msg:<message>]`, true); break; }
-            let msgStr = fullArgs; let userStr = isAdmin ? 'Error Dev' : 'Anonymous';
-            if (fullArgs.includes('msg:')) {
-                const p = fullArgs.split('msg:');
-                msgStr = p[1].split('badge*:')[0].trim();
-                if (p[0].includes('user:')) userStr = p[0].split('user:')[1].replace(';','').trim() || userStr;
-            } else {
-                msgStr = fullArgs.split('badge*:')[0].trim();
-            }
-            const useBadge = isAdmin && fullArgs.includes('badge*:true');
-            const { error: msgErr } = await supabaseClient.from('guestbook').insert({ name: userStr, message: msgStr, is_creator: useBadge, ip_address: 'Hidden', country: 'Unknown', is_vpn: false });
-            if (msgErr) print(`Error: ${msgErr.message}`, true);
-            else print(`Message sent.`, true);
-            break;
-        case 'theme':
+            
         case 'c':
         case 'color':
-            if (args[1] === 'apply' && args[2]) {
-                changeTheme(args[2]); print(`Applied theme: ${args[2]}`, true);
-            } else if (args[1] === 'index') {
-                print(`Themes: vitesse-dark, original, evergreens, gruvbox, ice-world, purple-orange, orange-purple, pink-dream, cyberpunk, desert, custom`, true);
-            } else {
-                print(`usage: theme [apply <theme> | index]`, true);
-            }
+        case 'theme':
+            const t = args[1];
+            if (!t) { printToTerminal("Usage: theme <name>"); break; }
+            window.changeTheme(t);
+            printToTerminal(`Theme applied: ${t}`);
             break;
+            
         case 'page':
-            if (!isAdmin) { print(`Error: Insufficient privileges`, true); break; }
+            if (!isAdmin) { printToTerminal("Error: Insufficient privileges"); break; }
             if (args[1] === 'show') {
                 sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
-                loadCustomPages(); print(`Hidden pages revealed.`, true);
+                loadCustomPages();
+                printToTerminal("Hidden pages are now visible.");
             } else if (args[1] === 'hide') {
                 sessionStorage.removeItem('sidebar_expire');
-                loadCustomPages(); print(`Hidden pages hidden.`, true);
+                loadCustomPages();
+                printToTerminal("Hidden pages are now hidden.");
             } else {
-                print(`usage: page [show | hide]`, true);
+                printToTerminal("Usage: page [show | hide]");
             }
             break;
-        case 'broadcast':
+            
         case 'bc':
-            if (!isAdmin && args[1] !== 'index') { print(`Error: Insufficient privileges`, true); break; }
-            const mode = args[1] || 'index';
-            if (mode === 'index') {
-                if (currentAnnouncements.length === 0) print(`No announcements found.`, true);
-                else {
-                    let out = `Index of current announcements:\n`;
-                    currentAnnouncements.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
-                    print(out + `\nEnd`, true);
-                }
-            } else if (mode === 'create') {
-                const text = fullArgs.substring(6).trim();
-                if (!text) { print(`usage: bc create <message>`, true); break; }
-                const newList = [...currentAnnouncements, text];
+        case 'broadcast':
+            if (!isAdmin) { printToTerminal("Error: Insufficient privileges"); break; }
+            const subCmd = args[1] || 'index';
+            
+            if (subCmd === 'index') {
+                let out = "\nIndex of current announcements:\n";
+                if (currentAnnouncements.length === 0) out += "No announcements found.";
+                else currentAnnouncements.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
+                out += "\nEnd";
+                printToTerminal(out);
+            } else if (subCmd === 'create') {
+                const msg = args.slice(2).join(' ');
+                if (!msg) { printToTerminal("Error: empty message"); break; }
+                const newList = [...currentAnnouncements, msg];
                 await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
-                print(`Created announcement '${text}' at index ${newList.length}`, true);
-            } else if (mode === 'delete' && args[2]) {
-                const idx = parseInt(args[2]) - 1;
-                if (idx >= 0 && idx < currentAnnouncements.length) {
-                    const newList = currentAnnouncements.filter((_, i) => i !== idx);
-                    await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
-                    print(`Deleted announcement at index ${args[2]}`, true);
-                } else {
-                    print(`Error: Invalid index`, true);
-                }
+                printToTerminal(`Created announcement '${msg}' at index ${newList.length}\n\nUpdated index of current announcements:`);
+                newList.forEach((a, i) => printToTerminal(`${i + 1}. '${a}'`));
+                printToTerminal("\nEnd");
+            } else if (subCmd === 'delete') {
+                const delIdx = parseInt(args[2]) - 1;
+                if (isNaN(delIdx) || delIdx < 0 || delIdx >= currentAnnouncements.length) { printToTerminal("Error: invalid index"); break; }
+                const newList = currentAnnouncements.filter((_, i) => i !== delIdx);
+                await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
+                printToTerminal(`Deleted announcement at index ${delIdx + 1}`);
+            } else {
+                printToTerminal("Usage: broadcast [create <message> | index | delete <indexID>]");
             }
             break;
+            
+        case 'msg':
+        case 'message':
+            let fullStr = args.slice(1).join(' ');
+            if (!fullStr) { printToTerminal("Usage: message user:<name> msg:<message>"); break; }
+            
+            let uName = "Anonymous";
+            let msgText = fullStr;
+            let useBadge = false;
+
+            if (fullStr.includes('user:') && fullStr.includes('msg:')) {
+                const parts = fullStr.split('msg:');
+                uName = parts[0].replace('user:', '').replace(';', '').trim() || "Anonymous";
+                msgText = parts[1].trim();
+            } else if (fullStr.includes('message:')) {
+                msgText = fullStr.replace('message:', '').trim();
+            }
+            
+            if (msgText.includes('badge*:')) {
+                const bp = msgText.split('badge*:');
+                msgText = bp[0].trim();
+                useBadge = bp[1].trim() === 'true';
+            }
+
+            if (useBadge && !isAdmin) {
+                printToTerminal("Error: Cannot use badge*. Insufficient privileges.");
+                break;
+            }
+
+            const { data, error } = await supabaseClient.from('guestbook').insert({ 
+                name: uName, 
+                message: msgText, 
+                is_creator: useBadge,
+                ip_address: 'Hidden',
+                country: 'Unknown',
+                is_vpn: false
+            }).select('id').single();
+
+            if (error) {
+                printToTerminal("Error sending message: " + error.message);
+            } else {
+                if (data && data.id) {
+                    const localSaved = JSON.parse(localStorage.getItem('posted_messages') || '[]');
+                    localSaved.push(data.id);
+                    localStorage.setItem('posted_messages', JSON.stringify(localSaved));
+                }
+                printToTerminal(`Message sent to Chits & Chats as ${uName}.`);
+            }
+            break;
+
         default:
-            print(`Error: '${cmd}' is not recognized. Type 'help' for commands.`, true);
+            printToTerminal(`Command not found: ${cmd}. Type 'help' for a list of commands.`);
+            break;
     }
 }

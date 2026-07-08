@@ -234,8 +234,7 @@ function applyTheme(themeName, themeData = null) {
     }
 }
 
-function changeTheme(themeName) {
-    const customEditor = document.getElementById('custom-theme-editor');
+window.changeTheme = function(themeName) {
     if (themeName === 'custom') {
         const savedCustom = localStorage.getItem('custom-theme-data');
         if (!savedCustom) {
@@ -245,10 +244,7 @@ function changeTheme(themeName) {
         } else {
             applyTheme('custom', JSON.parse(savedCustom));
         }
-        if (customEditor) customEditor.style.display = 'block';
-        if (typeof loadCustomThemeEditor === 'function') loadCustomThemeEditor();
     } else {
-        if (customEditor) customEditor.style.display = 'none';
         applyTheme(themeName);
         localStorage.setItem('selected-theme', themeName);
     }

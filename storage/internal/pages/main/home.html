@@ -13,6 +13,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        ::-webkit-scrollbar { display: none !important; }
+        * { border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        
+        .desktop-area { position: absolute; inset: 0; overflow: hidden; }
+        
         .text-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; line-height: 1.4; color: hsl(var(--foreground)); }
         .text-line a { color: hsl(var(--foreground)); text-decoration: none; }
         .text-line a:hover { color: hsl(var(--accent)); }
@@ -20,7 +25,7 @@
         .admin-actions { display: none; gap: 6px; }
         body.is-admin .admin-actions { display: flex; }
         
-        .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
+        .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
         body.is-admin .add-row { display: flex; }
         
         .admin-edit-only { display: none; cursor: pointer; color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: normal; }
@@ -29,13 +34,13 @@
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--foreground) / 0.3); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
+        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
         .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
         .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; }
         .modal-close:hover { color: hsl(var(--destructive)); }
         .modal-body { display: flex; flex-direction: column; gap: 12px; }
-        .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--foreground) / 0.3); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
+        .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
         .modal textarea:focus { border-color: hsl(var(--accent)); }
     </style>
 </head>
@@ -210,7 +215,7 @@
                 const row = document.createElement('div');
                 row.className = 'text-line';
                 row.innerHTML = `
-                    <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'};">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
+                    <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
                     <div class="admin-actions">
                         <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">[✎]</button>
                         <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">[x]</button>
@@ -319,7 +324,6 @@
                 }
             } catch (e) {}
         }
-        function parseDate(d) { const p=d.split('/'); return new Date(p[2],p[1]-1,p[0]); }
 
         document.addEventListener('DOMContentLoaded', () => { initDatabase(); });
     </script>
