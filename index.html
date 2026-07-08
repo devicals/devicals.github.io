@@ -22,32 +22,32 @@
 
     <div id="desktop" class="desktop-area">
         <div class="ascii-window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
-            <div style="display: flex; align-items: center; height: 1px; margin-left: -1px; margin-right: -1px; width: calc(100% + 2px);">
-                <div style="height: 1px; width: 15px; background: hsl(var(--foreground));"></div>
-                <div id="nav-drag" style="padding: 0 8px; color: hsl(var(--accent)); font-weight: bold; cursor: move; transform: translateY(-50%); user-select: none;">nav</div>
-                <div style="height: 1px; flex: 1; background: hsl(var(--foreground));"></div>
+            <div class="ascii-header-row">
+                <div class="ascii-header-line" style="width: 15px;"></div>
+                <div id="nav-drag" class="ascii-title">nav</div>
+                <div class="ascii-header-line" style="flex: 1;"></div>
             </div>
             <div class="ascii-content nav-tree" id="nav-tree-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
         </div>
         
         <div class="ascii-window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
-            <div style="display: flex; align-items: center; height: 1px; margin-left: -1px; margin-right: -1px; width: calc(100% + 2px);">
-                <div style="height: 1px; width: 15px; background: hsl(var(--foreground));"></div>
-                <div id="ann-drag" style="padding: 0 8px; color: hsl(var(--accent)); font-weight: bold; cursor: move; transform: translateY(-50%); user-select: none;">notice</div>
-                <div style="height: 1px; flex: 1; background: hsl(var(--foreground));"></div>
-                <div style="padding: 0 8px; transform: translateY(-50%); cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: bold;" onclick="closeAnnouncement()">x</div>
-                <div style="height: 1px; width: 10px; background: hsl(var(--foreground));"></div>
+            <div class="ascii-header-row">
+                <div class="ascii-header-line" style="width: 15px;"></div>
+                <div id="ann-drag" class="ascii-title">notice</div>
+                <div class="ascii-header-line" style="flex: 1;"></div>
+                <div class="ascii-close-btn" onclick="closeAnnouncement()">x</div>
+                <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" id="announcement-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
         </div>
 
         <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 300px; z-index: 105; display:none;">
-            <div style="display: flex; align-items: center; height: 1px; margin-left: -1px; margin-right: -1px; width: calc(100% + 2px);">
-                <div style="height: 1px; width: 15px; background: hsl(var(--foreground));"></div>
-                <div id="set-drag" style="padding: 0 8px; color: hsl(var(--accent)); font-weight: bold; cursor: move; transform: translateY(-50%); user-select: none;">settings.ini</div>
-                <div style="height: 1px; flex: 1; background: hsl(var(--foreground));"></div>
-                <div style="padding: 0 8px; transform: translateY(-50%); cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: bold;" onclick="closePreferences()">x</div>
-                <div style="height: 1px; width: 10px; background: hsl(var(--foreground));"></div>
+            <div class="ascii-header-row">
+                <div class="ascii-header-line" style="width: 15px;"></div>
+                <div id="set-drag" class="ascii-title">settings.ini</div>
+                <div class="ascii-header-line" style="flex: 1;"></div>
+                <div class="ascii-close-btn" onclick="closePreferences()">x</div>
+                <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
                 <div style="margin-bottom: 15px;">
@@ -70,12 +70,12 @@
         </div>
 
         <div class="ascii-window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
-            <div style="display: flex; align-items: center; height: 1px; margin-left: -1px; margin-right: -1px; width: calc(100% + 2px);">
-                <div style="height: 1px; width: 15px; background: hsl(var(--foreground));"></div>
-                <div id="lock-drag" style="padding: 0 8px; color: hsl(var(--accent)); font-weight: bold; cursor: move; transform: translateY(-50%); user-select: none;">auth_required.exe</div>
-                <div style="height: 1px; flex: 1; background: hsl(var(--foreground));"></div>
-                <div style="padding: 0 8px; transform: translateY(-50%); cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: bold;" onclick="closeLockModal()">x</div>
-                <div style="height: 1px; width: 10px; background: hsl(var(--foreground));"></div>
+            <div class="ascii-header-row">
+                <div class="ascii-header-line" style="width: 15px;"></div>
+                <div id="lock-drag" class="ascii-title">auth_required.exe</div>
+                <div class="ascii-header-line" style="flex: 1;"></div>
+                <div class="ascii-close-btn" onclick="closeLockModal()">x</div>
+                <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
                 <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">

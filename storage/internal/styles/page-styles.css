@@ -38,29 +38,35 @@ a:hover { color: hsl(var(--accent)); text-decoration: underline; }
 
 .project-tabs {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 16px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
+    border-bottom: 1px solid hsl(var(--border) / 0.5);
 }
 .project-tab {
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    color: hsl(var(--foreground));
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: hsl(var(--muted-foreground));
     padding: 8px 16px;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .project-tab:hover {
-    border-color: hsl(var(--accent));
     color: hsl(var(--accent));
+    border-bottom-color: hsl(var(--accent) / 0.5);
+    background: linear-gradient(to top, hsl(var(--accent) / 0.05), transparent 80%);
 }
 .project-tab.active {
-    background: hsl(var(--accent) / 0.1);
-    border-color: hsl(var(--accent));
     color: hsl(var(--accent));
+    border-bottom-color: hsl(var(--accent));
+    background: linear-gradient(to top, hsl(var(--accent) / 0.15), transparent);
 }
 .tab-content {
     display: none;

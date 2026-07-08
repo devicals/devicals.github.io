@@ -291,9 +291,6 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         win = document.createElement('div');
         win.id = id;
         win.className = 'ascii-window';
-        win.style.left = bounds.left;
-        win.style.top = bounds.top;
-        win.style.width = bounds.width;
         
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
@@ -301,24 +298,29 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         if (page !== 'home') win.style.display = 'none';
         
         document.getElementById('desktop').appendChild(win);
-        if (window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
     }
+
+    if (bounds.left !== undefined) { win.style.left = bounds.left; win.style.right = 'auto'; }
+    if (bounds.right !== undefined) { win.style.right = bounds.right; win.style.left = 'auto'; }
+    if (bounds.top !== undefined) { win.style.top = bounds.top; win.style.bottom = 'auto'; }
+    if (bounds.bottom !== undefined) { win.style.bottom = bounds.bottom; win.style.top = 'auto'; }
+    if (bounds.width) win.style.width = bounds.width;
     
     win.innerHTML = `
-        <div style="display: flex; align-items: center; height: 1px; margin-left: -1px; margin-right: -1px; width: calc(100% + 2px);">
-            <div style="height: 1px; width: 15px; background: hsl(var(--foreground));"></div>
-            <div id="${id}-drag" style="padding: 0 8px; color: hsl(var(--accent)); font-weight: bold; cursor: move; transform: translateY(-50%); user-select: none;">${title}</div>
-            ${adminControls ? `<div style="transform: translateY(-50%);">${adminControls}</div>` : ''}
-            <div style="height: 1px; flex: 1; background: hsl(var(--foreground));"></div>
-            ${rightContent ? `<div style="padding: 0 8px; transform: translateY(-50%); font-size: 12px; color: hsl(var(--muted-foreground));">${rightContent}</div>` : ''}
-            <div style="height: 1px; width: 10px; background: hsl(var(--foreground));"></div>
+        <div class="ascii-header-row">
+            <div class="ascii-header-line" style="width: 15px;"></div>
+            <div id="${id}-drag" class="ascii-title">${title}</div>
+            ${adminControls ? `<div class="ascii-admin-controls">${adminControls}</div>` : ''}
+            <div class="ascii-header-line" style="flex: 1;"></div>
+            ${rightContent ? `<div class="ascii-right-content">${rightContent}</div>` : ''}
+            <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
         <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
             ${contentHTML}
         </div>
     `;
     
-    if (!isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
+    if (window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
     return win;
 }
 
@@ -326,7 +328,7 @@ async function renderHomePage() {
     if (!homeData) return;
 
     let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
-    createWindow('win-bio', 'about me', '', bioHTML, {left: '320px', top: '120px', width: '450px'}, 
+    createWindow('win-bio', 'about me', '', bioHTML, {left: '320px', top: '20px', width: '450px'}, 
         `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
 
     let skillsHTML = `<div class="add-row">
@@ -334,7 +336,7 @@ async function renderHomePage() {
         <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
         <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
     </div><div id="skills-list"></div>`;
-    createWindow('win-skills', 'skills', '', skillsHTML, {left: '800px', top: '550px', width: '450px'});
+    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '20px', width: '380px'});
     renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
 
     let socialsHTML = `<div class="add-row">
@@ -344,7 +346,7 @@ async function renderHomePage() {
     </div>
     <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
     <div id="socials-list" style="margin-top:10px;"></div>`;
-    createWindow('win-socials', 'socials', '', socialsHTML, {left: '460px', top: '550px', width: '300px'});
+    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '20px', width: '300px'});
     renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
     refreshDiscordUI();
 
@@ -446,17 +448,16 @@ async function loadLatestBlogPreview() {
             });
             const latest = sortedBlogs[0];
             const temp = document.createElement('div'); temp.innerHTML = marked.parse(latest.content);
-            let ext = (temp.textContent || "").trim();
-            if (ext.length > 100) ext = ext.substring(0, 100) + "...";
+            const ext = temp.innerHTML;
             
             const dateDisplay = latest.date.replace(/\//g, '-');
             
             createWindow('win-blog', 'latest blog', dateDisplay, `
                 <div style="cursor: pointer; line-height: 1.6;" onclick="window.location.hash = 'page=blogs&id=${latest.id}'">
-                    <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:8px;">${latest.title}</div>
+                    <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
                     <div style="color:hsl(var(--foreground));">${ext}</div>
                 </div>
-            `, {left: '800px', top: '20px', width: '450px'});
+            `, {right: '20px', top: '20px', width: '500px'});
         }
     } catch (e) {}
 }
@@ -468,12 +469,12 @@ async function loadCustomPages() {
     const container = document.getElementById('nav-tree-content');
     container.innerHTML = `
         <div class="nav-folder">Main/</div>
-        <div class="nav-item">├─ <span onclick="loadPage('home')">Home</span></div>
-        <div class="nav-item">└─ <span onclick="loadPage('blogs')">Blogs</span></div>
+        <div class="nav-item">├─ <a href="#page=home">Home</a></div>
+        <div class="nav-item">└─ <a href="#page=blogs">Blogs</a></div>
         <br>
         <div class="nav-folder">Content/</div>
-        <div class="nav-item">├─ <span onclick="loadPage('projects')">Projects</span></div>
-        <div class="nav-item">└─ <span onclick="loadPage('downloads')">Downloads</span></div>
+        <div class="nav-item">├─ <a href="#page=projects">Projects</a></div>
+        <div class="nav-item">└─ <a href="#page=downloads">Downloads</a></div>
         <br>
     `;
 
@@ -496,9 +497,9 @@ async function loadCustomPages() {
             const isLast = index === visibleSub.length - 1;
             const prefix = isLast ? '└─ ' : '├─ ';
             
-            const link = document.createElement('span');
+            const link = document.createElement('a');
+            link.href = `#page=${page.id}`;
             link.textContent = page.display || page.name;
-            link.onclick = () => loadPage(page.id);
 
             item.appendChild(document.createTextNode(prefix));
             item.appendChild(link);
@@ -509,7 +510,7 @@ async function loadCustomPages() {
 
     container.innerHTML += `
         <div class="nav-folder">System/</div>
-        <div class="nav-item">└─ <span onclick="openPreferences()">Settings</span></div>
+        <div class="nav-item">└─ <span class="fake-link" onclick="openPreferences()">Settings</span></div>
     `;
 }
 

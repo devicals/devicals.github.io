@@ -143,14 +143,6 @@
         body.is-admin .project-card {
             cursor: grab;
         }
-        .admin-tab-actions {
-            display: none;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-        body.is-admin .admin-tab-actions {
-            display: flex;
-        }
     </style>
 </head>
 <body>
@@ -158,12 +150,6 @@
         <h1 class="page-title">Projects</h1>
         
         <div class="project-tabs" id="project-tabs"></div>
-
-        <div class="admin-tab-actions">
-            <button class="admin-btn" onclick="renameActiveTab()">Rename Active Tab</button>
-            <button class="admin-btn danger-btn" onclick="deleteActiveTab()">Delete Active Tab</button>
-            <button class="admin-btn" onclick="createNewTab()">+ Create New Tab</button>
-        </div>
 
         <div id="add-project-container">
             <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddProjectModal()">+ Create New Project Card</button>
@@ -186,6 +172,22 @@
             </div>
         </div>
     </div>
+
+    <div id="tab-edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Tab</h2>
+                <button class="modal-close" onclick="closeTabEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="tab-name-input" placeholder="Tab Name">
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn-primary" onclick="saveTabEdit()" style="flex: 1;">Save</button>
+                    <button class="btn-primary" onclick="deleteActiveTab()" style="background: hsl(var(--destructive)) !important; border-color: hsl(var(--destructive)) !important;">Delete Tab</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script>
         const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
@@ -198,6 +200,7 @@
         let isAdmin = false;
         let activeEditIdx = null;
         let dragItemIdx = null;
+        let editingTabKey = null;
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -264,12 +267,38 @@
             Object.keys(tabs).forEach(tabKey => {
                 const tabData = tabs[tabKey];
                 const tabBtn = document.createElement('button');
-                tabBtn.className = 'project-tab';
-                tabBtn.textContent = tabData.display;
-                tabBtn.onclick = () => switchTab(tabKey);
+                tabBtn.className = `project-tab ${currentTab === tabKey ? 'active' : ''}`;
                 tabBtn.dataset.tab = tabKey;
+                
+                const titleSpan = document.createElement('span');
+                titleSpan.textContent = tabData.display;
+                titleSpan.onclick = () => switchTab(tabKey);
+                tabBtn.appendChild(titleSpan);
+
+                if (isAdmin) {
+                    const editBtn = document.createElement('span');
+                    editBtn.className = 'admin-action-btn';
+                    editBtn.innerHTML = '✎';
+                    editBtn.style.position = 'relative';
+                    editBtn.style.top = 'auto';
+                    editBtn.style.left = 'auto';
+                    editBtn.style.right = 'auto';
+                    editBtn.style.marginLeft = '8px';
+                    editBtn.style.display = 'block';
+                    editBtn.style.padding = '2px 6px';
+                    editBtn.onclick = (e) => { e.stopPropagation(); openTabEditModal(tabKey); };
+                    tabBtn.appendChild(editBtn);
+                }
                 tabsContainer.appendChild(tabBtn);
             });
+
+            if (isAdmin) {
+                const addBtn = document.createElement('button');
+                addBtn.className = 'project-tab';
+                addBtn.innerHTML = '<span>+ Create New Tab</span>';
+                addBtn.onclick = createNewTab;
+                tabsContainer.appendChild(addBtn);
+            }
 
             const container = document.getElementById('tab-container');
             container.innerHTML = '';
@@ -364,22 +393,33 @@
             await syncToSupabase();
         };
 
-        window.renameActiveTab = async () => {
-            if (!currentTab || !projectsData.tabs[currentTab]) return;
-            const newName = prompt("Rename active tab to:", projectsData.tabs[currentTab].display);
-            if (newName && newName.trim() !== '') {
-                projectsData.tabs[currentTab].display = newName.trim();
+        window.openTabEditModal = (tabKey) => {
+            editingTabKey = tabKey;
+            document.getElementById('tab-name-input').value = projectsData.tabs[tabKey].display;
+            document.getElementById('tab-edit-modal').classList.add('active');
+        };
+
+        window.closeTabEditModal = () => {
+            document.getElementById('tab-edit-modal').classList.remove('active');
+        };
+
+        window.saveTabEdit = async () => {
+            const newName = document.getElementById('tab-name-input').value.trim();
+            if (newName) {
+                projectsData.tabs[editingTabKey].display = newName;
                 await syncToSupabase();
+                closeTabEditModal();
             }
         };
 
         window.deleteActiveTab = async () => {
-            if (!currentTab || !projectsData.tabs[currentTab]) return;
-            if (!confirm(`Are you sure you want to delete the tab "${projectsData.tabs[currentTab].display}" and all of its project cards?`)) return;
-            
-            delete projectsData.tabs[currentTab];
-            currentTab = Object.keys(projectsData.tabs)[0] || null;
+            if (!confirm(`Delete tab "${projectsData.tabs[editingTabKey].display}"?`)) return;
+            delete projectsData.tabs[editingTabKey];
+            if (currentTab === editingTabKey) {
+                currentTab = Object.keys(projectsData.tabs)[0] || null;
+            }
             await syncToSupabase();
+            closeTabEditModal();
         };
 
         window.openAddProjectModal = () => {
