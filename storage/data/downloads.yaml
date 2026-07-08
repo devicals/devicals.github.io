@@ -2,7 +2,7 @@ downloads:
   - id: 1
     name: "Website Source Code"
     description: "Error Dev's custom HTML/CSS/JS portfolio website"
-    url: https://github.com/devicals/devicals.github.io
+    url: https://github.com/devicals/devicals.github.io/archive/refs/heads/main.zip
     
   - id: 2
     name: "MC Badges Pack"
