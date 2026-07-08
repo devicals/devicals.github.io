@@ -14,6 +14,20 @@ window.highestZ = 100;
 const homeWindows = ['win-bio', 'win-skills', 'win-socials', 'win-blog'];
 
 document.addEventListener('DOMContentLoaded', async () => {
+    ['nav-window', 'announcement-window', 'settings-window', 'lock-window'].forEach(id => {
+        const savedPos = localStorage.getItem('win_pos_' + id);
+        if (savedPos) {
+            const win = document.getElementById(id);
+            if (win) {
+                const pos = JSON.parse(savedPos);
+                win.style.top = pos.top;
+                win.style.left = pos.left;
+                win.style.bottom = 'auto';
+                win.style.right = 'auto';
+            }
+        }
+    });
+
     makeDraggable('nav-window', 'nav-drag');
     makeDraggable('announcement-window', 'ann-drag');
     makeDraggable('settings-window', 'set-drag');
@@ -55,6 +69,9 @@ function makeDraggable(winId, handleId) {
         pos3 = clientX; pos4 = clientY;
         win.style.top = (win.offsetTop - pos2) + "px";
         win.style.left = (win.offsetLeft - pos1) + "px";
+        win.style.bottom = 'auto';
+        win.style.right = 'auto';
+        localStorage.setItem('win_pos_' + winId, JSON.stringify({top: win.style.top, left: win.style.left}));
     }
 
     function closeDragElement() {
@@ -231,7 +248,14 @@ function applyAnnouncements(data) {
         win.style.display = 'none';
         return;
     }
-    if(sessionStorage.getItem('announcement-closed') !== 'true') win.style.display = 'flex';
+    if(sessionStorage.getItem('announcement-closed') !== 'true') {
+        win.style.display = 'flex';
+        setTimeout(() => {
+            if (win.style.display !== 'none') {
+                closeAnnouncement();
+            }
+        }, 10000);
+    }
     
     displayAnnouncement(0, currentAnnouncements);
     if (announcementInterval) clearInterval(announcementInterval);
@@ -300,11 +324,21 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         document.getElementById('desktop').appendChild(win);
     }
 
-    if (bounds.left !== undefined) { win.style.left = bounds.left; win.style.right = 'auto'; }
-    if (bounds.right !== undefined) { win.style.right = bounds.right; win.style.left = 'auto'; }
-    if (bounds.top !== undefined) { win.style.top = bounds.top; win.style.bottom = 'auto'; }
-    if (bounds.bottom !== undefined) { win.style.bottom = bounds.bottom; win.style.top = 'auto'; }
-    if (bounds.width) win.style.width = bounds.width;
+    const savedPos = localStorage.getItem('win_pos_' + id);
+    if (savedPos) {
+        const pos = JSON.parse(savedPos);
+        win.style.top = pos.top;
+        win.style.left = pos.left;
+        win.style.bottom = 'auto';
+        win.style.right = 'auto';
+        if (bounds.width) win.style.width = bounds.width;
+    } else {
+        if (bounds.left !== undefined) { win.style.left = bounds.left; win.style.right = 'auto'; }
+        if (bounds.right !== undefined) { win.style.right = bounds.right; win.style.left = 'auto'; }
+        if (bounds.top !== undefined) { win.style.top = bounds.top; win.style.bottom = 'auto'; }
+        if (bounds.bottom !== undefined) { win.style.bottom = bounds.bottom; win.style.top = 'auto'; }
+        if (bounds.width) win.style.width = bounds.width;
+    }
     
     win.innerHTML = `
         <div class="ascii-header-row">
@@ -320,7 +354,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         </div>
     `;
     
-    if (window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
+    if (isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
     return win;
 }
 
@@ -634,4 +668,13 @@ window.openPreferences = () => {
 
 window.closePreferences = () => {
     document.getElementById('settings-window').style.display = 'none';
+};
+
+window.resetWindowPositions = function() {
+    Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('win_pos_')) {
+            localStorage.removeItem(key);
+        }
+    });
+    location.reload();
 };

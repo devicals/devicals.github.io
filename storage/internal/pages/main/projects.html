@@ -380,15 +380,27 @@
             const name = prompt("Enter new tab name:");
             if (!name) return;
             const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-            if (projectsData.tabs[key]) {
+            if (projectsData.tabs && projectsData.tabs[key]) {
                 alert("A tab with that name already exists!");
                 return;
             }
             if (!projectsData.tabs) projectsData.tabs = {};
-            projectsData.tabs[key] = {
-                display: name,
-                projects: []
-            };
+            
+            const newTabs = {};
+            const keys = Object.keys(projectsData.tabs);
+            
+            if (keys.length === 0 || !currentTab) {
+                newTabs[key] = { display: name, projects: [] };
+            } else {
+                for (const k of keys) {
+                    newTabs[k] = projectsData.tabs[k];
+                    if (k === currentTab) {
+                        newTabs[key] = { display: name, projects: [] };
+                    }
+                }
+            }
+            
+            projectsData.tabs = newTabs;
             currentTab = key;
             await syncToSupabase();
         };

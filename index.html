@@ -30,7 +30,7 @@
             <div class="ascii-content nav-tree" id="nav-tree-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
         </div>
         
-        <div class="ascii-window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
+        <div class="ascii-window" id="announcement-window" style="left: 20px; bottom: 20px; top: auto; width: 450px; z-index: 101; display:none;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="ann-drag" class="ascii-title">notice</div>
@@ -52,7 +52,8 @@
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
                 <div style="margin-bottom: 15px;">
                     <select id="theme-select" class="ascii-input" onchange="changeTheme(this.value)">
-                        <option value="original">Original (Default)</option>
+                        <option value="default">Default</option>
+                        <option value="original">Original</option>
                         <option value="vitesse-dark">Vitesse Dark</option>
                         <option value="evergreens">Evergreens</option>
                         <option value="gruvbox">Gruvbox</option>
@@ -62,10 +63,12 @@
                         <option value="pink-dream">Pink Dream</option>
                         <option value="cyberpunk">Cyberpunk</option>
                         <option value="desert">Desert</option>
-                        <option value="custom">Custom</option>
                     </select>
                 </div>
                 <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px;"></div>
+                <div style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px; margin-top: 15px;">
+                    <button class="ascii-btn" onclick="resetWindowPositions()" style="width: 100%; border: 1px solid hsl(var(--border)); padding: 6px;">[ Reset Window Positions ]</button>
+                </div>
             </div>
         </div>
 

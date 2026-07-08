@@ -21,24 +21,24 @@ const themes = {
         ring: "160 100% 70%"
     },
     original: {
-        background: "246 13% 30%",
-        foreground: "0 0% 98%",
-        card: "246 13% 25%",
-        cardForeground: "0 0% 98%",
-        popover: "246 13% 30%",
-        popoverForeground: "0 0% 98%",
-        primary: "0 0% 98%",
-        primaryForeground: "246 13% 30%",
-        secondary: "246 13% 20%",
-        secondaryForeground: "0 0% 98%",
-        muted: "246 13% 20%",
-        mutedForeground: "240 5% 64.9%",
+        background: "246 13% 8%",
+        foreground: "0 0% 95%",
+        card: "246 13% 10%",
+        cardForeground: "0 0% 95%",
+        popover: "246 13% 8%",
+        popoverForeground: "0 0% 95%",
+        primary: "342 82% 73%",
+        primaryForeground: "246 13% 8%",
+        secondary: "246 13% 6%",
+        secondaryForeground: "0 0% 95%",
+        muted: "246 13% 12%",
+        mutedForeground: "246 13% 65%",
         accent: "342 82% 73%",
-        accentForeground: "0 0% 98%",
-        destructive: "0 62.8% 30.6%",
+        accentForeground: "0 0% 0%",
+        destructive: "0 63% 31%",
         destructiveForeground: "0 0% 98%",
-        border: "246 13% 40%",
-        input: "246 13% 20%",
+        border: "246 13% 20%",
+        input: "246 13% 6%",
         ring: "342 82% 73%"
     },
     "vitesse-dark": {
@@ -232,8 +232,6 @@ const themes = {
     }
 };
 
-let currentColorMode = 'hex';
-
 function applyTheme(themeName, themeData = null) {
     const theme = themeData || themes[themeName] || themes.default;
     const root = document.documentElement;
@@ -256,24 +254,8 @@ function applyTheme(themeName, themeData = null) {
 }
 
 function changeTheme(themeName) {
-    const customEditor = document.getElementById('custom-theme-editor');
-    
-    if (themeName === 'custom') {
-        const savedCustom = localStorage.getItem('custom-theme-data');
-        if (!savedCustom) {
-            const currentColors = getCurrentTheme();
-            localStorage.setItem('custom-theme-data', JSON.stringify(currentColors));
-            applyTheme('custom', currentColors);
-        } else {
-            applyTheme('custom', JSON.parse(savedCustom));
-        }
-        if (customEditor) customEditor.style.display = 'block';
-        if (typeof loadCustomThemeEditor === 'function') loadCustomThemeEditor();
-    } else {
-        if (customEditor) customEditor.style.display = 'none';
-        applyTheme(themeName);
-        localStorage.setItem('selected-theme', themeName);
-    }
+    applyTheme(themeName);
+    localStorage.setItem('selected-theme', themeName);
 }
 
 function getCurrentTheme() {
@@ -287,22 +269,11 @@ function getCurrentTheme() {
 }
 
 const savedTheme = localStorage.getItem('selected-theme') || 'default';
-if (savedTheme === 'custom') {
-    const savedCustom = localStorage.getItem('custom-theme-data');
-    if (savedCustom) applyTheme('custom', JSON.parse(savedCustom));
-    else applyTheme('default');
-} else {
-    applyTheme(savedTheme);
-}
+applyTheme(savedTheme);
 
 window.addEventListener('message', (e) => {
     if (e.data === 'iframe-loaded') {
         const current = localStorage.getItem('selected-theme') || 'default';
-        if (current === 'custom') {
-            const data = localStorage.getItem('custom-theme-data');
-            if (data) applyTheme('custom', JSON.parse(data));
-        } else {
-            applyTheme(current);
-        }
+        applyTheme(current);
     }
 });
