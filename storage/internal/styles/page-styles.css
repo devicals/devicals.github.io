@@ -250,3 +250,147 @@ a:hover {
         margin-bottom: 20px;
     }
 }
+
+:root {
+    --background: 246 13% 5%;
+    --foreground: 160 50% 80%;
+    --card: 246 13% 5%;
+    --card-foreground: 160 50% 80%;
+    --accent: 160 100% 70%;
+    --accent-foreground: 0 0% 0%;
+    --border: 160 50% 50%;
+    --muted-foreground: 160 30% 50%;
+    --destructive: 0 80% 60%;
+}
+
+::-webkit-scrollbar { display: none !important; }
+* { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
+
+body {
+    font-family: 'JetBrains Mono', monospace;
+    background: transparent;
+    color: hsl(var(--foreground));
+    padding: 20px;
+    line-height: 1.6;
+}
+
+a { color: hsl(var(--foreground)); text-decoration: none; }
+a:hover { color: hsl(var(--accent)); text-decoration: underline; }
+
+.page-container { max-width: 1200px; margin: 0 auto; }
+.page-title { font-size: 24px; margin-bottom: 24px; color: hsl(var(--accent)); font-weight: 700; text-transform: uppercase; }
+
+.card, .blog-post, .download-card, .project-card, .stat-card {
+    background: rgba(5,5,5,0.85);
+    border: 1px solid hsl(var(--foreground) / 0.3);
+    padding: 20px;
+    margin-bottom: 15px;
+}
+.blog-header { border-bottom: 1px dashed hsl(var(--foreground) / 0.3); padding-bottom: 10px; margin-bottom: 10px; }
+
+.desktop-area {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    width: 100%; height: 100vh;
+}
+
+.ascii-window {
+    position: absolute;
+    border: 1px solid hsl(var(--foreground) / 0.3);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: hsl(var(--foreground));
+    font-size: 13px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+}
+
+.ascii-corner {
+    position: absolute;
+    color: hsl(var(--foreground) / 0.5);
+    font-size: 14px;
+    line-height: 1;
+    background: #050505;
+}
+.ascii-corner.tl { top: -6px; left: -4px; padding: 2px; }
+.ascii-corner.tr { top: -6px; right: -4px; padding: 2px; }
+.ascii-corner.bl { bottom: -6px; left: -4px; padding: 2px; }
+.ascii-corner.br { bottom: -6px; right: -4px; padding: 2px; }
+
+.ascii-title-container {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    background: #050505;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ascii-title {
+    color: hsl(var(--accent));
+    cursor: move;
+    user-select: none;
+    font-weight: 600;
+}
+
+.ascii-right-container {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: #050505;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: hsl(var(--muted-foreground));
+    font-size: 12px;
+}
+
+.ascii-close {
+    cursor: pointer;
+    color: hsl(var(--muted-foreground));
+    font-weight: 600;
+}
+.ascii-close:hover { color: hsl(var(--destructive)); }
+
+.ascii-content {
+    margin-top: 5px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    line-height: 1.6;
+}
+
+.ascii-input {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid hsl(var(--foreground) / 0.3);
+    color: hsl(var(--foreground));
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    width: 100%;
+}
+.ascii-input:focus { border-color: hsl(var(--accent)); }
+
+.ascii-btn {
+    background: none;
+    border: none;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+}
+.ascii-btn:hover { color: hsl(var(--accent)); }
+.ascii-btn.del:hover { color: hsl(var(--destructive)); }
+
+@media (max-width: 768px) {
+    .desktop-area { overflow-y: auto; position: relative; padding: 20px; height: auto; display: flex; flex-direction: column; gap: 20px; }
+    .ascii-window { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; transform: none !important; }
+}

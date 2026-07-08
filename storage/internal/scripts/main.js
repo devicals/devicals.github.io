@@ -31,7 +31,7 @@ function makeDraggable(winId, handleId) {
     handle.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
         e.preventDefault();
         win.style.zIndex = ++window.highestZ;
         if (e.type === 'touchstart') {
@@ -130,8 +130,8 @@ function renderLoginPortal() {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
         <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ADMIN LOGIN</label>
-        <input type="text" id="admin-email-field" class="ascii-input" style="width:100%; margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
-        <input type="password" id="admin-password-field" class="ascii-input" style="width:100%; margin-bottom:8px;" placeholder="Password">
+        <input type="text" id="admin-email-field" class="ascii-input" style="margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
+        <input type="password" id="admin-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
         <button class="ascii-btn" style="color:hsl(var(--accent));" onclick="submitAdminLogin()">[ Login ]</button>
     `;
 }
@@ -152,7 +152,7 @@ function renderAdminPortal(email) {
             <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
         </div>
         
-        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px; margin-bottom:15px;">
+        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
                 <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
@@ -160,7 +160,7 @@ function renderAdminPortal(email) {
             </div>
         </div>
 
-        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px;">
+        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
             <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
             <div style="display:flex; gap:6px; align-items:center;">
@@ -263,12 +263,12 @@ async function loadCustomPages() {
     const container = document.getElementById('nav-tree-content');
     container.innerHTML = `
         <div class="nav-folder">Main/</div>
-        <div class="nav-item">├─ <a href="#page=home" onclick="loadPage('home')">Home</a></div>
-        <div class="nav-item">└─ <a href="#page=blogs" onclick="loadPage('blogs')">Blogs</a></div>
+        <div class="nav-item">├─ <a href="javascript:void(0)" onclick="loadPage('home')">Home</a></div>
+        <div class="nav-item">└─ <a href="javascript:void(0)" onclick="loadPage('blogs')">Blogs</a></div>
         <br>
         <div class="nav-folder">Content/</div>
-        <div class="nav-item">├─ <a href="#page=projects" onclick="loadPage('projects')">Projects</a></div>
-        <div class="nav-item">└─ <a href="#page=downloads" onclick="loadPage('downloads')">Downloads</a></div>
+        <div class="nav-item">├─ <a href="javascript:void(0)" onclick="loadPage('projects')">Projects</a></div>
+        <div class="nav-item">└─ <a href="javascript:void(0)" onclick="loadPage('downloads')">Downloads</a></div>
         <br>
     `;
 
@@ -292,7 +292,7 @@ async function loadCustomPages() {
             const prefix = isLast ? '└─ ' : '├─ ';
             
             const link = document.createElement('a');
-            link.href = `#page=${page.id}`;
+            link.href = "javascript:void(0)";
             link.textContent = page.display || page.name;
             link.onclick = (e) => { e.preventDefault(); loadPage(page.id); };
 
@@ -305,7 +305,7 @@ async function loadCustomPages() {
 
     container.innerHTML += `
         <div class="nav-folder">System/</div>
-        <div class="nav-item">└─ <a href="#" onclick="openPreferences()">Settings</a></div>
+        <div class="nav-item">└─ <a href="javascript:void(0)" onclick="openPreferences()">Settings</a></div>
     `;
 }
 
@@ -389,5 +389,11 @@ window.closeLockModal = () => {
     pendingPage = null; 
 }
 
-window.openPreferences = () => document.getElementById('settings-window').style.display = 'flex';
-window.closePreferences = () => document.getElementById('settings-window').style.display = 'none';
+window.openPreferences = () => {
+    document.getElementById('settings-window').style.display = 'flex';
+    document.getElementById('settings-window').style.zIndex = ++window.highestZ;
+};
+
+window.closePreferences = () => {
+    document.getElementById('settings-window').style.display = 'none';
+};

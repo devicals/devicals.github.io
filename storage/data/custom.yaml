@@ -53,20 +53,7 @@ customPages:
         type:
           type: refsection
           refid: writing
-  
-  archive:
-    display: "Archives"
-    sub:
-      - id: oricde
-        name: "Oricade Songs"
-        path: ~/oricade.yaml
-        type:
-          type: gallery
-        hidden: true
-
-  other:
-    display: "Other"
-    sub:
+          
       - id: funcgen
         name: "Function Generator"
         path: ~/function_generator.html
@@ -91,3 +78,13 @@ customPages:
         path: ~/zato.html
         type:
           type: html
+
+  archive:
+    display: "Archives"
+    sub:
+      - id: oricde
+        name: "Oricade Songs"
+        path: ~/oricade.yaml
+        type:
+          type: gallery
+        hidden: true
