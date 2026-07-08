@@ -161,9 +161,10 @@
             }
             
             win.innerHTML = `
+                <div class="ascii-drag-handle" id="${id}-drag"></div>
                 <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
                 <div class="ascii-title-container">
-                    <span class="ascii-title" id="${id}-drag">${title}</span>
+                    <span class="ascii-title">${title}</span>
                     ${adminControls}
                 </div>
                 ${rightContent ? `

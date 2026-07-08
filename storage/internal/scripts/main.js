@@ -199,27 +199,36 @@ async function loadCustomPages() {
         'downloads': { id: 'downloads', path: '/storage/internal/pages/main/downloads.html', type: 'html' }
     };
 
-    let orderedSections = [];
+    let localNodes = [];
     Object.entries(data.customPages).forEach(([key, category]) => {
-        let items = [];
-        if (category.sub) {
-            category.sub.forEach(page => {
-                flatPagesMap[page.id] = page;
-                if (page.type && page.type.type === 'refsection') {
-                    const parent = items.find(i => i.id === page.type.refid);
-                    if (parent) {
-                        if (!parent.children) parent.children = [];
-                        parent.children.push(page);
-                    }
-                } else {
-                    items.push(page);
-                }
-            });
-        }
-        orderedSections.push({ key, display: category.display || key, items });
+        if (!category.sub) return;
+        category.sub.forEach(page => {
+            flatPagesMap[page.id] = page;
+            page.children = [];
+            page.categoryId = key;
+            page.categoryDisplay = category.display || key;
+            localNodes.push(page);
+        });
     });
 
-    orderedSections.forEach(section => {
+    let topLevelNodes = [];
+    localNodes.forEach(child => {
+        if (child.type && child.type.type === 'refsection' && child.type.refid) {
+            const parent = localNodes.find(p => p.id === child.type.refid);
+            if (parent) parent.children.push(child);
+            else topLevelNodes.push(child);
+        } else {
+            topLevelNodes.push(child);
+        }
+    });
+
+    let groupedSections = {};
+    topLevelNodes.forEach(node => {
+        if (!groupedSections[node.categoryId]) groupedSections[node.categoryId] = { display: node.categoryDisplay, items: [] };
+        groupedSections[node.categoryId].items.push(node);
+    });
+
+    Object.values(groupedSections).forEach(section => {
         const visibleItems = section.items.filter(p => isRevealed || (!p.hidden && !p.locked));
         if (visibleItems.length === 0) return;
 
@@ -230,37 +239,7 @@ async function loadCustomPages() {
 
         visibleItems.forEach((page, index) => {
             const isLast = index === visibleItems.length - 1;
-            const prefix = isLast ? '└─ ' : '├─ ';
-            
-            const item = document.createElement('div');
-            item.className = 'nav-item';
-            
-            const link = document.createElement('span');
-            link.textContent = page.display || page.name;
-            link.onclick = () => loadPage(page.id);
-
-            item.appendChild(document.createTextNode(prefix));
-            item.appendChild(link);
-            container.appendChild(item);
-
-            if (page.children && page.children.length > 0) {
-                const subContainer = document.createElement('div');
-                subContainer.className = 'nav-sub';
-                page.children.forEach((child, cIndex) => {
-                    if (!isRevealed && (child.hidden || child.locked)) return;
-                    const cIsLast = cIndex === page.children.length - 1;
-                    const cPrefix = cIsLast ? '└─ ' : '├─ ';
-                    const cItem = document.createElement('div');
-                    cItem.className = 'nav-item';
-                    const cLink = document.createElement('span');
-                    cLink.textContent = child.display || child.name;
-                    cLink.onclick = () => loadPage(child.id);
-                    cItem.appendChild(document.createTextNode(cPrefix));
-                    cItem.appendChild(cLink);
-                    subContainer.appendChild(cItem);
-                });
-                container.appendChild(subContainer);
-            }
+            renderNavItem(page, isLast, container, isRevealed, false);
         });
         container.appendChild(document.createElement('br'));
     });
@@ -269,6 +248,40 @@ async function loadCustomPages() {
         <div class="nav-folder">System/</div>
         <div class="nav-item">└─ <span onclick="openPreferences()">Settings</span></div>
     `;
+}
+
+function renderNavItem(node, isLast, parentContainer, isRevealed, isSub = false) {
+    const item = document.createElement('div');
+    item.className = 'nav-item';
+    
+    const prefix = isLast ? '└─ ' : '├─ ';
+    
+    const link = document.createElement('span');
+    link.textContent = node.display || node.name;
+    link.onclick = () => loadPage(node.id);
+
+    item.appendChild(document.createTextNode(prefix));
+    item.appendChild(link);
+    parentContainer.appendChild(item);
+
+    if (node.children && node.children.length > 0) {
+        const visibleChildren = node.children.filter(c => isRevealed || (!c.hidden && !c.locked));
+        if (visibleChildren.length > 0) {
+            const subContainer = document.createElement('div');
+            subContainer.className = 'nav-sub';
+            if (!isLast && !isSub) {
+                subContainer.style.borderLeft = '1px solid hsl(var(--border))';
+            } else {
+                subContainer.style.borderLeft = '1px solid transparent';
+            }
+            
+            visibleChildren.forEach((child, cIdx) => {
+                const cIsLast = cIdx === visibleChildren.length - 1;
+                renderNavItem(child, cIsLast, subContainer, isRevealed, true);
+            });
+            parentContainer.appendChild(subContainer);
+        }
+    }
 }
 
 function handleHashNavigation() {
@@ -280,11 +293,16 @@ function handleHashNavigation() {
     loadPage(page, params.toString());
 }
 
-window.loadPage = function(pageName, args = '') {
+window.loadPage = async function(pageName, args = '') {
     const pageBase = '/storage/internal/pages/main/';
+    
+    if (Object.keys(flatPagesMap).length === 0) {
+        await loadCustomPages();
+    }
+    
     const customPage = flatPagesMap[pageName];
     
-    if (customPage && customPage.id !== 'home' && customPage.id !== 'blogs' && customPage.id !== 'projects' && customPage.id !== 'downloads') {
+    if (customPage && !['home', 'blogs', 'projects', 'downloads'].includes(customPage.id)) {
         if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
             pendingPage = { id: pageName, args: args };
             document.getElementById('lock-window').style.display = 'flex';
@@ -298,20 +316,21 @@ window.loadPage = function(pageName, args = '') {
 
         const iframe = document.getElementById('content-frame');
         let targetUrl = '';
-        if (pageType === 'section' || pageType === 'interests') targetUrl = `${pageBase}custom.html${args ? '#' + args : ''}`;
+        if (pageType === 'section') targetUrl = `${pageBase}custom.html?file=${encodeURIComponent(pagePath)}${args ? '#' + args : ''}`;
+        else if (pageType === 'interests') targetUrl = `${pageBase}interests.html?file=${encodeURIComponent(pagePath)}${args ? '#' + args : ''}`;
         else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(pagePath)}`;
-        else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
+        else if (pageType === 'gallery') targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
         else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(pagePath)}`;
         else if (pageType === 'html') targetUrl = pagePath;
 
         iframe.src = targetUrl;
-        history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
+        window.location.hash = `#page=${pageName}${args ? '&' + args : ''}`;
         return;
     }
     
     const iframe = document.getElementById('content-frame');
     iframe.src = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
-    history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
+    window.location.hash = `#page=${pageName}${args ? '&' + args : ''}`;
 }
 
 window.checkLock = () => {
@@ -336,22 +355,26 @@ window.closeLockModal = () => {
 
 window.openPreferences = () => {
     const win = document.getElementById('settings-window');
-    win.style.display = 'flex';
-    win.style.zIndex = ++window.highestZ;
-    document.getElementById('term-in').focus();
+    if (win.style.display === 'none' || !win.style.display) {
+        win.style.display = 'flex';
+        win.style.zIndex = ++window.highestZ;
+        setTimeout(() => document.getElementById('term-in').focus(), 50);
+    } else {
+        win.style.display = 'none';
+    }
 };
 
 window.closePreferences = () => {
     document.getElementById('settings-window').style.display = 'none';
 };
 
-/* Terminal Engine */
+/* --- TERMINAL ENGINE --- */
 const termOut = document.getElementById('term-out');
 const termIn = document.getElementById('term-in');
 const termPrefix = document.getElementById('term-prefix');
 
 function updateTerminalPrefix() {
-    if (termPrefix) termPrefix.textContent = (isAdmin ? 'A' : 'U') + ' > github\\pages\\devicals > ';
+    if (termPrefix) termPrefix.textContent = (isAdmin ? 'A' : 'U') + ' > github\\pages\\devicals >';
 }
 
 function printToTerminal(text) {
@@ -392,7 +415,7 @@ async function executeTerminalCommand(cmdStr) {
 ├ displays current user information and/or
 │ perform admin login or logout actions
 │ usage: user [login <password> | logout]
-└ note: login password will be redacted as * in input history
+└ note: login password will be redacted as * in input
 
 ┌ SOURCE
 └ origin > website source code
@@ -400,8 +423,10 @@ async function executeTerminalCommand(cmdStr) {
 ┌ NAVIGATE
 ├ navigate to a different page
 │ usage: navigate [path]
-│ example: navigate chitchat
+│ example: navigate community/chitchat
 │          moves to 'Chits & Chats' page
+│ example: navigate extra/writing/books
+│          moves to 'Books' page
 └ aliases: nav
 
 ┌ MESSAGE
@@ -413,7 +438,7 @@ async function executeTerminalCommand(cmdStr) {
 
 ┌ THEME
 ├ manages current theme
-│ usage: theme <theme_name>
+│ usage: theme [apply <theme> | index]
 └ aliases: c, color
 
 ┌ PAGE
@@ -451,10 +476,10 @@ async function executeTerminalCommand(cmdStr) {
             
         case 'nav':
         case 'navigate':
-            const target = args[1];
-            if (!target) { printToTerminal("Usage: navigate <pageID>"); break; }
+            let target = args[1];
+            if (!target) { printToTerminal("Usage: navigate <pageID/path>"); break; }
             const pageId = target.split('/').pop();
-            if (flatPagesMap[pageId] || pageId === 'home' || pageId === 'blogs') {
+            if (flatPagesMap[pageId] || pageId === 'home' || pageId === 'blogs' || pageId === 'projects' || pageId === 'downloads') {
                 loadPage(pageId);
                 printToTerminal(`Navigating to ${pageId}...`);
             } else {
@@ -465,10 +490,16 @@ async function executeTerminalCommand(cmdStr) {
         case 'c':
         case 'color':
         case 'theme':
-            const t = args[1];
-            if (!t) { printToTerminal("Usage: theme <name>"); break; }
-            window.changeTheme(t);
-            printToTerminal(`Theme applied: ${t}`);
+            if (args[1] === 'index') {
+                printToTerminal(`Available themes:\n- vitesse-dark\n- original\n- evergreens\n- gruvbox\n- ice-world\n- purple-orange\n- orange-purple\n- pink-dream\n- cyberpunk\n- desert\n- custom`);
+            } else if (args[1] === 'apply' || args[1]) {
+                const t = args[1] === 'apply' ? args[2] : args[1];
+                if (!t) { printToTerminal("Usage: theme <name>"); break; }
+                window.changeTheme(t);
+                printToTerminal(`Theme applied: ${t}`);
+            } else {
+                printToTerminal("Usage: theme <theme_name>");
+            }
             break;
             
         case 'page':
@@ -493,7 +524,7 @@ async function executeTerminalCommand(cmdStr) {
             
             if (subCmd === 'index') {
                 let out = "\nIndex of current announcements:\n";
-                if (currentAnnouncements.length === 0) out += "No announcements found.";
+                if (currentAnnouncements.length === 0) out += "No announcements found.\n";
                 else currentAnnouncements.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
                 out += "\nEnd";
                 printToTerminal(out);
@@ -502,9 +533,10 @@ async function executeTerminalCommand(cmdStr) {
                 if (!msg) { printToTerminal("Error: empty message"); break; }
                 const newList = [...currentAnnouncements, msg];
                 await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
-                printToTerminal(`Created announcement '${msg}' at index ${newList.length}\n\nUpdated index of current announcements:`);
-                newList.forEach((a, i) => printToTerminal(`${i + 1}. '${a}'`));
-                printToTerminal("\nEnd");
+                let out = `\nCreated announcement '${msg}' at index ${newList.length}\n\nUpdated index of current announcements:\n`;
+                newList.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
+                out += "\nEnd";
+                printToTerminal(out);
             } else if (subCmd === 'delete') {
                 const delIdx = parseInt(args[2]) - 1;
                 if (isNaN(delIdx) || delIdx < 0 || delIdx >= currentAnnouncements.length) { printToTerminal("Error: invalid index"); break; }
@@ -519,7 +551,7 @@ async function executeTerminalCommand(cmdStr) {
         case 'msg':
         case 'message':
             let fullStr = args.slice(1).join(' ');
-            if (!fullStr) { printToTerminal("Usage: message user:<name> msg:<message>"); break; }
+            if (!fullStr) { printToTerminal("Usage: message [user:<name>; msg:<message> | message:<message> badge*:<true|false>]"); break; }
             
             let uName = "Anonymous";
             let msgText = fullStr;
@@ -548,7 +580,7 @@ async function executeTerminalCommand(cmdStr) {
                 name: uName, 
                 message: msgText, 
                 is_creator: useBadge,
-                ip_address: 'Hidden',
+                ip_address: 'Terminal',
                 country: 'Unknown',
                 is_vpn: false
             }).select('id').single();
