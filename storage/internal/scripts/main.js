@@ -9,7 +9,9 @@ let titleIdx = 0;
 const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
 let currentAnnouncements = [];
+let homeData = null;
 window.highestZ = 100;
+const homeWindows = ['win-bio', 'win-skills', 'win-socials', 'win-blog'];
 
 document.addEventListener('DOMContentLoaded', async () => {
     makeDraggable('nav-window', 'nav-drag');
@@ -78,13 +80,14 @@ function startTitleAnimation() {
 }
 
 async function initializeApp() {
-    initAuth();
+    await initAuth();
     await loadAnnouncements();
     await loadCustomPages();
+    await initHomeDatabase();
     handleHashNavigation();
     window.addEventListener('hashchange', handleHashNavigation);
     
-    const savedTheme = localStorage.getItem('selected-theme') || 'vitesse-dark';
+    const savedTheme = localStorage.getItem('selected-theme') || 'original';
     const select = document.getElementById('theme-select');
     if (select) select.value = savedTheme;
     
@@ -119,6 +122,7 @@ function handleUserSession(session) {
         renderLoginPortal();
     }
     loadCustomPages();
+    if (homeData) renderHomePage();
 
     const iframe = document.getElementById('content-frame');
     if (iframe && iframe.contentWindow) {
@@ -131,7 +135,7 @@ function renderLoginPortal() {
     portal.innerHTML = `
         <input type="text" id="admin-email-field" class="ascii-input" style="margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
         <input type="password" id="admin-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
-        <button class="ascii-btn" style="color:hsl(var(--accent));" onclick="submitAdminLogin()">[ Login ]</button>
+        <button class="btn-primary" style="width:100%;" onclick="submitAdminLogin()">Login</button>
     `;
 }
 
@@ -255,6 +259,208 @@ window.closeAnnouncement = function() {
     if (announcementInterval) clearInterval(announcementInterval);
 }
 
+async function initHomeDatabase() {
+    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'home').single();
+    if (data && data.data) {
+        homeData = data.data;
+        renderHomePage();
+    }
+    supabaseClient.channel('home-realtime')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.home' }, (payload) => {
+            if (payload.new && payload.new.data) { homeData = payload.new.data; renderHomePage(); }
+        }).subscribe();
+}
+
+async function syncHomeToSupabase() {
+    if (!isAdmin) return;
+    const { error } = await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
+    if (error) alert("Error saving: " + error.message);
+}
+
+window.closeWindow = function(id) {
+    if (id === 'announcement-window') closeAnnouncement();
+    else if (id === 'settings-window') closePreferences();
+    else if (id === 'lock-window') closeLockModal();
+    else document.getElementById(id).style.display = 'none';
+}
+
+function createWindow(id, title, rightContent, contentHTML, bounds, adminControls = '') {
+    let win = document.getElementById(id);
+    const isNew = !win;
+    if (isNew) {
+        win = document.createElement('div');
+        win.id = id;
+        win.className = 'ascii-window';
+        win.style.left = bounds.left;
+        win.style.top = bounds.top;
+        win.style.width = bounds.width;
+        
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const page = params.get('page') || 'home';
+        if (page !== 'home') win.style.display = 'none';
+        
+        document.getElementById('desktop').appendChild(win);
+        if (window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
+    }
+    
+    win.innerHTML = `
+        <div style="display: flex; align-items: center; height: 1px; margin-left: -1px; margin-right: -1px; width: calc(100% + 2px);">
+            <div style="height: 1px; width: 15px; background: hsl(var(--foreground));"></div>
+            <div id="${id}-drag" style="padding: 0 8px; color: hsl(var(--accent)); font-weight: bold; cursor: move; transform: translateY(-50%); user-select: none;">${title}</div>
+            ${adminControls ? `<div style="transform: translateY(-50%);">${adminControls}</div>` : ''}
+            <div style="height: 1px; flex: 1; background: hsl(var(--foreground));"></div>
+            ${rightContent ? `<div style="padding: 0 8px; transform: translateY(-50%); font-size: 12px; color: hsl(var(--muted-foreground));">${rightContent}</div>` : ''}
+            <div style="height: 1px; width: 10px; background: hsl(var(--foreground));"></div>
+        </div>
+        <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
+            ${contentHTML}
+        </div>
+    `;
+    
+    if (!isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
+    return win;
+}
+
+async function renderHomePage() {
+    if (!homeData) return;
+
+    let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
+    createWindow('win-bio', 'about me', '', bioHTML, {left: '320px', top: '120px', width: '450px'}, 
+        `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
+
+    let skillsHTML = `<div class="add-row">
+        <input type="text" id="skill-n" class="ascii-input" placeholder="Skill Name" style="flex:1;">
+        <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
+        <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
+    </div><div id="skills-list"></div>`;
+    createWindow('win-skills', 'skills', '', skillsHTML, {left: '800px', top: '550px', width: '450px'});
+    renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
+
+    let socialsHTML = `<div class="add-row">
+        <input type="text" id="social-n" class="ascii-input" placeholder="Social Name" style="flex:1;">
+        <input type="text" id="social-l" class="ascii-input" placeholder="Profile URL" style="flex:1;">
+        <button class="ascii-btn" onclick="addSocial()" style="color:hsl(var(--accent));">[+]</button>
+    </div>
+    <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
+    <div id="socials-list" style="margin-top:10px;"></div>`;
+    createWindow('win-socials', 'socials', '', socialsHTML, {left: '460px', top: '550px', width: '300px'});
+    renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
+    refreshDiscordUI();
+
+    loadLatestBlogPreview();
+}
+
+function renderGridItems(arr, containerId, category, textMapper, linkMapper) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    grid.innerHTML = '';
+    arr.forEach((item, idx) => {
+        const link = linkMapper(item);
+        const row = document.createElement('div');
+        row.className = 'text-line';
+        row.innerHTML = `
+            <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'};">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
+            <div class="admin-actions">
+                <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">[✎]</button>
+                <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">[x]</button>
+            </div>
+        `;
+        
+        if (isAdmin) {
+            row.draggable = true;
+            row.addEventListener('dragstart', (e) => { dragItemIdx = idx; dragCategory = category; e.dataTransfer.effectAllowed = 'move'; });
+            row.addEventListener('dragover', (e) => e.preventDefault());
+            row.addEventListener('drop', async (e) => {
+                e.preventDefault(); if (dragCategory !== category) return;
+                if (dragItemIdx === idx) return;
+                const targetArr = homeData[category];
+                const [reordered] = targetArr.splice(dragItemIdx, 1);
+                targetArr.splice(idx, 0, reordered);
+                await syncHomeToSupabase();
+            });
+        }
+        grid.appendChild(row);
+    });
+}
+
+window.openBioModal = () => { document.getElementById('bio-textarea-input').value = homeData.bio || ''; document.getElementById('bio-modal').classList.add('active'); };
+window.closeBioModal = () => document.getElementById('bio-modal').classList.remove('active');
+window.saveBio = async () => {
+    const bioText = document.getElementById('bio-textarea-input').value.trim();
+    if (!bioText) return;
+    homeData.bio = bioText;
+    closeBioModal();
+    await syncHomeToSupabase();
+};
+
+window.addSkill = async () => {
+    const n = document.getElementById('skill-n').value.trim();
+    const l = document.getElementById('skill-l').value.trim() || null;
+    if (!n) return; homeData.skills.push({ skill: n, link: l }); await syncHomeToSupabase();
+};
+window.addSocial = async () => {
+    const n = document.getElementById('social-n').value.trim();
+    const l = document.getElementById('social-l').value.trim();
+    if (!n || !l) return; homeData.socials.push({ name: n, link: l }); await syncHomeToSupabase();
+};
+
+window.deleteItem = async (category, idx, e) => {
+    e.stopPropagation(); e.preventDefault();
+    if (!confirm(`Delete item?`)) return;
+    homeData[category].splice(idx, 1);
+    await syncHomeToSupabase();
+};
+
+window.editItem = async (category, idx, e) => {
+    e.stopPropagation(); e.preventDefault();
+    const item = homeData[category][idx];
+    const currentName = category === 'skills' ? item.skill : item.name;
+    const name = prompt("Edit Name:", currentName);
+    if (name && name.trim() !== '') {
+        const link = prompt("Edit Link:", item.link || '');
+        if (category === 'skills') item.skill = name.trim(); else item.name = name.trim();
+        item.link = link ? link.trim() : null;
+        await syncHomeToSupabase();
+    }
+};
+
+async function refreshDiscordUI() {
+    try {
+        const res = await fetch('https://api.lanyard.rest/v1/users/989414384679927838');
+        const data = await res.json();
+        const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
+        const text = statusMap[data.data?.discord_status || 'offline'] || 'Offline';
+        const el = document.getElementById('discord-live');
+        if(el) el.innerHTML = `<a href="https://discord.com/users/989414384679927838" target="_blank">${text} on Discord</a>`;
+    } catch(e) {}
+}
+
+async function loadLatestBlogPreview() {
+    try {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
+        if (data && data.data && data.data.length > 0) {
+            const sortedBlogs = data.data.sort((a,b) => {
+                const pa = a.date.split('/'); const pb = b.date.split('/');
+                return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
+            });
+            const latest = sortedBlogs[0];
+            const temp = document.createElement('div'); temp.innerHTML = marked.parse(latest.content);
+            let ext = (temp.textContent || "").trim();
+            if (ext.length > 100) ext = ext.substring(0, 100) + "...";
+            
+            const dateDisplay = latest.date.replace(/\//g, '-');
+            
+            createWindow('win-blog', 'latest blog', dateDisplay, `
+                <div style="cursor: pointer; line-height: 1.6;" onclick="window.location.hash = 'page=blogs&id=${latest.id}'">
+                    <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:8px;">${latest.title}</div>
+                    <div style="color:hsl(var(--foreground));">${ext}</div>
+                </div>
+            `, {left: '800px', top: '20px', width: '450px'});
+        }
+    } catch (e) {}
+}
+
 async function loadCustomPages() {
     const data = await loadYAML('/storage/data/custom.yaml');
     if (!data || !data.customPages) return;
@@ -316,12 +522,47 @@ function handleHashNavigation() {
     loadPage(page, params.toString());
 }
 
+function resolvePath(relativePath, baseDir) {
+    if (!relativePath) return '';
+    let path = relativePath.startsWith('~/') ? '/storage/internal/pages/custom/' + relativePath.substring(2) : relativePath;
+    if (!path.startsWith('/')) path = baseDir + path;
+    
+    const parts = path.split('/');
+    const stack = [];
+    for (const part of parts) {
+        if (part === '..') { if (stack.length > 0) stack.pop(); }
+        else if (part !== '.' && part !== '') { stack.push(part); }
+    }
+    return (path.startsWith('/') ? '/' : '') + stack.join('/');
+}
+
 async function loadPage(pageName, args = '') {
     const pageBase = '/storage/internal/pages/main/';
+    const iframe = document.getElementById('content-frame');
+    
+    if (pageName === 'home') {
+        iframe.style.display = 'none';
+        homeWindows.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.style.display = 'flex';
+        });
+        history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
+        return;
+    } else {
+        iframe.style.display = 'block';
+        homeWindows.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.style.display = 'none';
+        });
+    }
+
     const customData = await loadYAML('/storage/data/custom.yaml');
+    let targetUrl = '';
+
     if (customData && customData.customPages) {
         let customPage = null;
         for (const key in customData.customPages) {
+            if (!customData.customPages[key].sub) continue;
             const found = customData.customPages[key].sub.find(p => String(p.id) === String(pageName));
             if (found) { customPage = found; break; }
         }
@@ -333,28 +574,25 @@ async function loadPage(pageName, args = '') {
                 return;
             }
 
-            let pagePath = customPage.path.startsWith('~/') ? '/storage/internal/pages/custom/' + customPage.path.substring(2) : customPage.path;
+            const resolvedPath = resolvePath(customPage.path, '/storage/internal/pages/custom/');
             const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
             let pageType = typeInfo.type || 'raw';
             if (pageType === 'refsection') pageType = 'section'; 
 
-            const iframe = document.getElementById('content-frame');
-            let targetUrl = '';
             if (pageType === 'section' || pageType === 'interests') targetUrl = `${pageBase}custom.html${args ? '#' + args : ''}`;
-            else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(pagePath)}`;
-            else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
-            else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(pagePath)}`;
-            else if (pageType === 'html') targetUrl = pagePath;
-
-            iframe.src = targetUrl;
-            history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
-            return;
+            else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(resolvedPath)}`;
+            else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(resolvedPath)}&type=${pageType}${args ? '&' + args : ''}`;
+            else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(resolvedPath)}`;
+            else if (pageType === 'html') targetUrl = resolvedPath;
         }
     }
     
-    const iframe = document.getElementById('content-frame');
-    iframe.src = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
-    history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
+    if (!targetUrl) {
+        targetUrl = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
+    }
+    
+    iframe.src = targetUrl;
+    history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
 }
 
 window.requestReveal = () => {

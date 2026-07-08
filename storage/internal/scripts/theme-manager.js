@@ -1,24 +1,24 @@
 const themes = {
     original: {
-        background: "246 13% 30%",
-        foreground: "0 0% 98%",
-        card: "246 13% 25%",
-        cardForeground: "0 0% 98%",
-        popover: "246 13% 30%",
-        popoverForeground: "0 0% 98%",
-        primary: "0 0% 98%",
-        primaryForeground: "246 13% 30%",
-        secondary: "246 13% 20%",
-        secondaryForeground: "0 0% 98%",
-        muted: "246 13% 20%",
-        mutedForeground: "240 5% 64.9%",
-        accent: "342 82% 73%",
-        accentForeground: "0 0% 98%",
-        destructive: "0 62.8% 30.6%",
-        destructiveForeground: "0 0% 98%",
-        border: "246 13% 40%",
-        input: "246 13% 20%",
-        ring: "342 82% 73%"
+        background: "246 13% 5%",
+        foreground: "160 50% 80%",
+        card: "246 13% 5%",
+        cardForeground: "160 50% 80%",
+        popover: "246 13% 5%",
+        popoverForeground: "160 50% 80%",
+        primary: "160 100% 70%",
+        primaryForeground: "246 13% 5%",
+        secondary: "246 13% 8%",
+        secondaryForeground: "160 50% 80%",
+        muted: "246 13% 8%",
+        mutedForeground: "160 30% 50%",
+        accent: "160 100% 70%",
+        accentForeground: "0 0% 0%",
+        destructive: "0 80% 60%",
+        destructiveForeground: "0 0% 0%",
+        border: "160 50% 50%",
+        input: "246 13% 8%",
+        ring: "160 100% 70%"
     },
     "vitesse-dark": {
         background: "246 13% 5%",
@@ -265,18 +265,18 @@ function getCurrentTheme() {
     return theme;
 }
 
-const savedTheme = localStorage.getItem('selected-theme') || 'vitesse-dark';
+const savedTheme = localStorage.getItem('selected-theme') || 'original';
 if (savedTheme === 'custom') {
     const savedCustom = localStorage.getItem('custom-theme-data');
     if (savedCustom) applyTheme('custom', JSON.parse(savedCustom));
-    else applyTheme('vitesse-dark');
+    else applyTheme('original');
 } else {
     applyTheme(savedTheme);
 }
 
 window.addEventListener('message', (e) => {
     if (e.data === 'iframe-loaded') {
-        const current = localStorage.getItem('selected-theme') || 'vitesse-dark';
+        const current = localStorage.getItem('selected-theme') || 'original';
         if (current === 'custom') {
             const data = localStorage.getItem('custom-theme-data');
             if (data) applyTheme('custom', JSON.parse(data));
