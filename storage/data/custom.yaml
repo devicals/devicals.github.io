@@ -1,4 +1,27 @@
 customPages:
+  main:
+      display: "Main"
+      sub:
+        - id: home
+          name: "Home"
+          path: /storage/internal/pages/main/home.html
+          type: html
+        - id: blogs
+          name: "Blogs"
+          path: /storage/internal/pages/main/blogs.html
+          type: html
+    content:
+      display: "Content"
+      sub:
+        - id: projects
+          name: "Projects"
+          path: /storage/internal/pages/main/projects.html
+          type: html
+        - id: downloads
+          name: "Downloads"
+          path: /storage/internal/pages/main/downloads.html
+          type: html
+          
   community:
     display: "Community"
     sub:

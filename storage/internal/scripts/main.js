@@ -10,11 +10,12 @@ const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
 let currentAnnouncements = [];
 window.highestZ = 100;
+let customConfig = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     makeDraggable('nav-window', 'nav-drag');
     makeDraggable('announcement-window', 'ann-drag');
-    makeDraggable('settings-window', 'set-drag');
+    makeDraggable('terminal-window', 'term-drag');
     makeDraggable('lock-window', 'lock-drag');
     
     await initializeApp();
@@ -84,11 +85,11 @@ async function initializeApp() {
     handleHashNavigation();
     window.addEventListener('hashchange', handleHashNavigation);
     
-    const savedTheme = localStorage.getItem('selected-theme') || 'vitesse-dark';
-    const select = document.getElementById('theme-select');
-    if (select) select.value = savedTheme;
+    const savedTheme = localStorage.getItem('selected-theme') || 'original';
+    changeTheme(savedTheme);
     
     sessionStorage.removeItem('announcement-closed');
+    setupTerminal();
 
     setInterval(async () => {
         const expire = sessionStorage.getItem('sidebar_expire');
@@ -106,98 +107,20 @@ async function initAuth() {
 }
 
 function handleUserSession(session) {
-    const portal = document.getElementById('settings-admin-portal');
-    if (!portal) return;
-
     if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
         isAdmin = true;
         document.body.classList.add('is-admin');
-        renderAdminPortal(session.user.email);
     } else {
         isAdmin = false;
         document.body.classList.remove('is-admin');
-        renderLoginPortal();
     }
+    document.getElementById('term-prompt-prefix').textContent = `${isAdmin ? 'A' : 'U'} > github\\pages\\devicals >`;
     loadCustomPages();
 
     const iframe = document.getElementById('content-frame');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
     }
-}
-
-function renderLoginPortal() {
-    const portal = document.getElementById('settings-admin-portal');
-    portal.innerHTML = `
-        <input type="text" id="admin-email-field" class="ascii-input" style="margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
-        <input type="password" id="admin-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
-        <button class="ascii-btn" style="color:hsl(var(--accent));" onclick="submitAdminLogin()">[ Login ]</button>
-    `;
-}
-
-async function submitAdminLogin() {
-    const email = document.getElementById('admin-email-field').value;
-    const password = document.getElementById('admin-password-field').value;
-    if (!password) return;
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) alert("Login Failed: " + error.message);
-}
-
-function renderAdminPortal(email) {
-    const portal = document.getElementById('settings-admin-portal');
-    portal.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:11px; color:hsl(var(--accent));">${email}</span>
-            <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
-        </div>
-        
-        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
-            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
-            <div style="display: flex; gap: 10px; margin-top: 8px;">
-                <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
-                <button id="hide-hidden-btn" class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
-            </div>
-        </div>
-
-        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px;">
-            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
-            <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <input type="text" id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="flex:1;">
-                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent));">[+]</button>
-            </div>
-        </div>
-    `;
-    renderManagerAnnouncements();
-}
-
-function renderManagerAnnouncements() {
-    const listContainer = document.getElementById('ann-manager-list');
-    if (!listContainer) return;
-    listContainer.innerHTML = '';
-    currentAnnouncements.forEach((ann, idx) => {
-        const item = document.createElement('div');
-        item.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;";
-        item.innerHTML = `
-            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; margin-right:8px;">${ann}</span>
-            <button class="ascii-btn del" onclick="deleteAnnouncement(${idx})">[x]</button>
-        `;
-        listContainer.appendChild(item);
-    });
-}
-
-function addNewAnnouncement() {
-    const input = document.getElementById('new-ann-input');
-    const val = input.value.trim();
-    if (!val) return;
-    const newList = [...currentAnnouncements, val];
-    saveAnnouncements(newList);
-    input.value = '';
-}
-
-function deleteAnnouncement(idx) {
-    const newList = currentAnnouncements.filter((_, i) => i !== idx);
-    saveAnnouncements(newList);
 }
 
 async function loadYAML(path) {
@@ -210,7 +133,7 @@ async function loadYAML(path) {
 
 async function loadAnnouncements() {
     try {
-        const { data, error } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data) applyAnnouncements(data.data);
         supabaseClient.channel('ann-realtime')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.announcements' },
@@ -221,7 +144,6 @@ async function loadAnnouncements() {
 
 function applyAnnouncements(data) {
     currentAnnouncements = data;
-    renderManagerAnnouncements();
     const win = document.getElementById('announcement-window');
     if (currentAnnouncements.length === 0) {
         win.style.display = 'none';
@@ -245,65 +167,78 @@ function displayAnnouncement(index, announcements) {
     content.innerHTML = marked.parse(announcements[index], { renderer });
 }
 
-async function saveAnnouncements(updatedList) {
-    await supabaseClient.from('site_content').update({ data: updatedList }).eq('key', 'announcements');
-}
-
 window.closeAnnouncement = function() {
     document.getElementById('announcement-window').style.display = 'none';
     sessionStorage.setItem('announcement-closed', 'true');
     if (announcementInterval) clearInterval(announcementInterval);
 }
 
+function renderTreeNodes(nodes, container, prefix = '') {
+    nodes.forEach((node, index) => {
+        const isLast = index === nodes.length - 1;
+        const nodePrefix = prefix + (isLast ? '└─ ' : '├─ ');
+        
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'nav-item';
+        
+        if (node.type === 'category') {
+            itemDiv.innerHTML = `<span style="color:hsl(var(--accent)); font-weight:600; margin-top:10px; display:inline-block; cursor:default;">${node.name}/</span>`;
+            container.appendChild(itemDiv);
+            renderTreeNodes(node.children, container, '');
+        } else {
+            const link = document.createElement('span');
+            link.textContent = node.name;
+            link.onclick = () => loadPage(node.id);
+            
+            itemDiv.appendChild(document.createTextNode(nodePrefix));
+            itemDiv.appendChild(link);
+            container.appendChild(itemDiv);
+            
+            if (node.children && node.children.length > 0) {
+                const childPrefix = prefix + (isLast ? '   ' : '│  ');
+                renderTreeNodes(node.children, container, childPrefix);
+            }
+        }
+    });
+}
+
 async function loadCustomPages() {
-    const data = await loadYAML('/storage/data/custom.yaml');
-    if (!data || !data.customPages) return;
+    customConfig = await loadYAML('/storage/data/custom.yaml');
+    if (!customConfig || !customConfig.customPages) return;
 
     const container = document.getElementById('nav-tree-content');
-    container.innerHTML = `
-        <div class="nav-folder">Main/</div>
-        <div class="nav-item">├─ <span onclick="loadPage('home')">Home</span></div>
-        <div class="nav-item">└─ <span onclick="loadPage('blogs')">Blogs</span></div>
-        <br>
-        <div class="nav-folder">Content/</div>
-        <div class="nav-item">├─ <span onclick="loadPage('projects')">Projects</span></div>
-        <div class="nav-item">└─ <span onclick="loadPage('downloads')">Downloads</span></div>
-        <br>
-    `;
+    container.innerHTML = '';
 
     const expire = sessionStorage.getItem('sidebar_expire');
     const isRevealed = expire && Date.now() < parseInt(expire);
 
-    Object.entries(data.customPages).forEach(([key, category]) => {
-        if (!category.sub) return;
-        const visibleSub = category.sub.filter(p => isRevealed || (!p.hidden && !p.locked));
-        if (visibleSub.length === 0) return;
-
-        const folder = document.createElement('div');
-        folder.className = 'nav-folder';
-        folder.textContent = (category.display || key) + '/';
-        container.appendChild(folder);
-
-        visibleSub.forEach((page, index) => {
-            const item = document.createElement('div');
-            item.className = 'nav-item';
-            const isLast = index === visibleSub.length - 1;
-            const prefix = isLast ? '└─ ' : '├─ ';
-            
-            const link = document.createElement('span');
-            link.textContent = page.display || page.name;
-            link.onclick = () => loadPage(page.id);
-
-            item.appendChild(document.createTextNode(prefix));
-            item.appendChild(link);
-            container.appendChild(item);
-        });
-        container.appendChild(document.createElement('br'));
+    let tree = [];
+    Object.entries(customConfig.customPages).forEach(([key, category]) => {
+        let catNode = { name: category.display || key, type: 'category', children: [] };
+        if (category.sub) {
+            let nodeMap = {};
+            category.sub.forEach(p => {
+                if (isRevealed || (!p.hidden && !p.locked)) {
+                    nodeMap[p.id] = { ...p, children: [] };
+                }
+            });
+            Object.values(nodeMap).forEach(p => {
+                let pType = typeof p.type === 'object' ? p.type.type : p.type;
+                if (pType === 'refsection' && p.type.refid && nodeMap[p.type.refid]) {
+                    nodeMap[p.type.refid].children.push(p);
+                } else {
+                    catNode.children.push(p);
+                }
+            });
+        }
+        if (catNode.children.length > 0) tree.push(catNode);
     });
+
+    renderTreeNodes(tree, container);
 
     container.innerHTML += `
         <div class="nav-folder">System/</div>
-        <div class="nav-item">└─ <span onclick="openPreferences()">Settings</span></div>
+        <div class="nav-item">└─ <span onclick="window.openTerminal()">Terminal</span></div>
     `;
 }
 
@@ -318,11 +253,11 @@ function handleHashNavigation() {
 
 async function loadPage(pageName, args = '') {
     const pageBase = '/storage/internal/pages/main/';
-    const customData = await loadYAML('/storage/data/custom.yaml');
-    if (customData && customData.customPages) {
+    if (!customConfig) customConfig = await loadYAML('/storage/data/custom.yaml');
+    if (customConfig && customConfig.customPages) {
         let customPage = null;
-        for (const key in customData.customPages) {
-            const found = customData.customPages[key].sub.find(p => String(p.id) === String(pageName));
+        for (const key in customConfig.customPages) {
+            const found = customConfig.customPages[key].sub.find(p => String(p.id) === String(pageName));
             if (found) { customPage = found; break; }
         }
         
@@ -333,7 +268,10 @@ async function loadPage(pageName, args = '') {
                 return;
             }
 
-            let pagePath = customPage.path.startsWith('~/') ? '/storage/internal/pages/custom/' + customPage.path.substring(2) : customPage.path;
+            let pagePath = customPage.path;
+            if (pagePath.startsWith('~/')) {
+                pagePath = '/storage/internal/pages/custom/' + pagePath.substring(2);
+            }
             const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
             let pageType = typeInfo.type || 'raw';
             if (pageType === 'refsection') pageType = 'section'; 
@@ -351,20 +289,6 @@ async function loadPage(pageName, args = '') {
             return;
         }
     }
-    
-    const iframe = document.getElementById('content-frame');
-    iframe.src = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
-    history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
-}
-
-window.requestReveal = () => {
-    sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
-    loadCustomPages();
-}
-
-window.requestHide = () => {
-    sessionStorage.removeItem('sidebar_expire');
-    loadCustomPages();
 }
 
 window.checkLock = () => {
@@ -380,19 +304,153 @@ window.checkLock = () => {
         closeLockModal();
     } else alert("Incorrect.");
 }
+window.closeLockModal = () => { document.getElementById('lock-window').style.display = 'none'; document.getElementById('lock-input').value = ''; pendingPage = null; }
 
-window.closeLockModal = () => { 
-    document.getElementById('lock-window').style.display = 'none'; 
-    document.getElementById('lock-input').value = ''; 
-    pendingPage = null; 
-}
-
-window.openPreferences = () => {
-    const win = document.getElementById('settings-window');
+window.openTerminal = () => {
+    const win = document.getElementById('terminal-window');
     win.style.display = 'flex';
     win.style.zIndex = ++window.highestZ;
+    document.getElementById('term-input').focus();
 };
+window.closeTerminal = () => { document.getElementById('terminal-window').style.display = 'none'; };
 
-window.closePreferences = () => {
-    document.getElementById('settings-window').style.display = 'none';
-};
+function escapeHTML(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function setupTerminal() {
+    const termInput = document.getElementById('term-input');
+    const termOutput = document.getElementById('term-output');
+    
+    const print = (text, breakline = false) => {
+        const div = document.createElement('div');
+        div.innerHTML = escapeHTML(text).replace(/\n/g, '<br>');
+        termOutput.appendChild(div);
+        if (breakline) termOutput.appendChild(document.createElement('br'));
+        termOutput.scrollTop = termOutput.scrollHeight;
+    };
+
+    termInput.addEventListener('keydown', async (e) => {
+        if (e.key === 'Enter') {
+            const val = termInput.value.trim();
+            termInput.value = '';
+            if (!val) return;
+            
+            let maskedVal = val;
+            if (val.startsWith('user login ')) {
+                const parts = val.split(' ');
+                if (parts[2]) maskedVal = `user login ${'*'.repeat(parts[2].length)}`;
+            }
+            
+            const promptSymbol = isAdmin ? 'A' : 'U';
+            print(`${promptSymbol} > github\\pages\\devicals > ${maskedVal}`);
+            await processCommand(val, print);
+        }
+    });
+}
+
+async function processCommand(cmdLine, print) {
+    const args = cmdLine.split(' ');
+    const cmd = args[0].toLowerCase();
+    const fullArgs = cmdLine.substring(cmd.length).trim();
+
+    switch(cmd) {
+        case 'help':
+            print(`┌ HELP\n├ lists all commands,\n└ displays this message\n\n┌ USER\n├ displays current user information and/or\n│ perform admin login or logout actions\n│ usage: user [login <password> | logout]\n└ note: login password will be redacted as * in input\n\n┌ SOURCE\n└ origin > website source code\n\n┌ NAVIGATE\n├ navigate to a different page\n│ usage: navigate [path]\n│ example: navigate community/chitchat\n│          moves to 'Chits & Chats' page\n│ example: navigate extra/writing/books\n│          moves to 'Books' page\n└ aliases: nav\n\n┌ MESSAGE\n├ send a message in 'Chits & Chats'\n│ usage: message [user:<name>; msg:<message> | message:<message> badge*:<true|false>]\n│        username is optional | badge* is [A] admin only\n│ aliases: msg\n└ notes: drawings cannot be added via terminal\n\n┌ THEME\n├ manages current theme\n│ usage: theme [apply <theme> | index]\n└ aliases: c, color\n\n┌ PAGE\n├ show or hide @hidden pages\n│ [A] admin only\n└ usage: page [show | hide]\n\n┌ BROADCAST\n├ manages announcements\n│ [A] admin only\n│ usage: broadcast [create <message> | index | delete <indexID>]\n│        no arguments will default to 'index' argument\n└ aliases: bc`, true);
+            break;
+        case 'user':
+            if (args[1] === 'login' && args[2]) {
+                const { error } = await supabaseClient.auth.signInWithPassword({ email: '3rr0r.d3v@gmail.com', password: args[2] });
+                if (error) print(`Error: ${error.message}`, true);
+                else print(`Successfully logged in as Administrator status`, true);
+            } else if (args[1] === 'logout') {
+                await supabaseClient.auth.signOut();
+                print(`Logged out.`, true);
+            } else {
+                print(`Current status: ${isAdmin ? 'Administrator' : 'User'}`, true);
+            }
+            break;
+        case 'source':
+            window.open('https://github.com/devicals/devicals.github.io', '_blank');
+            print(`Opening source...`, true);
+            break;
+        case 'navigate':
+        case 'nav':
+            if (fullArgs) {
+                const parts = fullArgs.split('/');
+                const id = parts[parts.length - 1];
+                loadPage(id);
+                print(`Navigated to ${id}`, true);
+            } else {
+                print(`usage: navigate [path]`, true);
+            }
+            break;
+        case 'message':
+        case 'msg':
+            if (!fullArgs) { print(`usage: message [user:<name>; msg:<message>]`, true); break; }
+            let msgStr = fullArgs; let userStr = isAdmin ? 'Error Dev' : 'Anonymous';
+            if (fullArgs.includes('msg:')) {
+                const p = fullArgs.split('msg:');
+                msgStr = p[1].split('badge*:')[0].trim();
+                if (p[0].includes('user:')) userStr = p[0].split('user:')[1].replace(';','').trim() || userStr;
+            } else {
+                msgStr = fullArgs.split('badge*:')[0].trim();
+            }
+            const useBadge = isAdmin && fullArgs.includes('badge*:true');
+            const { error: msgErr } = await supabaseClient.from('guestbook').insert({ name: userStr, message: msgStr, is_creator: useBadge, ip_address: 'Hidden', country: 'Unknown', is_vpn: false });
+            if (msgErr) print(`Error: ${msgErr.message}`, true);
+            else print(`Message sent.`, true);
+            break;
+        case 'theme':
+        case 'c':
+        case 'color':
+            if (args[1] === 'apply' && args[2]) {
+                changeTheme(args[2]); print(`Applied theme: ${args[2]}`, true);
+            } else if (args[1] === 'index') {
+                print(`Themes: vitesse-dark, original, evergreens, gruvbox, ice-world, purple-orange, orange-purple, pink-dream, cyberpunk, desert, custom`, true);
+            } else {
+                print(`usage: theme [apply <theme> | index]`, true);
+            }
+            break;
+        case 'page':
+            if (!isAdmin) { print(`Error: Insufficient privileges`, true); break; }
+            if (args[1] === 'show') {
+                sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
+                loadCustomPages(); print(`Hidden pages revealed.`, true);
+            } else if (args[1] === 'hide') {
+                sessionStorage.removeItem('sidebar_expire');
+                loadCustomPages(); print(`Hidden pages hidden.`, true);
+            } else {
+                print(`usage: page [show | hide]`, true);
+            }
+            break;
+        case 'broadcast':
+        case 'bc':
+            if (!isAdmin && args[1] !== 'index') { print(`Error: Insufficient privileges`, true); break; }
+            const mode = args[1] || 'index';
+            if (mode === 'index') {
+                if (currentAnnouncements.length === 0) print(`No announcements found.`, true);
+                else {
+                    let out = `Index of current announcements:\n`;
+                    currentAnnouncements.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
+                    print(out + `\nEnd`, true);
+                }
+            } else if (mode === 'create') {
+                const text = fullArgs.substring(6).trim();
+                if (!text) { print(`usage: bc create <message>`, true); break; }
+                const newList = [...currentAnnouncements, text];
+                await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
+                print(`Created announcement '${text}' at index ${newList.length}`, true);
+            } else if (mode === 'delete' && args[2]) {
+                const idx = parseInt(args[2]) - 1;
+                if (idx >= 0 && idx < currentAnnouncements.length) {
+                    const newList = currentAnnouncements.filter((_, i) => i !== idx);
+                    await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
+                    print(`Deleted announcement at index ${args[2]}`, true);
+                } else {
+                    print(`Error: Invalid index`, true);
+                }
+            }
+            break;
+        default:
+            print(`Error: '${cmd}' is not recognized. Type 'help' for commands.`, true);
+    }
+}

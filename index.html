@@ -19,62 +19,43 @@
 
     <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:100%; border:none; z-index:1;"></iframe>
 
-    <div class="ascii-window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title" id="nav-drag">nav</span>
+    <div class="window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
+        <div class="window-header" id="nav-drag">
+            <span class="window-title">nav</span>
         </div>
-        <div class="ascii-content nav-tree" id="nav-tree-content"></div>
+        <div class="window-content nav-tree" id="nav-tree-content"></div>
     </div>
     
-    <div class="ascii-window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title" id="ann-drag">notice</span>
+    <div class="window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
+        <div class="window-header" id="ann-drag">
+            <span class="window-title">notice</span>
+            <div class="window-controls"><span class="window-close" onclick="closeAnnouncement()">x</span></div>
         </div>
-        <div class="ascii-right-container">
-            <span class="ascii-close" onclick="closeAnnouncement()">x</span>
-        </div>
-        <div class="ascii-content" id="announcement-content"></div>
+        <div class="window-content" id="announcement-content"></div>
     </div>
 
-    <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 300px; z-index: 105; display:none;">
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title" id="set-drag">settings.ini</span>
+    <div class="window" id="terminal-window" style="left: 20px; top: 400px; width: 550px; z-index: 105; display:none;">
+        <div class="window-header" id="term-drag">
+            <span class="window-title">terminal.exe</span>
+            <div class="window-controls"><span class="window-close" onclick="closeTerminal()">x</span></div>
         </div>
-        <div class="ascii-right-container">
-            <span class="ascii-close" onclick="closePreferences()">x</span>
-        </div>
-        <div class="ascii-content">
-            <div style="margin-bottom: 15px;">
-                <select id="theme-select" class="ascii-input" onchange="changeTheme(this.value)">
-                    <option value="vitesse-dark">Vitesse Dark (Default)</option>
-                    <option value="original">Original</option>
-                    <option value="evergreens">Evergreens</option>
-                    <option value="gruvbox">Gruvbox</option>
-                    <option value="ice-world">Ice World</option>
-                    <option value="purple-orange">Purple & Orange</option>
-                    <option value="orange-purple">Orange & Purple</option>
-                    <option value="pink-dream">Pink Dream</option>
-                    <option value="cyberpunk">Cyberpunk</option>
-                    <option value="desert">Desert</option>
-                    <option value="custom">Custom</option>
-                </select>
+        <div class="window-content" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.5; display: flex; flex-direction: column; height: 350px;">
+            <div id="term-output" style="flex: 1; overflow-y: auto; margin-bottom: 10px; white-space: pre-wrap; word-break: break-all;">
+                <div style="color: hsl(var(--accent));">DEV.WEB - v5.289.628<br>(c) Error Dev. All rights reserved.<br><br></div>
             </div>
-            <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px;"></div>
+            <div style="display: flex; align-items: center;">
+                <span id="term-prompt-prefix" style="color: hsl(var(--accent)); margin-right: 8px; white-space: nowrap;">U > github\pages\devicals ></span>
+                <input type="text" id="term-input" style="flex: 1; background: transparent; border: none; color: hsl(var(--foreground)); font-family: inherit; font-size: inherit; outline: none;" autocomplete="off" spellcheck="false">
+            </div>
         </div>
     </div>
 
-    <div class="ascii-window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title" id="lock-drag">auth_required.exe</span>
+    <div class="window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
+        <div class="window-header" id="lock-drag">
+            <span class="window-title">auth_required.exe</span>
+            <div class="window-controls"><span class="window-close" onclick="closeLockModal()">x</span></div>
         </div>
-        <div class="ascii-right-container">
-            <span class="ascii-close" onclick="closeLockModal()">x</span>
-        </div>
-        <div class="ascii-content">
+        <div class="window-content">
             <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
             <button class="ascii-btn" onclick="checkLock()" style="color:hsl(var(--accent));">[ Unlock ]</button>
         </div>

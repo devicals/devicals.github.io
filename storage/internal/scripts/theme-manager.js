@@ -236,7 +236,6 @@ function applyTheme(themeName, themeData = null) {
 
 function changeTheme(themeName) {
     const customEditor = document.getElementById('custom-theme-editor');
-    
     if (themeName === 'custom') {
         const savedCustom = localStorage.getItem('custom-theme-data');
         if (!savedCustom) {
@@ -265,18 +264,18 @@ function getCurrentTheme() {
     return theme;
 }
 
-const savedTheme = localStorage.getItem('selected-theme') || 'vitesse-dark';
+const savedTheme = localStorage.getItem('selected-theme') || 'original';
 if (savedTheme === 'custom') {
     const savedCustom = localStorage.getItem('custom-theme-data');
     if (savedCustom) applyTheme('custom', JSON.parse(savedCustom));
-    else applyTheme('vitesse-dark');
+    else applyTheme('original');
 } else {
     applyTheme(savedTheme);
 }
 
 window.addEventListener('message', (e) => {
     if (e.data === 'iframe-loaded') {
-        const current = localStorage.getItem('selected-theme') || 'vitesse-dark';
+        const current = localStorage.getItem('selected-theme') || 'original';
         if (current === 'custom') {
             const data = localStorage.getItem('custom-theme-data');
             if (data) applyTheme('custom', JSON.parse(data));
