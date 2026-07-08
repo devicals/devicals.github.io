@@ -36,8 +36,8 @@
         .modal.active { display: flex; }
         .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
-        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
-        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; }
+        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; white-space: nowrap; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; padding: 0 4px; }
         .modal-close:hover { color: hsl(var(--destructive)); }
         .modal-body { display: flex; flex-direction: column; gap: 12px; }
         .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
@@ -50,7 +50,7 @@
     <div id="bio-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Edit_Bio.exe</h2>
+                <h2>+---[ Edit_Bio.exe ]---+</h2>
                 <button class="modal-close" onclick="closeBioModal()">x</button>
             </div>
             <div class="modal-body">
@@ -145,6 +145,7 @@
             }
             
             win.addEventListener('mousedown', () => { win.style.zIndex = ++highestZ; });
+            win.addEventListener('touchstart', () => { win.style.zIndex = ++highestZ; }, {passive: true});
         }
 
         function createWindow(id, title, rightContent, contentHTML, bounds, adminControls = '') {
@@ -161,16 +162,13 @@
             }
             
             win.innerHTML = `
-                <div class="ascii-drag-handle" id="${id}-drag"></div>
-                <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-                <div class="ascii-title-container">
-                    <span class="ascii-title">${title}</span>
-                    ${adminControls}
+                <div class="ascii-header" id="${id}-drag">
+                    <span class="ascii-title">+--[ ${title} ]--+</span>
+                    <div class="ascii-controls">
+                        ${adminControls}
+                        ${rightContent ? `<span>${rightContent}</span>` : ''}
+                    </div>
                 </div>
-                ${rightContent ? `
-                <div class="ascii-right-container">
-                    <span>${rightContent}</span>
-                </div>` : ''}
                 <div class="ascii-content">
                     ${contentHTML}
                 </div>
@@ -216,7 +214,7 @@
                 const row = document.createElement('div');
                 row.className = 'text-line';
                 row.innerHTML = `
-                    <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
+                    <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'};">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
                     <div class="admin-actions">
                         <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">[✎]</button>
                         <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">[x]</button>

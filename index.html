@@ -20,55 +20,55 @@
     <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:100%; border:none; z-index:1;"></iframe>
 
     <div class="ascii-window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
-        <div class="ascii-drag-handle" id="nav-drag"></div>
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title">nav</span>
+        <div class="ascii-header" id="nav-drag">
+            <span class="ascii-title">+--[ nav ]--+</span>
         </div>
         <div class="ascii-content nav-tree" id="nav-tree-content"></div>
     </div>
     
     <div class="ascii-window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
-        <div class="ascii-drag-handle" id="ann-drag"></div>
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title">notice</span>
-        </div>
-        <div class="ascii-right-container">
-            <span class="ascii-close" onclick="closeAnnouncement()">x</span>
+        <div class="ascii-header" id="ann-drag">
+            <span class="ascii-title">+--[ notice ]--+</span>
+            <div class="ascii-controls">
+                <span class="ascii-close" onclick="closeAnnouncement()">x</span>
+            </div>
         </div>
         <div class="ascii-content" id="announcement-content"></div>
     </div>
 
-    <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 700px; height: 480px; z-index: 105; display:none;">
-        <div class="ascii-drag-handle" id="set-drag"></div>
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title">terminal.exe</span>
-        </div>
-        <div class="ascii-right-container">
-            <span class="ascii-close" onclick="closePreferences()">x</span>
-        </div>
-        <div class="ascii-content terminal-container" id="terminal-container">
-            <div id="term-out" class="terminal-output">DEV.WEB - v5.289.628
-(c) Error Dev. All rights reserved.
-
-Type 'help' to see a list of available commands.</div>
-            <div class="terminal-input-line">
-                <span id="term-prefix" class="terminal-prompt">U &gt; github\pages\devicals &gt;</span>
-                <input type="text" id="term-in" class="terminal-input" autocomplete="off" spellcheck="false" autofocus>
+    <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 300px; z-index: 105; display:none;">
+        <div class="ascii-header" id="set-drag">
+            <span class="ascii-title">+--[ settings.ini ]--+</span>
+            <div class="ascii-controls">
+                <span class="ascii-close" onclick="closePreferences()">x</span>
             </div>
+        </div>
+        <div class="ascii-content">
+            <div style="margin-bottom: 15px;">
+                <select id="theme-select" class="ascii-input" onchange="changeTheme(this.value)">
+                    <option value="vitesse-dark">Vitesse Dark (Default)</option>
+                    <option value="original">Original</option>
+                    <option value="evergreens">Evergreens</option>
+                    <option value="gruvbox">Gruvbox</option>
+                    <option value="ice-world">Ice World</option>
+                    <option value="purple-orange">Purple & Orange</option>
+                    <option value="orange-purple">Orange & Purple</option>
+                    <option value="pink-dream">Pink Dream</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="desert">Desert</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+            <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--border)); padding-top: 15px;"></div>
         </div>
     </div>
 
     <div class="ascii-window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
-        <div class="ascii-drag-handle" id="lock-drag"></div>
-        <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-title-container">
-            <span class="ascii-title">auth_required.exe</span>
-        </div>
-        <div class="ascii-right-container">
-            <span class="ascii-close" onclick="closeLockModal()">x</span>
+        <div class="ascii-header" id="lock-drag">
+            <span class="ascii-title">+--[ auth_required.exe ]--+</span>
+            <div class="ascii-controls">
+                <span class="ascii-close" onclick="closeLockModal()">x</span>
+            </div>
         </div>
         <div class="ascii-content">
             <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">

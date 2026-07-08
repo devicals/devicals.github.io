@@ -9,7 +9,6 @@ let titleIdx = 0;
 const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
 let currentAnnouncements = [];
-let flatPagesMap = {};
 window.highestZ = 100;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -20,7 +19,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await initializeApp();
     startTitleAnimation();
-    setupTerminal();
 });
 
 function makeDraggable(winId, handleId) {
@@ -86,8 +84,9 @@ async function initializeApp() {
     handleHashNavigation();
     window.addEventListener('hashchange', handleHashNavigation);
     
-    const savedTheme = localStorage.getItem('selected-theme') || 'original';
-    window.changeTheme(savedTheme);
+    const savedTheme = localStorage.getItem('selected-theme') || 'vitesse-dark';
+    const select = document.getElementById('theme-select');
+    if (select) select.value = savedTheme;
     
     sessionStorage.removeItem('announcement-closed');
 
@@ -107,20 +106,98 @@ async function initAuth() {
 }
 
 function handleUserSession(session) {
+    const portal = document.getElementById('settings-admin-portal');
+    if (!portal) return;
+
     if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
         isAdmin = true;
         document.body.classList.add('is-admin');
+        renderAdminPortal(session.user.email);
     } else {
         isAdmin = false;
         document.body.classList.remove('is-admin');
+        renderLoginPortal();
     }
     loadCustomPages();
-    updateTerminalPrefix();
 
     const iframe = document.getElementById('content-frame');
     if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
     }
+}
+
+function renderLoginPortal() {
+    const portal = document.getElementById('settings-admin-portal');
+    portal.innerHTML = `
+        <input type="text" id="admin-email-field" class="ascii-input" style="margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
+        <input type="password" id="admin-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
+        <button class="ascii-btn" style="color:hsl(var(--accent));" onclick="submitAdminLogin()">[ Login ]</button>
+    `;
+}
+
+async function submitAdminLogin() {
+    const email = document.getElementById('admin-email-field').value;
+    const password = document.getElementById('admin-password-field').value;
+    if (!password) return;
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) alert("Login Failed: " + error.message);
+}
+
+function renderAdminPortal(email) {
+    const portal = document.getElementById('settings-admin-portal');
+    portal.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span style="font-size:11px; color:hsl(var(--accent));">${email}</span>
+            <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
+        </div>
+        
+        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px; margin-bottom:15px;">
+            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
+                <button id="hide-hidden-btn" class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
+            </div>
+        </div>
+
+        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px;">
+            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
+            <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <input type="text" id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="flex:1;">
+                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent));">[+]</button>
+            </div>
+        </div>
+    `;
+    renderManagerAnnouncements();
+}
+
+function renderManagerAnnouncements() {
+    const listContainer = document.getElementById('ann-manager-list');
+    if (!listContainer) return;
+    listContainer.innerHTML = '';
+    currentAnnouncements.forEach((ann, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;";
+        item.innerHTML = `
+            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; margin-right:8px;">${ann}</span>
+            <button class="ascii-btn del" onclick="deleteAnnouncement(${idx})">[x]</button>
+        `;
+        listContainer.appendChild(item);
+    });
+}
+
+function addNewAnnouncement() {
+    const input = document.getElementById('new-ann-input');
+    const val = input.value.trim();
+    if (!val) return;
+    const newList = [...currentAnnouncements, val];
+    saveAnnouncements(newList);
+    input.value = '';
+}
+
+function deleteAnnouncement(idx) {
+    const newList = currentAnnouncements.filter((_, i) => i !== idx);
+    saveAnnouncements(newList);
 }
 
 async function loadYAML(path) {
@@ -133,7 +210,7 @@ async function loadYAML(path) {
 
 async function loadAnnouncements() {
     try {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+        const { data, error } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data) applyAnnouncements(data.data);
         supabaseClient.channel('ann-realtime')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.announcements' },
@@ -143,7 +220,8 @@ async function loadAnnouncements() {
 }
 
 function applyAnnouncements(data) {
-    currentAnnouncements = data || [];
+    currentAnnouncements = data;
+    renderManagerAnnouncements();
     const win = document.getElementById('announcement-window');
     if (currentAnnouncements.length === 0) {
         win.style.display = 'none';
@@ -165,6 +243,10 @@ function displayAnnouncement(index, announcements) {
     const content = document.getElementById('announcement-content');
     const renderer = new marked.Renderer();
     content.innerHTML = marked.parse(announcements[index], { renderer });
+}
+
+async function saveAnnouncements(updatedList) {
+    await supabaseClient.from('site_content').update({ data: updatedList }).eq('key', 'announcements');
 }
 
 window.closeAnnouncement = function() {
@@ -192,54 +274,29 @@ async function loadCustomPages() {
     const expire = sessionStorage.getItem('sidebar_expire');
     const isRevealed = expire && Date.now() < parseInt(expire);
 
-    flatPagesMap = {
-        'home': { id: 'home', path: '/storage/internal/pages/main/home.html', type: 'html' },
-        'blogs': { id: 'blogs', path: '/storage/internal/pages/main/blogs.html', type: 'html' },
-        'projects': { id: 'projects', path: '/storage/internal/pages/main/projects.html', type: 'html' },
-        'downloads': { id: 'downloads', path: '/storage/internal/pages/main/downloads.html', type: 'html' }
-    };
-
-    let localNodes = [];
     Object.entries(data.customPages).forEach(([key, category]) => {
         if (!category.sub) return;
-        category.sub.forEach(page => {
-            flatPagesMap[page.id] = page;
-            page.children = [];
-            page.categoryId = key;
-            page.categoryDisplay = category.display || key;
-            localNodes.push(page);
-        });
-    });
-
-    let topLevelNodes = [];
-    localNodes.forEach(child => {
-        if (child.type && child.type.type === 'refsection' && child.type.refid) {
-            const parent = localNodes.find(p => p.id === child.type.refid);
-            if (parent) parent.children.push(child);
-            else topLevelNodes.push(child);
-        } else {
-            topLevelNodes.push(child);
-        }
-    });
-
-    let groupedSections = {};
-    topLevelNodes.forEach(node => {
-        if (!groupedSections[node.categoryId]) groupedSections[node.categoryId] = { display: node.categoryDisplay, items: [] };
-        groupedSections[node.categoryId].items.push(node);
-    });
-
-    Object.values(groupedSections).forEach(section => {
-        const visibleItems = section.items.filter(p => isRevealed || (!p.hidden && !p.locked));
-        if (visibleItems.length === 0) return;
+        const visibleSub = category.sub.filter(p => isRevealed || (!p.hidden && !p.locked));
+        if (visibleSub.length === 0) return;
 
         const folder = document.createElement('div');
         folder.className = 'nav-folder';
-        folder.textContent = section.display + '/';
+        folder.textContent = (category.display || key) + '/';
         container.appendChild(folder);
 
-        visibleItems.forEach((page, index) => {
-            const isLast = index === visibleItems.length - 1;
-            renderNavItem(page, isLast, container, isRevealed, false);
+        visibleSub.forEach((page, index) => {
+            const item = document.createElement('div');
+            item.className = 'nav-item';
+            const isLast = index === visibleSub.length - 1;
+            const prefix = isLast ? '└─ ' : '├─ ';
+            
+            const link = document.createElement('span');
+            link.textContent = page.display || page.name;
+            link.onclick = () => loadPage(page.id);
+
+            item.appendChild(document.createTextNode(prefix));
+            item.appendChild(link);
+            container.appendChild(item);
         });
         container.appendChild(document.createElement('br'));
     });
@@ -248,40 +305,6 @@ async function loadCustomPages() {
         <div class="nav-folder">System/</div>
         <div class="nav-item">└─ <span onclick="openPreferences()">Settings</span></div>
     `;
-}
-
-function renderNavItem(node, isLast, parentContainer, isRevealed, isSub = false) {
-    const item = document.createElement('div');
-    item.className = 'nav-item';
-    
-    const prefix = isLast ? '└─ ' : '├─ ';
-    
-    const link = document.createElement('span');
-    link.textContent = node.display || node.name;
-    link.onclick = () => loadPage(node.id);
-
-    item.appendChild(document.createTextNode(prefix));
-    item.appendChild(link);
-    parentContainer.appendChild(item);
-
-    if (node.children && node.children.length > 0) {
-        const visibleChildren = node.children.filter(c => isRevealed || (!c.hidden && !c.locked));
-        if (visibleChildren.length > 0) {
-            const subContainer = document.createElement('div');
-            subContainer.className = 'nav-sub';
-            if (!isLast && !isSub) {
-                subContainer.style.borderLeft = '1px solid hsl(var(--border))';
-            } else {
-                subContainer.style.borderLeft = '1px solid transparent';
-            }
-            
-            visibleChildren.forEach((child, cIdx) => {
-                const cIsLast = cIdx === visibleChildren.length - 1;
-                renderNavItem(child, cIsLast, subContainer, isRevealed, true);
-            });
-            parentContainer.appendChild(subContainer);
-        }
-    }
 }
 
 function handleHashNavigation() {
@@ -293,44 +316,55 @@ function handleHashNavigation() {
     loadPage(page, params.toString());
 }
 
-window.loadPage = async function(pageName, args = '') {
+async function loadPage(pageName, args = '') {
     const pageBase = '/storage/internal/pages/main/';
-    
-    if (Object.keys(flatPagesMap).length === 0) {
-        await loadCustomPages();
-    }
-    
-    const customPage = flatPagesMap[pageName];
-    
-    if (customPage && !['home', 'blogs', 'projects', 'downloads'].includes(customPage.id)) {
-        if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
-            pendingPage = { id: pageName, args: args };
-            document.getElementById('lock-window').style.display = 'flex';
+    const customData = await loadYAML('/storage/data/custom.yaml');
+    if (customData && customData.customPages) {
+        let customPage = null;
+        for (const key in customData.customPages) {
+            const found = customData.customPages[key].sub.find(p => String(p.id) === String(pageName));
+            if (found) { customPage = found; break; }
+        }
+        
+        if (customPage) {
+            if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
+                pendingPage = { id: pageName, args: args };
+                document.getElementById('lock-window').style.display = 'flex';
+                return;
+            }
+
+            let pagePath = customPage.path.startsWith('~/') ? '/storage/internal/pages/custom/' + customPage.path.substring(2) : customPage.path;
+            const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
+            let pageType = typeInfo.type || 'raw';
+            if (pageType === 'refsection') pageType = 'section'; 
+
+            const iframe = document.getElementById('content-frame');
+            let targetUrl = '';
+            if (pageType === 'section' || pageType === 'interests') targetUrl = `${pageBase}custom.html${args ? '#' + args : ''}`;
+            else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(pagePath)}`;
+            else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
+            else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(pagePath)}`;
+            else if (pageType === 'html') targetUrl = pagePath;
+
+            iframe.src = targetUrl;
+            history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
             return;
         }
-
-        let pagePath = customPage.path.startsWith('~/') ? '/storage/internal/pages/custom/' + customPage.path.substring(2) : customPage.path;
-        const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
-        let pageType = typeInfo.type || 'raw';
-        if (pageType === 'refsection') pageType = 'section'; 
-
-        const iframe = document.getElementById('content-frame');
-        let targetUrl = '';
-        if (pageType === 'section') targetUrl = `${pageBase}custom.html?file=${encodeURIComponent(pagePath)}${args ? '#' + args : ''}`;
-        else if (pageType === 'interests') targetUrl = `${pageBase}interests.html?file=${encodeURIComponent(pagePath)}${args ? '#' + args : ''}`;
-        else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(pagePath)}`;
-        else if (pageType === 'gallery') targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(pagePath)}&type=${pageType}${args ? '&' + args : ''}`;
-        else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(pagePath)}`;
-        else if (pageType === 'html') targetUrl = pagePath;
-
-        iframe.src = targetUrl;
-        window.location.hash = `#page=${pageName}${args ? '&' + args : ''}`;
-        return;
     }
     
     const iframe = document.getElementById('content-frame');
     iframe.src = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
-    window.location.hash = `#page=${pageName}${args ? '&' + args : ''}`;
+    history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
+}
+
+window.requestReveal = () => {
+    sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
+    loadCustomPages();
+}
+
+window.requestHide = () => {
+    sessionStorage.removeItem('sidebar_expire');
+    loadCustomPages();
 }
 
 window.checkLock = () => {
@@ -355,250 +389,10 @@ window.closeLockModal = () => {
 
 window.openPreferences = () => {
     const win = document.getElementById('settings-window');
-    if (win.style.display === 'none' || !win.style.display) {
-        win.style.display = 'flex';
-        win.style.zIndex = ++window.highestZ;
-        setTimeout(() => document.getElementById('term-in').focus(), 50);
-    } else {
-        win.style.display = 'none';
-    }
+    win.style.display = 'flex';
+    win.style.zIndex = ++window.highestZ;
 };
 
 window.closePreferences = () => {
     document.getElementById('settings-window').style.display = 'none';
 };
-
-/* --- TERMINAL ENGINE --- */
-const termOut = document.getElementById('term-out');
-const termIn = document.getElementById('term-in');
-const termPrefix = document.getElementById('term-prefix');
-
-function updateTerminalPrefix() {
-    if (termPrefix) termPrefix.textContent = (isAdmin ? 'A' : 'U') + ' > github\\pages\\devicals >';
-}
-
-function printToTerminal(text) {
-    termOut.textContent += `\n${text}`;
-    termOut.scrollTop = termOut.scrollHeight;
-}
-
-function setupTerminal() {
-    if (!termIn) return;
-    termIn.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-            const raw = termIn.value.trim();
-            termIn.value = '';
-            
-            let displayCmd = raw;
-            if (raw.startsWith('user login ')) {
-                displayCmd = 'user login **********';
-            }
-            
-            printToTerminal(`\n${termPrefix.textContent} ${displayCmd}`);
-            if (raw) await executeTerminalCommand(raw);
-        }
-    });
-}
-
-async function executeTerminalCommand(cmdStr) {
-    const args = cmdStr.split(' ');
-    const cmd = args[0].toLowerCase();
-    
-    switch (cmd) {
-        case 'help':
-            printToTerminal(`
-┌ HELP
-├ lists all commands,
-└ displays this message
-
-┌ USER
-├ displays current user information and/or
-│ perform admin login or logout actions
-│ usage: user [login <password> | logout]
-└ note: login password will be redacted as * in input
-
-┌ SOURCE
-└ origin > website source code
-
-┌ NAVIGATE
-├ navigate to a different page
-│ usage: navigate [path]
-│ example: navigate community/chitchat
-│          moves to 'Chits & Chats' page
-│ example: navigate extra/writing/books
-│          moves to 'Books' page
-└ aliases: nav
-
-┌ MESSAGE
-├ send a message in 'Chits & Chats'
-│ usage: message [user:<name>; msg:<message> | message:<message> badge*:<true|false>]
-│        username is optional | badge* is [A] admin only
-│ aliases: msg
-└ notes: drawings cannot be added via terminal
-
-┌ THEME
-├ manages current theme
-│ usage: theme [apply <theme> | index]
-└ aliases: c, color
-
-┌ PAGE
-├ show or hide @hidden pages
-│ [A] admin only
-└ usage: page [show | hide]
-
-┌ BROADCAST
-├ manages announcements
-│ [A] admin only
-│ usage: broadcast [create <message> | index | delete <indexID>]
-│        no arguments will default to 'index' argument
-└ aliases: bc`);
-            break;
-            
-        case 'user':
-            if (args[1] === 'login') {
-                const password = args.slice(2).join(' ');
-                if (!password) { printToTerminal("Error: missing password"); break; }
-                const { error } = await supabaseClient.auth.signInWithPassword({ email: '3rr0r.d3v@gmail.com', password });
-                if (error) printToTerminal("Login Failed: " + error.message);
-                else printToTerminal("Successfully logged in as Administrator status");
-            } else if (args[1] === 'logout') {
-                await supabaseClient.auth.signOut();
-                printToTerminal("Logged out.");
-            } else {
-                printToTerminal(isAdmin ? "Current User: Administrator" : "Current User: Guest");
-            }
-            break;
-            
-        case 'source':
-            window.open('https://github.com/devicals/devicals.github.io');
-            printToTerminal("Opened source repository.");
-            break;
-            
-        case 'nav':
-        case 'navigate':
-            let target = args[1];
-            if (!target) { printToTerminal("Usage: navigate <pageID/path>"); break; }
-            const pageId = target.split('/').pop();
-            if (flatPagesMap[pageId] || pageId === 'home' || pageId === 'blogs' || pageId === 'projects' || pageId === 'downloads') {
-                loadPage(pageId);
-                printToTerminal(`Navigating to ${pageId}...`);
-            } else {
-                printToTerminal(`Error: Page '${pageId}' not found.`);
-            }
-            break;
-            
-        case 'c':
-        case 'color':
-        case 'theme':
-            if (args[1] === 'index') {
-                printToTerminal(`Available themes:\n- vitesse-dark\n- original\n- evergreens\n- gruvbox\n- ice-world\n- purple-orange\n- orange-purple\n- pink-dream\n- cyberpunk\n- desert\n- custom`);
-            } else if (args[1] === 'apply' || args[1]) {
-                const t = args[1] === 'apply' ? args[2] : args[1];
-                if (!t) { printToTerminal("Usage: theme <name>"); break; }
-                window.changeTheme(t);
-                printToTerminal(`Theme applied: ${t}`);
-            } else {
-                printToTerminal("Usage: theme <theme_name>");
-            }
-            break;
-            
-        case 'page':
-            if (!isAdmin) { printToTerminal("Error: Insufficient privileges"); break; }
-            if (args[1] === 'show') {
-                sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
-                loadCustomPages();
-                printToTerminal("Hidden pages are now visible.");
-            } else if (args[1] === 'hide') {
-                sessionStorage.removeItem('sidebar_expire');
-                loadCustomPages();
-                printToTerminal("Hidden pages are now hidden.");
-            } else {
-                printToTerminal("Usage: page [show | hide]");
-            }
-            break;
-            
-        case 'bc':
-        case 'broadcast':
-            if (!isAdmin) { printToTerminal("Error: Insufficient privileges"); break; }
-            const subCmd = args[1] || 'index';
-            
-            if (subCmd === 'index') {
-                let out = "\nIndex of current announcements:\n";
-                if (currentAnnouncements.length === 0) out += "No announcements found.\n";
-                else currentAnnouncements.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
-                out += "\nEnd";
-                printToTerminal(out);
-            } else if (subCmd === 'create') {
-                const msg = args.slice(2).join(' ');
-                if (!msg) { printToTerminal("Error: empty message"); break; }
-                const newList = [...currentAnnouncements, msg];
-                await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
-                let out = `\nCreated announcement '${msg}' at index ${newList.length}\n\nUpdated index of current announcements:\n`;
-                newList.forEach((a, i) => out += `${i + 1}. '${a}'\n`);
-                out += "\nEnd";
-                printToTerminal(out);
-            } else if (subCmd === 'delete') {
-                const delIdx = parseInt(args[2]) - 1;
-                if (isNaN(delIdx) || delIdx < 0 || delIdx >= currentAnnouncements.length) { printToTerminal("Error: invalid index"); break; }
-                const newList = currentAnnouncements.filter((_, i) => i !== delIdx);
-                await supabaseClient.from('site_content').update({ data: newList }).eq('key', 'announcements');
-                printToTerminal(`Deleted announcement at index ${delIdx + 1}`);
-            } else {
-                printToTerminal("Usage: broadcast [create <message> | index | delete <indexID>]");
-            }
-            break;
-            
-        case 'msg':
-        case 'message':
-            let fullStr = args.slice(1).join(' ');
-            if (!fullStr) { printToTerminal("Usage: message [user:<name>; msg:<message> | message:<message> badge*:<true|false>]"); break; }
-            
-            let uName = "Anonymous";
-            let msgText = fullStr;
-            let useBadge = false;
-
-            if (fullStr.includes('user:') && fullStr.includes('msg:')) {
-                const parts = fullStr.split('msg:');
-                uName = parts[0].replace('user:', '').replace(';', '').trim() || "Anonymous";
-                msgText = parts[1].trim();
-            } else if (fullStr.includes('message:')) {
-                msgText = fullStr.replace('message:', '').trim();
-            }
-            
-            if (msgText.includes('badge*:')) {
-                const bp = msgText.split('badge*:');
-                msgText = bp[0].trim();
-                useBadge = bp[1].trim() === 'true';
-            }
-
-            if (useBadge && !isAdmin) {
-                printToTerminal("Error: Cannot use badge*. Insufficient privileges.");
-                break;
-            }
-
-            const { data, error } = await supabaseClient.from('guestbook').insert({ 
-                name: uName, 
-                message: msgText, 
-                is_creator: useBadge,
-                ip_address: 'Terminal',
-                country: 'Unknown',
-                is_vpn: false
-            }).select('id').single();
-
-            if (error) {
-                printToTerminal("Error sending message: " + error.message);
-            } else {
-                if (data && data.id) {
-                    const localSaved = JSON.parse(localStorage.getItem('posted_messages') || '[]');
-                    localSaved.push(data.id);
-                    localStorage.setItem('posted_messages', JSON.stringify(localSaved));
-                }
-                printToTerminal(`Message sent to Chits & Chats as ${uName}.`);
-            }
-            break;
-
-        default:
-            printToTerminal(`Command not found: ${cmd}. Type 'help' for a list of commands.`);
-            break;
-    }
-}

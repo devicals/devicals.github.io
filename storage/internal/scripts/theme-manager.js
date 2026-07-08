@@ -234,7 +234,9 @@ function applyTheme(themeName, themeData = null) {
     }
 }
 
-window.changeTheme = function(themeName) {
+function changeTheme(themeName) {
+    const customEditor = document.getElementById('custom-theme-editor');
+    
     if (themeName === 'custom') {
         const savedCustom = localStorage.getItem('custom-theme-data');
         if (!savedCustom) {
@@ -244,7 +246,10 @@ window.changeTheme = function(themeName) {
         } else {
             applyTheme('custom', JSON.parse(savedCustom));
         }
+        if (customEditor) customEditor.style.display = 'block';
+        if (typeof loadCustomThemeEditor === 'function') loadCustomThemeEditor();
     } else {
+        if (customEditor) customEditor.style.display = 'none';
         applyTheme(themeName);
         localStorage.setItem('selected-theme', themeName);
     }
@@ -260,18 +265,18 @@ function getCurrentTheme() {
     return theme;
 }
 
-const savedTheme = localStorage.getItem('selected-theme') || 'original';
+const savedTheme = localStorage.getItem('selected-theme') || 'vitesse-dark';
 if (savedTheme === 'custom') {
     const savedCustom = localStorage.getItem('custom-theme-data');
     if (savedCustom) applyTheme('custom', JSON.parse(savedCustom));
-    else applyTheme('original');
+    else applyTheme('vitesse-dark');
 } else {
     applyTheme(savedTheme);
 }
 
 window.addEventListener('message', (e) => {
     if (e.data === 'iframe-loaded') {
-        const current = localStorage.getItem('selected-theme') || 'original';
+        const current = localStorage.getItem('selected-theme') || 'vitesse-dark';
         if (current === 'custom') {
             const data = localStorage.getItem('custom-theme-data');
             if (data) applyTheme('custom', JSON.parse(data));
