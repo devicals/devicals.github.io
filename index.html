@@ -21,34 +21,30 @@
 
     <div class="ascii-window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
         <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-top-bar">
-            <span class="ascii-line-left"></span>
+        <div class="ascii-title-container">
             <span class="ascii-title" id="nav-drag">nav</span>
-            <span class="ascii-line-right" style="flex:1;"></span>
         </div>
         <div class="ascii-content nav-tree" id="nav-tree-content"></div>
     </div>
     
     <div class="ascii-window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
         <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-top-bar">
-            <span class="ascii-line-left"></span>
+        <div class="ascii-title-container">
             <span class="ascii-title" id="ann-drag">notice</span>
-            <span class="ascii-line-mid"></span>
-            <span class="ascii-close" onclick="closeAnnouncement()">x</span>
-            <span class="ascii-line-right"></span>
         </div>
-        <div class="ascii-content announcement-content" id="announcement-content"></div>
+        <div class="ascii-right-container">
+            <span class="ascii-close" onclick="closeAnnouncement()">x</span>
+        </div>
+        <div class="ascii-content" id="announcement-content"></div>
     </div>
 
     <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 300px; z-index: 105; display:none;">
         <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-top-bar">
-            <span class="ascii-line-left"></span>
+        <div class="ascii-title-container">
             <span class="ascii-title" id="set-drag">settings.ini</span>
-            <span class="ascii-line-mid"></span>
+        </div>
+        <div class="ascii-right-container">
             <span class="ascii-close" onclick="closePreferences()">x</span>
-            <span class="ascii-line-right"></span>
         </div>
         <div class="ascii-content">
             <div style="margin-bottom: 15px;">
@@ -72,16 +68,14 @@
 
     <div class="ascii-window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
         <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-        <div class="ascii-top-bar">
-            <span class="ascii-line-left"></span>
+        <div class="ascii-title-container">
             <span class="ascii-title" id="lock-drag">auth_required.exe</span>
-            <span class="ascii-line-mid"></span>
+        </div>
+        <div class="ascii-right-container">
             <span class="ascii-close" onclick="closeLockModal()">x</span>
-            <span class="ascii-line-right"></span>
         </div>
         <div class="ascii-content">
-            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">PASSWORD</label>
-            <input type="password" id="lock-input" class="ascii-input" style="margin:8px 0;">
+            <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
             <button class="ascii-btn" onclick="checkLock()" style="color:hsl(var(--accent));">[ Unlock ]</button>
         </div>
     </div>

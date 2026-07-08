@@ -163,22 +163,19 @@
                 win.style.left = bounds.left;
                 win.style.top = bounds.top;
                 win.style.width = bounds.width;
-                if (bounds.height) win.style.height = bounds.height;
                 document.getElementById('desktop').appendChild(win);
             }
             
             win.innerHTML = `
                 <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-                <div class="ascii-top-bar">
-                    <span class="ascii-line-left"></span>
+                <div class="ascii-title-container">
                     <span class="ascii-title" id="${id}-drag">${title}</span>
                     ${adminControls}
-                    ${rightContent ? `
-                    <span class="ascii-line-mid"></span>
-                    <span style="padding:0 8px; color:hsl(var(--foreground)); font-size:11px;">${rightContent}</span>
-                    ` : '<span class="ascii-line-mid"></span>'}
-                    <span class="ascii-line-right"></span>
                 </div>
+                ${rightContent ? `
+                <div class="ascii-right-container">
+                    <span>${rightContent}</span>
+                </div>` : ''}
                 <div class="ascii-content">
                     ${contentHTML}
                 </div>
