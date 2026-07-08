@@ -13,11 +13,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        ::-webkit-scrollbar { display: none !important; }
-        * { border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
-        
-        .desktop-area { position: absolute; inset: 0; overflow: hidden; }
-        
         .text-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; line-height: 1.4; color: hsl(var(--foreground)); }
         .text-line a { color: hsl(var(--foreground)); text-decoration: none; }
         .text-line a:hover { color: hsl(var(--accent)); }
@@ -28,32 +23,30 @@
         .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
         body.is-admin .add-row { display: flex; }
         
-        .admin-edit-only { display: none; }
-        body.is-admin .admin-edit-only { display: inline-block; cursor: pointer; color: hsl(var(--muted-foreground)); font-size: 13px; font-weight: normal; }
-        body.is-admin .admin-edit-only:hover { color: hsl(var(--accent)); }
+        .admin-edit-only { display: none; cursor: pointer; color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: normal; }
+        body.is-admin .admin-edit-only { display: inline-block; }
+        .admin-edit-only:hover { color: hsl(var(--accent)); }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--foreground)); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
+        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--foreground) / 0.3); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
         .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
-        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--foreground)); }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; }
+        .modal-close:hover { color: hsl(var(--destructive)); }
         .modal-body { display: flex; flex-direction: column; gap: 12px; }
-        .modal textarea { width: 100%; padding: 10px; background: hsla(var(--secondary), 0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
+        .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--foreground) / 0.3); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
         .modal textarea:focus { border-color: hsl(var(--accent)); }
-        .btn-primary { background: hsl(var(--accent)) !important; color: hsl(var(--accent-foreground)) !important; border: 1px solid hsl(var(--accent)) !important; padding: 10px 20px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; text-transform: uppercase; }
-        .btn-primary:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
     <div class="desktop-area" id="desktop"></div>
 
-    <!-- Biography Modal -->
     <div id="bio-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>+---[ Edit_Bio.exe ]---+</h2>
-                <button class="modal-close" onclick="closeBioModal()">✕</button>
+                <h2>Edit_Bio.exe</h2>
+                <button class="modal-close" onclick="closeBioModal()">x</button>
             </div>
             <div class="modal-body">
                 <textarea id="bio-textarea-input" placeholder="Biography Markdown..."></textarea>
@@ -104,8 +97,7 @@
 
         async function syncToSupabase() {
             if (!isAdmin) return;
-            const { error } = await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
-            if (error) alert("Error saving: " + error.message);
+            await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
         }
 
         function makeDraggable(winId, handleId) {
@@ -118,7 +110,7 @@
             handle.ontouchstart = dragMouseDown;
 
             function dragMouseDown(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN' && e.target.classList.contains('admin-edit-only')) return;
                 e.preventDefault();
                 win.style.zIndex = ++highestZ;
                 if (e.type === 'touchstart') {
@@ -160,7 +152,6 @@
                 win.style.left = bounds.left;
                 win.style.top = bounds.top;
                 win.style.width = bounds.width;
-                if (bounds.height) win.style.height = bounds.height;
                 document.getElementById('desktop').appendChild(win);
             }
             
@@ -328,6 +319,7 @@
                 }
             } catch (e) {}
         }
+        function parseDate(d) { const p=d.split('/'); return new Date(p[2],p[1]-1,p[0]); }
 
         document.addEventListener('DOMContentLoaded', () => { initDatabase(); });
     </script>

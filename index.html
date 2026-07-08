@@ -48,8 +48,7 @@
         </div>
         <div class="ascii-content">
             <div style="margin-bottom: 15px;">
-                <label style="color:hsl(var(--muted-foreground)); font-size:10px;">THEME</label>
-                <select id="theme-select" class="ascii-input" style="margin-top:4px;" onchange="changeTheme(this.value)">
+                <select id="theme-select" class="ascii-input" onchange="changeTheme(this.value)">
                     <option value="vitesse-dark">Vitesse Dark (Default)</option>
                     <option value="original">Original</option>
                     <option value="evergreens">Evergreens</option>
@@ -76,8 +75,7 @@
             <span class="ascii-close" onclick="closeLockModal()">x</span>
         </div>
         <div class="ascii-content">
-            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">PASSWORD</label>
-            <input type="password" id="lock-input" class="ascii-input" style="margin:8px 0;">
+            <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
             <button class="ascii-btn" onclick="checkLock()" style="color:hsl(var(--accent));">[ Unlock ]</button>
         </div>
     </div>

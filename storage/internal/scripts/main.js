@@ -31,7 +31,7 @@ function makeDraggable(winId, handleId) {
     handle.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
         e.preventDefault();
         win.style.zIndex = ++window.highestZ;
         if (e.type === 'touchstart') {
@@ -129,7 +129,6 @@ function handleUserSession(session) {
 function renderLoginPortal() {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
-        <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ADMIN LOGIN</label>
         <input type="text" id="admin-email-field" class="ascii-input" style="margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
         <input type="password" id="admin-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
         <button class="ascii-btn" style="color:hsl(var(--accent));" onclick="submitAdminLogin()">[ Login ]</button>
@@ -263,12 +262,12 @@ async function loadCustomPages() {
     const container = document.getElementById('nav-tree-content');
     container.innerHTML = `
         <div class="nav-folder">Main/</div>
-        <div class="nav-item">├─ <a href="javascript:void(0)" onclick="loadPage('home')">Home</a></div>
-        <div class="nav-item">└─ <a href="javascript:void(0)" onclick="loadPage('blogs')">Blogs</a></div>
+        <div class="nav-item">├─ <span onclick="loadPage('home')">Home</span></div>
+        <div class="nav-item">└─ <span onclick="loadPage('blogs')">Blogs</span></div>
         <br>
         <div class="nav-folder">Content/</div>
-        <div class="nav-item">├─ <a href="javascript:void(0)" onclick="loadPage('projects')">Projects</a></div>
-        <div class="nav-item">└─ <a href="javascript:void(0)" onclick="loadPage('downloads')">Downloads</a></div>
+        <div class="nav-item">├─ <span onclick="loadPage('projects')">Projects</span></div>
+        <div class="nav-item">└─ <span onclick="loadPage('downloads')">Downloads</span></div>
         <br>
     `;
 
@@ -291,10 +290,9 @@ async function loadCustomPages() {
             const isLast = index === visibleSub.length - 1;
             const prefix = isLast ? '└─ ' : '├─ ';
             
-            const link = document.createElement('a');
-            link.href = "javascript:void(0)";
+            const link = document.createElement('span');
             link.textContent = page.display || page.name;
-            link.onclick = (e) => { e.preventDefault(); loadPage(page.id); };
+            link.onclick = () => loadPage(page.id);
 
             item.appendChild(document.createTextNode(prefix));
             item.appendChild(link);
@@ -305,7 +303,7 @@ async function loadCustomPages() {
 
     container.innerHTML += `
         <div class="nav-folder">System/</div>
-        <div class="nav-item">└─ <a href="javascript:void(0)" onclick="openPreferences()">Settings</a></div>
+        <div class="nav-item">└─ <span onclick="openPreferences()">Settings</span></div>
     `;
 }
 
@@ -390,8 +388,9 @@ window.closeLockModal = () => {
 }
 
 window.openPreferences = () => {
-    document.getElementById('settings-window').style.display = 'flex';
-    document.getElementById('settings-window').style.zIndex = ++window.highestZ;
+    const win = document.getElementById('settings-window');
+    win.style.display = 'flex';
+    win.style.zIndex = ++window.highestZ;
 };
 
 window.closePreferences = () => {
