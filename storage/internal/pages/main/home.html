@@ -25,7 +25,7 @@
         .admin-actions { display: none; gap: 6px; }
         body.is-admin .admin-actions { display: flex; }
         
-        .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
+        .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
         body.is-admin .add-row { display: flex; }
         
         .admin-edit-only { display: none; cursor: pointer; color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: normal; }
@@ -34,14 +34,19 @@
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
-        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; white-space: nowrap; }
-        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; padding: 0 4px; }
+        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--foreground) / 0.3); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
+        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; }
         .modal-close:hover { color: hsl(var(--destructive)); }
         .modal-body { display: flex; flex-direction: column; gap: 12px; }
-        .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
+        .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--foreground) / 0.3); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
         .modal textarea:focus { border-color: hsl(var(--accent)); }
+        
+        @media (max-width: 768px) {
+            .desktop-area { overflow-y: auto; position: relative; padding: 20px; height: auto; display: flex; flex-direction: column; gap: 20px; }
+            .ascii-window { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; transform: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -50,7 +55,7 @@
     <div id="bio-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>+---[ Edit_Bio.exe ]---+</h2>
+                <h2>Edit_Bio.exe</h2>
                 <button class="modal-close" onclick="closeBioModal()">x</button>
             </div>
             <div class="modal-body">
@@ -102,7 +107,8 @@
 
         async function syncToSupabase() {
             if (!isAdmin) return;
-            await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
+            const { error } = await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
+            if (error) alert("Error saving: " + error.message);
         }
 
         function makeDraggable(winId, handleId) {
@@ -115,7 +121,7 @@
             handle.ontouchstart = dragMouseDown;
 
             function dragMouseDown(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SPAN' && e.target.classList.contains('admin-edit-only')) return;
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
                 e.preventDefault();
                 win.style.zIndex = ++highestZ;
                 if (e.type === 'touchstart') {
@@ -145,7 +151,6 @@
             }
             
             win.addEventListener('mousedown', () => { win.style.zIndex = ++highestZ; });
-            win.addEventListener('touchstart', () => { win.style.zIndex = ++highestZ; }, {passive: true});
         }
 
         function createWindow(id, title, rightContent, contentHTML, bounds, adminControls = '') {
@@ -158,16 +163,21 @@
                 win.style.left = bounds.left;
                 win.style.top = bounds.top;
                 win.style.width = bounds.width;
+                if (bounds.height) win.style.height = bounds.height;
                 document.getElementById('desktop').appendChild(win);
             }
             
             win.innerHTML = `
-                <div class="ascii-header" id="${id}-drag">
-                    <span class="ascii-title">+--[ ${title} ]--+</span>
-                    <div class="ascii-controls">
-                        ${adminControls}
-                        ${rightContent ? `<span>${rightContent}</span>` : ''}
-                    </div>
+                <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
+                <div class="ascii-top-bar">
+                    <span class="ascii-line-left"></span>
+                    <span class="ascii-title" id="${id}-drag">${title}</span>
+                    ${adminControls}
+                    ${rightContent ? `
+                    <span class="ascii-line-mid"></span>
+                    <span style="padding:0 8px; color:hsl(var(--foreground)); font-size:11px;">${rightContent}</span>
+                    ` : '<span class="ascii-line-mid"></span>'}
+                    <span class="ascii-line-right"></span>
                 </div>
                 <div class="ascii-content">
                     ${contentHTML}
@@ -181,7 +191,7 @@
         async function renderPage() {
             let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
             createWindow('win-bio', 'about me', '', bioHTML, {left: '20px', top: '20px', width: '450px'}, 
-                `<span class="admin-edit-only" onclick="openBioModal()">[ Edit ]</span>`);
+                `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
 
             let skillsHTML = `<div class="add-row">
                 <input type="text" id="skill-n" class="ascii-input" placeholder="Skill Name" style="flex:1;">
@@ -198,7 +208,7 @@
             </div>
             <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
             <div id="socials-list" style="margin-top:10px;"></div>`;
-            createWindow('win-socials', 'social', '', socialsHTML, {left: '920px', top: '100px', width: '300px'});
+            createWindow('win-socials', 'socials', '', socialsHTML, {left: '920px', top: '100px', width: '300px'});
             renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
             refreshDiscordUI();
 
@@ -229,8 +239,8 @@
                         e.preventDefault(); if (dragCategory !== category) return;
                         if (dragItemIdx === idx) return;
                         const targetArr = homeData[category];
-                        const [reorderedItem] = targetArr.splice(dragItemIdx, 1);
-                        targetArr.splice(idx, 0, reorderedItem);
+                        const [reordered] = targetArr.splice(dragItemIdx, 1);
+                        targetArr.splice(idx, 0, reordered);
                         await syncToSupabase();
                     });
                 }
@@ -323,6 +333,7 @@
                 }
             } catch (e) {}
         }
+        function parseDate(d) { const p=d.split('/'); return new Date(p[2],p[1]-1,p[0]); }
 
         document.addEventListener('DOMContentLoaded', () => { initDatabase(); });
     </script>

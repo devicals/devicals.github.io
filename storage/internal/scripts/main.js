@@ -31,7 +31,7 @@ function makeDraggable(winId, handleId) {
     handle.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
-        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('ascii-close')) return;
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
         e.preventDefault();
         win.style.zIndex = ++window.highestZ;
         if (e.type === 'touchstart') {
@@ -60,8 +60,8 @@ function makeDraggable(winId, handleId) {
         document.ontouchend = null; document.ontouchmove = null;
     }
     
-    win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
-    win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
+    win.addEventListener('mousedown', () => win.style.zIndex = ++window.highestZ);
+    win.addEventListener('touchstart', () => win.style.zIndex = ++window.highestZ, {passive: true});
 }
 
 function startTitleAnimation() {
@@ -151,7 +151,7 @@ function renderAdminPortal(email) {
             <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
         </div>
         
-        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px; margin-bottom:15px;">
+        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
                 <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
@@ -159,7 +159,7 @@ function renderAdminPortal(email) {
             </div>
         </div>
 
-        <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px;">
+        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
             <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
             <div style="display:flex; gap:6px; align-items:center;">
