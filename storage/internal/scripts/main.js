@@ -87,7 +87,7 @@ async function initializeApp() {
     handleHashNavigation();
     window.addEventListener('hashchange', handleHashNavigation);
     
-    const savedTheme = localStorage.getItem('selected-theme') || 'original';
+    const savedTheme = localStorage.getItem('selected-theme') || 'default';
     const select = document.getElementById('theme-select');
     if (select) select.value = savedTheme;
     

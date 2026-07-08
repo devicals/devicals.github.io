@@ -1,5 +1,5 @@
 const themes = {
-    original: {
+    default: {
         background: "246 13% 5%",
         foreground: "160 50% 80%",
         card: "246 13% 5%",
@@ -19,6 +19,27 @@ const themes = {
         border: "160 50% 50%",
         input: "246 13% 8%",
         ring: "160 100% 70%"
+    },
+    original: {
+        background: "246 13% 30%",
+        foreground: "0 0% 98%",
+        card: "246 13% 25%",
+        cardForeground: "0 0% 98%",
+        popover: "246 13% 30%",
+        popoverForeground: "0 0% 98%",
+        primary: "0 0% 98%",
+        primaryForeground: "246 13% 30%",
+        secondary: "246 13% 20%",
+        secondaryForeground: "0 0% 98%",
+        muted: "246 13% 20%",
+        mutedForeground: "240 5% 64.9%",
+        accent: "342 82% 73%",
+        accentForeground: "0 0% 98%",
+        destructive: "0 62.8% 30.6%",
+        destructiveForeground: "0 0% 98%",
+        border: "246 13% 40%",
+        input: "246 13% 20%",
+        ring: "342 82% 73%"
     },
     "vitesse-dark": {
         background: "225 6% 7%",
@@ -214,7 +235,7 @@ const themes = {
 let currentColorMode = 'hex';
 
 function applyTheme(themeName, themeData = null) {
-    const theme = themeData || themes[themeName] || themes.original;
+    const theme = themeData || themes[themeName] || themes.default;
     const root = document.documentElement;
     
     Object.keys(theme).forEach(key => {
@@ -258,25 +279,25 @@ function changeTheme(themeName) {
 function getCurrentTheme() {
     const root = document.documentElement;
     const theme = {};
-    Object.keys(themes.original).forEach(key => {
+    Object.keys(themes.default).forEach(key => {
         const cssVar = '--' + key.replace(/([A-Z])/g, '-$1').toLowerCase();
         theme[key] = getComputedStyle(root).getPropertyValue(cssVar).trim();
     });
     return theme;
 }
 
-const savedTheme = localStorage.getItem('selected-theme') || 'original';
+const savedTheme = localStorage.getItem('selected-theme') || 'default';
 if (savedTheme === 'custom') {
     const savedCustom = localStorage.getItem('custom-theme-data');
     if (savedCustom) applyTheme('custom', JSON.parse(savedCustom));
-    else applyTheme('original');
+    else applyTheme('default');
 } else {
     applyTheme(savedTheme);
 }
 
 window.addEventListener('message', (e) => {
     if (e.data === 'iframe-loaded') {
-        const current = localStorage.getItem('selected-theme') || 'original';
+        const current = localStorage.getItem('selected-theme') || 'default';
         if (current === 'custom') {
             const data = localStorage.getItem('custom-theme-data');
             if (data) applyTheme('custom', JSON.parse(data));
