@@ -1,21 +1,68 @@
 const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
-
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentAnnouncementIndex = 0;
 let announcementInterval;
-let sidebarOpen = false;
 let pendingPage = null;
 let titleIdx = 0;
 const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
 let currentAnnouncements = [];
+window.highestZ = 100;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    makeDraggable('nav-window', 'nav-drag');
+    makeDraggable('announcement-window', 'ann-drag');
+    makeDraggable('settings-window', 'set-drag');
+    makeDraggable('lock-window', 'lock-drag');
+    
     await initializeApp();
     startTitleAnimation();
 });
+
+function makeDraggable(winId, handleId) {
+    const win = document.getElementById(winId);
+    const handle = document.getElementById(handleId);
+    if (!win || !handle) return;
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    
+    handle.onmousedown = dragMouseDown;
+    handle.ontouchstart = dragMouseDown;
+
+    function dragMouseDown(e) {
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SPAN') return;
+        e.preventDefault();
+        win.style.zIndex = ++window.highestZ;
+        if (e.type === 'touchstart') {
+            pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
+        } else {
+            pos3 = e.clientX; pos4 = e.clientY;
+        }
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement;
+        document.ontouchmove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
+        let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+        pos1 = pos3 - clientX; pos2 = pos4 - clientY;
+        pos3 = clientX; pos4 = clientY;
+        win.style.top = (win.offsetTop - pos2) + "px";
+        win.style.left = (win.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null; document.onmousemove = null;
+        document.ontouchend = null; document.ontouchmove = null;
+    }
+    
+    win.addEventListener('mousedown', () => win.style.zIndex = ++window.highestZ);
+    win.addEventListener('touchstart', () => win.style.zIndex = ++window.highestZ, {passive: true});
+}
 
 function startTitleAnimation() {
     const updateTitle = () => {
@@ -28,11 +75,6 @@ function startTitleAnimation() {
         clearInterval(interval);
         interval = setInterval(updateTitle, document.hidden ? 1000 : 200);
     });
-}
-
-function toggleSection(header) {
-    const section = header.parentElement;
-    section.classList.toggle('collapsed');
 }
 
 async function initializeApp() {
@@ -53,28 +95,6 @@ async function initializeApp() {
         if (expire && Date.now() > parseInt(expire)) {
             sessionStorage.removeItem('sidebar_expire');
             await loadCustomPages();
-            
-            const hash = window.location.hash.substring(1);
-            const params = new URLSearchParams(hash);
-            const currentPageId = params.get('page');
-
-            if (currentPageId && currentPageId !== 'home') {
-                const data = await loadYAML('/storage/data/custom.yaml');
-                if (data && data.customPages) {
-                    let shouldKick = false;
-                    for (const key in data.customPages) {
-                        const page = data.customPages[key].sub.find(p => String(p.id) === String(currentPageId));
-                        if (page && (page.hidden || page.locked)) {
-                            shouldKick = true;
-                            break;
-                        }
-                    }
-                    if (shouldKick) {
-                        window.location.hash = '#page=home';
-                        loadPage('home');
-                    }
-                }
-            }
         }
     }, 5000);
 }
@@ -82,9 +102,7 @@ async function initializeApp() {
 async function initAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     handleUserSession(session);
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
-        handleUserSession(session);
-    });
+    supabaseClient.auth.onAuthStateChange((_event, session) => handleUserSession(session));
 }
 
 function handleUserSession(session) {
@@ -111,10 +129,10 @@ function handleUserSession(session) {
 function renderLoginPortal() {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
-        <label>Admin Login</label>
-        <input type="text" id="admin-email-field" class="setting-field" placeholder="Email" value="3rr0r.d3v@gmail.com" readonly style="margin-top:5px;">
-        <input type="password" id="admin-password-field" class="setting-field" placeholder="Password">
-        <button class="customize-btn" style="margin-top:5px; margin-bottom:0;" onclick="submitAdminLogin()">Login</button>
+        <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ADMIN LOGIN</label>
+        <input type="text" id="admin-email-field" class="ascii-input" style="width:100%; margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
+        <input type="password" id="admin-password-field" class="ascii-input" style="width:100%; margin-bottom:8px;" placeholder="Password">
+        <button class="ascii-btn" style="color:hsl(var(--accent));" onclick="submitAdminLogin()">[ Login ]</button>
     `;
 }
 
@@ -123,35 +141,34 @@ async function submitAdminLogin() {
     const password = document.getElementById('admin-password-field').value;
     if (!password) return;
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-        alert("Login Failed: " + error.message);
-    }
+    if (error) alert("Login Failed: " + error.message);
 }
 
 function renderAdminPortal(email) {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
-        <label>Logged in as ${email}</label>
-        <button class="customize-btn" style="background:hsl(var(--destructive)); color:hsl(var(--destructive-foreground)); margin-top:5px; margin-bottom:15px; border:none;" onclick="supabaseClient.auth.signOut()">Logout</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span style="font-size:11px; color:hsl(var(--accent));">${email}</span>
+            <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
+        </div>
         
         <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px; margin-bottom:15px;">
-            <label>Developer Options</label>
-            <div style="display: flex; gap: 10px; margin-top: 5px;">
-                <button id="show-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestReveal()">Show Hidden</button>
-                <button id="hide-hidden-btn" class="customize-btn" style="flex: 1; margin-bottom: 0;" onclick="requestHide()">Hide Hidden</button>
+            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
+                <button id="hide-hidden-btn" class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
             </div>
         </div>
 
         <div style="border-top:1px dashed hsl(var(--border)); padding-top:15px;">
-            <label>Manage Announcements</label>
-            <div id="ann-manager-list" style="margin-top:8px; max-height:150px; overflow-y:auto; margin-bottom:10px;"></div>
+            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
+            <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
             <div style="display:flex; gap:6px; align-items:center;">
-                <input type="text" id="new-ann-input" class="setting-field" placeholder="Add new announcement..." style="margin-bottom:0; flex:1;">
-                <button class="customize-btn" style="width:38px; height:38px; padding:0; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:0; border:none;" onclick="addNewAnnouncement()">+</button>
+                <input type="text" id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="flex:1;">
+                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent));">[+]</button>
             </div>
         </div>
     `;
-    updatePreferenceButtons();
     renderManagerAnnouncements();
 }
 
@@ -161,10 +178,10 @@ function renderManagerAnnouncements() {
     listContainer.innerHTML = '';
     currentAnnouncements.forEach((ann, idx) => {
         const item = document.createElement('div');
-        item.className = 'ann-list-item';
+        item.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;";
         item.innerHTML = `
-            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:10px;">${ann}</div>
-            <button onclick="deleteAnnouncement(${idx})">✕</button>
+            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; margin-right:8px;">${ann}</span>
+            <button class="ascii-btn del" onclick="deleteAnnouncement(${idx})">[x]</button>
         `;
         listContainer.appendChild(item);
     });
@@ -188,50 +205,31 @@ async function loadYAML(path) {
     try {
         const response = await fetch(path);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const text = await response.text();
-        return jsyaml.load(text);
-    } catch (error) {
-        console.error(`Error loading YAML file: ${path}`, error);
-        return null;
-    }
+        return jsyaml.load(await response.text());
+    } catch (error) { return null; }
 }
 
 async function loadAnnouncements() {
     try {
-        const { data, error } = await supabaseClient
-            .from('site_content')
-            .select('data')
-            .eq('key', 'announcements')
-            .single();
-        if (data && data.data) {
-            applyAnnouncements(data.data);
-        }
-        supabaseClient
-            .channel('ann-realtime')
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.announcements' },
-                (payload) => {
-                    if (payload.new && payload.new.data) {
-                        applyAnnouncements(payload.new.data);
-                    }
-                }
-            )
-            .subscribe();
-    } catch (error) {
-        console.error('Error loading announcements:', error);
-    }
+        const { data, error } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+        if (data && data.data) applyAnnouncements(data.data);
+        supabaseClient.channel('ann-realtime')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.announcements' },
+            (payload) => { if (payload.new && payload.new.data) applyAnnouncements(payload.new.data); }
+        ).subscribe();
+    } catch (e) {}
 }
 
 function applyAnnouncements(data) {
     currentAnnouncements = data;
     renderManagerAnnouncements();
+    const win = document.getElementById('announcement-window');
     if (currentAnnouncements.length === 0) {
-        closeAnnouncement();
+        win.style.display = 'none';
         return;
     }
-    document.getElementById('announcement-banner').classList.remove('hidden');
-    document.getElementById('main-content').classList.remove('no-banner');
+    if(sessionStorage.getItem('announcement-closed') !== 'true') win.style.display = 'flex';
+    
     displayAnnouncement(0, currentAnnouncements);
     if (announcementInterval) clearInterval(announcementInterval);
     if (currentAnnouncements.length > 1) {
@@ -242,98 +240,78 @@ function applyAnnouncements(data) {
     }
 }
 
-async function displayAnnouncement(index, announcements) {
-    const announcement = announcements[index];
-    const content = document.querySelector('.announcement-content');
+function displayAnnouncement(index, announcements) {
+    const content = document.getElementById('announcement-content');
     const renderer = new marked.Renderer();
-    renderer.codespan = (code) => `<code style="background:rgba(0,0,0,0.2);padding:2px 4px;font-family:monospace;">${code}</code>`;
-    content.innerHTML = marked.parse(announcement, { renderer });
+    content.innerHTML = marked.parse(announcements[index], { renderer });
 }
 
 async function saveAnnouncements(updatedList) {
-    const { error } = await supabaseClient
-        .from('site_content')
-        .update({ data: updatedList })
-        .eq('key', 'announcements');
-    if (error) {
-        alert("Error saving: " + error.message);
-    }
+    await supabaseClient.from('site_content').update({ data: updatedList }).eq('key', 'announcements');
 }
 
-function closeAnnouncement() {
-    document.getElementById('announcement-banner').classList.add('hidden');
-    document.getElementById('main-content').classList.add('no-banner');
+window.closeAnnouncement = function() {
+    document.getElementById('announcement-window').style.display = 'none';
     sessionStorage.setItem('announcement-closed', 'true');
     if (announcementInterval) clearInterval(announcementInterval);
 }
 
 async function loadCustomPages() {
-    try {
-        const data = await loadYAML('/storage/data/custom.yaml');
-        if (!data || !data.customPages) return;
+    const data = await loadYAML('/storage/data/custom.yaml');
+    if (!data || !data.customPages) return;
 
-        const container = document.getElementById('custom-pages-container');
-        container.innerHTML = '';
-        const expire = sessionStorage.getItem('sidebar_expire');
-        const isRevealed = expire && Date.now() < parseInt(expire);
+    const container = document.getElementById('nav-tree-content');
+    container.innerHTML = `
+        <div class="nav-folder">Main/</div>
+        <div class="nav-item">├─ <a href="#page=home" onclick="loadPage('home')">Home</a></div>
+        <div class="nav-item">└─ <a href="#page=blogs" onclick="loadPage('blogs')">Blogs</a></div>
+        <br>
+        <div class="nav-folder">Content/</div>
+        <div class="nav-item">├─ <a href="#page=projects" onclick="loadPage('projects')">Projects</a></div>
+        <div class="nav-item">└─ <a href="#page=downloads" onclick="loadPage('downloads')">Downloads</a></div>
+        <br>
+    `;
 
-        Object.entries(data.customPages).forEach(([key, category]) => {
-            if (!category.sub) return;
-            const visibleSub = category.sub.filter(p => isRevealed || (!p.hidden && !p.locked));
-            if (visibleSub.length === 0) return;
+    const expire = sessionStorage.getItem('sidebar_expire');
+    const isRevealed = expire && Date.now() < parseInt(expire);
 
-            const section = document.createElement('div');
-            section.className = 'nav-section';
-            const header = document.createElement('h3');
-            header.textContent = (category.display || key).toUpperCase();
-            header.onclick = () => toggleSection(header);
-            section.appendChild(header);
+    Object.entries(data.customPages).forEach(([key, category]) => {
+        if (!category.sub) return;
+        const visibleSub = category.sub.filter(p => isRevealed || (!p.hidden && !p.locked));
+        if (visibleSub.length === 0) return;
 
-            category.sub.forEach((page, index) => {
-                if (!isRevealed && (page.hidden || page.locked || !page.name)) return;
-                const pageTypeData = typeof page.type === 'object' ? page.type : { type: page.type };
-                const isRef = pageTypeData.type === 'refsection';
-                const wrapper = document.createElement('div');
-                wrapper.className = 'nav-item-wrapper';
-                
-                if (isRef) {
-                    const connector = document.createElement('div');
-                    connector.className = 'tree-connector';
-                    const nextItem = category.sub[index + 1];
-                    const nextIsRef = nextItem && 
-                                     (typeof nextItem.type === 'object' ? nextItem.type.type : nextItem.type) === 'refsection' && 
-                                     nextItem.type.refid === pageTypeData.refid;
-                    if (!nextIsRef) wrapper.classList.add('last-ref');
-                    wrapper.appendChild(connector);
-                }
+        const folder = document.createElement('div');
+        folder.className = 'nav-folder';
+        folder.textContent = (category.display || key) + '/';
+        container.appendChild(folder);
 
-                const link = document.createElement('a');
-                link.href = `#page=${page.id}`;
-                link.textContent = page.display || page.name;
-                if (isRef) link.classList.add('is-ref');
-                
-                link.onclick = (e) => {
-                    e.preventDefault();
-                    loadPage(page.id);
-                    toggleSidebar();
-                };
+        visibleSub.forEach((page, index) => {
+            const item = document.createElement('div');
+            item.className = 'nav-item';
+            const isLast = index === visibleSub.length - 1;
+            const prefix = isLast ? '└─ ' : '├─ ';
+            
+            const link = document.createElement('a');
+            link.href = `#page=${page.id}`;
+            link.textContent = page.display || page.name;
+            link.onclick = (e) => { e.preventDefault(); loadPage(page.id); };
 
-                wrapper.appendChild(link);
-                section.appendChild(wrapper);
-            });
-            container.appendChild(section);
+            item.appendChild(document.createTextNode(prefix));
+            item.appendChild(link);
+            container.appendChild(item);
         });
-    } catch (error) {
-        console.error('Error loading custom pages:', error);
-    }
+        container.appendChild(document.createElement('br'));
+    });
+
+    container.innerHTML += `
+        <div class="nav-folder">System/</div>
+        <div class="nav-item">└─ <a href="#" onclick="openPreferences()">Settings</a></div>
+    `;
 }
 
 function handleHashNavigation() {
     const hash = window.location.hash.substring(1);
-    if (!hash || hash === '') {
-        loadPage('home');
-        return;
-    }
+    if (!hash || hash === '') { loadPage('home'); return; }
     const params = new URLSearchParams(hash);
     const page = params.get('page') || 'home';
     params.delete('page');
@@ -341,28 +319,19 @@ function handleHashNavigation() {
 }
 
 async function loadPage(pageName, args = '') {
-    document.querySelectorAll('.sidebar-nav a').forEach(link => {
-        link.classList.remove('active');
-        const href = link.getAttribute('href');
-        if (href && href.includes(`page=${pageName}`)) link.classList.add('active');
-    });
-    
     const pageBase = '/storage/internal/pages/main/';
     const customData = await loadYAML('/storage/data/custom.yaml');
     if (customData && customData.customPages) {
         let customPage = null;
         for (const key in customData.customPages) {
             const found = customData.customPages[key].sub.find(p => String(p.id) === String(pageName));
-            if (found) {
-                customPage = found;
-                break;
-            }
+            if (found) { customPage = found; break; }
         }
         
         if (customPage) {
             if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
                 pendingPage = { id: pageName, args: args };
-                document.getElementById('lock-modal').classList.add('active');
+                document.getElementById('lock-window').style.display = 'flex';
                 return;
             }
 
@@ -390,25 +359,22 @@ async function loadPage(pageName, args = '') {
     history.replaceState(null, null, `#page=${pageName}${args ? '&' + args : ''}`);
 }
 
-function requestReveal() {
+window.requestReveal = () => {
     sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
     loadCustomPages();
-    updatePreferenceButtons();
 }
 
-function requestHide() {
+window.requestHide = () => {
     sessionStorage.removeItem('sidebar_expire');
     loadCustomPages();
-    updatePreferenceButtons();
 }
 
-function checkLock() {
+window.checkLock = () => {
     const input = document.getElementById('lock-input').value;
     if (input === "Canned Pineapple") {
         if (pendingPage && pendingPage.id === 'reveal_sidebar') {
             sessionStorage.setItem('sidebar_expire', (Date.now() + 1800000).toString());
             loadCustomPages();
-            updatePreferenceButtons();
         } else {
             sessionStorage.setItem('unlocked_' + pendingPage.id, 'true');
             loadPage(pendingPage.id, pendingPage.args);
@@ -417,51 +383,11 @@ function checkLock() {
     } else alert("Incorrect.");
 }
 
-function closeLockModal() { document.getElementById('lock-modal').classList.remove('active'); document.getElementById('lock-input').value = ''; pendingPage = null; }
-
-function toggleSidebar() {
-    sidebarOpen = !sidebarOpen;
-    document.getElementById('sidebar').classList.toggle('open', sidebarOpen);
-    document.getElementById('sidebar-overlay').classList.toggle('active', sidebarOpen);
-    document.getElementById('toggle-icon').textContent = sidebarOpen ? '▼' : '▲';
+window.closeLockModal = () => { 
+    document.getElementById('lock-window').style.display = 'none'; 
+    document.getElementById('lock-input').value = ''; 
+    pendingPage = null; 
 }
 
-function updatePreferenceButtons() {
-    const expire = sessionStorage.getItem('sidebar_expire');
-    const isRevealed = expire && Date.now() < parseInt(expire);
-    const showBtn = document.getElementById('show-hidden-btn');
-    const hideBtn = document.getElementById('hide-hidden-btn');
-    if (!showBtn || !hideBtn) return;
-    showBtn.disabled = isRevealed;
-    hideBtn.disabled = !isRevealed;
-}
-
-function openPreferences() { document.getElementById('preferences-modal').classList.add('active'); }
-function closePreferences() { document.getElementById('preferences-modal').classList.remove('active'); }
-function toggleCustomEditor() { 
-    const editor = document.getElementById('custom-theme-editor');
-    editor.style.display = editor.style.display === 'none' ? 'block' : 'none';
-}
-
-document.addEventListener('click', (e) => { if (e.target.classList.contains('modal')) { closePreferences(); closeLockModal(); } });
-
-async function updateVisitorCount() {
-    const namespace = "devicals-github-io";
-    const key = "main-counter";
-    const display = document.getElementById('visit-count');
-    const hasVisited = localStorage.getItem('has_visited_before');
-    try {
-        let response = await fetch(`https://api.counterapi.dev/v1/${namespace}/${key}${hasVisited ? '/' : '/up'}`);
-        if (!hasVisited) localStorage.setItem('has_visited_before', 'true');
-        const data = await response.json();
-        const count = data.count || data.value;
-        if (display && count !== undefined) display.textContent = count.toString().padStart(6, '0');
-    } catch (err) { if (display) display.textContent = "??????"; }
-}
-document.addEventListener('DOMContentLoaded', updateVisitorCount);
-
-window.submitAdminLogin = submitAdminLogin;
-window.addNewAnnouncement = addNewAnnouncement;
-window.deleteAnnouncement = deleteAnnouncement;
-window.requestReveal = requestReveal;
-window.requestHide = requestHide;
+window.openPreferences = () => document.getElementById('settings-window').style.display = 'flex';
+window.closePreferences = () => document.getElementById('settings-window').style.display = 'none';

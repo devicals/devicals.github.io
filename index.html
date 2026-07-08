@@ -12,135 +12,60 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        ::-webkit-scrollbar {
-            display: none !important;
-        }
-        * {
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
-        }
-        .nav-top-actions > div {
-            display: block !important;
-            width: 100% !important;
-        }
-        .setting-field {
-            width: 100%;
-            padding: 8px 10px;
-            background: hsl(var(--input));
-            border: 2px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-family: inherit;
-            font-size: 13px;
-            outline: none;
-            margin-bottom: 8px;
-        }
-        .ann-list-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            padding: 8px 12px;
-            margin-bottom: 6px;
-            font-size: 12px;
-        }
-        .ann-list-item button {
-            background: none;
-            border: none;
-            color: hsl(var(--destructive));
-            cursor: pointer;
-            font-size: 14px;
-        }
-    </style>
 </head>
 <body>
-    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div style="position:fixed; inset:0; background:url('/storage/assets/background.png') center/cover; opacity:0.12; z-index:-1;"></div>
 
-    <div id="sidebar" class="sidebar">
-        <div class="sidebar-tab" onclick="toggleSidebar()">
-            <span id="toggle-icon">▲</span>
-            <span id="sidebar-title-label">Dev's Coffin</span>
-        </div>
-        
-        <div class="sidebar-container">
-            <nav class="sidebar-nav">
-                <div class="nav-section nav-top-actions">
-                    <div style="display: block; width: 100%;">
-                        <button class="action-btn" onclick="openPreferences()" style="width: 100%;">⚙ Settings</button>
-                    </div>
-                </div>
+    <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:100%; border:none; z-index:1;"></iframe>
 
-                <div class="nav-section">
-                    <h3 onclick="toggleSection(this)">MAIN</h3>
-                    <a href="#page=home" onclick="loadPage('home'); toggleSidebar(); return false;">Home</a>
-                    <a href="#page=blogs" onclick="loadPage('blogs'); toggleSidebar(); return false;">Blogs</a>
-                </div>
-
-                <div class="nav-section">
-                    <h3 onclick="toggleSection(this)">CONTENT</h3>
-                    <a href="#page=projects" onclick="loadPage('projects'); toggleSidebar(); return false;">Projects</a>
-                    <a href="#page=downloads" onclick="loadPage('downloads'); toggleSidebar(); return false;">Downloads</a>
-                </div>
-
-                <div id="custom-pages-container"></div>
-            </nav>
+    <div class="ascii-window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
+        <div class="corner tl">+</div><div class="corner tr">+</div><div class="corner bl">+</div><div class="corner br">+</div>
+        <div class="ascii-title" id="nav-drag">nav</div>
+        <div class="ascii-content" id="nav-tree-content">
         </div>
     </div>
     
-    <div id="announcement-banner" class="announcement-banner hidden">
-        <div class="announcement-content"></div>
-        <button class="announcement-close" onclick="closeAnnouncement()">×</button>
+    <div class="ascii-window" id="announcement-window" style="left: 320px; top: 20px; width: 450px; z-index: 101; display:none;">
+        <div class="corner tl">+</div><div class="corner tr">+</div><div class="corner bl">+</div><div class="corner br">+</div>
+        <div class="ascii-title" id="ann-drag">notice</div>
+        <div class="ascii-close" onclick="closeAnnouncement()">x</div>
+        <div class="ascii-content announcement-content" id="announcement-content"></div>
     </div>
 
-    <div id="main-content" class="main-content">
-        <div class="page-background"></div>
-        <iframe id="content-frame" src=""></iframe>
-    </div>
-
-    <div id="preferences-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Settings</h2>
-                <button class="modal-close" onclick="closePreferences()">×</button>
+    <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 300px; z-index: 105; display:none;">
+        <div class="corner tl">+</div><div class="corner tr">+</div><div class="corner bl">+</div><div class="corner br">+</div>
+        <div class="ascii-title" id="set-drag">settings.ini</div>
+        <div class="ascii-close" onclick="closePreferences()">x</div>
+        <div class="ascii-content">
+            <div style="margin-bottom: 15px;">
+                <label style="color:hsl(var(--muted-foreground)); font-size:10px;">THEME</label>
+                <select id="theme-select" class="ascii-input" style="width:100%; margin-top:4px;" onchange="changeTheme(this.value)">
+                    <option value="vitesse-dark">Vitesse Dark (Default)</option>
+                    <option value="original">Original</option>
+                    <option value="evergreens">Evergreens</option>
+                    <option value="gruvbox">Gruvbox</option>
+                    <option value="ice-world">Ice World</option>
+                    <option value="purple-orange">Purple & Orange</option>
+                    <option value="orange-purple">Orange & Purple</option>
+                    <option value="pink-dream">Pink Dream</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="desert">Desert</option>
+                    <option value="custom">Custom</option>
+                </select>
             </div>
-            <div class="modal-body">
-                <div class="preference-section">
-                    <label for="theme-select">Theme</label>
-                    <select id="theme-select" onchange="changeTheme(this.value)">
-                        <option value="vitesse-dark">Vitesse Dark (Default)</option>
-                        <option value="original">Original</option>
-                        <option value="evergreens">Evergreens</option>
-                        <option value="gruvbox">Gruvbox</option>
-                        <option value="ice-world">Ice World</option>
-                        <option value="purple-orange">Purple & Orange</option>
-                        <option value="orange-purple">Orange & Purple</option>
-                        <option value="pink-dream">Pink Dream</option>
-                        <option value="cyberpunk">Cyberpunk</option>
-                        <option value="desert">Desert</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </div>
-                
-                <div id="settings-admin-portal" class="preference-section" style="border-top: 1px solid hsl(var(--border)); padding-top: 15px;">
-                </div>
-            </div>
+            
+            <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--border)); padding-top: 15px;"></div>
         </div>
     </div>
 
-    <div id="lock-modal" class="modal">
-        <div class="modal-content" style="max-width: 400px;">
-            <div class="modal-header">
-                <h2>Locked Page</h2>
-                <button class="modal-close" onclick="closeLockModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="preference-section">
-                    <label>Can Pineapple</label>
-                    <input type="text" id="lock-input" style="width: 100%; padding: 10px; background: hsl(var(--input)); border: 2px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit;">
-                </div>
-                <button class="customize-btn" onclick="checkLock()">Unlock</button>
-            </div>
+    <div class="ascii-window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
+        <div class="corner tl">+</div><div class="corner tr">+</div><div class="corner bl">+</div><div class="corner br">+</div>
+        <div class="ascii-title" id="lock-drag">auth_required.exe</div>
+        <div class="ascii-close" onclick="closeLockModal()">x</div>
+        <div class="ascii-content">
+            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">PASSWORD</label>
+            <input type="password" id="lock-input" class="ascii-input" style="width:100%; margin:8px 0;">
+            <button class="ascii-btn" onclick="checkLock()" style="color:hsl(var(--accent));">[ Unlock ]</button>
         </div>
     </div>
 

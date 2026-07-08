@@ -16,16 +16,21 @@
         ::-webkit-scrollbar { display: none !important; }
         * { border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
         
-        .admin-action-btn { display: none; position: absolute; background: none; border: none; cursor: pointer; z-index: 10; pointer-events: auto !important; color: hsl(var(--foreground)); }
-        .admin-action-btn:hover { color: hsl(var(--accent)); }
-        .admin-action-btn.del-btn { color: hsl(var(--muted-foreground)); }
-        .admin-action-btn.del-btn:hover { color: hsl(var(--destructive)); }
-        body.is-admin .admin-action-btn { display: block; }
+        .desktop-area { position: absolute; inset: 0; overflow: hidden; }
         
-        .add-grid-item-container { display: none; width: 100%; border: 1px dashed hsl(var(--border)); padding: 10px; margin-bottom: 15px; gap: 10px; }
-        body.is-admin .add-grid-item-container { display: flex; }
-        .add-grid-item-container input { flex: 1; padding: 8px 12px; background: hsla(var(--secondary), 0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit; outline: none; }
-        .add-grid-item-container input:focus { border-color: hsl(var(--accent)); }
+        .text-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; line-height: 1.4; color: hsl(var(--foreground)); }
+        .text-line a { color: hsl(var(--foreground)); text-decoration: none; }
+        .text-line a:hover { color: hsl(var(--accent)); }
+        
+        .admin-actions { display: none; gap: 6px; }
+        body.is-admin .admin-actions { display: flex; }
+        
+        .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--border)); }
+        body.is-admin .add-row { display: flex; }
+        
+        .admin-edit-only { display: none; }
+        body.is-admin .admin-edit-only { display: inline-block; cursor: pointer; color: hsl(var(--muted-foreground)); margin-left: 8px; font-size: 11px; font-weight: normal; }
+        body.is-admin .admin-edit-only:hover { color: hsl(var(--accent)); }
         
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
@@ -36,21 +41,17 @@
         .modal-body { display: flex; flex-direction: column; gap: 12px; }
         .modal textarea { width: 100%; padding: 10px; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
         .modal textarea:focus { border-color: hsl(var(--accent)); }
-        .btn-primary { background: hsl(var(--accent)) !important; color: hsl(var(--accent-foreground)) !important; border: 1px solid hsl(var(--accent)) !important; padding: 10px 20px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.1s; text-transform: uppercase; }
-        .btn-primary:hover { opacity: 0.9; }
-        .grid-add-btn { background: hsla(var(--secondary), 0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); width: 38px; height: 38px; font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .grid-add-btn:hover { background: hsla(var(--accent), 0.1); color: hsl(var(--accent)); border-color: hsl(var(--accent)); }
         
-        body.is-admin .admin-edit-only { display: inline-block; }
-        .admin-edit-only { display: none; }
+        @media (max-width: 768px) {
+            .desktop-area { position: relative; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+            .ascii-window { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; transform: none !important; }
+            .ascii-title { cursor: default; }
+        }
     </style>
 </head>
 <body>
-    <div class="desktop-area" id="desktop">
-        <!-- Windows will be injected here -->
-    </div>
+    <div class="desktop-area" id="desktop"></div>
 
-    <!-- Biography Modal -->
     <div id="bio-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -59,7 +60,7 @@
             </div>
             <div class="modal-body">
                 <textarea id="bio-textarea-input" placeholder="Biography Markdown..."></textarea>
-                <button class="btn-primary" onclick="saveBio()" style="width: 100%; padding: 10px;">[ Execute Save ]</button>
+                <button class="ascii-btn" onclick="saveBio()" style="text-align: right; color: hsl(var(--accent));">[ Execute Save ]</button>
             </div>
         </div>
     </div>
@@ -75,11 +76,11 @@
         let dragCategory = null;
         let highestZ = 100;
 
-        async function initAuth() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            handleUserSession(session);
-            supabaseClient.auth.onAuthStateChange((_event, session) => handleUserSession(session));
-        }
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'auth-sync') {
+                handleUserSession(e.data.session);
+            }
+        });
 
         function handleUserSession(session) {
             if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
@@ -90,21 +91,6 @@
                 document.body.classList.remove('is-admin');
             }
             if (homeData) renderPage();
-        }
-
-        function parseDate(dateStr) {
-            const [day, month, year] = dateStr.split('/').map(Number);
-            return new Date(year, month - 1, day);
-        }
-
-        async function fetchDiscordData(userId) {
-            try {
-                const response = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
-                const statusData = await response.json();
-                if (!statusData.success) throw new Error('Lanyard failed');
-                const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
-                return { statusText: statusMap[statusData.data?.discord_status || 'offline'] || 'Offline' };
-            } catch (error) { return { statusText: "Offline" }; }
         }
 
         async function initDatabase() {
@@ -121,22 +107,22 @@
 
         async function syncToSupabase() {
             if (!isAdmin) return;
-            const { error } = await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
-            if (error) alert("Error saving: " + error.message);
+            await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
         }
 
-        function makeDraggable(el) {
-            const header = el.querySelector('.ascii-header');
-            if (!header) return;
+        function makeDraggable(winId, handleId) {
+            const win = document.getElementById(winId);
+            const handle = document.getElementById(handleId);
+            if (!win || !handle) return;
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             
-            header.onmousedown = dragMouseDown;
-            header.ontouchstart = dragMouseDown;
+            handle.onmousedown = dragMouseDown;
+            handle.ontouchstart = dragMouseDown;
 
             function dragMouseDown(e) {
-                if (e.target.tagName === 'BUTTON') return;
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
                 e.preventDefault();
-                el.style.zIndex = ++highestZ;
+                win.style.zIndex = ++highestZ;
                 if (e.type === 'touchstart') {
                     pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
                 } else {
@@ -154,8 +140,8 @@
                 let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
                 pos1 = pos3 - clientX; pos2 = pos4 - clientY;
                 pos3 = clientX; pos4 = clientY;
-                el.style.top = (el.offsetTop - pos2) + "px";
-                el.style.left = (el.offsetLeft - pos1) + "px";
+                win.style.top = (win.offsetTop - pos2) + "px";
+                win.style.left = (win.offsetLeft - pos1) + "px";
             }
 
             function closeDragElement() {
@@ -163,7 +149,7 @@
                 document.ontouchend = null; document.ontouchmove = null;
             }
             
-            el.addEventListener('mousedown', () => { el.style.zIndex = ++highestZ; });
+            win.addEventListener('mousedown', () => { win.style.zIndex = ++highestZ; });
         }
 
         function createWindow(id, title, contentHTML, bounds, adminControls = '') {
@@ -176,54 +162,48 @@
                 win.style.left = bounds.left;
                 win.style.top = bounds.top;
                 win.style.width = bounds.width;
-                if (bounds.height) win.style.height = bounds.height;
                 document.getElementById('desktop').appendChild(win);
             }
             
             win.innerHTML = `
-                <div class="ascii-header">
-                    <span class="ascii-header-title">+--[ ${title} ]--+</span>
-                    <div class="ascii-controls">
-                        ${adminControls}
-                    </div>
-                </div>
-                <div class="ascii-body">
+                <div class="corner tl">+</div><div class="corner tr">+</div><div class="corner bl">+</div><div class="corner br">+</div>
+                <div class="ascii-title" id="${id}-drag">${title} ${adminControls}</div>
+                <div class="ascii-content">
                     ${contentHTML}
                 </div>
             `;
             
-            if (isNew && window.innerWidth > 768) makeDraggable(win);
+            if (isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
             return win;
         }
 
         async function renderPage() {
-            // Bio Window
-            let bioHTML = `<div class="bio-card" style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
-            createWindow('win-bio', 'about_me.txt', bioHTML, {left: '5%', top: '5%', width: '420px'}, 
-                `<button class="ascii-btn admin-edit-only" onclick="openBioModal()">[ Edit ]</button>`);
+            // Bio
+            let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
+            createWindow('win-bio', 'about_me.txt', bioHTML, {left: '50px', top: '50px', width: '420px'}, 
+                `<span class="admin-edit-only" onclick="openBioModal()">[ Edit ]</span>`);
 
-            // Skills Window
-            let skillsHTML = `<div class="add-grid-item-container">
-                <input type="text" id="skill-name-input" placeholder="Skill Name">
-                <input type="text" id="skill-link-input" placeholder="URL (opt)">
-                <button class="grid-add-btn" onclick="addNewSkill()">+</button>
-            </div><div class="skills-grid" id="skills-grid-content"></div>`;
-            
-            createWindow('win-skills', 'sys_skills.exe', skillsHTML, {left: '55%', top: '5%', width: '380px'});
-            renderGridItems(homeData.skills, 'skills-grid-content', 'skills', (item) => item.skill, (item) => item.link);
+            // Skills
+            let skillsHTML = `<div class="add-row">
+                <input type="text" id="skill-n" class="ascii-input" placeholder="Skill Name" style="flex:1;">
+                <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
+                <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
+            </div><div id="skills-list"></div>`;
+            createWindow('win-skills', 'sys_skills.exe', skillsHTML, {left: '520px', top: '150px', width: '380px'});
+            renderGridItems(homeData.skills, 'skills-list', 'skills', i => i.skill, i => i.link);
 
-            // Socials Window
-            let socialsHTML = `<div class="add-grid-item-container">
-                <input type="text" id="social-name-input" placeholder="Social Name">
-                <input type="text" id="social-link-input" placeholder="Profile URL">
-                <button class="grid-add-btn" onclick="addNewSocial()">+</button>
-            </div><div class="socials-grid" id="socials-grid-content"></div>`;
-            
-            createWindow('win-socials', 'network.dat', socialsHTML, {left: '60%', top: '55%', width: '320px'});
-            renderGridItems(homeData.socials, 'socials-grid-content', 'socials', (item) => item.name, (item) => item.link);
+            // Socials
+            let socialsHTML = `<div class="add-row">
+                <input type="text" id="social-n" class="ascii-input" placeholder="Social Name" style="flex:1;">
+                <input type="text" id="social-l" class="ascii-input" placeholder="Profile URL" style="flex:1;">
+                <button class="ascii-btn" onclick="addSocial()" style="color:hsl(var(--accent));">[+]</button>
+            </div>
+            <div id="discord-live" class="text-line" style="color:hsl(var(--muted-foreground)); font-weight:bold;">Loading Discord...</div>
+            <div id="socials-list" style="margin-top:10px;"></div>`;
+            createWindow('win-socials', 'network.dat', socialsHTML, {left: '950px', top: '100px', width: '300px'});
+            renderGridItems(homeData.socials, 'socials-list', 'socials', i => i.name, i => i.link);
             refreshDiscordUI();
 
-            // Blog Window
             loadLatestBlogPreview();
         }
 
@@ -233,35 +213,33 @@
             grid.innerHTML = '';
             arr.forEach((item, idx) => {
                 const link = linkMapper(item);
-                const card = document.createElement(link ? 'a' : 'div');
-                card.className = (category === 'skills' ? 'skill-card' : 'social-card') + (link ? ' skill-card-link' : '');
-                if (link) { card.href = link; card.target = '_blank'; }
-                card.innerHTML = `
-                    <button class="admin-action-btn" style="top:5px; left:5px; font-size:10px;" onclick="editGridItem('${category}', ${idx}, event)">✎</button>
-                    <button class="admin-action-btn del-btn" style="top:5px; right:5px; font-size:10px;" onclick="deleteGridItem('${category}', ${idx}, event)">✕</button>
-                    ${textMapper(item)}
+                const row = document.createElement('div');
+                row.className = 'text-line';
+                row.innerHTML = `
+                    <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'};">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
+                    <div class="admin-actions">
+                        <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">[✎]</button>
+                        <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">[x]</button>
+                    </div>
                 `;
+                
                 if (isAdmin) {
-                    card.draggable = true;
-                    card.addEventListener('dragstart', (e) => { dragItemIdx = idx; dragCategory = category; e.dataTransfer.effectAllowed = 'move'; });
-                    card.addEventListener('dragover', (e) => e.preventDefault());
-                    card.addEventListener('drop', async (e) => {
+                    row.draggable = true;
+                    row.addEventListener('dragstart', (e) => { dragItemIdx = idx; dragCategory = category; e.dataTransfer.effectAllowed = 'move'; });
+                    row.addEventListener('dragover', (e) => e.preventDefault());
+                    row.addEventListener('drop', async (e) => {
                         e.preventDefault(); if (dragCategory !== category) return;
                         if (dragItemIdx === idx) return;
-                        const targetArr = homeData[category];
-                        const [reorderedItem] = targetArr.splice(dragItemIdx, 1);
-                        targetArr.splice(idx, 0, reorderedItem);
+                        const [reordered] = homeData[category].splice(dragItemIdx, 1);
+                        homeData[category].splice(idx, 0, reordered);
                         await syncToSupabase();
                     });
                 }
-                grid.appendChild(card);
+                grid.appendChild(row);
             });
         }
 
-        window.openBioModal = () => {
-            document.getElementById('bio-textarea-input').value = homeData.bio || '';
-            document.getElementById('bio-modal').classList.add('active');
-        };
+        window.openBioModal = () => { document.getElementById('bio-textarea-input').value = homeData.bio || ''; document.getElementById('bio-modal').classList.add('active'); };
         window.closeBioModal = () => document.getElementById('bio-modal').classList.remove('active');
         window.saveBio = async () => {
             const bioText = document.getElementById('bio-textarea-input').value.trim();
@@ -271,33 +249,28 @@
             await syncToSupabase();
         };
 
-        window.addNewSkill = async () => {
-            const n = document.getElementById('skill-name-input').value.trim();
-            const l = document.getElementById('skill-link-input').value.trim() || null;
-            if (!n) return;
-            homeData.skills.push({ skill: n, link: l });
-            await syncToSupabase();
+        window.addSkill = async () => {
+            const n = document.getElementById('skill-n').value.trim();
+            const l = document.getElementById('skill-l').value.trim() || null;
+            if (!n) return; homeData.skills.push({ skill: n, link: l }); await syncToSupabase();
         };
-        window.addNewSocial = async () => {
-            const n = document.getElementById('social-name-input').value.trim();
-            const l = document.getElementById('social-link-input').value.trim();
-            if (!n || !l) return;
-            homeData.socials.push({ name: n, link: l });
-            await syncToSupabase();
+        window.addSocial = async () => {
+            const n = document.getElementById('social-n').value.trim();
+            const l = document.getElementById('social-l').value.trim();
+            if (!n || !l) return; homeData.socials.push({ name: n, link: l }); await syncToSupabase();
         };
 
-        window.deleteGridItem = async (category, idx, e) => {
+        window.deleteItem = async (category, idx, e) => {
             e.stopPropagation(); e.preventDefault();
             if (!confirm(`Delete item?`)) return;
             homeData[category].splice(idx, 1);
             await syncToSupabase();
         };
 
-        window.editGridItem = async (category, idx, e) => {
+        window.editItem = async (category, idx, e) => {
             e.stopPropagation(); e.preventDefault();
             const item = homeData[category][idx];
-            const currentName = category === 'skills' ? item.skill : item.name;
-            const name = prompt("Edit Name:", currentName);
+            const name = prompt("Edit Name:", category === 'skills' ? item.skill : item.name);
             if (name && name.trim() !== '') {
                 const link = prompt("Edit Link:", item.link || '');
                 if (category === 'skills') item.skill = name.trim(); else item.name = name.trim();
@@ -306,60 +279,37 @@
             }
         };
 
-        async function fetchDiscordData(userId) {
-            try {
-                const response = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
-                const statusData = await response.json();
-                if (!statusData.success) throw new Error('Lanyard failed');
-                const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
-                return { statusText: statusMap[statusData.data?.discord_status || 'offline'] || 'Offline' };
-            } catch (error) { return { statusText: "Offline" }; }
-        }
-
         async function refreshDiscordUI() {
-            const DISCORD_ID = '989414384679927838';
-            const socialsGrid = document.getElementById('socials-grid-content');
-            if (!socialsGrid) return;
-            const data = await fetchDiscordData(DISCORD_ID);
-            let discordCard = document.getElementById('discord-live-card');
-            if (!discordCard) {
-                discordCard = document.createElement('a');
-                discordCard.id = 'discord-live-card';
-                discordCard.className = 'social-card discord-status';
-                discordCard.target = '_blank';
-                discordCard.href = `https://discord.com/users/${DISCORD_ID}/`;
-                socialsGrid.prepend(discordCard);
-            }
-            discordCard.textContent = `${data.statusText} on Discord`;
+            try {
+                const res = await fetch('https://api.lanyard.rest/v1/users/989414384679927838');
+                const data = await res.json();
+                const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
+                const text = statusMap[data.data?.discord_status || 'offline'] || 'Offline';
+                document.getElementById('discord-live').innerHTML = `<a href="https://discord.com/users/989414384679927838" target="_blank">${text} on Discord</a>`;
+            } catch(e) {}
         }
 
         async function loadLatestBlogPreview() {
             try {
                 const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
                 if (data && data.data && data.data.length > 0) {
-                    const sortedBlogs = data.data.sort((a, b) => parseDate(b.date) - parseDate(a.date));
-                    const latest = sortedBlogs[0];
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = marked.parse(latest.content);
-                    let excerpt = (tempDiv.textContent || tempDiv.innerText || "").trim();
-                    if (excerpt.length > 100) excerpt = excerpt.substring(0, 100).replace(/[ ,.]*$/, "") + "...";
+                    const latest = data.data.sort((a,b) => parseDate(b.date) - parseDate(a.date))[0];
+                    const temp = document.createElement('div'); temp.innerHTML = marked.parse(latest.content);
+                    let ext = (temp.textContent || "").trim();
+                    if (ext.length > 100) ext = ext.substring(0, 100) + "...";
                     
-                    const html = `
-                        <div class="blog-preview-card" style="cursor: pointer;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
-                            <div class="preview-title">${latest.title}</div>
-                            <div class="preview-date">${latest.date}</div>
-                            <div class="preview-excerpt">${excerpt}</div>
+                    createWindow('win-blog', `latest_log.md  [${latest.date}]`, `
+                        <div style="cursor: pointer; line-height: 1.6;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
+                            <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:8px;">${latest.title}</div>
+                            <div>${ext}</div>
                         </div>
-                    `;
-                    createWindow('win-blog', 'latest_log.md', html, {left: '5%', top: '65%', width: '450px'});
+                    `, {left: '50px', top: '650px', width: '450px'});
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {}
         }
+        function parseDate(d) { const p=d.split('/'); return new Date(p[2],p[1]-1,p[0]); }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initDatabase();
-            initAuth();
-        });
+        document.addEventListener('DOMContentLoaded', () => { initDatabase(); });
     </script>
 </body>
 </html>
