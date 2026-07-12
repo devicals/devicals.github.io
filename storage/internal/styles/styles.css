@@ -80,16 +80,35 @@ a:hover { color: hsl(var(--accent)); }
     background: transparent;
 }
 
-.ascii-close-btn {
+.ascii-window-action {
     padding: 0 8px;
     cursor: pointer;
-    color: hsl(var(--muted-foreground));
     font-weight: bold;
-    line-height: 1;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    transition: background 0.2s, color 0.2s;
+    user-select: none;
+}
+
+.ascii-minimize-btn {
+    color: hsl(var(--muted-foreground));
+}
+
+.ascii-minimize-btn:hover {
+    color: hsl(var(--foreground));
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.ascii-close-btn {
+    color: hsl(var(--destructive));
 }
 
 .ascii-close-btn:hover {
-    color: hsl(var(--destructive));
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff6b6b;
 }
 
 .ascii-content {

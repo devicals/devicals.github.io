@@ -7,26 +7,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/styles.css">
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        ::-webkit-scrollbar {
-            display: none !important;
+        ::-webkit-scrollbar { display: none !important; }
+        * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        body { 
+            margin: 0; 
+            box-sizing: border-box; 
+            height: 100vh; 
+            overflow: hidden;
+            background: transparent;
         }
-        * {
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
-        }
-        .blog-controls { position: fixed; top: 50px; right: 50px; z-index: 1000; background: hsla(var(--card), 0.8); backdrop-filter: blur(12px); border: 1px solid hsla(var(--primary), 0.2); padding: 10px 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); }
-        .blog-jump { display: flex; align-items: center; gap: 10px; }
-        .blog-jump label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: hsl(var(--primary)); }
-        #blog-id-input { width: 50px; background: hsla(var(--background), 0.5); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); padding: 4px 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none; }
-        .blog-content { word-wrap: break-word; line-height: 1.6; }
-        .blog-id { position: absolute; top: 24px; right: 24px; font-size: 12px; color: hsl(var(--muted-foreground)); font-weight: 600; }
-        .blog-post { position: relative; border: 2px solid hsl(var(--border)); padding: 24px; margin-bottom: 24px; background: hsl(var(--card)); }
+
+        .blog-content { word-wrap: break-word; line-height: 1.6; font-size: 13px; }
+        
         .admin-action-row {
             display: none;
             gap: 8px;
@@ -69,115 +68,44 @@
         .shiki-container pre.shiki { margin: 0 !important; border: none !important; padding: 1rem !important; background-color: transparent !important; white-space: pre; overflow-x: auto; }
         .shiki-container.wrap-enabled pre.shiki { white-space: pre-wrap; word-break: break-all; }
         code.shiki-inline { background: #121212 !important; padding: 3px 6px !important; border: 1px solid #2d2e2e !important; font-family: 'JetBrains Mono', monospace !important; display: inline-block; vertical-align: middle; }
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: hsl(var(--card));
-            border: 2px solid hsl(var(--border));
-            padding: 24px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid hsl(var(--border));
-        }
-        .modal-header h2 {
-            font-size: 18px;
-            margin: 0;
-            color: hsl(var(--accent));
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: hsl(var(--foreground));
-        }
-        .modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-        }
-        .modal input[type=text], .modal textarea {
-            width: 100%;
-            padding: 10px;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-family: inherit;
-            font-size: 13px;
-            outline: none;
-        }
-        .modal textarea {
-            min-height: 250px;
-            resize: vertical;
-        }
-        .modal input:focus, .modal textarea:focus {
-            border-color: hsl(var(--accent));
-        }
+        
         #add-blog-container {
             display: none;
-            margin-bottom: 24px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
         }
         body.is-admin #add-blog-container {
             display: block;
         }
-        .btn-primary {
-            background: hsl(var(--accent)) !important;
-            color: hsl(var(--accent-foreground)) !important;
-            border: 1px solid hsl(var(--accent)) !important;
-            padding: 10px 20px;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
     </style>
 </head>
 <body>
-    <div class="page-container">
-        <h1 class="page-title">Blogs</h1>
+    
+    <div class="ascii-window" id="big-blog-window" style="width: 900px; height: 700px; max-width: 95%; max-height: 90vh; margin: 20px auto; display: flex; flex-direction: column; position: relative;">
         
-        <div class="blog-controls" id="floating-jump-card">
-            <div class="blog-jump">
-                <label>Jump to</label>
-                <input type="number" id="blog-id-input" placeholder="ID">
-                <button onclick="window.jumpToBlog()" class="copy-btn" style="padding: 4px 10px;">Go</button>
-                <button onclick="window.copyRSS()" class="copy-btn" id="rss-btn" style="padding: 4px 10px; background: transparent; border: 1px solid hsla(var(--primary), 0.5);">RSS URL</button>
-            </div>
+        <div class="ascii-header-row">
+            <div class="ascii-header-line" style="width: 15px;"></div>
+            <div class="ascii-title">Blogs</div>
+            <div class="ascii-header-line" style="flex: 1;"></div>
+            <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeMe()">-</div>
+            <div class="ascii-header-line" style="width: 10px;"></div>
+        </div>
+        
+        <div style="padding: 10px; border-bottom: 1px dashed hsl(var(--border)); display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2);">
+            <label style="font-size:10px; color:hsl(var(--accent));">JUMP TO ID:</label>
+            <input type="number" id="blog-id-input" class="ascii-input" style="width:80px; margin: 0; padding: 4px;" placeholder="ID">
+            <button onclick="window.jumpToBlog()" class="ascii-btn" style="border: 1px solid hsl(var(--border)); padding: 4px 10px;">[ Go ]</button>
+            <button onclick="window.copyRSS()" class="ascii-btn" id="rss-btn" style="border: 1px solid hsl(var(--border)); padding: 4px 10px;">[ RSS URL ]</button>
         </div>
 
-        <div id="add-blog-container">
-            <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddBlogModal()">+ Create New Blog Post</button>
-        </div>
+        <div id="tab-container" style="position: relative; flex: 1; overflow: auto;"></div>
 
-        <div class="blog-posts" id="blog-posts"></div>
+    </div>
+
+    <div id="add-blog-container">
+        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; background: hsl(var(--card)); box-shadow: 0 4px 6px rgba(0,0,0,0.5);" onclick="openAddBlogModal()">+ Create New Blog</button>
     </div>
 
     <div id="blog-modal" class="modal">
@@ -187,7 +115,7 @@
                 <button class="modal-close" onclick="closeBlogModal()">×</button>
             </div>
             <div class="modal-body">
-                <input type="text" id="blog-title-input" placeholder="Title">
+                <input type="text" id="blog-title-input" class="ascii-input" placeholder="Title">
                 <textarea id="blog-content-input" placeholder="Content (Markdown supported)"></textarea>
                 <button class="btn-primary" id="blog-save-submit" style="width: 100%; padding: 10px;">Save Post</button>
             </div>
@@ -207,6 +135,11 @@
         let activeEditId = null;
         let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
         let currentRenderId = 0;
+        let highestZ = 10;
+
+        window.minimizeMe = function() {
+            window.parent.postMessage({ type: 'minimize-iframe', id: 'content-frame', title: 'Blogs' }, '*');
+        };
 
         marked.use({
             breaks: true, gfm: true, async: true,
@@ -251,46 +184,160 @@
 
         async function renderBlogs(blogs) {
             const renderId = ++currentRenderId;
-            const container = document.getElementById('blog-posts');
+            const container = document.getElementById('tab-container');
             container.innerHTML = '';
-            for (const blog of blogs) {
-                if (renderId !== currentRenderId) return;
-                const blogPost = document.createElement('div');
-                blogPost.className = 'blog-post';
-                blogPost.id = `blog-${blog.id}`;
-                const htmlContent = await marked.parse(blog.content);
-                if (renderId !== currentRenderId) return;
-                blogPost.innerHTML = `
-                    <div class="blog-id">#${blog.id}</div>
-                    <div class="blog-header">
-                        <a href="#" class="blog-title" id="title-anchor-${blog.id}">${blog.title}</a>
-                        <div class="blog-date">${blog.date}</div>
+
+            const parsedContent = await Promise.all(blogs.map(b => marked.parse(b.content)));
+            
+            if (renderId !== currentRenderId) return;
+
+            blogs.forEach((blog, idx) => {
+                const htmlContent = parsedContent[idx];
+                const card = document.createElement('div');
+                card.className = 'ascii-window blog-card-window';
+                card.dataset.id = blog.id;
+                card.dataset.index = idx;
+                card.id = `blog-${blog.id}`;
+                card.style.width = '400px';
+                card.style.height = '350px';
+                card.style.position = 'absolute';
+
+                card.innerHTML = `
+                    <div class="ascii-header-row card-drag-handle" style="cursor: move; background: rgba(0,0,0,0.1);">
+                        <div class="ascii-header-line" style="width: 10px;"></div>
+                        <div class="ascii-title" style="font-size: 11px;">#${blog.id} - ${blog.date}</div>
+                        <div class="ascii-header-line" style="flex:1;"></div>
                     </div>
-                    <div class="blog-content">${htmlContent}</div>
-                    <div class="admin-action-row">
-                        <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
-                        <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
+                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 12px; height: calc(100% - 15px); box-sizing: border-box; overflow-y: auto;">
+                        <div class="blog-header" style="border-bottom: 1px dashed hsl(var(--border)); padding-bottom: 5px; margin-bottom: 5px;">
+                            <a href="#" class="blog-title" id="title-anchor-${blog.id}" style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px; text-decoration: none;">${blog.title}</a>
+                        </div>
+                        <div class="blog-content" style="flex: 1;">${htmlContent}</div>
+                        <div class="admin-action-row">
+                            <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
+                            <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
+                        </div>
                     </div>
                 `;
-                container.appendChild(blogPost);
+                container.appendChild(card);
 
                 const titleAnchor = document.getElementById(`title-anchor-${blog.id}`);
-                if (titleAnchor) {
-                    titleAnchor.onclick = (e) => window.copyBlogLink(e, blog.id);
-                }
+                if (titleAnchor) titleAnchor.onclick = (e) => window.copyBlogLink(e, blog.id);
 
                 const editBtn = document.getElementById(`edit-btn-${blog.id}`);
-                if (editBtn) {
-                    editBtn.onclick = () => openEditBlogModal(blog);
-                }
+                if (editBtn) editBtn.onclick = () => openEditBlogModal(blog);
 
                 const delBtn = document.getElementById(`del-btn-${blog.id}`);
-                if (delBtn) {
-                    delBtn.onclick = () => deleteBlogPost(blog.id);
+                if (delBtn) delBtn.onclick = () => deleteBlogPost(blog.id);
+            });
+
+            layoutCards();
+            setupShikiInteractions();
+            
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const id = params.get('id');
+            if (id) setTimeout(() => scrollToBlogId(id), 500);
+        }
+
+        function layoutCards() {
+            const container = document.getElementById('tab-container');
+            const cards = container.querySelectorAll('.blog-card-window');
+            const containerWidth = container.clientWidth || window.innerWidth;
+            
+            const cardWidth = 400;
+            const cardHeight = 350; 
+            const gap = 20;
+            const padding = 20;
+            
+            let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
+            if (cols < 1) cols = 1;
+
+            let maxTop = 0;
+
+            cards.forEach((card, idx) => {
+                const id = card.dataset.id;
+                const savedPos = localStorage.getItem(`blog_pos_${id}`);
+                if (savedPos) {
+                    const pos = JSON.parse(savedPos);
+                    card.style.left = pos.left;
+                    card.style.top = pos.top;
+                } else {
+                    const col = idx % cols;
+                    const row = Math.floor(idx / cols);
+                    card.style.left = (padding + col * (cardWidth + gap)) + 'px';
+                    card.style.top = (padding + row * (cardHeight + gap)) + 'px';
+                }
+                
+                const topVal = parseInt(card.style.top) || 0;
+                if (topVal > maxTop) maxTop = topVal;
+                
+                makeCardDraggable(card, card.querySelector('.card-drag-handle'));
+            });
+            
+            let dummy = document.getElementById('scroll-dummy');
+            if (!dummy) {
+                dummy = document.createElement('div');
+                dummy.id = 'scroll-dummy';
+                dummy.style.position = 'absolute';
+                dummy.style.width = '1px';
+                container.appendChild(dummy);
+            }
+            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
+        }
+
+        function makeCardDraggable(win, handle) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            handle.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                e.preventDefault();
+                win.style.zIndex = ++highestZ;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                win.style.top = (win.offsetTop - pos2) + "px";
+                win.style.left = (win.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                const id = win.dataset.id;
+                localStorage.setItem(`blog_pos_${id}`, JSON.stringify({
+                    left: win.style.left,
+                    top: win.style.top
+                }));
+                
+                const topVal = parseInt(win.style.top) || 0;
+                const dummy = document.getElementById('scroll-dummy');
+                const dummyTop = parseInt(dummy.style.top) || 0;
+                if (topVal + 400 > dummyTop) {
+                    dummy.style.top = (topVal + 400) + 'px';
                 }
             }
-            setupShikiInteractions();
         }
+
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('tab-container');
+            const cards = container.querySelectorAll('.blog-card-window');
+            let hasUnsaved = false;
+            cards.forEach(card => {
+                if (!localStorage.getItem(`blog_pos_${card.dataset.id}`)) {
+                    hasUnsaved = true;
+                }
+            });
+            if (hasUnsaved) layoutCards();
+        });
 
         function setupShikiInteractions() {
             document.querySelectorAll('.shiki-container').forEach(container => {
@@ -309,6 +356,7 @@
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 el.style.borderColor = 'hsl(var(--accent))';
+                el.style.zIndex = ++highestZ;
                 setTimeout(() => el.style.borderColor = 'hsl(var(--border))', 2000);
             } else {
                 alert(`Blog #${id} not found.`);
@@ -333,19 +381,19 @@
             document.getElementById('blog-modal').classList.add('active');
         };
 
-        function openEditBlogModal(blog) {
+        window.openEditBlogModal = (blog) => {
             activeEditId = blog.id;
             document.getElementById('modal-title-label').textContent = `Edit Blog Post #${blog.id}`;
             document.getElementById('blog-title-input').value = blog.title;
             document.getElementById('blog-content-input').value = blog.content;
             document.getElementById('blog-modal').classList.add('active');
-        }
+        };
 
         window.closeBlogModal = () => {
             document.getElementById('blog-modal').classList.remove('active');
         };
 
-        async function handleSaveBlog() {
+        window.handleSaveBlog = async () => {
             const title = document.getElementById('blog-title-input').value.trim();
             const content = document.getElementById('blog-content-input').value.trim();
             if (!title || !content) return;
@@ -371,13 +419,14 @@
 
             closeBlogModal();
             await syncToSupabase();
-        }
+        };
 
-        async function deleteBlogPost(id) {
+        window.deleteBlogPost = async (id) => {
             if (!confirm(`Are you sure you want to delete Blog Post #${id}?`)) return;
+            localStorage.removeItem(`blog_pos_${id}`);
             blogsData = blogsData.filter(b => b.id !== id);
             await syncToSupabase();
-        }
+        };
 
         document.addEventListener('click', (e) => {
             if (e.target.matches('.shiki-btn.copy-btn')) {
@@ -402,26 +451,6 @@
                     }
                 });
             }
-
-            const link = e.target.closest('a');
-            if (link) {
-                const href = link.getAttribute('href');
-                if (!href) return;
-
-                if (href.match(/^~\/&id=(\d+)$/)) {
-                    e.preventDefault();
-                    const id = href.split('=')[1];
-                    scrollToBlogId(id);
-                    return;
-                }
-
-                if (href.startsWith('./#')) {
-                    e.preventDefault();
-                    const hash = href.substring(2); 
-                    window.parent.location.hash = hash;
-                    return;
-                }
-            }
         });
 
         window.copyBlogLink = (e, id) => { e.preventDefault(); const url = `https://devicals.github.io/#page=blogs&id=${id}`; navigator.clipboard.writeText(url).then(() => { e.target.textContent = "Link Copied!"; setTimeout(() => { e.target.textContent = blogsData.find(b=>b.id===id).title; }, 2000); }); document.getElementById(`blog-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
@@ -430,7 +459,7 @@
             if (!id) return; 
             scrollToBlogId(id);
         };
-        window.copyRSS = () => { const url = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml"; navigator.clipboard.writeText(url).then(() => { const btn = document.getElementById('rss-btn'); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'RSS URL'; }, 2000); }); };
+        window.copyRSS = () => { const url = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml"; navigator.clipboard.writeText(url).then(() => { const btn = document.getElementById('rss-btn'); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = '[ RSS URL ]'; }, 2000); }); };
 
         document.getElementById('blog-save-submit').onclick = handleSaveBlog;
 
@@ -462,10 +491,6 @@
                     .subscribe();
 
                 await initAuth();
-
-                const params = new URLSearchParams(window.location.hash.substring(1));
-                const id = params.get('id');
-                if (id) setTimeout(() => { const el = document.getElementById(`blog-${id}`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500);
             } catch (error) { console.error(error); }
         });
     </script>

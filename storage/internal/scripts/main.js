@@ -434,7 +434,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
             ${adminControls ? `<div class="ascii-admin-controls">${adminControls}</div>` : ''}
             <div class="ascii-header-line" style="flex: 1;"></div>
             ${rightContent ? `<div class="ascii-right-content">${rightContent}</div>` : ''}
-            <div class="ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')" style="cursor:pointer; padding: 0 8px; color: hsl(var(--accent)); font-weight: bold;">_</div>
+            <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')">-</div>
             <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
         <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
@@ -768,7 +768,7 @@ window.closePreferences = () => {
 
 window.resetWindowPositions = function() {
     Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('win_pos_') || key.startsWith('proj_pos_')) {
+        if (key.startsWith('win_pos_') || key.startsWith('proj_pos_') || key.startsWith('blog_pos_') || key.startsWith('dl_pos_')) {
             localStorage.removeItem(key);
         }
     });

@@ -60,17 +60,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
+            transition: background-color 0.2s, border-color 0.2s;
         }
-        #start-button:hover {
+        #start-button:hover, #start-button.start-spin {
             background: hsl(var(--secondary));
             border-color: hsl(var(--border));
         }
-        .start-spin {
+        .start-icon {
+            display: inline-block;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .start-spin .start-icon {
             transform: rotate(180deg) scale(1.1);
-            background: hsl(var(--secondary)) !important;
-            border-color: hsl(var(--accent)) !important;
-            color: hsl(var(--accent)) !important;
+            color: hsl(var(--accent));
         }
         #taskbar-items {
             display: flex;
@@ -182,7 +184,7 @@
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="ann-drag" class="ascii-title">notice</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
-                <div class="ascii-close-btn" onclick="closeAnnouncement()">x</div>
+                <div class="ascii-window-action ascii-close-btn" onclick="closeAnnouncement()">x</div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
@@ -196,8 +198,8 @@
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="set-drag" class="ascii-title">settings.ini</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
-                <div class="ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')" style="cursor:pointer; padding: 0 5px; color: hsl(var(--accent)); font-weight: bold;">_</div>
-                <div class="ascii-close-btn" onclick="closePreferences()">x</div>
+                <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')">-</div>
+                <div class="ascii-window-action ascii-close-btn" onclick="closePreferences()">x</div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
@@ -228,7 +230,7 @@
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="lock-drag" class="ascii-title">auth_required.exe</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
-                <div class="ascii-close-btn" onclick="closeLockModal()">x</div>
+                <div class="ascii-window-action ascii-close-btn" onclick="closeLockModal()">x</div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
@@ -239,7 +241,9 @@
     </div>
 
     <div id="taskbar">
-        <button id="start-button" onclick="toggleNav()">✦</button>
+        <button id="start-button" onclick="toggleNav()">
+            <span class="start-icon">✦</span>
+        </button>
         <div id="taskbar-items"></div>
     </div>
 

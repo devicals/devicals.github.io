@@ -7,19 +7,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/styles.css">
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        ::-webkit-scrollbar {
-            display: none !important;
+        ::-webkit-scrollbar { display: none !important; }
+        * { border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        body { 
+            margin: 0; 
+            box-sizing: border-box; 
+            height: 100vh; 
+            overflow: hidden;
+            background: transparent;
         }
-        * { 
-            border-radius: 0 !important; 
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
-        }
+
         .admin-action-row {
             display: none;
             gap: 8px;
@@ -39,6 +42,7 @@
             background: hsl(var(--secondary));
             border: 1px solid hsl(var(--border));
             color: hsl(var(--foreground));
+            flex: 1;
         }
         .admin-btn:hover {
             border-color: hsl(var(--accent));
@@ -52,107 +56,50 @@
             border-color: hsl(var(--destructive));
             background: hsl(var(--destructive) / 0.05);
         }
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: hsl(var(--card));
-            border: 2px solid hsl(var(--border));
-            padding: 24px;
-            width: 90%;
-            max-width: 440px;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid hsl(var(--border));
-        }
-        .modal-header h2 {
-            font-size: 16px;
-            margin: 0;
-            color: hsl(var(--accent));
-        }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: hsl(var(--foreground));
-        }
-        .modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .modal input[type=text], .modal textarea {
-            width: 100%;
-            padding: 10px;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-family: inherit;
-            font-size: 13px;
-            outline: none;
-        }
-        .modal textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        .modal input:focus, .modal textarea:focus {
-            border-color: hsl(var(--accent));
-        }
-        .btn-primary {
-            background: hsl(var(--accent)) !important;
-            color: hsl(var(--accent-foreground)) !important;
-            border: 1px solid hsl(var(--accent)) !important;
-            padding: 10px 20px;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-        }
-        .btn-primary:hover {
-            opacity: 0.9;
-        }
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
         #add-download-container {
             display: none;
-            margin-bottom: 24px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
         }
         body.is-admin #add-download-container {
             display: block;
+        }
+        #copy-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            padding: 8px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            display: none;
+            z-index: 2000;
         }
     </style>
 </head>
 <body>
     <div id="copy-toast">LINK COPIED TO CLIPBOARD</div>
     
-    <div class="page-container">
-        <h1 class="page-title">Downloads</h1>
-        
-        <div id="add-download-container">
-            <button class="admin-btn" style="width:100%; padding:12px; font-size:13px; border-style:dashed;" onclick="openAddDownloadModal()">+ Create New Download Card</button>
+    <div class="ascii-window" id="big-download-window" style="width: 800px; height: 600px; max-width: 95%; max-height: 90vh; margin: 20px auto; display: flex; flex-direction: column; position: relative;">
+        <div class="ascii-header-row">
+            <div class="ascii-header-line" style="width: 15px;"></div>
+            <div class="ascii-title">Downloads</div>
+            <div class="ascii-header-line" style="flex: 1;"></div>
+            <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeMe()">-</div>
+            <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
-
-        <div class="downloads-list" id="downloads-list"></div>
+        <div id="tab-container" style="position: relative; flex: 1; overflow: auto;"></div>
     </div>
 
-    <!-- Download Editor Modal -->
+    <div id="add-download-container">
+        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; background: hsl(var(--card)); box-shadow: 0 4px 6px rgba(0,0,0,0.5);" onclick="openAddDownloadModal()">+ Add Download</button>
+    </div>
+
     <div id="download-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -160,9 +107,9 @@
                 <button class="modal-close" onclick="closeDownloadModal()">×</button>
             </div>
             <div class="modal-body">
-                <input type="text" id="dl-name-input" placeholder="Title/Name">
+                <input type="text" id="dl-name-input" class="ascii-input" placeholder="Title/Name">
                 <textarea id="dl-desc-input" placeholder="Description"></textarea>
-                <input type="text" id="dl-url-input" placeholder="Download URL">
+                <input type="text" id="dl-url-input" class="ascii-input" placeholder="Download URL">
                 <button class="btn-primary" onclick="handleSaveDownload()" style="width: 100%; padding: 10px;">Save Download</button>
             </div>
         </div>
@@ -177,6 +124,11 @@
         let downloadsData = [];
         let isAdmin = false;
         let activeEditId = null;
+        let highestZ = 10;
+
+        window.minimizeMe = function() {
+            window.parent.postMessage({ type: 'minimize-iframe', id: 'content-frame', title: 'Downloads' }, '*');
+        };
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -236,32 +188,142 @@
         }
 
         function renderDownloads() {
-            const container = document.getElementById('downloads-list');
+            const container = document.getElementById('tab-container');
             container.innerHTML = '';
             
             downloadsData.forEach((download, idx) => {
                 const card = document.createElement('div');
-                card.className = 'download-card';
+                card.className = 'ascii-window dl-card-window';
+                card.dataset.id = download.id;
+                card.dataset.index = idx;
                 card.id = `download-${download.id}`;
-                
+                card.style.width = '340px';
+                card.style.height = '180px';
+                card.style.position = 'absolute';
+
                 card.innerHTML = `
-                    <div class="download-header">
-                        <div class="download-left" onclick="copyLink(${download.id})" title="Click to copy link">
-                            <span class="download-id">#${download.id}</span>
-                            <span class="download-name">${download.name}</span>
-                        </div>
-                        <a href="${download.url}" target="_blank" rel="noopener noreferrer" class="download-btn">Download</a>
+                    <div class="ascii-header-row card-drag-handle" style="cursor: move; background: rgba(0,0,0,0.1);">
+                        <div class="ascii-header-line" style="width: 10px;"></div>
+                        <div class="ascii-title" style="font-size: 11px;">#${download.id}</div>
+                        <div class="ascii-header-line" style="flex:1;"></div>
                     </div>
-                    <div class="download-description">${download.description}</div>
-                    <div class="admin-action-row">
-                        <button class="admin-btn" onclick="openEditDownloadModal(${idx})">Edit</button>
-                        <button class="admin-btn danger-btn" onclick="deleteDownload(${download.id})">Delete</button>
+                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: calc(100% - 15px); box-sizing: border-box;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <span style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px; cursor: pointer; text-decoration: none;" onclick="copyLink(${download.id})">${download.name}</span>
+                            <a href="${download.url}" target="_blank" style="background: hsl(var(--secondary)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); padding: 4px 8px; font-size: 10px; font-weight: bold; text-decoration: none;">DOWNLOAD</a>
+                        </div>
+                        <div style="font-size: 12px; color: hsl(var(--foreground)); line-height: 1.5; flex: 1;">${download.description}</div>
+                        <div class="admin-action-row">
+                            <button class="admin-btn" onclick="openEditDownloadModal(${idx})">Edit</button>
+                            <button class="admin-btn danger-btn" onclick="deleteDownload(${download.id})">Delete</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
+            layoutCards();
             handleHash();
         }
+
+        function layoutCards() {
+            const container = document.getElementById('tab-container');
+            const cards = container.querySelectorAll('.dl-card-window');
+            const containerWidth = container.clientWidth || window.innerWidth;
+            
+            const cardWidth = 340;
+            const cardHeight = 180; 
+            const gap = 20;
+            const padding = 20;
+            
+            let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
+            if (cols < 1) cols = 1;
+
+            let maxTop = 0;
+
+            cards.forEach((card, idx) => {
+                const id = card.dataset.id;
+                const savedPos = localStorage.getItem(`dl_pos_${id}`);
+                if (savedPos) {
+                    const pos = JSON.parse(savedPos);
+                    card.style.left = pos.left;
+                    card.style.top = pos.top;
+                } else {
+                    const col = idx % cols;
+                    const row = Math.floor(idx / cols);
+                    card.style.left = (padding + col * (cardWidth + gap)) + 'px';
+                    card.style.top = (padding + row * (cardHeight + gap)) + 'px';
+                }
+                
+                const topVal = parseInt(card.style.top) || 0;
+                if (topVal > maxTop) maxTop = topVal;
+                
+                makeCardDraggable(card, card.querySelector('.card-drag-handle'));
+            });
+            
+            let dummy = document.getElementById('scroll-dummy');
+            if (!dummy) {
+                dummy = document.createElement('div');
+                dummy.id = 'scroll-dummy';
+                dummy.style.position = 'absolute';
+                dummy.style.width = '1px';
+                container.appendChild(dummy);
+            }
+            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
+        }
+
+        function makeCardDraggable(win, handle) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            handle.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                e.preventDefault();
+                win.style.zIndex = ++highestZ;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                win.style.top = (win.offsetTop - pos2) + "px";
+                win.style.left = (win.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                const id = win.dataset.id;
+                localStorage.setItem(`dl_pos_${id}`, JSON.stringify({
+                    left: win.style.left,
+                    top: win.style.top
+                }));
+                
+                const topVal = parseInt(win.style.top) || 0;
+                const dummy = document.getElementById('scroll-dummy');
+                const dummyTop = parseInt(dummy.style.top) || 0;
+                if (topVal + 200 > dummyTop) {
+                    dummy.style.top = (topVal + 200) + 'px';
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('tab-container');
+            const cards = container.querySelectorAll('.dl-card-window');
+            let hasUnsaved = false;
+            cards.forEach(card => {
+                if (!localStorage.getItem(`dl_pos_${card.dataset.id}`)) {
+                    hasUnsaved = true;
+                }
+            });
+            if (hasUnsaved) layoutCards();
+        });
 
         function copyLink(id) {
             const baseUrl = window.parent.location.origin + window.parent.location.pathname;
@@ -277,11 +339,12 @@
                 setTimeout(() => { toast.style.display = 'none'; }, 2000);
             });
 
-            document.querySelectorAll('.download-card').forEach(card => card.style.borderColor = '');
+            document.querySelectorAll('.dl-card-window').forEach(card => card.style.borderColor = '');
             
             const activeCard = document.getElementById(`download-${id}`);
             if (activeCard) {
                 activeCard.style.borderColor = 'hsl(var(--accent))';
+                activeCard.style.zIndex = ++highestZ;
                 setTimeout(() => { activeCard.style.borderColor = ''; }, 1000);
             }
         }
@@ -296,6 +359,7 @@
                     if (element) {
                         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         element.style.borderColor = 'hsl(var(--accent))';
+                        element.style.zIndex = ++highestZ;
                         setTimeout(() => { element.style.borderColor = ''; }, 1000);
                     }
                 }, 300);
@@ -349,6 +413,7 @@
 
         window.deleteDownload = async (id) => {
             if (!confirm(`Are you sure you want to delete download card #${id}?`)) return;
+            localStorage.removeItem(`dl_pos_${id}`);
             downloadsData = downloadsData.filter(d => d.id !== id);
             await syncToSupabase();
         };

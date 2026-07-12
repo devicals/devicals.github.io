@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/storage/internal/styles/styles.css">
     <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
@@ -16,7 +17,6 @@
         * { border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
         body { 
             margin: 0; 
-            padding: 20px; 
             box-sizing: border-box; 
             height: 100vh; 
             overflow: hidden;
@@ -84,71 +84,6 @@
             background: hsl(var(--destructive) / 0.05);
         }
         
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal.active { display: flex; }
-        .modal-content {
-            background: hsl(var(--card));
-            border: 1px solid hsl(var(--border));
-            padding: 20px;
-            width: 90%;
-            max-width: 440px;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px dashed hsl(var(--border));
-        }
-        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); }
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            color: hsl(var(--foreground));
-        }
-        .modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .modal input[type=text], .modal textarea {
-            width: 100%;
-            padding: 10px;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-family: inherit;
-            font-size: 13px;
-            outline: none;
-            box-sizing: border-box;
-        }
-        .modal textarea { min-height: 100px; resize: vertical; }
-        .modal input:focus, .modal textarea:focus { border-color: hsl(var(--accent)); }
-        
-        .btn-primary {
-            background: hsl(var(--accent)) !important;
-            color: hsl(var(--accent-foreground)) !important;
-            border: 1px solid hsl(var(--accent)) !important;
-            padding: 10px 20px;
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .btn-primary:hover { opacity: 0.9; }
-        
         #add-project-container {
             display: none;
             position: absolute;
@@ -161,13 +96,14 @@
 </head>
 <body>
     
-    <div class="ascii-window" id="big-project-window" style="width: 100%; height: 100%; display: flex; flex-direction: column; position: relative;">
+    <div class="ascii-window" id="big-project-window" style="width: 850px; height: 650px; max-width: 95%; max-height: 90vh; margin: 20px auto; display: flex; flex-direction: column; position: relative;">
         
         <div class="ascii-header-row">
             <div class="ascii-header-line" style="width: 15px;"></div>
             <div class="ascii-title">Projects</div>
             <div class="ascii-header-line" style="flex: 1;"></div>
-            <div class="ascii-minimize-btn" onclick="minimizeMe()" style="cursor:pointer; padding: 0 10px; color: hsl(var(--accent)); font-weight: bold;">_</div>
+            <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeMe()">-</div>
+            <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
         
         <div class="vscode-tab-bar" id="project-tabs"></div>
@@ -223,15 +159,6 @@
         let activeEditIdx = null;
         let editingTabKey = null;
         let highestZ = 10;
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Control') {
-                window.parent.postMessage({ type: 'ctrl-pressed' }, '*');
-            }
-        });
-        document.addEventListener('mousedown', () => {
-            window.parent.postMessage({ type: 'iframe-click' }, '*');
-        });
 
         window.minimizeMe = function() {
             window.parent.postMessage({ type: 'minimize-iframe', id: 'content-frame', title: 'Projects' }, '*');
