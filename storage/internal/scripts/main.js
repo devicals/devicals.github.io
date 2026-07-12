@@ -14,7 +14,7 @@ window.highestZ = 100;
 const homeWindows = ['win-bio', 'win-skills', 'win-socials', 'win-blog'];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    ['nav-window', 'announcement-window', 'settings-window', 'lock-window'].forEach(id => {
+    ['announcement-window', 'settings-window', 'lock-window'].forEach(id => {
         const savedPos = localStorage.getItem('win_pos_' + id);
         if (savedPos) {
             const win = document.getElementById(id);
@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    makeDraggable('nav-window', 'nav-drag');
     makeDraggable('announcement-window', 'ann-drag');
     makeDraggable('settings-window', 'set-drag');
     makeDraggable('lock-window', 'lock-drag');
@@ -36,6 +35,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initializeApp();
     startTitleAnimation();
 });
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Control') {
+        window.toggleNav();
+    }
+});
+
+document.addEventListener('mousedown', (e) => {
+    const nav = document.getElementById('nav-window');
+    const startBtn = document.getElementById('start-button');
+    if (nav && nav.style.display === 'flex') {
+        if (!nav.contains(e.target) && !startBtn.contains(e.target)) {
+            nav.style.display = 'none';
+        }
+    }
+});
+
+window.toggleNav = function() {
+    const nav = document.getElementById('nav-window');
+    if (nav.style.display === 'none' || nav.style.display === '') {
+        nav.style.display = 'flex';
+        nav.style.zIndex = ++window.highestZ;
+    } else {
+        nav.style.display = 'none';
+    }
+};
 
 function makeDraggable(winId, handleId) {
     const win = document.getElementById(winId);
@@ -244,12 +269,25 @@ function applyAnnouncements(data) {
     currentAnnouncements = data;
     renderManagerAnnouncements();
     const win = document.getElementById('announcement-window');
+    const bar = document.getElementById('ann-progress-bar');
+    
     if (currentAnnouncements.length === 0) {
         win.style.display = 'none';
         return;
     }
+    
     if(sessionStorage.getItem('announcement-closed') !== 'true') {
+        win.classList.remove('fade-out');
+        win.classList.add('fade-in');
         win.style.display = 'flex';
+        
+        bar.style.transition = 'none';
+        bar.style.width = '100%';
+        void bar.offsetWidth; 
+        
+        bar.style.transition = 'width 10s linear';
+        bar.style.width = '0%';
+        
         setTimeout(() => {
             if (win.style.display !== 'none') {
                 closeAnnouncement();
@@ -278,9 +316,16 @@ async function saveAnnouncements(updatedList) {
 }
 
 window.closeAnnouncement = function() {
-    document.getElementById('announcement-window').style.display = 'none';
+    const win = document.getElementById('announcement-window');
+    win.classList.remove('fade-in');
+    win.classList.add('fade-out');
     sessionStorage.setItem('announcement-closed', 'true');
     if (announcementInterval) clearInterval(announcementInterval);
+    
+    setTimeout(() => {
+        win.style.display = 'none';
+        win.classList.remove('fade-out');
+    }, 300);
 }
 
 async function initHomeDatabase() {
@@ -362,7 +407,7 @@ async function renderHomePage() {
     if (!homeData) return;
 
     let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
-    createWindow('win-bio', 'about me', '', bioHTML, {left: '320px', top: '20px', width: '450px'}, 
+    createWindow('win-bio', 'about me', '', bioHTML, {left: '20px', top: '20px', width: '450px'}, 
         `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
 
     let skillsHTML = `<div class="add-row">
@@ -370,7 +415,7 @@ async function renderHomePage() {
         <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
         <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
     </div><div id="skills-list"></div>`;
-    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '20px', width: '380px'});
+    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '60px', width: '380px'});
     renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
 
     let socialsHTML = `<div class="add-row">
@@ -380,7 +425,7 @@ async function renderHomePage() {
     </div>
     <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
     <div id="socials-list" style="margin-top:10px;"></div>`;
-    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '20px', width: '300px'});
+    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '60px', width: '300px'});
     renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
     refreshDiscordUI();
 

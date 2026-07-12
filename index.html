@@ -12,25 +12,128 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        #mobile-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: hsl(var(--background));
+            z-index: 99999;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            color: hsl(var(--foreground));
+        }
+        @media (max-width: 768px) {
+            #mobile-blocker {
+                display: flex;
+            }
+            #desktop, #taskbar, iframe, .modal {
+                display: none !important;
+            }
+        }
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-top: 1px solid hsl(var(--border));
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+        }
+        #start-button {
+            background: transparent;
+            border: 1px solid transparent;
+            color: hsl(var(--foreground));
+            font-size: 18px;
+            cursor: pointer;
+            height: 100%;
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        #start-button:hover {
+            background: hsl(var(--secondary));
+            border-color: hsl(var(--border));
+        }
+        .nav-vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            padding: 15px 5px;
+            font-size: 10px;
+            letter-spacing: 1px;
+            color: hsl(var(--muted-foreground));
+            border-left: 1px dashed hsl(var(--border));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            background: rgba(0,0,0,0.2);
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(10px) scale(0.98); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .fade-out { animation: fadeOut 0.3s forwards; }
+        .fade-in { animation: fadeIn 0.3s forwards; }
+        
+        #ann-progress-container {
+            height: 2px;
+            background: hsl(var(--secondary));
+            width: 100%;
+            margin-top: 12px;
+        }
+        #ann-progress-bar {
+            height: 100%;
+            background: hsl(var(--accent));
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
+    <div id="mobile-blocker">
+        <div>
+            <div style="font-size: 32px; margin-bottom: 15px; color: hsl(var(--accent));">✦</div>
+            <p>Please view this website on a larger desktop screen.</p>
+        </div>
+    </div>
+
     <div style="position:fixed; inset:0; background:hsl(var(--background)); z-index:-3;"></div>
     <iframe src="/bg.html" style="position:fixed; inset:0; width:100%; height:100%; border:none; z-index:-2; pointer-events:none; user-select:none; opacity: 0.15;"></iframe>
     <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1; pointer-events:none;"></div>
 
-    <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:100%; border:none; z-index:1; display:none;"></iframe>
+    <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:calc(100% - 40px); border:none; z-index:1; display:none;"></iframe>
 
-    <div id="desktop" class="desktop-area">
-        <div class="ascii-window" id="nav-window" style="left: 20px; top: 20px; width: 280px; z-index: 100;">
+    <div id="desktop" class="desktop-area" style="height: calc(100% - 40px);">
+        
+        <div class="ascii-window" id="nav-window" style="left: 10px; bottom: 50px; top: auto; width: 300px; z-index: 100; display: none; position: fixed;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
-                <div id="nav-drag" class="ascii-title">nav</div>
+                <div class="ascii-title">nav</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
             </div>
-            <div class="ascii-content nav-tree" id="nav-tree-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
+            <div class="ascii-content" style="padding: 0; flex: 1; display: flex; overflow: hidden;">
+                <div class="nav-tree" id="nav-tree-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
+                <div class="nav-vertical-text">CTRL TO TOGGLE</div>
+            </div>
         </div>
         
-        <div class="ascii-window" id="announcement-window" style="left: 20px; bottom: 20px; top: auto; width: 450px; z-index: 101; display:none;">
+        <div class="ascii-window" id="announcement-window" style="left: 20px; bottom: 60px; top: auto; width: 450px; z-index: 101; display:none;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="ann-drag" class="ascii-title">notice</div>
@@ -38,10 +141,13 @@
                 <div class="ascii-close-btn" onclick="closeAnnouncement()">x</div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
-            <div class="ascii-content" id="announcement-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
+            <div class="ascii-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+                <div id="announcement-content" style="flex: 1; overflow-y: auto;"></div>
+                <div id="ann-progress-container"><div id="ann-progress-bar"></div></div>
+            </div>
         </div>
 
-        <div class="ascii-window" id="settings-window" style="left: 20px; top: 400px; width: 300px; z-index: 105; display:none;">
+        <div class="ascii-window" id="settings-window" style="left: 20px; top: 40px; width: 300px; z-index: 105; display:none;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="set-drag" class="ascii-title">settings.ini</div>
@@ -85,6 +191,10 @@
                 <button class="btn-primary" onclick="checkLock()" style="width: 100%;">[ Unlock ]</button>
             </div>
         </div>
+    </div>
+
+    <div id="taskbar">
+        <button id="start-button" onclick="toggleNav()">✦</button>
     </div>
 
     <div id="bio-modal" class="modal">
