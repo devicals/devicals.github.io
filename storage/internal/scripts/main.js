@@ -45,22 +45,64 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('mousedown', (e) => {
     const nav = document.getElementById('nav-window');
     const startBtn = document.getElementById('start-button');
-    if (nav && nav.style.display === 'flex') {
+    if (nav && nav.classList.contains('nav-open')) {
         if (!nav.contains(e.target) && !startBtn.contains(e.target)) {
-            nav.style.display = 'none';
+            window.toggleNav();
         }
+    }
+});
+
+window.addEventListener('message', e => {
+    if (e.data.type === 'ctrl-pressed') {
+        window.toggleNav();
+    } else if (e.data.type === 'iframe-click') {
+        const nav = document.getElementById('nav-window');
+        if (nav && nav.classList.contains('nav-open')) {
+            window.toggleNav();
+        }
+    } else if (e.data.type === 'minimize-iframe') {
+        const frame = document.getElementById(e.data.id || 'content-frame');
+        if (frame) frame.style.display = 'none';
+        addTaskbarItem(e.data.id || 'content-frame', e.data.title);
     }
 });
 
 window.toggleNav = function() {
     const nav = document.getElementById('nav-window');
-    if (nav.style.display === 'none' || nav.style.display === '') {
-        nav.style.display = 'flex';
-        nav.style.zIndex = ++window.highestZ;
+    const btn = document.getElementById('start-button');
+    if (nav.classList.contains('nav-open')) {
+        nav.classList.remove('nav-open');
+        btn.classList.remove('start-spin');
     } else {
-        nav.style.display = 'none';
+        nav.classList.add('nav-open');
+        btn.classList.add('start-spin');
+        nav.style.zIndex = ++window.highestZ;
     }
 };
+
+window.minimizeWindow = function(id, title) {
+    const win = document.getElementById(id);
+    if (win) {
+        win.style.display = 'none';
+        addTaskbarItem(id, title);
+    }
+};
+
+function addTaskbarItem(id, title) {
+    const container = document.getElementById('taskbar-items');
+    if (document.getElementById('tb-item-' + id)) return;
+    const btn = document.createElement('button');
+    btn.id = 'tb-item-' + id;
+    btn.className = 'taskbar-item-btn';
+    btn.textContent = title;
+    btn.onclick = () => {
+        const win = document.getElementById(id);
+        if (win) win.style.display = (id === 'content-frame') ? 'block' : 'flex';
+        if (win && id !== 'content-frame') win.style.zIndex = ++window.highestZ;
+        btn.remove();
+    };
+    container.appendChild(btn);
+}
 
 function makeDraggable(winId, handleId) {
     const win = document.getElementById(winId);
@@ -392,6 +434,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
             ${adminControls ? `<div class="ascii-admin-controls">${adminControls}</div>` : ''}
             <div class="ascii-header-line" style="flex: 1;"></div>
             ${rightContent ? `<div class="ascii-right-content">${rightContent}</div>` : ''}
+            <div class="ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')" style="cursor:pointer; padding: 0 8px; color: hsl(var(--accent)); font-weight: bold;">_</div>
             <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
         <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
@@ -415,7 +458,7 @@ async function renderHomePage() {
         <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
         <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
     </div><div id="skills-list"></div>`;
-    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '60px', width: '380px'});
+    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '20px', width: '380px'});
     renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
 
     let socialsHTML = `<div class="add-row">
@@ -425,7 +468,7 @@ async function renderHomePage() {
     </div>
     <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
     <div id="socials-list" style="margin-top:10px;"></div>`;
-    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '60px', width: '300px'});
+    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '20px', width: '300px'});
     renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
     refreshDiscordUI();
 
@@ -622,14 +665,22 @@ async function loadPage(pageName, args = '') {
     
     if (pageName === 'home') {
         iframe.style.display = 'none';
+        
+        const tbItem = document.getElementById('tb-item-content-frame');
+        if (tbItem) tbItem.remove();
+        
         homeWindows.forEach(id => {
             const el = document.getElementById(id);
-            if(el) el.style.display = 'flex';
+            const tbItemWin = document.getElementById('tb-item-' + id);
+            if(el && !tbItemWin) el.style.display = 'flex';
         });
         history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
         return;
     } else {
-        iframe.style.display = 'block';
+        const tbItem = document.getElementById('tb-item-content-frame');
+        if (!tbItem) {
+            iframe.style.display = 'block';
+        }
         homeWindows.forEach(id => {
             const el = document.getElementById(id);
             if(el) el.style.display = 'none';
@@ -717,7 +768,7 @@ window.closePreferences = () => {
 
 window.resetWindowPositions = function() {
     Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('win_pos_')) {
+        if (key.startsWith('win_pos_') || key.startsWith('proj_pos_')) {
             localStorage.removeItem(key);
         }
     });

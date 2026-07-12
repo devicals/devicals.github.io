@@ -39,7 +39,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 40px;
+            height: 50px;
             background: rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
@@ -53,18 +53,62 @@
             background: transparent;
             border: 1px solid transparent;
             color: hsl(var(--foreground));
-            font-size: 18px;
+            font-size: 24px;
             cursor: pointer;
             height: 100%;
-            padding: 0 15px;
+            padding: 0 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.2s;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
         }
         #start-button:hover {
             background: hsl(var(--secondary));
             border-color: hsl(var(--border));
+        }
+        .start-spin {
+            transform: rotate(180deg) scale(1.1);
+            background: hsl(var(--secondary)) !important;
+            border-color: hsl(var(--accent)) !important;
+            color: hsl(var(--accent)) !important;
+        }
+        #taskbar-items {
+            display: flex;
+            gap: 8px;
+            margin-left: 15px;
+            height: 100%;
+            align-items: center;
+        }
+        .taskbar-item-btn {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+            padding: 0 15px;
+            height: 32px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .taskbar-item-btn:hover {
+            background: hsl(var(--secondary));
+        }
+        #nav-window {
+            position: fixed;
+            left: 10px;
+            bottom: 60px;
+            top: 20px;
+            width: 300px;
+            z-index: 10001;
+            transform: translateX(-120%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        #nav-window.nav-open {
+            transform: translateX(0);
         }
         .nav-vertical-text {
             writing-mode: vertical-rl;
@@ -117,11 +161,11 @@
     <iframe src="/bg.html" style="position:fixed; inset:0; width:100%; height:100%; border:none; z-index:-2; pointer-events:none; user-select:none; opacity: 0.15;"></iframe>
     <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1; pointer-events:none;"></div>
 
-    <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:calc(100% - 40px); border:none; z-index:1; display:none;"></iframe>
+    <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:calc(100% - 50px); border:none; z-index:1; display:none;"></iframe>
 
-    <div id="desktop" class="desktop-area" style="height: calc(100% - 40px);">
+    <div id="desktop" class="desktop-area" style="height: calc(100% - 50px);">
         
-        <div class="ascii-window" id="nav-window" style="left: 10px; bottom: 50px; top: auto; width: 300px; z-index: 100; display: none; position: fixed;">
+        <div class="ascii-window" id="nav-window">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div class="ascii-title">nav</div>
@@ -133,7 +177,7 @@
             </div>
         </div>
         
-        <div class="ascii-window" id="announcement-window" style="left: 20px; bottom: 60px; top: auto; width: 450px; z-index: 101; display:none;">
+        <div class="ascii-window" id="announcement-window" style="left: 20px; bottom: 70px; top: auto; width: 450px; z-index: 101; display:none;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="ann-drag" class="ascii-title">notice</div>
@@ -152,6 +196,7 @@
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="set-drag" class="ascii-title">settings.ini</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
+                <div class="ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')" style="cursor:pointer; padding: 0 5px; color: hsl(var(--accent)); font-weight: bold;">_</div>
                 <div class="ascii-close-btn" onclick="closePreferences()">x</div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
@@ -195,6 +240,7 @@
 
     <div id="taskbar">
         <button id="start-button" onclick="toggleNav()">✦</button>
+        <div id="taskbar-items"></div>
     </div>
 
     <div id="bio-modal" class="modal">
