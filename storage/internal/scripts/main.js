@@ -61,9 +61,7 @@ window.addEventListener('message', e => {
             window.toggleNav();
         }
     } else if (e.data.type === 'minimize-iframe') {
-        const frame = document.getElementById(e.data.id || 'content-frame');
-        if (frame) frame.style.display = 'none';
-        addTaskbarItem(e.data.id || 'content-frame', e.data.title);
+        minimizeWindow(e.data.id, e.data.title);
     }
 });
 
@@ -88,6 +86,32 @@ window.minimizeWindow = function(id, title) {
     }
 };
 
+window.closeWindow = function(id) {
+    if (id === 'announcement-window') closeAnnouncement();
+    else if (id === 'settings-window') closePreferences();
+    else if (id === 'lock-window') closeLockModal();
+    else document.getElementById(id).style.display = 'none';
+}
+
+window.toggleNotifications = function() {
+    const win = document.getElementById('notifications-window');
+    if (win.style.display === 'none' || win.style.display === '') {
+        win.style.display = 'flex';
+        win.style.zIndex = ++window.highestZ;
+    } else {
+        win.style.display = 'none';
+    }
+};
+
+function updateNotificationsList() {
+    const list = document.getElementById('notifications-list');
+    if (currentAnnouncements.length === 0) {
+        list.innerHTML = '<div style="color:hsl(var(--muted-foreground)); font-style:italic;">No new notifications.</div>';
+        return;
+    }
+    list.innerHTML = currentAnnouncements.map(a => `<div style="border-bottom: 1px solid hsl(var(--border)); padding-bottom: 10px; line-height:1.6; font-size:12px;">${marked.parse(a)}</div>`).join('');
+}
+
 function addTaskbarItem(id, title) {
     const container = document.getElementById('taskbar-items');
     if (document.getElementById('tb-item-' + id)) return;
@@ -97,9 +121,14 @@ function addTaskbarItem(id, title) {
     btn.textContent = title;
     btn.onclick = () => {
         const win = document.getElementById(id);
-        if (win) win.style.display = (id === 'content-frame') ? 'block' : 'flex';
-        if (win && id !== 'content-frame') win.style.zIndex = ++window.highestZ;
+        if (win) win.style.display = 'flex';
+        if (win) win.style.zIndex = ++window.highestZ;
         btn.remove();
+        
+        const iframe = win.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ type: 'hash-updated', args: window.location.hash.substring(1) }, '*');
+        }
     };
     container.appendChild(btn);
 }
@@ -117,6 +146,7 @@ function makeDraggable(winId, handleId) {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
         e.preventDefault();
         win.style.zIndex = ++window.highestZ;
+        document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'none');
         if (e.type === 'touchstart') {
             pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
         } else {
@@ -144,6 +174,7 @@ function makeDraggable(winId, handleId) {
     function closeDragElement() {
         document.onmouseup = null; document.onmousemove = null;
         document.ontouchend = null; document.ontouchmove = null;
+        document.querySelectorAll('iframe').forEach(f => f.style.pointerEvents = 'auto');
     }
     
     win.addEventListener('mousedown', () => win.style.zIndex = ++window.highestZ);
@@ -169,7 +200,7 @@ async function initializeApp() {
     await loadCustomPages();
     await initHomeDatabase();
     handleHashNavigation();
-    window.addEventListener('hashchange', handleHashNavigation);
+    window.parent.addEventListener('hashchange', handleHashNavigation);
     
     const savedTheme = localStorage.getItem('selected-theme') || 'default';
     const select = document.getElementById('theme-select');
@@ -208,10 +239,11 @@ function handleUserSession(session) {
     loadCustomPages();
     if (homeData) renderHomePage();
 
-    const iframe = document.getElementById('content-frame');
-    if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
-    }
+    document.querySelectorAll('iframe').forEach(iframe => {
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
+        }
+    });
 }
 
 function renderLoginPortal() {
@@ -236,14 +268,14 @@ function renderAdminPortal(email) {
     portal.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <span style="font-size:11px; color:hsl(var(--accent));">${email}</span>
-            <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
+            <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">Logout</button>
         </div>
         
         <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
-                <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
-                <button id="hide-hidden-btn" class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
+                <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">Show Hidden</button>
+                <button id="hide-hidden-btn" class="ascii-btn" onclick="requestHide()">Hide Hidden</button>
             </div>
         </div>
 
@@ -252,7 +284,7 @@ function renderAdminPortal(email) {
             <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
             <div style="display:flex; gap:6px; align-items:center;">
                 <input type="text" id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="flex:1;">
-                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent));">[+]</button>
+                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent));">+</button>
             </div>
         </div>
     `;
@@ -268,7 +300,7 @@ function renderManagerAnnouncements() {
         item.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;";
         item.innerHTML = `
             <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; margin-right:8px;">${ann}</span>
-            <button class="ascii-btn del" onclick="deleteAnnouncement(${idx})">[x]</button>
+            <button class="ascii-btn del" onclick="deleteAnnouncement(${idx})">x</button>
         `;
         listContainer.appendChild(item);
     });
@@ -310,6 +342,8 @@ async function loadAnnouncements() {
 function applyAnnouncements(data) {
     currentAnnouncements = data;
     renderManagerAnnouncements();
+    updateNotificationsList();
+    
     const win = document.getElementById('announcement-window');
     const bar = document.getElementById('ann-progress-bar');
     
@@ -388,14 +422,7 @@ async function syncHomeToSupabase() {
     if (error) alert("Error saving: " + error.message);
 }
 
-window.closeWindow = function(id) {
-    if (id === 'announcement-window') closeAnnouncement();
-    else if (id === 'settings-window') closePreferences();
-    else if (id === 'lock-window') closeLockModal();
-    else document.getElementById(id).style.display = 'none';
-}
-
-function createWindow(id, title, rightContent, contentHTML, bounds, adminControls = '') {
+function createWindow(id, title, rightContent, contentHTML, bounds, adminControls = '', hasIframe = false) {
     let win = document.getElementById(id);
     const isNew = !win;
     if (isNew) {
@@ -406,7 +433,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         const page = params.get('page') || 'home';
-        if (page !== 'home') win.style.display = 'none';
+        if (page !== 'home' && !hasIframe) win.style.display = 'none';
         
         document.getElementById('desktop').appendChild(win);
     }
@@ -419,12 +446,14 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         win.style.bottom = 'auto';
         win.style.right = 'auto';
         if (bounds.width) win.style.width = bounds.width;
+        if (bounds.height) win.style.height = bounds.height;
     } else {
         if (bounds.left !== undefined) { win.style.left = bounds.left; win.style.right = 'auto'; }
         if (bounds.right !== undefined) { win.style.right = bounds.right; win.style.left = 'auto'; }
         if (bounds.top !== undefined) { win.style.top = bounds.top; win.style.bottom = 'auto'; }
         if (bounds.bottom !== undefined) { win.style.bottom = bounds.bottom; win.style.top = 'auto'; }
         if (bounds.width) win.style.width = bounds.width;
+        if (bounds.height) win.style.height = bounds.height;
     }
     
     win.innerHTML = `
@@ -435,9 +464,10 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
             <div class="ascii-header-line" style="flex: 1;"></div>
             ${rightContent ? `<div class="ascii-right-content">${rightContent}</div>` : ''}
             <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')">-</div>
+            <div class="ascii-window-action ascii-close-btn" onclick="closeWindow('${id}')">x</div>
             <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
-        <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
+        <div class="ascii-content" style="padding: ${hasIframe ? '0' : '15px'}; flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
             ${contentHTML}
         </div>
     `;
@@ -451,24 +481,24 @@ async function renderHomePage() {
 
     let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
     createWindow('win-bio', 'about me', '', bioHTML, {left: '20px', top: '20px', width: '450px'}, 
-        `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
+        `<span class="admin-edit-only" onclick="openBioModal()">✎</span>`);
 
     let skillsHTML = `<div class="add-row">
         <input type="text" id="skill-n" class="ascii-input" placeholder="Skill Name" style="flex:1;">
         <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
-        <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
+        <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">+</button>
     </div><div id="skills-list"></div>`;
-    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '20px', width: '380px'});
+    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '60px', width: '380px'});
     renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
 
     let socialsHTML = `<div class="add-row">
         <input type="text" id="social-n" class="ascii-input" placeholder="Social Name" style="flex:1;">
         <input type="text" id="social-l" class="ascii-input" placeholder="Profile URL" style="flex:1;">
-        <button class="ascii-btn" onclick="addSocial()" style="color:hsl(var(--accent));">[+]</button>
+        <button class="ascii-btn" onclick="addSocial()" style="color:hsl(var(--accent));">+</button>
     </div>
     <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
     <div id="socials-list" style="margin-top:10px;"></div>`;
-    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '20px', width: '300px'});
+    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '60px', width: '300px'});
     renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
     refreshDiscordUI();
 
@@ -486,8 +516,8 @@ function renderGridItems(arr, containerId, category, textMapper, linkMapper) {
         row.innerHTML = `
             <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'};">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
             <div class="admin-actions">
-                <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">[✎]</button>
-                <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">[x]</button>
+                <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">✎</button>
+                <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">x</button>
             </div>
         `;
         
@@ -574,7 +604,7 @@ async function loadLatestBlogPreview() {
             
             const dateDisplay = latest.date.replace(/\//g, '-');
             
-            createWindow('win-blog', 'latest blog', dateDisplay, `
+            createWindow('win-blog-preview', 'latest blog', dateDisplay, `
                 <div style="cursor: pointer; line-height: 1.6;" onclick="window.location.hash = 'page=blogs&id=${latest.id}'">
                     <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
                     <div style="color:hsl(var(--foreground));">${ext}</div>
@@ -661,34 +691,25 @@ function resolvePath(relativePath, baseDir) {
 
 async function loadPage(pageName, args = '') {
     const pageBase = '/storage/internal/pages/main/';
-    const iframe = document.getElementById('content-frame');
     
     if (pageName === 'home') {
-        iframe.style.display = 'none';
-        
-        const tbItem = document.getElementById('tb-item-content-frame');
-        if (tbItem) tbItem.remove();
-        
         homeWindows.forEach(id => {
             const el = document.getElementById(id);
-            const tbItemWin = document.getElementById('tb-item-' + id);
-            if(el && !tbItemWin) el.style.display = 'flex';
+            if(el && el.style.display === 'none' && !document.getElementById('tb-item-' + id)) {
+                el.style.display = 'flex';
+            }
         });
+        const prev = document.getElementById('win-blog-preview');
+        if (prev && prev.style.display === 'none' && !document.getElementById('tb-item-win-blog-preview')) {
+            prev.style.display = 'flex';
+        }
         history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
         return;
-    } else {
-        const tbItem = document.getElementById('tb-item-content-frame');
-        if (!tbItem) {
-            iframe.style.display = 'block';
-        }
-        homeWindows.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.style.display = 'none';
-        });
     }
 
     const customData = await loadYAML('/storage/data/custom.yaml');
     let targetUrl = '';
+    let title = pageName.charAt(0).toUpperCase() + pageName.slice(1);
 
     if (customData && customData.customPages) {
         let customPage = null;
@@ -699,6 +720,7 @@ async function loadPage(pageName, args = '') {
         }
         
         if (customPage) {
+            title = customPage.display || customPage.name;
             if (customPage.locked && sessionStorage.getItem('unlocked_' + pageName) !== 'true') {
                 pendingPage = { id: pageName, args: args };
                 document.getElementById('lock-window').style.display = 'flex';
@@ -722,7 +744,23 @@ async function loadPage(pageName, args = '') {
         targetUrl = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
     }
     
-    iframe.src = targetUrl;
+    const winId = 'win-' + pageName;
+    let win = document.getElementById(winId);
+    
+    if (win) {
+        win.style.display = 'flex';
+        win.style.zIndex = ++window.highestZ;
+        const tbItem = document.getElementById('tb-item-' + winId);
+        if(tbItem) tbItem.remove();
+        
+        const iframe = win.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({ type: 'hash-updated', args }, '*');
+        }
+    } else {
+        createWindow(winId, title, '', `<iframe src="${targetUrl}" style="width:100%; height:100%; border:none; background:transparent;"></iframe>`, {left: '100px', top: '100px', width: '850px', height: '600px'}, '', true);
+    }
+    
     history.replaceState(null, null, args ? `#page=${pageName}&${args}` : `#page=${pageName}`);
 }
 

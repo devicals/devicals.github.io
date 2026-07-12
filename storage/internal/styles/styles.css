@@ -88,12 +88,8 @@ a:hover { color: hsl(var(--accent)); }
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
     transition: background 0.2s, color 0.2s;
     user-select: none;
-}
-
-.ascii-minimize-btn {
     color: hsl(var(--muted-foreground));
 }
 

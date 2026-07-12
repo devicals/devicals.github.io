@@ -26,7 +26,7 @@
         .vscode-tab-bar {
             display: flex;
             background: hsl(var(--card));
-            border-bottom: 1px solid hsl(var(--border));
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
             overflow-x: auto;
             min-height: 35px;
         }
@@ -34,7 +34,8 @@
             padding: 8px 15px;
             background: transparent;
             border: none;
-            border-right: 1px solid hsl(var(--border));
+            border-right: 1px solid hsl(var(--border) / 0.5);
+            border-top: 2px solid transparent;
             color: hsl(var(--muted-foreground));
             cursor: pointer;
             font-family: inherit;
@@ -43,11 +44,19 @@
             align-items: center;
             gap: 8px;
             white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .project-tab:hover {
+            color: hsl(var(--accent));
+            border-top-color: hsl(var(--accent) / 0.5);
+            background: linear-gradient(to bottom, hsl(var(--accent) / 0.05), transparent 80%);
         }
         .project-tab.active {
-            background: hsl(var(--secondary));
-            color: hsl(var(--foreground));
-            border-top: 2px solid hsl(var(--accent));
+            background: linear-gradient(to bottom, hsl(var(--accent) / 0.15), transparent);
+            color: hsl(var(--accent));
+            border-top-color: hsl(var(--accent));
+            box-shadow: inset 0 10px 15px -10px hsl(var(--accent) / 0.3);
+            text-shadow: 0 0 5px hsl(var(--accent) / 0.5);
         }
         
         .admin-action-row {
@@ -86,35 +95,21 @@
         
         #add-project-container {
             display: none;
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
+            padding: 15px;
+            padding-bottom: 0;
         }
         body.is-admin #add-project-container { display: block; }
     </style>
 </head>
 <body>
     
-    <div class="ascii-window" id="big-project-window" style="width: 850px; height: 650px; max-width: 95%; max-height: 90vh; margin: 20px auto; display: flex; flex-direction: column; position: relative;">
-        
-        <div class="ascii-header-row">
-            <div class="ascii-header-line" style="width: 15px;"></div>
-            <div class="ascii-title">Projects</div>
-            <div class="ascii-header-line" style="flex: 1;"></div>
-            <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeMe()">-</div>
-            <div class="ascii-header-line" style="width: 10px;"></div>
-        </div>
-        
-        <div class="vscode-tab-bar" id="project-tabs"></div>
-
-        <div id="tab-container" style="position: relative; flex: 1; overflow: auto;"></div>
-
-    </div>
+    <div class="vscode-tab-bar" id="project-tabs"></div>
 
     <div id="add-project-container">
-        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; background: hsl(var(--card)); box-shadow: 0 4px 6px rgba(0,0,0,0.5);" onclick="openAddProjectModal()">+ Add Project</button>
+        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; width: 100%;" onclick="openAddProjectModal()">+ Add Project</button>
     </div>
+
+    <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 500px;"></div>
 
     <div id="project-modal" class="modal">
         <div class="modal-content">
@@ -123,9 +118,9 @@
                 <button class="modal-close" onclick="closeProjectModal()">×</button>
             </div>
             <div class="modal-body">
-                <input type="text" id="proj-name-input" placeholder="Project Name">
+                <input type="text" id="proj-name-input" class="ascii-input" placeholder="Project Name">
                 <textarea id="proj-desc-input" placeholder="Description"></textarea>
-                <input type="text" id="proj-link-input" placeholder="Project URL">
+                <input type="text" id="proj-link-input" class="ascii-input" placeholder="Project URL">
                 <button class="btn-primary" onclick="handleSaveProject()" style="width: 100%; padding: 10px;">Save Project</button>
             </div>
         </div>
@@ -138,7 +133,7 @@
                 <button class="modal-close" onclick="closeTabEditModal()">×</button>
             </div>
             <div class="modal-body">
-                <input type="text" id="tab-name-input" placeholder="Tab Name">
+                <input type="text" id="tab-name-input" class="ascii-input" placeholder="Tab Name">
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button class="btn-primary" onclick="saveTabEdit()" style="flex: 1;">Save</button>
                     <button class="btn-primary" onclick="deleteActiveTab()" style="background: hsl(var(--destructive)) !important; border-color: hsl(var(--destructive)) !important;">Delete Tab</button>
@@ -160,10 +155,6 @@
         let editingTabKey = null;
         let highestZ = 10;
 
-        window.minimizeMe = function() {
-            window.parent.postMessage({ type: 'minimize-iframe', id: 'content-frame', title: 'Projects' }, '*');
-        };
-
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             handleUserSession(session);
@@ -171,6 +162,19 @@
                 handleUserSession(session);
             });
         }
+
+        window.addEventListener('message', e => {
+            if (e.data && e.data.type === 'auth-sync') {
+                handleUserSession(e.data.session);
+            } else if (e.data && e.data.type === 'hash-updated') {
+                const hash = e.data.args;
+                const params = new URLSearchParams(hash);
+                const tab = params.get('tab');
+                if (tab && projectsData && projectsData.tabs && projectsData.tabs[tab]) {
+                    switchTab(tab, true);
+                }
+            }
+        });
 
         function handleUserSession(session) {
             if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
@@ -273,24 +277,26 @@
             
             projects.forEach((project, idx) => {
                 const card = document.createElement('div');
-                card.className = 'ascii-window project-card-window';
+                card.className = 'project-card';
                 card.dataset.index = idx;
                 card.style.width = '320px';
-                card.style.position = 'absolute'; 
+                card.style.position = 'absolute';
+                card.style.background = 'hsl(var(--card))';
+                card.style.border = '1px solid hsl(var(--border))';
+                card.style.padding = '15px';
+                card.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
+                card.style.display = 'flex';
+                card.style.flexDirection = 'column';
 
                 card.innerHTML = `
-                    <div class="ascii-header-row card-drag-handle" style="cursor: move; background: rgba(0,0,0,0.1);">
-                        <div class="ascii-header-line" style="width: 10px;"></div>
-                        <div class="ascii-title" style="font-size: 11px;">${project.name}</div>
-                        <div class="ascii-header-line" style="flex:1;"></div>
+                    <div class="card-drag-handle" style="cursor: move; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid hsl(var(--border) / 0.5);">
+                        <div style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px;">${project.name}</div>
                     </div>
-                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 12px; height: calc(100% - 30px); box-sizing: border-box;">
-                        <a href="${project.link}" target="_blank" style="color: hsl(var(--accent)); font-weight: bold; font-size: 12px; text-decoration: none;">[ View Project ]</a>
-                        <div style="font-size: 12px; color: hsl(var(--foreground)); line-height: 1.5; flex: 1;">${project.description}</div>
-                        <div class="admin-action-row">
-                            <button class="admin-btn" onclick="openEditProjectModal(${idx})">Edit</button>
-                            <button class="admin-btn danger-btn" onclick="deleteProject(${idx})">Delete</button>
-                        </div>
+                    <a href="${project.link}" target="_blank" style="color: hsl(var(--foreground)); font-size: 12px; text-decoration: underline;">View Project</a>
+                    <div style="font-size: 12px; color: hsl(var(--muted-foreground)); line-height: 1.5; margin-top: 10px; flex-grow: 1;">${project.description}</div>
+                    <div class="admin-action-row">
+                        <button class="admin-btn" onclick="openEditProjectModal(${idx})">Edit</button>
+                        <button class="admin-btn danger-btn" onclick="deleteProject(${idx})">Delete</button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -301,7 +307,7 @@
 
         function layoutCards() {
             const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.project-card-window');
+            const cards = container.querySelectorAll('.project-card');
             const containerWidth = container.clientWidth || window.innerWidth;
             
             const cardWidth = 320;
@@ -388,7 +394,7 @@
 
         window.addEventListener('resize', () => {
             const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.project-card-window');
+            const cards = container.querySelectorAll('.project-card');
             let hasUnsaved = false;
             cards.forEach(card => {
                 if (!localStorage.getItem(`proj_pos_${currentTab}_${card.dataset.index}`)) {
@@ -504,7 +510,6 @@
             if (!confirm(`Are you sure you want to delete this project card?`)) return;
             localStorage.removeItem(`proj_pos_${currentTab}_${idx}`);
             
-            // Shift pos of items after this so they don't break layout when reloading
             for (let i = idx + 1; i < projectsData.tabs[currentTab].projects.length; i++) {
                 const pos = localStorage.getItem(`proj_pos_${currentTab}_${i}`);
                 if (pos) {

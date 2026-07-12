@@ -163,8 +163,6 @@
     <iframe src="/bg.html" style="position:fixed; inset:0; width:100%; height:100%; border:none; z-index:-2; pointer-events:none; user-select:none; opacity: 0.15;"></iframe>
     <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1; pointer-events:none;"></div>
 
-    <iframe id="content-frame" style="position:absolute; inset:0; width:100%; height:calc(100% - 50px); border:none; z-index:1; display:none;"></iframe>
-
     <div id="desktop" class="desktop-area" style="height: calc(100% - 50px);">
         
         <div class="ascii-window" id="nav-window">
@@ -193,13 +191,25 @@
             </div>
         </div>
 
+        <div class="ascii-window" id="notifications-window" style="right: 10px; bottom: 60px; left: auto; top: auto; width: 350px; display: none; z-index: 10000;">
+            <div class="ascii-header-row">
+                <div class="ascii-header-line" style="width: 15px;"></div>
+                <div class="ascii-title">notifications</div>
+                <div class="ascii-header-line" style="flex: 1;"></div>
+                <div class="ascii-window-action ascii-close-btn" onclick="toggleNotifications()">x</div>
+                <div class="ascii-header-line" style="width: 10px;"></div>
+            </div>
+            <div class="ascii-content" id="notifications-list" style="padding: 15px; max-height: 400px; display: flex; flex-direction: column; gap: 10px;">
+            </div>
+        </div>
+
         <div class="ascii-window" id="settings-window" style="left: 20px; top: 40px; width: 300px; z-index: 105; display:none;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
                 <div id="set-drag" class="ascii-title">settings.ini</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
                 <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')">-</div>
-                <div class="ascii-window-action ascii-close-btn" onclick="closePreferences()">x</div>
+                <div class="ascii-window-action ascii-close-btn" onclick="closeWindow('settings-window')">x</div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
@@ -220,7 +230,7 @@
                 </div>
                 <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px;"></div>
                 <div style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px; margin-top: 15px;">
-                    <button class="ascii-btn" onclick="resetWindowPositions()" style="width: 100%; border: 1px solid hsl(var(--border)); padding: 6px;">[ Reset Window Positions ]</button>
+                    <button class="ascii-btn" onclick="resetWindowPositions()" style="width: 100%; border: 1px solid hsl(var(--border)); padding: 6px;">Reset Window Positions</button>
                 </div>
             </div>
         </div>
@@ -235,7 +245,7 @@
             </div>
             <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
                 <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
-                <button class="btn-primary" onclick="checkLock()" style="width: 100%;">[ Unlock ]</button>
+                <button class="btn-primary" onclick="checkLock()" style="width: 100%;">Unlock</button>
             </div>
         </div>
     </div>
@@ -245,6 +255,9 @@
             <span class="start-icon">✦</span>
         </button>
         <div id="taskbar-items"></div>
+        <div id="taskbar-right" style="margin-left: auto; display: flex; align-items: center; padding-right: 15px; gap: 10px;">
+            <button class="taskbar-item-btn" onclick="toggleNotifications()" style="padding: 0 10px;">🔔</button>
+        </div>
     </div>
 
     <div id="bio-modal" class="modal">
@@ -255,7 +268,7 @@
             </div>
             <div class="modal-body">
                 <textarea id="bio-textarea-input" placeholder="Biography Markdown..."></textarea>
-                <button class="btn-primary" onclick="saveBio()" style="width: 100%;">[ Execute Save ]</button>
+                <button class="btn-primary" onclick="saveBio()" style="width: 100%;">Execute Save</button>
             </div>
         </div>
     </div>

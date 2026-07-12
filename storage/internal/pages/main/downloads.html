@@ -19,7 +19,7 @@
             margin: 0; 
             box-sizing: border-box; 
             height: 100vh; 
-            overflow: hidden;
+            overflow: auto;
             background: transparent;
         }
 
@@ -58,10 +58,8 @@
         }
         #add-download-container {
             display: none;
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
+            padding: 15px;
+            padding-bottom: 0;
         }
         body.is-admin #add-download-container {
             display: block;
@@ -85,20 +83,11 @@
 <body>
     <div id="copy-toast">LINK COPIED TO CLIPBOARD</div>
     
-    <div class="ascii-window" id="big-download-window" style="width: 800px; height: 600px; max-width: 95%; max-height: 90vh; margin: 20px auto; display: flex; flex-direction: column; position: relative;">
-        <div class="ascii-header-row">
-            <div class="ascii-header-line" style="width: 15px;"></div>
-            <div class="ascii-title">Downloads</div>
-            <div class="ascii-header-line" style="flex: 1;"></div>
-            <div class="ascii-window-action ascii-minimize-btn" onclick="minimizeMe()">-</div>
-            <div class="ascii-header-line" style="width: 10px;"></div>
-        </div>
-        <div id="tab-container" style="position: relative; flex: 1; overflow: auto;"></div>
+    <div id="add-download-container">
+        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; width: 100%;" onclick="openAddDownloadModal()">+ Add Download</button>
     </div>
 
-    <div id="add-download-container">
-        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; background: hsl(var(--card)); box-shadow: 0 4px 6px rgba(0,0,0,0.5);" onclick="openAddDownloadModal()">+ Add Download</button>
-    </div>
+    <div class="downloads-list" id="tab-container" style="padding: 15px; display: flex; flex-direction: column; gap: 15px;"></div>
 
     <div id="download-modal" class="modal">
         <div class="modal-content">
@@ -124,11 +113,6 @@
         let downloadsData = [];
         let isAdmin = false;
         let activeEditId = null;
-        let highestZ = 10;
-
-        window.minimizeMe = function() {
-            window.parent.postMessage({ type: 'minimize-iframe', id: 'content-frame', title: 'Downloads' }, '*');
-        };
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -137,6 +121,14 @@
                 handleUserSession(session);
             });
         }
+
+        window.addEventListener('message', e => {
+            if (e.data && e.data.type === 'auth-sync') {
+                handleUserSession(e.data.session);
+            } else if (e.data && e.data.type === 'hash-updated') {
+                handleHash(e.data.args);
+            }
+        });
 
         function handleUserSession(session) {
             if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
@@ -193,137 +185,27 @@
             
             downloadsData.forEach((download, idx) => {
                 const card = document.createElement('div');
-                card.className = 'ascii-window dl-card-window';
-                card.dataset.id = download.id;
-                card.dataset.index = idx;
+                card.className = 'download-card';
                 card.id = `download-${download.id}`;
-                card.style.width = '340px';
-                card.style.height = '180px';
-                card.style.position = 'absolute';
-
+                
                 card.innerHTML = `
-                    <div class="ascii-header-row card-drag-handle" style="cursor: move; background: rgba(0,0,0,0.1);">
-                        <div class="ascii-header-line" style="width: 10px;"></div>
-                        <div class="ascii-title" style="font-size: 11px;">#${download.id}</div>
-                        <div class="ascii-header-line" style="flex:1;"></div>
+                    <div class="download-header">
+                        <div class="download-left" onclick="copyLink(${download.id})" title="Click to copy link">
+                            <span class="download-id">#${download.id}</span>
+                            <span class="download-name">${download.name}</span>
+                        </div>
+                        <a href="${download.url}" target="_blank" rel="noopener noreferrer" class="download-btn">DOWNLOAD</a>
                     </div>
-                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: calc(100% - 15px); box-sizing: border-box;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                            <span style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px; cursor: pointer; text-decoration: none;" onclick="copyLink(${download.id})">${download.name}</span>
-                            <a href="${download.url}" target="_blank" style="background: hsl(var(--secondary)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); padding: 4px 8px; font-size: 10px; font-weight: bold; text-decoration: none;">DOWNLOAD</a>
-                        </div>
-                        <div style="font-size: 12px; color: hsl(var(--foreground)); line-height: 1.5; flex: 1;">${download.description}</div>
-                        <div class="admin-action-row">
-                            <button class="admin-btn" onclick="openEditDownloadModal(${idx})">Edit</button>
-                            <button class="admin-btn danger-btn" onclick="deleteDownload(${download.id})">Delete</button>
-                        </div>
+                    <div class="download-description">${download.description}</div>
+                    <div class="admin-action-row">
+                        <button class="admin-btn" onclick="openEditDownloadModal(${idx})">Edit</button>
+                        <button class="admin-btn danger-btn" onclick="deleteDownload(${download.id})">Delete</button>
                     </div>
                 `;
                 container.appendChild(card);
             });
-            layoutCards();
-            handleHash();
+            handleHash(window.location.hash.substring(1));
         }
-
-        function layoutCards() {
-            const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.dl-card-window');
-            const containerWidth = container.clientWidth || window.innerWidth;
-            
-            const cardWidth = 340;
-            const cardHeight = 180; 
-            const gap = 20;
-            const padding = 20;
-            
-            let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
-            if (cols < 1) cols = 1;
-
-            let maxTop = 0;
-
-            cards.forEach((card, idx) => {
-                const id = card.dataset.id;
-                const savedPos = localStorage.getItem(`dl_pos_${id}`);
-                if (savedPos) {
-                    const pos = JSON.parse(savedPos);
-                    card.style.left = pos.left;
-                    card.style.top = pos.top;
-                } else {
-                    const col = idx % cols;
-                    const row = Math.floor(idx / cols);
-                    card.style.left = (padding + col * (cardWidth + gap)) + 'px';
-                    card.style.top = (padding + row * (cardHeight + gap)) + 'px';
-                }
-                
-                const topVal = parseInt(card.style.top) || 0;
-                if (topVal > maxTop) maxTop = topVal;
-                
-                makeCardDraggable(card, card.querySelector('.card-drag-handle'));
-            });
-            
-            let dummy = document.getElementById('scroll-dummy');
-            if (!dummy) {
-                dummy = document.createElement('div');
-                dummy.id = 'scroll-dummy';
-                dummy.style.position = 'absolute';
-                dummy.style.width = '1px';
-                container.appendChild(dummy);
-            }
-            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
-        }
-
-        function makeCardDraggable(win, handle) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            handle.onmousedown = dragMouseDown;
-
-            function dragMouseDown(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-                e.preventDefault();
-                win.style.zIndex = ++highestZ;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-            }
-
-            function elementDrag(e) {
-                e.preventDefault();
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                win.style.top = (win.offsetTop - pos2) + "px";
-                win.style.left = (win.offsetLeft - pos1) + "px";
-            }
-
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-                const id = win.dataset.id;
-                localStorage.setItem(`dl_pos_${id}`, JSON.stringify({
-                    left: win.style.left,
-                    top: win.style.top
-                }));
-                
-                const topVal = parseInt(win.style.top) || 0;
-                const dummy = document.getElementById('scroll-dummy');
-                const dummyTop = parseInt(dummy.style.top) || 0;
-                if (topVal + 200 > dummyTop) {
-                    dummy.style.top = (topVal + 200) + 'px';
-                }
-            }
-        }
-
-        window.addEventListener('resize', () => {
-            const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.dl-card-window');
-            let hasUnsaved = false;
-            cards.forEach(card => {
-                if (!localStorage.getItem(`dl_pos_${card.dataset.id}`)) {
-                    hasUnsaved = true;
-                }
-            });
-            if (hasUnsaved) layoutCards();
-        });
 
         function copyLink(id) {
             const baseUrl = window.parent.location.origin + window.parent.location.pathname;
@@ -334,23 +216,21 @@
             
             navigator.clipboard.writeText(fullUrl).then(() => {
                 const toast = document.getElementById('copy-toast');
-                toast.textContent = `LINK COPIED [#${id}]`;
+                toast.textContent = `LINK COPIED #${id}`;
                 toast.style.display = 'block';
                 setTimeout(() => { toast.style.display = 'none'; }, 2000);
             });
 
-            document.querySelectorAll('.dl-card-window').forEach(card => card.style.borderColor = '');
+            document.querySelectorAll('.download-card').forEach(card => card.style.borderColor = '');
             
             const activeCard = document.getElementById(`download-${id}`);
             if (activeCard) {
                 activeCard.style.borderColor = 'hsl(var(--accent))';
-                activeCard.style.zIndex = ++highestZ;
                 setTimeout(() => { activeCard.style.borderColor = ''; }, 1000);
             }
         }
 
-        function handleHash() {
-            const hash = window.location.hash.substring(1);
+        function handleHash(hash) {
             const params = new URLSearchParams(hash);
             const id = params.get('id');
             if (id) {
@@ -359,7 +239,6 @@
                     if (element) {
                         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         element.style.borderColor = 'hsl(var(--accent))';
-                        element.style.zIndex = ++highestZ;
                         setTimeout(() => { element.style.borderColor = ''; }, 1000);
                     }
                 }, 300);
@@ -413,7 +292,6 @@
 
         window.deleteDownload = async (id) => {
             if (!confirm(`Are you sure you want to delete download card #${id}?`)) return;
-            localStorage.removeItem(`dl_pos_${id}`);
             downloadsData = downloadsData.filter(d => d.id !== id);
             await syncToSupabase();
         };
