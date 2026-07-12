@@ -14,16 +14,26 @@ window.highestZ = 100;
 const homeWindows = ['win-bio', 'win-skills', 'win-socials', 'win-blog'];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    ['announcement-window', 'settings-window', 'lock-window'].forEach(id => {
-        const savedPos = localStorage.getItem('win_pos_' + id);
-        if (savedPos) {
-            const win = document.getElementById(id);
-            if (win) {
+    ['announcement-window', 'settings-window', 'lock-window', 'notif-pane'].forEach(id => {
+        const win = document.getElementById(id);
+        if (win) {
+            win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
+            win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
+            makeResizable(win);
+
+            const savedPos = localStorage.getItem('win_pos_' + id);
+            if (savedPos) {
                 const pos = JSON.parse(savedPos);
                 win.style.top = pos.top;
                 win.style.left = pos.left;
                 win.style.bottom = 'auto';
                 win.style.right = 'auto';
+            }
+            const savedSize = localStorage.getItem('win_size_' + id);
+            if (savedSize) {
+                const size = JSON.parse(savedSize);
+                win.style.width = size.width;
+                win.style.height = size.height;
             }
         }
     });
@@ -31,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     makeDraggable('announcement-window', 'ann-drag');
     makeDraggable('settings-window', 'set-drag');
     makeDraggable('lock-window', 'lock-drag');
+    makeDraggable('notif-pane', 'notif-drag');
     
     await initializeApp();
     startTitleAnimation();
@@ -55,7 +66,7 @@ document.addEventListener('mousedown', (e) => {
     const notifBtn = document.getElementById('notif-btn');
     if (notifPane && notifPane.style.display === 'flex') {
         if (!notifPane.contains(e.target) && !notifBtn.contains(e.target)) {
-            notifPane.style.display = 'none';
+            window.toggleNotifications();
         }
     }
 });
@@ -67,7 +78,17 @@ window.addEventListener('message', e => {
         const nav = document.getElementById('nav-window');
         if (nav && nav.classList.contains('nav-open')) window.toggleNav();
         const notifPane = document.getElementById('notif-pane');
-        if (notifPane && notifPane.style.display === 'flex') notifPane.style.display = 'none';
+        if (notifPane && notifPane.style.display === 'flex') window.toggleNotifications();
+        
+        const iframes = document.querySelectorAll('.page-iframe');
+        iframes.forEach(ifr => {
+            if (ifr.contentWindow === e.source) {
+                const win = ifr.closest('.ascii-window');
+                if (win) {
+                    win.style.zIndex = ++window.highestZ;
+                }
+            }
+        });
     } else if (e.data.type === 'minimize-iframe') {
         const iframes = document.querySelectorAll('.page-iframe');
         let senderId = null;
@@ -97,11 +118,14 @@ window.toggleNav = function() {
 
 window.toggleNotifications = function() {
     const pane = document.getElementById('notif-pane');
+    const btn = document.getElementById('notif-btn');
     if (pane.style.display === 'none' || !pane.style.display) {
         pane.style.display = 'flex';
         pane.style.zIndex = Math.max(10001, ++window.highestZ);
+        btn.classList.add('notif-active');
     } else {
         pane.style.display = 'none';
+        btn.classList.remove('notif-active');
     }
 };
 
@@ -129,6 +153,91 @@ function addTaskbarItem(id, title) {
         btn.remove();
     };
     container.appendChild(btn);
+}
+
+function makeResizable(win) {
+    const handles = ['n', 's', 'e', 'w', 'nw', 'ne', 'sw', 'se'];
+    handles.forEach(dir => {
+        const h = document.createElement('div');
+        h.className = `resize-handle resize-${dir}`;
+        h.style.cssText = getResizeHandleStyle(dir);
+        win.appendChild(h);
+        setupResizeDrag(win, h, dir);
+    });
+}
+
+function getResizeHandleStyle(dir) {
+    const size = '8px';
+    const offset = '-4px';
+    let style = `position: absolute; z-index: 10000;`;
+    if (dir === 'n') style += `top: ${offset}; left: 0; right: 0; height: ${size}; cursor: n-resize;`;
+    if (dir === 's') style += `bottom: ${offset}; left: 0; right: 0; height: ${size}; cursor: s-resize;`;
+    if (dir === 'e') style += `right: ${offset}; top: 0; bottom: 0; width: ${size}; cursor: e-resize;`;
+    if (dir === 'w') style += `left: ${offset}; top: 0; bottom: 0; width: ${size}; cursor: w-resize;`;
+    if (dir === 'nw') style += `top: ${offset}; left: ${offset}; width: ${size}; height: ${size}; cursor: nw-resize;`;
+    if (dir === 'ne') style += `top: ${offset}; right: ${offset}; width: ${size}; height: ${size}; cursor: ne-resize;`;
+    if (dir === 'sw') style += `bottom: ${offset}; left: ${offset}; width: ${size}; height: ${size}; cursor: sw-resize;`;
+    if (dir === 'se') style += `bottom: ${offset}; right: ${offset}; width: ${size}; height: ${size}; cursor: se-resize;`;
+    return style;
+}
+
+function setupResizeDrag(win, h, dir) {
+    h.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = win.offsetWidth;
+        const startHeight = win.offsetHeight;
+        const startLeft = win.offsetLeft;
+        const startTop = win.offsetTop;
+        
+        document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'none');
+
+        const onMouseMove = (moveEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+
+            if (dir.includes('e')) {
+                win.style.width = Math.max(200, startWidth + dx) + 'px';
+            }
+            if (dir.includes('w')) {
+                const newW = startWidth - dx;
+                if (newW > 200) {
+                    win.style.width = newW + 'px';
+                    win.style.left = (startLeft + dx) + 'px';
+                }
+            }
+            if (dir.includes('s')) {
+                win.style.height = Math.max(100, startHeight + dy) + 'px';
+            }
+            if (dir.includes('n')) {
+                const newH = startHeight - dy;
+                if (newH > 100) {
+                    win.style.height = newH + 'px';
+                    win.style.top = (startTop + dy) + 'px';
+                }
+            }
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'auto');
+            
+            localStorage.setItem('win_pos_' + win.id, JSON.stringify({
+                top: win.style.top,
+                left: win.style.left
+            }));
+            localStorage.setItem('win_size_' + win.id, JSON.stringify({
+                width: win.style.width,
+                height: win.style.height
+            }));
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
 }
 
 function makeDraggable(winId, handleId) {
@@ -451,6 +560,10 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         win.id = id;
         win.className = 'ascii-window';
         document.getElementById('desktop').appendChild(win);
+        
+        win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
+        win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
+        makeResizable(win);
     }
 
     const savedPos = localStorage.getItem('win_pos_' + id);
@@ -470,6 +583,13 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         if (bounds.width) win.style.width = bounds.width;
         if (bounds.height) win.style.height = bounds.height;
     }
+
+    const savedSize = localStorage.getItem('win_size_' + id);
+    if (savedSize) {
+        const size = JSON.parse(savedSize);
+        win.style.width = size.width;
+        win.style.height = size.height;
+    }
     
     win.innerHTML = `
         <div class="ascii-header-row">
@@ -479,8 +599,8 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
             <div class="ascii-header-line" style="flex: 1;"></div>
             ${rightContent ? `<div class="ascii-right-content">${rightContent}</div>` : ''}
             <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px;">
-                <div class="ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')" style="cursor:pointer; color: hsl(var(--muted-foreground)); font-weight: bold; padding-bottom: 5px;">_</div>
-                <div class="ascii-close-btn" onclick="closeWindow('${id}')" style="cursor:pointer; color: hsl(var(--destructive)); font-weight: bold;">x</div>
+                <div class="ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')" style="cursor:pointer; color: hsl(var(--accent)); font-weight: bold; padding-bottom: 5px;">_</div>
+                ${homeWindows.includes(id) ? '' : `<div class="ascii-close-btn" onclick="closeWindow('${id}')" style="cursor:pointer; color: hsl(var(--destructive)); font-weight: bold;">x</div>`}
             </div>
             <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
@@ -704,7 +824,18 @@ window.loadPage = async function(pageName, args = '') {
     const nav = document.getElementById('nav-window');
     if (nav && nav.classList.contains('nav-open')) window.toggleNav();
     
-    if (pageName === 'home') return;
+    if (pageName === 'home') {
+        homeWindows.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = 'flex';
+                el.style.zIndex = ++window.highestZ;
+            }
+            const tbItem = document.getElementById('tb-item-' + id);
+            if (tbItem) tbItem.remove();
+        });
+        return;
+    }
 
     const winId = 'win-' + pageName;
     let existingWin = document.getElementById(winId);
@@ -743,11 +874,17 @@ window.loadPage = async function(pageName, args = '') {
             let pageType = typeInfo.type || 'raw';
             if (pageType === 'refsection') pageType = 'section'; 
 
-            if (pageType === 'section' || pageType === 'interests') targetUrl = `${pageBase}custom.html`;
-            else if (pageType === 'raw') targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(resolvedPath)}`;
-            else if (pageType.startsWith('gallery')) targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(resolvedPath)}&type=${pageType}`;
-            else if (pageType === 'md') targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(resolvedPath)}`;
-            else if (pageType === 'html') targetUrl = resolvedPath;
+            if (pageType === 'section' || pageType === 'interests') {
+                targetUrl = `${pageBase}custom.html?file=${encodeURIComponent(resolvedPath)}`;
+            } else if (pageType === 'raw') {
+                targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(resolvedPath)}`;
+            } else if (pageType.startsWith('gallery')) {
+                targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(resolvedPath)}&type=${pageType}`;
+            } else if (pageType === 'md') {
+                targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(resolvedPath)}`;
+            } else if (pageType === 'html') {
+                targetUrl = resolvedPath;
+            }
         }
     }
     
@@ -802,9 +939,69 @@ window.closePreferences = () => {
 
 window.resetWindowPositions = function() {
     Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('win_pos_') || key.startsWith('proj_pos_')) {
+        if (key.startsWith('win_pos_') || key.startsWith('win_size_') || key.startsWith('proj_pos_')) {
             localStorage.removeItem(key);
         }
     });
-    location.reload();
+    
+    const defaultPositions = {
+        'nav-window': { top: '20px', left: '10px', width: '300px', height: '' },
+        'announcement-window': { bottom: '70px', left: '20px', top: 'auto', right: 'auto', width: '450px', height: '' },
+        'settings-window': { top: '40px', left: '20px', width: '300px', height: '' },
+        'notif-pane': { bottom: '60px', right: '10px', top: 'auto', left: 'auto', width: '300px', height: '' }
+    };
+    
+    Object.keys(defaultPositions).forEach(id => {
+        const win = document.getElementById(id);
+        if (win) {
+            const pos = defaultPositions[id];
+            win.style.top = pos.top || 'auto';
+            win.style.left = pos.left || 'auto';
+            win.style.bottom = pos.bottom || 'auto';
+            win.style.right = pos.right || 'auto';
+            win.style.width = pos.width || '';
+            win.style.height = pos.height || '';
+        }
+    });
+
+    const homeDefaults = {
+        'win-bio': { left: '20px', top: '20px', width: '450px', height: '' },
+        'win-skills': { right: '20px', bottom: '20px', width: '380px', height: '' },
+        'win-socials': { right: '420px', bottom: '20px', width: '300px', height: '' },
+        'win-blog': { right: '20px', top: '20px', width: '500px', height: '' }
+    };
+
+    Object.keys(homeDefaults).forEach(id => {
+        const win = document.getElementById(id);
+        if (win) {
+            const pos = homeDefaults[id];
+            win.style.top = pos.top || 'auto';
+            win.style.left = pos.left || 'auto';
+            win.style.bottom = pos.bottom || 'auto';
+            win.style.right = pos.right || 'auto';
+            win.style.width = pos.width || '';
+            win.style.height = pos.height || '';
+        }
+    });
+
+    const dynamicWindows = document.querySelectorAll('.ascii-window');
+    dynamicWindows.forEach(win => {
+        if (!defaultPositions[win.id] && !homeDefaults[win.id]) {
+            win.style.top = '100px';
+            win.style.left = '100px';
+            win.style.bottom = 'auto';
+            win.style.right = 'auto';
+            win.style.width = '850px';
+            win.style.height = '650px';
+        }
+        win.style.display = win.id === 'nav-window' || win.id === 'notif-pane' ? 'none' : 'flex';
+    });
+
+    const taskbarItems = document.getElementById('taskbar-items');
+    if (taskbarItems) taskbarItems.innerHTML = '';
+    
+    const iframes = document.querySelectorAll('.page-iframe');
+    iframes.forEach(ifr => {
+        ifr.contentWindow.postMessage({ type: 'reset-inner-positions' }, '*');
+    });
 };

@@ -47,18 +47,20 @@
             z-index: 10000;
             display: flex;
             align-items: center;
+            padding: 0 10px;
         }
         #start-button {
             background: transparent;
             border: 1px solid transparent;
             color: hsl(var(--foreground));
+            font-size: 24px;
             cursor: pointer;
             height: 100%;
             padding: 0 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s, border-color 0.2s;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
         }
         #start-button:hover {
             background: hsl(var(--secondary));
@@ -105,18 +107,28 @@
 
         #notif-btn {
             background: transparent;
-            border: none;
+            border: 1px solid transparent;
+            color: hsl(var(--foreground));
             cursor: pointer;
             padding: 0 15px;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, border-color 0.2s;
             margin-left: auto;
         }
         #notif-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: hsl(var(--secondary));
+            border-color: hsl(var(--border));
+        }
+        #notif-btn.notif-active {
+            background: hsl(var(--secondary)) !important;
+            border-color: hsl(var(--accent)) !important;
+        }
+        #notif-btn.notif-active svg {
+            fill: hsl(var(--accent)) !important;
+            stroke: hsl(var(--accent)) !important;
         }
 
         #nav-window {
@@ -171,14 +183,8 @@
             background: hsl(var(--accent));
             width: 100%;
         }
-
-        .fake-link {
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        .fake-link:hover {
-            color: hsl(var(--accent));
-            text-decoration: underline;
+        .resize-handle {
+            user-select: none;
         }
     </style>
 </head>
@@ -225,7 +231,7 @@
         <div class="ascii-window" id="notif-pane" style="right: 10px; bottom: 60px; top: auto; left: auto; width: 300px; z-index: 10001; display: none; position: fixed;">
             <div class="ascii-header-row">
                 <div class="ascii-header-line" style="width: 15px;"></div>
-                <div class="ascii-title">Notifications</div>
+                <div id="notif-drag" class="ascii-title">Announcements</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
             </div>
             <div class="ascii-content" id="notif-list" style="padding: 15px; flex: 1; max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
@@ -238,7 +244,7 @@
                 <div id="set-drag" class="ascii-title">settings.ini</div>
                 <div class="ascii-header-line" style="flex: 1;"></div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px;">
-                    <div class="ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')" style="cursor:pointer; color: hsl(var(--muted-foreground)); font-weight: bold; padding-bottom: 5px;">_</div>
+                    <div class="ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')" style="cursor:pointer; color: hsl(var(--accent)); font-weight: bold; padding-bottom: 5px;">_</div>
                     <div class="ascii-close-btn" onclick="closePreferences()" style="cursor:pointer; color: hsl(var(--destructive)); font-weight: bold;">x</div>
                 </div>
                 <div class="ascii-header-line" style="width: 10px;"></div>
@@ -291,7 +297,7 @@
         </button>
         <div id="taskbar-items"></div>
         <button id="notif-btn" onclick="toggleNotifications()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
             </svg>

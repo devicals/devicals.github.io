@@ -155,14 +155,6 @@
         let editingTabKey = null;
         let highestZ = 10;
 
-        async function initAuth() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            handleUserSession(session);
-            supabaseClient.auth.onAuthStateChange((_event, session) => {
-                handleUserSession(session);
-            });
-        }
-
         window.addEventListener('message', e => {
             if (e.data && e.data.type === 'auth-sync') {
                 handleUserSession(e.data.session);
@@ -173,6 +165,13 @@
                 if (tab && projectsData && projectsData.tabs && projectsData.tabs[tab]) {
                     switchTab(tab, true);
                 }
+            } else if (e.data && e.data.type === 'reset-inner-positions') {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('proj_pos_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                renderCardsForActiveTab();
             }
         });
 
@@ -489,7 +488,7 @@
             const name = document.getElementById('proj-name-input').value.trim();
             const description = document.getElementById('proj-desc-input').value.trim();
             const link = document.getElementById('proj-link-input').value.trim();
-            if (!name || !link) return;
+            if (!name || !url) return;
 
             if (activeEditIdx !== null) {
                 const proj = projectsData.tabs[currentTab].projects[activeEditIdx];
