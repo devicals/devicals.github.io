@@ -20,7 +20,7 @@
             margin: 0; 
             box-sizing: border-box; 
             height: 100vh; 
-            overflow: auto;
+            overflow: hidden;
             background: transparent;
         }
 
@@ -92,21 +92,7 @@
         <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; width: 100%;" onclick="openAddBlogModal()">+ Create New Blog</button>
     </div>
 
-    <div id="tab-container" style="padding: 15px; display: flex; flex-direction: column; gap: 20px;"></div>
-
-    <div id="blog-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title-label">Create Blog Post</h2>
-                <button class="modal-close" onclick="closeBlogModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="blog-title-input" class="ascii-input" placeholder="Title">
-                <textarea id="blog-content-input" placeholder="Content (Markdown supported)"></textarea>
-                <button class="btn-primary" id="blog-save-submit" style="width: 100%; padding: 10px;">Save Post</button>
-            </div>
-        </div>
-    </div>
+    <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 500px;"></div>
     
     <script type="module">
         import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
@@ -118,9 +104,9 @@
 
         let blogsData = [];
         let isAdmin = false;
-        let activeEditId = null;
         let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
         let currentRenderId = 0;
+        let highestZ = 10;
 
         marked.use({
             breaks: true, gfm: true, async: true,
@@ -155,6 +141,13 @@
                 const params = new URLSearchParams(hash);
                 const id = params.get('id');
                 if (id) scrollToBlogId(id);
+            } else if (e.data && e.data.type === 'reset-inner-positions') {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('blog_pos_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+                renderBlogs(blogsData);
             }
         });
 
@@ -186,23 +179,28 @@
             blogs.forEach((blog, idx) => {
                 const htmlContent = parsedContent[idx];
                 const card = document.createElement('div');
-                card.className = 'blog-post';
+                card.className = 'ascii-window blog-post-window';
                 card.id = `blog-${blog.id}`;
-                card.style.background = 'hsl(var(--card))';
-                card.style.border = '1px solid hsl(var(--border))';
-                card.style.padding = '24px';
-                card.style.position = 'relative';
+                card.dataset.index = idx;
+                card.style.width = '340px';
+                card.style.height = '280px';
+                card.style.position = 'absolute';
 
                 card.innerHTML = `
-                    <div class="blog-id" style="position: absolute; top: 24px; right: 24px; font-size: 12px; color: hsl(var(--muted-foreground)); font-weight: 600;">#${blog.id}</div>
-                    <div class="blog-header" style="border-bottom: 1px dashed hsl(var(--border)); padding-bottom: 10px; margin-bottom: 15px;">
-                        <a href="#" class="blog-title" id="title-anchor-${blog.id}" style="color: hsl(var(--accent)); font-weight: bold; font-size: 18px; text-decoration: none;">${blog.title}</a>
-                        <div class="blog-date" style="font-size: 12px; color: hsl(var(--muted-foreground)); margin-top: 4px;">${blog.date}</div>
+                    <div class="ascii-header-row card-drag-handle" style="cursor: move;">
+                        <div class="ascii-header-line" style="width: 15px;"></div>
+                        <div class="ascii-title" style="font-size: 11px;">#${blog.id} - ${blog.date}</div>
+                        <div class="ascii-header-line" style="flex:1;"></div>
                     </div>
-                    <div class="blog-content">${htmlContent}</div>
-                    <div class="admin-action-row">
-                        <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
-                        <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
+                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box;">
+                        <div style="border-bottom: 1px dashed hsl(var(--border) / 0.5); padding-bottom: 5px;">
+                            <a href="#" class="blog-title" id="title-anchor-${blog.id}" style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px; text-decoration: none;">${blog.title}</a>
+                        </div>
+                        <div class="blog-content" style="flex-grow: 1; overflow-y: auto;">${htmlContent}</div>
+                        <div class="admin-action-row">
+                            <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
+                            <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -217,11 +215,104 @@
                 if (delBtn) delBtn.onclick = () => deleteBlogPost(blog.id);
             });
 
+            layoutCards();
             setupShikiInteractions();
             
             const params = new URLSearchParams(window.location.hash.substring(1));
             const id = params.get('id');
             if (id) setTimeout(() => scrollToBlogId(id), 500);
+        }
+
+        function layoutCards() {
+            const container = document.getElementById('tab-container');
+            const cards = container.querySelectorAll('.blog-post-window');
+            const containerWidth = container.clientWidth || window.innerWidth;
+            
+            const cardWidth = 340;
+            const cardHeight = 280; 
+            const gap = 20;
+            const padding = 20;
+            
+            let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
+            if (cols < 1) cols = 1;
+
+            let maxTop = 0;
+
+            cards.forEach((card, idx) => {
+                const savedPos = localStorage.getItem(`blog_pos_${idx}`);
+                if (savedPos) {
+                    const pos = JSON.parse(savedPos);
+                    card.style.left = pos.left;
+                    card.style.top = pos.top;
+                } else {
+                    const col = idx % cols;
+                    const row = Math.floor(idx / cols);
+                    card.style.left = (padding + col * (cardWidth + gap)) + 'px';
+                    card.style.top = (padding + row * (cardHeight + gap)) + 'px';
+                }
+                
+                const topVal = parseInt(card.style.top) || 0;
+                if (topVal > maxTop) maxTop = topVal;
+                
+                makeCardDraggable(card, card.querySelector('.card-drag-handle'));
+            });
+            
+            let dummy = document.getElementById('scroll-dummy');
+            if (!dummy) {
+                dummy = document.createElement('div');
+                dummy.id = 'scroll-dummy';
+                dummy.style.position = 'absolute';
+                dummy.style.width = '1px';
+                container.appendChild(dummy);
+            }
+            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
+        }
+
+        function clamp(val, min, max) {
+            return Math.max(min, Math.min(max, val));
+        }
+
+        function makeCardDraggable(win, handle) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            handle.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                e.preventDefault();
+                win.style.zIndex = ++highestZ;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                
+                let newTop = win.offsetTop - pos2;
+                let newLeft = win.offsetLeft - pos1;
+                
+                const container = document.getElementById('tab-container');
+                const maxLeft = container.clientWidth - win.offsetWidth;
+                const maxTop = Math.max(container.clientHeight, container.scrollHeight) - win.offsetHeight;
+                
+                win.style.top = clamp(newTop, 0, maxTop) + "px";
+                win.style.left = clamp(newLeft, 0, maxLeft) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                const idx = win.dataset.index;
+                localStorage.setItem(`blog_pos_${idx}`, JSON.stringify({
+                    left: win.style.left,
+                    top: win.style.top
+                }));
+            }
         }
 
         function setupShikiInteractions() {
@@ -258,51 +349,11 @@
         }
 
         window.openAddBlogModal = () => {
-            activeEditId = null;
-            document.getElementById('modal-title-label').textContent = "Create Blog Post";
-            document.getElementById('blog-title-input').value = "";
-            document.getElementById('blog-content-input').value = "";
-            document.getElementById('blog-modal').classList.add('active');
+            window.parent.postMessage({ type: 'open-editor', editorType: 'blog', title: 'Create Blog Post' }, '*');
         };
 
         window.openEditBlogModal = (blog) => {
-            activeEditId = blog.id;
-            document.getElementById('modal-title-label').textContent = `Edit Blog Post #${blog.id}`;
-            document.getElementById('blog-title-input').value = blog.title;
-            document.getElementById('blog-content-input').value = blog.content;
-            document.getElementById('blog-modal').classList.add('active');
-        };
-
-        window.closeBlogModal = () => {
-            document.getElementById('blog-modal').classList.remove('active');
-        };
-
-        window.handleSaveBlog = async () => {
-            const title = document.getElementById('blog-title-input').value.trim();
-            const content = document.getElementById('blog-content-input').value.trim();
-            if (!title || !content) return;
-
-            if (activeEditId !== null) {
-                const blog = blogsData.find(b => b.id === activeEditId);
-                if (blog) {
-                    blog.title = title;
-                    blog.content = content;
-                }
-            } else {
-                const nextId = blogsData.length > 0 ? Math.max(...blogsData.map(b => b.id)) + 1 : 1;
-                const today = new Date();
-                const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-                
-                blogsData.unshift({
-                    id: nextId,
-                    date: dateStr,
-                    title,
-                    content
-                });
-            }
-
-            closeBlogModal();
-            await syncToSupabase();
+            window.parent.postMessage({ type: 'open-editor', editorType: 'blog', title: `Edit Blog Post #${blog.id}`, id: blog.id, data: blog }, '*');
         };
 
         window.deleteBlogPost = async (id) => {
@@ -343,8 +394,6 @@
             scrollToBlogId(id);
         };
         window.copyRSS = () => { const url = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml"; navigator.clipboard.writeText(url).then(() => { const btn = document.getElementById('rss-btn'); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'RSS URL'; }, 2000); }); };
-
-        document.getElementById('blog-save-submit').onclick = handleSaveBlog;
 
         document.addEventListener('DOMContentLoaded', async () => {
             try {

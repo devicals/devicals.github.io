@@ -71,6 +71,10 @@ document.addEventListener('mousedown', (e) => {
     }
 });
 
+function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+}
+
 window.addEventListener('message', e => {
     if (e.data.type === 'ctrl-pressed') {
         window.toggleNav();
@@ -100,8 +104,118 @@ window.addEventListener('message', e => {
         if (senderId) {
             minimizeWindow(senderId, e.data.title || senderId.replace('win-', ''));
         }
+    } else if (e.data.type === 'open-editor') {
+        const editorId = 'win-editor-' + e.data.editorType;
+        const title = e.data.title || 'Editor';
+        
+        let contentHTML = '';
+        if (e.data.editorType === 'blog') {
+            contentHTML = `
+                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                    <input type="text" id="editor-blog-title" class="ascii-input" placeholder="Title" value="${e.data.data?.title || ''}">
+                    <textarea id="editor-blog-content" class="ascii-input" style="flex: 1; min-height: 250px; resize: vertical;" placeholder="Content (Markdown supported)">${e.data.data?.content || ''}</textarea>
+                    <button class="btn-primary" onclick="submitEditorBlog('${e.data.id || ''}')">Save Post</button>
+                </div>
+            `;
+        } else if (e.data.editorType === 'project') {
+            contentHTML = `
+                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                    <input type="text" id="editor-proj-name" class="ascii-input" placeholder="Project Name" value="${e.data.data?.name || ''}">
+                    <textarea id="editor-proj-desc" class="ascii-input" style="flex: 1; min-height: 150px; resize: vertical;" placeholder="Description">${e.data.data?.description || ''}</textarea>
+                    <input type="text" id="editor-proj-link" class="ascii-input" placeholder="Project URL" value="${e.data.data?.link || ''}">
+                    <button class="btn-primary" onclick="submitEditorProject('${e.data.tab || ''}', ${e.data.index !== undefined ? e.data.index : -1})">Save Project</button>
+                </div>
+            `;
+        } else if (e.data.editorType === 'download') {
+            contentHTML = `
+                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                    <input type="text" id="editor-dl-name" class="ascii-input" placeholder="Title/Name" value="${e.data.data?.name || ''}">
+                    <textarea id="editor-dl-desc" class="ascii-input" style="flex: 1; min-height: 150px; resize: vertical;" placeholder="Description">${e.data.data?.description || ''}</textarea>
+                    <input type="text" id="editor-dl-url" class="ascii-input" placeholder="Download URL" value="${e.data.data?.url || ''}">
+                    <button class="btn-primary" onclick="submitEditorDownload(${e.data.id !== undefined ? e.data.id : -1})">Save Download</button>
+                </div>
+            `;
+        }
+        
+        const bounds = { left: '200px', top: '150px', width: '500px', height: '480px' };
+        createWindow(editorId, title, '', contentHTML, bounds);
     }
 });
+
+window.submitEditorBlog = async function(id) {
+    const title = document.getElementById('editor-blog-title').value.trim();
+    const content = document.getElementById('editor-blog-content').value.trim();
+    if (!title || !content) return;
+
+    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
+    let blogs = data ? data.data : [];
+
+    if (id) {
+        const blog = blogs.find(b => String(b.id) === String(id));
+        if (blog) {
+            blog.title = title;
+            blog.content = content;
+        }
+    } else {
+        const nextId = blogs.length > 0 ? Math.max(...blogs.map(b => b.id)) + 1 : 1;
+        const today = new Date();
+        const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+        blogs.unshift({ id: nextId, date: dateStr, title, content });
+    }
+
+    await supabaseClient.from('site_content').update({ data: blogs }).eq('key', 'blogs');
+    closeWindow('win-editor-blog');
+};
+
+window.submitEditorProject = async function(tab, index) {
+    const name = document.getElementById('editor-proj-name').value.trim();
+    const description = document.getElementById('editor-proj-desc').value.trim();
+    const link = document.getElementById('editor-proj-link').value.trim();
+    if (!name || !link) return;
+
+    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
+    let projData = data ? data.data : { tabs: {} };
+
+    if (index !== -1) {
+        const proj = projData.tabs[tab].projects[index];
+        if (proj) {
+            proj.name = name;
+            proj.description = description;
+            proj.link = link;
+        }
+    } else {
+        if (!projData.tabs[tab].projects) projData.tabs[tab].projects = [];
+        projData.tabs[tab].projects.push({ name, description, link });
+    }
+
+    await supabaseClient.from('site_content').update({ data: projData }).eq('key', 'projects');
+    closeWindow('win-editor-project');
+};
+
+window.submitEditorDownload = async function(id) {
+    const name = document.getElementById('editor-dl-name').value.trim();
+    const description = document.getElementById('editor-dl-desc').value.trim();
+    const url = document.getElementById('editor-dl-url').value.trim();
+    if (!name || !url) return;
+
+    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
+    let downloads = data ? data.data : [];
+
+    if (id !== -1) {
+        const dl = downloads.find(d => d.id === id);
+        if (dl) {
+            dl.name = name;
+            dl.description = description;
+            dl.url = url;
+        }
+    } else {
+        const nextId = downloads.length > 0 ? Math.max(...downloads.map(d => d.id)) + 1 : 1;
+        downloads.push({ id: nextId, name, description, url });
+    }
+
+    await supabaseClient.from('site_content').update({ data: downloads }).eq('key', 'downloads');
+    closeWindow('win-editor-download');
+};
 
 window.toggleNav = function() {
     const nav = document.getElementById('nav-window');
@@ -146,10 +260,8 @@ function addTaskbarItem(id, title) {
     btn.textContent = title;
     btn.onclick = () => {
         const win = document.getElementById(id);
-        if (win) {
-            win.style.display = 'flex';
-            win.style.zIndex = ++window.highestZ;
-        }
+        if (win) win.style.display = 'flex';
+        if (win && id !== 'content-frame') win.style.zIndex = ++window.highestZ;
         btn.remove();
     };
     container.appendChild(btn);
@@ -169,11 +281,11 @@ function makeResizable(win) {
 function getResizeHandleStyle(dir) {
     const size = '8px';
     const offset = '-4px';
-    let style = `position: absolute; z-index: 10000;`;
-    if (dir === 'n') style += `top: ${offset}; left: 0; right: 0; height: ${size}; cursor: n-resize;`;
-    if (dir === 's') style += `bottom: ${offset}; left: 0; right: 0; height: ${size}; cursor: s-resize;`;
-    if (dir === 'e') style += `right: ${offset}; top: 0; bottom: 0; width: ${size}; cursor: e-resize;`;
-    if (dir === 'w') style += `left: ${offset}; top: 0; bottom: 0; width: ${size}; cursor: w-resize;`;
+    let style = `position: absolute; z-index: 10000; background: transparent;`;
+    if (dir === 'n') style += `top: ${offset}; left: 4px; right: 4px; height: ${size}; cursor: n-resize;`;
+    if (dir === 's') style += `bottom: ${offset}; left: 4px; right: 4px; height: ${size}; cursor: s-resize;`;
+    if (dir === 'e') style += `right: ${offset}; top: 4px; bottom: 4px; width: ${size}; cursor: e-resize;`;
+    if (dir === 'w') style += `left: ${offset}; top: 4px; bottom: 4px; width: ${size}; cursor: w-resize;`;
     if (dir === 'nw') style += `top: ${offset}; left: ${offset}; width: ${size}; height: ${size}; cursor: nw-resize;`;
     if (dir === 'ne') style += `top: ${offset}; right: ${offset}; width: ${size}; height: ${size}; cursor: ne-resize;`;
     if (dir === 'sw') style += `bottom: ${offset}; left: ${offset}; width: ${size}; height: ${size}; cursor: sw-resize;`;
@@ -199,24 +311,26 @@ function setupResizeDrag(win, h, dir) {
             const dy = moveEvent.clientY - startY;
 
             if (dir.includes('e')) {
-                win.style.width = Math.max(200, startWidth + dx) + 'px';
+                const maxW = window.innerWidth - win.offsetLeft;
+                win.style.width = clamp(startWidth + dx, 200, maxW) + 'px';
             }
             if (dir.includes('w')) {
-                const newW = startWidth - dx;
-                if (newW > 200) {
-                    win.style.width = newW + 'px';
-                    win.style.left = (startLeft + dx) + 'px';
-                }
+                const maxW = startWidth + startLeft;
+                const newW = clamp(startWidth - dx, 200, maxW);
+                const actualDx = startWidth - newW;
+                win.style.width = newW + 'px';
+                win.style.left = (startLeft + actualDx) + 'px';
             }
             if (dir.includes('s')) {
-                win.style.height = Math.max(100, startHeight + dy) + 'px';
+                const maxH = window.innerHeight - win.offsetTop - 50;
+                win.style.height = clamp(startHeight + dy, 100, maxH) + 'px';
             }
             if (dir.includes('n')) {
-                const newH = startHeight - dy;
-                if (newH > 100) {
-                    win.style.height = newH + 'px';
-                    win.style.top = (startTop + dy) + 'px';
-                }
+                const maxH = startHeight + startTop;
+                const newH = clamp(startHeight - dy, 100, maxH);
+                const actualDy = startHeight - newH;
+                win.style.height = newH + 'px';
+                win.style.top = (startTop + actualDy) + 'px';
             }
         };
 
@@ -271,8 +385,15 @@ function makeDraggable(winId, handleId) {
         let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
         pos1 = pos3 - clientX; pos2 = pos4 - clientY;
         pos3 = clientX; pos4 = clientY;
-        win.style.top = (win.offsetTop - pos2) + "px";
-        win.style.left = (win.offsetLeft - pos1) + "px";
+        
+        let newTop = win.offsetTop - pos2;
+        let newLeft = win.offsetLeft - pos1;
+        
+        const maxLeft = window.innerWidth - win.offsetWidth;
+        const maxTop = window.innerHeight - win.offsetHeight - 50;
+        
+        win.style.top = clamp(newTop, 0, maxTop) + "px";
+        win.style.left = clamp(newLeft, 0, maxLeft) + "px";
         win.style.bottom = 'auto';
         win.style.right = 'auto';
         localStorage.setItem('win_pos_' + winId, JSON.stringify({top: win.style.top, left: win.style.left}));
@@ -325,7 +446,15 @@ async function initializeApp() {
 async function initAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     handleUserSession(session);
-    supabaseClient.auth.onAuthStateChange((_event, session) => handleUserSession(session));
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+        handleUserSession(session);
+        const iframes = document.querySelectorAll('.page-iframe');
+        iframes.forEach(ifr => {
+            if (ifr.contentWindow) {
+                ifr.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
+            }
+        });
+    });
 }
 
 function handleUserSession(session) {
@@ -398,7 +527,7 @@ function renderManagerAnnouncements() {
         const item = document.createElement('div');
         item.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;";
         item.innerHTML = `
-            <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; margin-right:8px;">${ann}</span>
+            <span style="white-space:pre-wrap; word-break:break-word; flex:1; margin-right:8px;">${ann}</span>
             <button class="ascii-btn del" onclick="deleteAnnouncement(${idx})">[x]</button>
         `;
         listContainer.appendChild(item);
@@ -563,7 +692,6 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         
         win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
         win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
-        makeResizable(win);
     }
 
     const savedPos = localStorage.getItem('win_pos_' + id);
@@ -611,6 +739,9 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
     
     if (isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
     win.style.zIndex = ++window.highestZ;
+    
+    win.querySelectorAll('.resize-handle').forEach(h => h.remove());
+    makeResizable(win);
     
     return win;
 }
@@ -738,15 +869,14 @@ async function loadLatestBlogPreview() {
                 return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
             });
             const latest = sortedBlogs[0];
-            const temp = document.createElement('div'); temp.innerHTML = marked.parse(latest.content);
-            const ext = temp.innerHTML;
+            const parsedHTML = await marked.parse(latest.content);
             
             const dateDisplay = latest.date.replace(/\//g, '-');
             
             createWindow('win-blog', 'latest blog', dateDisplay, `
                 <div style="cursor: pointer; line-height: 1.6;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
                     <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
-                    <div style="color:hsl(var(--foreground));">${ext}</div>
+                    <div style="color:hsl(var(--foreground));">${parsedHTML}</div>
                 </div>
             `, {right: '20px', top: '20px', width: '500px'});
         }
@@ -943,65 +1073,5 @@ window.resetWindowPositions = function() {
             localStorage.removeItem(key);
         }
     });
-    
-    const defaultPositions = {
-        'nav-window': { top: '20px', left: '10px', width: '300px', height: '' },
-        'announcement-window': { bottom: '70px', left: '20px', top: 'auto', right: 'auto', width: '450px', height: '' },
-        'settings-window': { top: '40px', left: '20px', width: '300px', height: '' },
-        'notif-pane': { bottom: '60px', right: '10px', top: 'auto', left: 'auto', width: '300px', height: '' }
-    };
-    
-    Object.keys(defaultPositions).forEach(id => {
-        const win = document.getElementById(id);
-        if (win) {
-            const pos = defaultPositions[id];
-            win.style.top = pos.top || 'auto';
-            win.style.left = pos.left || 'auto';
-            win.style.bottom = pos.bottom || 'auto';
-            win.style.right = pos.right || 'auto';
-            win.style.width = pos.width || '';
-            win.style.height = pos.height || '';
-        }
-    });
-
-    const homeDefaults = {
-        'win-bio': { left: '20px', top: '20px', width: '450px', height: '' },
-        'win-skills': { right: '20px', bottom: '20px', width: '380px', height: '' },
-        'win-socials': { right: '420px', bottom: '20px', width: '300px', height: '' },
-        'win-blog': { right: '20px', top: '20px', width: '500px', height: '' }
-    };
-
-    Object.keys(homeDefaults).forEach(id => {
-        const win = document.getElementById(id);
-        if (win) {
-            const pos = homeDefaults[id];
-            win.style.top = pos.top || 'auto';
-            win.style.left = pos.left || 'auto';
-            win.style.bottom = pos.bottom || 'auto';
-            win.style.right = pos.right || 'auto';
-            win.style.width = pos.width || '';
-            win.style.height = pos.height || '';
-        }
-    });
-
-    const dynamicWindows = document.querySelectorAll('.ascii-window');
-    dynamicWindows.forEach(win => {
-        if (!defaultPositions[win.id] && !homeDefaults[win.id]) {
-            win.style.top = '100px';
-            win.style.left = '100px';
-            win.style.bottom = 'auto';
-            win.style.right = 'auto';
-            win.style.width = '850px';
-            win.style.height = '650px';
-        }
-        win.style.display = win.id === 'nav-window' || win.id === 'notif-pane' ? 'none' : 'flex';
-    });
-
-    const taskbarItems = document.getElementById('taskbar-items');
-    if (taskbarItems) taskbarItems.innerHTML = '';
-    
-    const iframes = document.querySelectorAll('.page-iframe');
-    iframes.forEach(ifr => {
-        ifr.contentWindow.postMessage({ type: 'reset-inner-positions' }, '*');
-    });
+    location.reload();
 };

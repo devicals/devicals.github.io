@@ -110,37 +110,6 @@
     </div>
 
     <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 500px;"></div>
-
-    <div id="project-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title-label">Create Project Card</h2>
-                <button class="modal-close" onclick="closeProjectModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="proj-name-input" class="ascii-input" placeholder="Project Name">
-                <textarea id="proj-desc-input" placeholder="Description"></textarea>
-                <input type="text" id="proj-link-input" class="ascii-input" placeholder="Project URL">
-                <button class="btn-primary" onclick="handleSaveProject()" style="width: 100%; padding: 10px;">Save Project</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="tab-edit-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Edit Tab</h2>
-                <button class="modal-close" onclick="closeTabEditModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="tab-name-input" class="ascii-input" placeholder="Tab Name">
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="btn-primary" onclick="saveTabEdit()" style="flex: 1;">Save</button>
-                    <button class="btn-primary" onclick="deleteActiveTab()" style="background: hsl(var(--destructive)) !important; border-color: hsl(var(--destructive)) !important;">Delete Tab</button>
-                </div>
-            </div>
-        </div>
-    </div>
     
     <script>
         const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
@@ -151,8 +120,6 @@
         let projectsData = null;
         let currentTab = null;
         let isAdmin = false;
-        let activeEditIdx = null;
-        let editingTabKey = null;
         let highestZ = 10;
 
         window.addEventListener('message', e => {
@@ -276,26 +243,25 @@
             
             projects.forEach((project, idx) => {
                 const card = document.createElement('div');
-                card.className = 'project-card';
+                card.className = 'ascii-window project-card-window';
                 card.dataset.index = idx;
                 card.style.width = '320px';
+                card.style.height = '180px';
                 card.style.position = 'absolute';
-                card.style.background = 'hsl(var(--card))';
-                card.style.border = '1px solid hsl(var(--border))';
-                card.style.padding = '15px';
-                card.style.boxShadow = '0 4px 6px rgba(0,0,0,0.3)';
-                card.style.display = 'flex';
-                card.style.flexDirection = 'column';
 
                 card.innerHTML = `
-                    <div class="card-drag-handle" style="cursor: move; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid hsl(var(--border) / 0.5);">
-                        <div style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px;">${project.name}</div>
+                    <div class="ascii-header-row card-drag-handle" style="cursor: move;">
+                        <div class="ascii-header-line" style="width: 15px;"></div>
+                        <div class="ascii-title" style="font-size: 11px;">${project.name}</div>
+                        <div class="ascii-header-line" style="flex:1;"></div>
                     </div>
-                    <a href="${project.link}" target="_blank" style="color: hsl(var(--foreground)); font-size: 12px; text-decoration: underline;">View Project</a>
-                    <div style="font-size: 12px; color: hsl(var(--muted-foreground)); line-height: 1.5; margin-top: 10px; flex-grow: 1;">${project.description}</div>
-                    <div class="admin-action-row">
-                        <button class="admin-btn" onclick="openEditProjectModal(${idx})">Edit</button>
-                        <button class="admin-btn danger-btn" onclick="deleteProject(${idx})">Delete</button>
+                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box;">
+                        <a href="${project.link}" target="_blank" style="color: hsl(var(--accent)); font-weight: bold; font-size: 12px; text-decoration: none;">[ View Project ]</a>
+                        <div style="font-size: 11px; color: hsl(var(--foreground)); line-height: 1.4; flex-grow: 1; overflow-y: auto;">${project.description}</div>
+                        <div class="admin-action-row">
+                            <button class="admin-btn" onclick="openEditProjectModal(${idx})">Edit</button>
+                            <button class="admin-btn danger-btn" onclick="deleteProject(${idx})">Delete</button>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -306,11 +272,11 @@
 
         function layoutCards() {
             const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.project-card');
+            const cards = container.querySelectorAll('.project-card-window');
             const containerWidth = container.clientWidth || window.innerWidth;
             
             const cardWidth = 320;
-            const cardHeight = 220; 
+            const cardHeight = 180; 
             const gap = 20;
             const padding = 20;
             
@@ -349,6 +315,10 @@
             dummy.style.top = (maxTop + cardHeight + padding) + 'px';
         }
 
+        function clamp(val, min, max) {
+            return Math.max(min, Math.min(max, val));
+        }
+
         function makeCardDraggable(win, handle) {
             let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
             handle.onmousedown = dragMouseDown;
@@ -369,8 +339,16 @@
                 pos2 = pos4 - e.clientY;
                 pos3 = e.clientX;
                 pos4 = e.clientY;
-                win.style.top = (win.offsetTop - pos2) + "px";
-                win.style.left = (win.offsetLeft - pos1) + "px";
+                
+                let newTop = win.offsetTop - pos2;
+                let newLeft = win.offsetLeft - pos1;
+                
+                const container = document.getElementById('tab-container');
+                const maxLeft = container.clientWidth - win.offsetWidth;
+                const maxTop = Math.max(container.clientHeight, container.scrollHeight) - win.offsetHeight;
+                
+                win.style.top = clamp(newTop, 0, maxTop) + "px";
+                win.style.left = clamp(newLeft, 0, maxLeft) + "px";
             }
 
             function closeDragElement() {
@@ -381,19 +359,12 @@
                     left: win.style.left,
                     top: win.style.top
                 }));
-                
-                const topVal = parseInt(win.style.top) || 0;
-                const dummy = document.getElementById('scroll-dummy');
-                const dummyTop = parseInt(dummy.style.top) || 0;
-                if (topVal + 250 > dummyTop) {
-                    dummy.style.top = (topVal + 250) + 'px';
-                }
             }
         }
 
         window.addEventListener('resize', () => {
             const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.project-card');
+            const cards = container.querySelectorAll('.project-card-window');
             let hasUnsaved = false;
             cards.forEach(card => {
                 if (!localStorage.getItem(`proj_pos_${currentTab}_${card.dataset.index}`)) {
@@ -462,47 +433,12 @@
         };
 
         window.openAddProjectModal = () => {
-            activeEditIdx = null;
-            document.getElementById('modal-title-label').textContent = `Create Project [${projectsData.tabs[currentTab].display}]`;
-            document.getElementById('proj-name-input').value = "";
-            document.getElementById('proj-desc-input').value = "";
-            document.getElementById('proj-link-input').value = "";
-            document.getElementById('project-modal').classList.add('active');
+            window.parent.postMessage({ type: 'open-editor', editorType: 'project', title: `Create Project [${projectsData.tabs[currentTab].display}]`, tab: currentTab }, '*');
         };
 
         window.openEditProjectModal = (idx) => {
             const proj = projectsData.tabs[currentTab].projects[idx];
-            activeEditIdx = idx;
-            document.getElementById('modal-title-label').textContent = `Edit Project [${projectsData.tabs[currentTab].display}]`;
-            document.getElementById('proj-name-input').value = proj.name;
-            document.getElementById('proj-desc-input').value = proj.description;
-            document.getElementById('proj-link-input').value = proj.link;
-            document.getElementById('project-modal').classList.add('active');
-        };
-
-        window.closeProjectModal = () => {
-            document.getElementById('project-modal').classList.remove('active');
-        };
-
-        window.handleSaveProject = async () => {
-            const name = document.getElementById('proj-name-input').value.trim();
-            const description = document.getElementById('proj-desc-input').value.trim();
-            const link = document.getElementById('proj-link-input').value.trim();
-            if (!name || !url) return;
-
-            if (activeEditIdx !== null) {
-                const proj = projectsData.tabs[currentTab].projects[activeEditIdx];
-                if (proj) {
-                    proj.name = name;
-                    proj.description = description;
-                    proj.link = link;
-                }
-            } else {
-                projectsData.tabs[currentTab].projects.push({ name, description, link });
-            }
-
-            closeProjectModal();
-            await syncToSupabase();
+            window.parent.postMessage({ type: 'open-editor', editorType: 'project', title: `Edit Project [${projectsData.tabs[currentTab].display}]`, tab: currentTab, index: idx, data: proj }, '*');
         };
 
         window.deleteProject = async (idx) => {
