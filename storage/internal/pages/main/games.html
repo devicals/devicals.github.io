@@ -42,8 +42,8 @@
             margin-bottom: 12px;
         }
         .fav-card, .liked-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(5,5,5,0.85);
+            border: 1px solid hsl(var(--foreground) / 0.3);
             transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
             transform-style: preserve-3d;
             pointer-events: none;
@@ -415,6 +415,19 @@
         </div>
     </div>
     
+    <div id="edit-grid-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Game Title</h2>
+                <button class="modal-close" onclick="closeEditGridModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="edit-grid-title" class="ascii-input" placeholder="Game Title">
+                <button class="btn-primary" onclick="saveEditGridItem()" style="width: 100%;">Save</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
@@ -435,6 +448,8 @@
         let activeEditIdx = null;
         let dragItemIdx = null;
         let dragCategory = null;
+        let currentEditGridCategory = null;
+        let currentEditGridIdx = null;
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -797,13 +812,24 @@
             await syncToSupabase();
         }
 
-        window.editGridItem = async (categoryKey, idx) => {
+        window.editGridItem = (categoryKey, idx) => {
+            currentEditGridCategory = categoryKey;
+            currentEditGridIdx = idx;
             const listArr = categoryKey === 'liked' ? gamesData.liked : gamesData.wanttoplay;
-            const newVal = prompt("Edit Game Title:", listArr[idx]);
-            if (newVal !== null && newVal.trim() !== '') {
-                listArr[idx] = newVal.trim();
+            document.getElementById('edit-grid-title').value = listArr[idx];
+            document.getElementById('edit-grid-modal').classList.add('active');
+        };
+        
+        window.closeEditGridModal = () => document.getElementById('edit-grid-modal').classList.remove('active');
+        
+        window.saveEditGridItem = async () => {
+            const newVal = document.getElementById('edit-grid-title').value.trim();
+            if (newVal) {
+                const listArr = currentEditGridCategory === 'liked' ? gamesData.liked : gamesData.wanttoplay;
+                listArr[currentEditGridIdx] = newVal;
                 await syncToSupabase();
             }
+            closeEditGridModal();
         };
 
         document.addEventListener('touchstart', (e) => {

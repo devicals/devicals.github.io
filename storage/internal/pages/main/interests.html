@@ -26,7 +26,7 @@
         .interest-title { color: hsl(var(--accent)); margin-bottom: 1.5rem; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
         .tilt-wrapper { display: block; perspective: 1000px; user-select: none; position: relative; }
         .interest-fav-list .tilt-wrapper { perspective: 2000px; margin-bottom: 15px; }
-        .fav-card, .interest-grid-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
+        .fav-card, .interest-grid-card { background: rgba(5, 5, 5, 0.85); border: 1px solid hsl(var(--foreground) / 0.3); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
         .tilt-wrapper:hover .fav-card, .tilt-wrapper:hover .interest-grid-card, .tilt-wrapper.is-tapped .fav-card, .tilt-wrapper.is-tapped .interest-grid-card { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.06); box-shadow: 0 20px 50px rgba(0,0,0,0.7); z-index: 100; }
         body.is-admin .tilt-wrapper { cursor: grab; }
         .fav-card { padding: 35px; display: flex; justify-content: space-between; align-items: center; gap: 20px; overflow: hidden; }
@@ -275,6 +275,20 @@
         </div>
     </div>
 
+    <!-- Edit Grid Modal -->
+    <div id="edit-grid-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Item</h2>
+                <button class="modal-close" onclick="closeEditGridModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="edit-grid-title" placeholder="Item Text">
+                <button class="btn-primary" onclick="saveEditGridItem()" style="width: 100%;">Save</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
@@ -287,6 +301,9 @@
         let activeEditIdx = null;
         let dragItemIdx = null;
         let dragCategory = null;
+        
+        let currentEditGridCategory = null;
+        let currentEditGridIdx = null;
 
         function randomizeTags(wrapper) {
             wrapper.querySelectorAll('.tag-box').forEach(tag => {
@@ -638,13 +655,23 @@
             await syncToSupabase();
         }
 
-        window.editGridItem = async (secIdx, idx) => {
+        window.editGridItem = (secIdx, idx) => {
+            currentEditGridCategory = secIdx;
+            currentEditGridIdx = idx;
             const currentVal = interestsData.sections[secIdx].items[idx];
-            const newVal = prompt("Edit Item Text:", currentVal);
-            if (newVal !== null && newVal.trim() !== '') {
-                interestsData.sections[secIdx].items[idx] = newVal.trim();
+            document.getElementById('edit-grid-title').value = currentVal;
+            document.getElementById('edit-grid-modal').classList.add('active');
+        };
+        
+        window.closeEditGridModal = () => document.getElementById('edit-grid-modal').classList.remove('active');
+        
+        window.saveEditGridItem = async () => {
+            const newVal = document.getElementById('edit-grid-title').value.trim();
+            if (newVal) {
+                interestsData.sections[currentEditGridCategory].items[currentEditGridIdx] = newVal;
                 await syncToSupabase();
             }
+            closeEditGridModal();
         };
 
         document.addEventListener('touchstart', (e) => {

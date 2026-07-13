@@ -8,7 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <script src="/storage/internal/scripts/embed-detect.js"></script>
+    <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     
     <style>
@@ -25,11 +26,11 @@
             --destructive: 0 60% 50%;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
 
         body {
             font-family: 'JetBrains Mono', monospace;
-            background-image: url("storage/assets/background.png");
+            background: transparent;
             color: hsl(var(--foreground));
             padding: 40px;
             line-height: 1.6;
@@ -64,8 +65,8 @@
         }
 
         .card {
-            background: hsl(var(--card));
-            border: 2px solid hsl(var(--border));
+            background: rgba(5,5,5,0.85);
+            border: 1px solid hsl(var(--foreground) / 0.3);
             padding: 24px;
             transition: border-color 0.2s ease;
             position: relative;
@@ -104,7 +105,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            border-top: 1px solid hsl(var(--border));
+            border-top: 1px dashed hsl(var(--foreground) / 0.3);
             padding-top: 15px;
         }
 
@@ -130,14 +131,14 @@
         }
 
         .btn-remove {
-            background: hsl(var(--border));
+            background: hsl(var(--secondary));
             color: hsl(var(--foreground));
             width: 36px; height: 36px;
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: none; font-size: 18px; flex-shrink: 0;
+            cursor: pointer; border: 1px solid hsl(var(--border)); font-size: 18px; flex-shrink: 0;
         }
 
-        .btn-remove:hover { background: hsl(var(--destructive)); color: white; }
+        .btn-remove:hover { border-color: hsl(var(--destructive)); color: hsl(var(--destructive)); background: hsl(var(--destructive) / 0.1); }
 
         @media (max-width: 768px) {
             body { padding: 20px; }
@@ -193,7 +194,6 @@
         let clocks = JSON.parse(localStorage.getItem('world-clocks')) || ['local', 'UTC', 'America/New_York', 'Asia/Tokyo'];
         let is24Hour = localStorage.getItem('clock-format') !== '12h';
 
-        // Populate Datalist with all valid IANA zones
         const datalist = document.getElementById('tz-list');
         Intl.supportedValuesOf('timeZone').forEach(tz => {
             const opt = document.createElement('option');
@@ -229,28 +229,21 @@
             localStorage.setItem('world-clocks', JSON.stringify(clocks));
         }
 
-        /**
-         * Resolves a string input to a Luxon DateTime object
-         */
         function getLuxonTime(input) {
             const cleanInput = input.trim();
             const upperInput = cleanInput.toUpperCase();
             
-            // 1. Check for 'local' keyword
             if (upperInput === 'LOCAL') return DateTime.now();
 
-            // 2. Check manual abbreviation map
             if (TZ_ABBREVIATIONS[upperInput]) {
                 return DateTime.now().setZone(TZ_ABBREVIATIONS[upperInput]);
             }
 
-            // 3. Check for Offset (e.g., UTC+5, -8, +05:30)
             const offsetMatch = cleanInput.match(/^(?:UTC|GMT)?([+-]\d{1,2}:?\d{0,2})$/i);
             if (offsetMatch) {
                 return DateTime.now().setZone(`UTC${offsetMatch[1]}`);
             }
 
-            // 4. Try as IANA name (e.g., Africa/Cairo)
             const dt = DateTime.now().setZone(cleanInput);
             if (dt.isValid) return dt;
 
@@ -265,14 +258,11 @@
 
             const local = DateTime.now();
             
-            // Format time
             const timeStr = target.toFormat(is24Hour ? 'HH:mm:ss' : 'hh:mm:ss a');
             
-            // Get Offset from UTC (e.g., UTC +5.5)
             const offsetHours = target.offset / 60;
             const utcText = `UTC ${offsetHours >= 0 ? '+' : ''}${offsetHours}`;
 
-            // Calculate Difference from local system time
             const diffInHours = (target.offset - local.offset) / 60;
             let diffText = "";
             if (diffInHours === 0) {

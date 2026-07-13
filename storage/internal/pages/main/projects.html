@@ -110,6 +110,35 @@
     </div>
 
     <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 500px;"></div>
+
+    <div id="new-tab-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Tab</h2>
+                <button class="modal-close" onclick="closeNewTabModal()">x</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-tab-input" class="ascii-input" placeholder="Tab Name">
+                <button class="btn-primary" onclick="saveNewTab()" style="width: 100%;">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Tab</h2>
+                <button class="modal-close" onclick="closeTabEditModal()">x</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="tab-name-input" class="ascii-input" placeholder="Tab Name">
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn-primary" onclick="saveTabEdit()" style="flex: 1;">Save</button>
+                    <button class="admin-btn danger-btn" onclick="deleteActiveTab()" style="padding: 10px; border-radius: 0;">Delete Tab</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script>
         const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
@@ -121,6 +150,7 @@
         let currentTab = null;
         let isAdmin = false;
         let highestZ = 10;
+        let editingTabKey = null;
 
         window.addEventListener('message', e => {
             if (e.data && e.data.type === 'auth-sync') {
@@ -374,8 +404,13 @@
             if (hasUnsaved) layoutCards();
         });
 
-        window.createNewTab = async () => {
-            const name = prompt("Enter new tab name:");
+        window.createNewTab = () => {
+            document.getElementById('new-tab-input').value = '';
+            document.getElementById('new-tab-modal').classList.add('active');
+        };
+        window.closeNewTabModal = () => document.getElementById('new-tab-modal').classList.remove('active');
+        window.saveNewTab = async () => {
+            const name = document.getElementById('new-tab-input').value.trim();
             if (!name) return;
             const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
             if (projectsData.tabs && projectsData.tabs[key]) {
@@ -383,10 +418,8 @@
                 return;
             }
             if (!projectsData.tabs) projectsData.tabs = {};
-            
             const newTabs = {};
             const keys = Object.keys(projectsData.tabs);
-            
             if (keys.length === 0 || !currentTab) {
                 newTabs[key] = { display: name, projects: [] };
             } else {
@@ -397,10 +430,10 @@
                     }
                 }
             }
-            
             projectsData.tabs = newTabs;
             currentTab = key;
             await syncToSupabase();
+            closeNewTabModal();
         };
 
         window.openTabEditModal = (tabKey) => {

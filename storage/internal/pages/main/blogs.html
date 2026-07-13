@@ -182,7 +182,6 @@
                 card.className = 'ascii-window blog-post-window';
                 card.id = `blog-${blog.id}`;
                 card.dataset.index = idx;
-                card.style.width = '340px';
                 card.style.height = '280px';
                 card.style.position = 'absolute';
 
@@ -228,13 +227,12 @@
             const cards = container.querySelectorAll('.blog-post-window');
             const containerWidth = container.clientWidth || window.innerWidth;
             
-            const cardWidth = 340;
+            const cardWidth = Math.min(containerWidth - 40, 800); 
             const cardHeight = 280; 
             const gap = 20;
             const padding = 20;
             
-            let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
-            if (cols < 1) cols = 1;
+            let cols = 1; 
 
             let maxTop = 0;
 
@@ -244,11 +242,13 @@
                     const pos = JSON.parse(savedPos);
                     card.style.left = pos.left;
                     card.style.top = pos.top;
+                    card.style.width = cardWidth + 'px';
                 } else {
                     const col = idx % cols;
                     const row = Math.floor(idx / cols);
                     card.style.left = (padding + col * (cardWidth + gap)) + 'px';
                     card.style.top = (padding + row * (cardHeight + gap)) + 'px';
+                    card.style.width = cardWidth + 'px';
                 }
                 
                 const topVal = parseInt(card.style.top) || 0;

@@ -65,6 +65,20 @@
         </div>
     </div>
     
+    <div id="edit-item-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="edit-item-title">Edit Item</h2>
+                <button class="modal-close" onclick="closeEditItemModal()">x</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="edit-item-name" class="ascii-input" placeholder="Name">
+                <input type="text" id="edit-item-link" class="ascii-input" placeholder="Link (optional)">
+                <button class="btn-primary" onclick="saveEditItem()" style="width: 100%;">[ Save ]</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
@@ -75,6 +89,8 @@
         let dragItemIdx = null;
         let dragCategory = null;
         let highestZ = 100;
+        let currentEditCategory = null;
+        let currentEditIdx = null;
 
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'auth-sync') {
@@ -255,6 +271,29 @@
             await syncToSupabase();
         };
 
+        window.editItem = (category, idx, e) => {
+            e.stopPropagation(); e.preventDefault();
+            currentEditCategory = category;
+            currentEditIdx = idx;
+            const item = homeData[category][idx];
+            document.getElementById('edit-item-title').textContent = category === 'skills' ? 'Edit Skill' : 'Edit Social';
+            document.getElementById('edit-item-name').value = category === 'skills' ? item.skill : item.name;
+            document.getElementById('edit-item-link').value = item.link || '';
+            document.getElementById('edit-item-modal').classList.add('active');
+        };
+        window.closeEditItemModal = () => document.getElementById('edit-item-modal').classList.remove('active');
+        window.saveEditItem = async () => {
+            const name = document.getElementById('edit-item-name').value.trim();
+            if (!name) return;
+            const link = document.getElementById('edit-item-link').value.trim();
+            const item = homeData[currentEditCategory][currentEditIdx];
+            if (currentEditCategory === 'skills') item.skill = name; else item.name = name;
+            item.link = link || null;
+            closeEditItemModal();
+            await syncToSupabase();
+            renderPage();
+        };
+
         window.addSkill = async () => {
             const n = document.getElementById('skill-n').value.trim();
             const l = document.getElementById('skill-l').value.trim() || null;
@@ -272,29 +311,6 @@
             homeData[category].splice(idx, 1);
             await syncToSupabase();
         };
-
-        window.editItem = async (category, idx, e) => {
-            e.stopPropagation(); e.preventDefault();
-            const item = homeData[category][idx];
-            const currentName = category === 'skills' ? item.skill : item.name;
-            const name = prompt("Edit Name:", currentName);
-            if (name && name.trim() !== '') {
-                const link = prompt("Edit Link:", item.link || '');
-                if (category === 'skills') item.skill = name.trim(); else item.name = name.trim();
-                item.link = link ? link.trim() : null;
-                await syncToSupabase();
-            }
-        };
-
-        async function fetchDiscordData(userId) {
-            try {
-                const response = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
-                const statusData = await response.json();
-                if (!statusData.success) throw new Error('Lanyard failed');
-                const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
-                return { statusText: statusMap[statusData.data?.discord_status || 'offline'] || 'Offline' };
-            } catch (error) { return { statusText: "Offline" }; }
-        }
 
         async function refreshDiscordUI() {
             try {
@@ -315,16 +331,18 @@
                         return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
                     });
                     const latest = sortedBlogs[0];
-                    const temp = document.createElement('div'); temp.innerHTML = marked.parse(latest.content);
-                    let ext = (temp.textContent || "").trim();
-                    if (ext.length > 100) ext = ext.substring(0, 100) + "...";
+                    const parsedHTML = await marked.parse(latest.content);
                     
                     const dateDisplay = latest.date.replace(/\//g, '-');
                     
                     createWindow('win-blog', 'latest blog', dateDisplay, `
-                        <div style="cursor: pointer; line-height: 1.6;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
-                            <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:8px;">${latest.title}</div>
-                            <div>${ext}</div>
+                        <div style="cursor: pointer; line-height: 1.6; height: 100%; display: flex; flex-direction: column;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
+                            <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
+                            <div style="color:hsl(var(--foreground)); flex-grow: 1; overflow: hidden; position: relative; white-space: pre-wrap; word-wrap: break-word;">
+                                <div style="mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); height: 100%;">
+                                    ${parsedHTML}
+                                </div>
+                            </div>
                         </div>
                     `, {left: '50px', top: '550px', width: '500px'});
                 }
