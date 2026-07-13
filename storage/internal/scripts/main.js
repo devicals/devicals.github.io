@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     ['announcement-window', 'settings-window', 'lock-window', 'notif-pane'].forEach(id => {
         const win = document.getElementById(id);
         if (win) {
-            win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
-            win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
+            win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; }, true);
+            win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true, capture: true});
             makeResizable(win);
 
             const savedPos = localStorage.getItem('win_pos_' + id);
@@ -137,7 +137,7 @@ window.addEventListener('message', e => {
             `;
         }
         
-        const bounds = { left: '200px', top: '150px', width: '500px', height: '480px' };
+        const bounds = { left: '150px', top: '100px', width: '500px', height: '480px' };
         createWindow(editorId, title, '', contentHTML, bounds);
     }
 });
@@ -260,8 +260,10 @@ function addTaskbarItem(id, title) {
     btn.textContent = title;
     btn.onclick = () => {
         const win = document.getElementById(id);
-        if (win) win.style.display = 'flex';
-        if (win && id !== 'content-frame') win.style.zIndex = ++window.highestZ;
+        if (win) {
+            win.style.display = 'flex';
+            win.style.zIndex = ++window.highestZ;
+        }
         btn.remove();
     };
     container.appendChild(btn);
@@ -282,7 +284,7 @@ function getResizeHandleStyle(dir) {
     const size = '8px';
     const offset = '-4px';
     let style = `position: absolute; z-index: 10000; background: transparent;`;
-    if (dir === 'n') style += `top: ${offset}; left: 4px; right: 4px; height: ${size}; cursor: n-resize;`;
+    if (dir === 'n') style += `top: ${offset}; left: 15px; right: 15px; height: ${size}; cursor: n-resize;`;
     if (dir === 's') style += `bottom: ${offset}; left: 4px; right: 4px; height: ${size}; cursor: s-resize;`;
     if (dir === 'e') style += `right: ${offset}; top: 4px; bottom: 4px; width: ${size}; cursor: e-resize;`;
     if (dir === 'w') style += `left: ${offset}; top: 4px; bottom: 4px; width: ${size}; cursor: w-resize;`;
@@ -404,9 +406,6 @@ function makeDraggable(winId, handleId) {
         document.ontouchend = null; document.ontouchmove = null;
         document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'auto');
     }
-    
-    win.addEventListener('mousedown', () => win.style.zIndex = ++window.highestZ);
-    win.addEventListener('touchstart', () => win.style.zIndex = ++window.highestZ, {passive: true});
 }
 
 function startTitleAnimation() {
@@ -510,9 +509,9 @@ function renderAdminPortal(email) {
         <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
             <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <input type="text" id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="flex:1;">
-                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent));">[+]</button>
+            <div style="display:flex; flex-direction: column; gap:6px;">
+                <textarea id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="resize:vertical; min-height:40px; width: 100%;"></textarea>
+                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent)); align-self: flex-end;">[+ Add]</button>
             </div>
         </div>
     `;
@@ -585,7 +584,7 @@ function applyAnnouncements(data) {
             notifList.appendChild(item);
         });
         if (data.length === 0) {
-            notifList.innerHTML = '<div style="color:hsl(var(--muted-foreground)); font-size: 12px; padding: 10px;">No new notifications.</div>';
+            notifList.innerHTML = '<div style="color:hsl(var(--muted-foreground)); font-size: 12px; padding: 10px;">No new announcements.</div>';
         }
     }
     
@@ -690,8 +689,8 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         win.className = 'ascii-window';
         document.getElementById('desktop').appendChild(win);
         
-        win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; });
-        win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true});
+        win.addEventListener('mousedown', () => { win.style.zIndex = ++window.highestZ; }, true);
+        win.addEventListener('touchstart', () => { win.style.zIndex = ++window.highestZ; }, {passive: true, capture: true});
     }
 
     const savedPos = localStorage.getItem('win_pos_' + id);
@@ -719,6 +718,9 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
         win.style.height = size.height;
     }
     
+    const isMainWin = id.startsWith('win-') && !homeWindows.includes(id) && !id.includes('editor');
+    const contentPadding = isMainWin ? '0' : '15px';
+    
     win.innerHTML = `
         <div class="ascii-header-row">
             <div class="ascii-header-line" style="width: 15px;"></div>
@@ -732,7 +734,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
             </div>
             <div class="ascii-header-line" style="width: 10px;"></div>
         </div>
-        <div class="ascii-content" style="padding: ${id.startsWith('win-') && !homeWindows.includes(id) ? '0' : '15px'}; flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+        <div class="ascii-content" style="padding: ${contentPadding}; flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
             ${contentHTML}
         </div>
     `;
@@ -874,11 +876,15 @@ async function loadLatestBlogPreview() {
             const dateDisplay = latest.date.replace(/\//g, '-');
             
             createWindow('win-blog', 'latest blog', dateDisplay, `
-                <div style="cursor: pointer; line-height: 1.6;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
+                <div style="cursor: pointer; line-height: 1.6; height: 100%; display: flex; flex-direction: column;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
                     <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
-                    <div style="color:hsl(var(--foreground));">${parsedHTML}</div>
+                    <div style="color:hsl(var(--foreground)); flex-grow: 1; overflow: hidden; position: relative;">
+                        <div style="mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); height: 100%;">
+                            ${parsedHTML}
+                        </div>
+                    </div>
                 </div>
-            `, {right: '20px', top: '20px', width: '500px'});
+            `, {right: '20px', top: '20px', width: '500px', height: '280px'});
         }
     } catch (e) {}
 }
@@ -1005,15 +1011,15 @@ window.loadPage = async function(pageName, args = '') {
             if (pageType === 'refsection') pageType = 'section'; 
 
             if (pageType === 'section' || pageType === 'interests') {
-                targetUrl = `${pageBase}custom.html?file=${encodeURIComponent(resolvedPath)}`;
+                targetUrl = `${pageBase}custom.html?file=${encodeURIComponent(resolvedPath)}&rootId=${pageName}`;
             } else if (pageType === 'raw') {
-                targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(resolvedPath)}`;
+                targetUrl = `${pageBase}raw.html?file=${encodeURIComponent(resolvedPath)}&rootId=${pageName}`;
             } else if (pageType.startsWith('gallery')) {
-                targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(resolvedPath)}&type=${pageType}`;
+                targetUrl = `${pageBase}gallery.html?file=${encodeURIComponent(resolvedPath)}&type=${pageType}&rootId=${pageName}`;
             } else if (pageType === 'md') {
-                targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(resolvedPath)}`;
+                targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(resolvedPath)}&rootId=${pageName}`;
             } else if (pageType === 'html') {
-                targetUrl = resolvedPath;
+                targetUrl = resolvedPath + (resolvedPath.includes('?') ? '&' : '?') + `rootId=${pageName}`;
             }
         }
     }
@@ -1023,7 +1029,7 @@ window.loadPage = async function(pageName, args = '') {
     }
     
     const contentHTML = `<iframe class="page-iframe" src="${targetUrl}" style="width: 100%; height: 100%; border: none; background: transparent; display: block;"></iframe>`;
-    const bounds = { left: '100px', top: '100px', width: '850px', height: '650px' };
+    const bounds = { left: '50px', top: '50px', width: '800px', height: '600px' };
     createWindow(winId, title, '', contentHTML, bounds);
 };
 
@@ -1069,7 +1075,7 @@ window.closePreferences = () => {
 
 window.resetWindowPositions = function() {
     Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('win_pos_') || key.startsWith('win_size_') || key.startsWith('proj_pos_')) {
+        if (key.startsWith('win_pos_') || key.startsWith('win_size_') || key.startsWith('proj_pos_') || key.startsWith('blog_pos_') || key.startsWith('dl_pos_')) {
             localStorage.removeItem(key);
         }
     });

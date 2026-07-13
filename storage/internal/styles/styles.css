@@ -54,7 +54,7 @@ a:hover { color: hsl(var(--accent)); }
     display: flex;
     align-items: center;
     transform: translateY(-50%);
-    z-index: 10;
+    z-index: 10001;
 }
 
 .ascii-header-line {
@@ -70,6 +70,8 @@ a:hover { color: hsl(var(--accent)); }
     user-select: none;
     line-height: 1;
     background: transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .ascii-right-content, .ascii-admin-controls {

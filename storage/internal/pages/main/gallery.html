@@ -368,7 +368,7 @@
             galleryType = params.get('type') || 'gallery';
             const parentHash = window.parent.location.hash.substring(1);
             const parentParams = new URLSearchParams(parentHash);
-            currentPageId = parentParams.get('page') || 'home';
+            currentPageId = params.get('rootId') || parentParams.get('page') || 'home';
 
             if (!yamlFilePath) return;
 

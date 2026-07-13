@@ -117,7 +117,7 @@
                 const typeInfo = typeof customPageData.type === 'object' ? customPageData.type.type : customPageData.type;
                 if (typeInfo === 'interests') {
                     isInterests = true;
-                    content.innerHTML = `<iframe id="viewer-frame" src="/storage/internal/pages/main/interests.html?file=${encodeURIComponent(customPageData.path)}"></iframe>`;
+                    content.innerHTML = `<iframe id="viewer-frame" src="/storage/internal/pages/main/interests.html?file=${encodeURIComponent(customPageData.path)}&rootId=${rootPageId}"></iframe>`;
                 } else {
                     await renderSections(customPageData.path);
                 }
@@ -132,7 +132,7 @@
                     await renderSections(item.path);
                 } else if (item.type === 'interests') {
                     isInterests = true;
-                    content.innerHTML = `<iframe id="viewer-frame" src="/storage/internal/pages/main/interests.html?file=${encodeURIComponent(item.path)}"></iframe>`;
+                    content.innerHTML = `<iframe id="viewer-frame" src="/storage/internal/pages/main/interests.html?file=${encodeURIComponent(item.path)}&rootId=${rootPageId}"></iframe>`;
                 } else if (item.type === 'md') {
                     const resp = await fetch(item.path);
                     if (resp.ok) {
@@ -142,7 +142,7 @@
                         setupShikiInteractions();
                     }
                 } else if (item.type === 'raw') {
-                    window.parent.location.href = `/storage/internal/pages/main/raw.html?file=${encodeURIComponent(item.path)}`;
+                    window.parent.location.href = `/storage/internal/pages/main/raw.html?file=${encodeURIComponent(item.path)}&rootId=${rootPageId}`;
                 }
             }
             breadcrumb.style.display = isInterests ? 'none' : 'flex';
@@ -229,7 +229,10 @@
             });
         }
         async function init() {
-            rootPageId = getParentParams().get('page');
+            const params = new URLSearchParams(window.location.search);
+            rootPageId = params.get('rootId');
+            if(!rootPageId) rootPageId = getParentParams().get('page');
+            
             const custom = await loadYAML('/storage/data/custom.yaml');
             for (const k in custom.customPages) {
                 const sub = custom.customPages[k].sub;

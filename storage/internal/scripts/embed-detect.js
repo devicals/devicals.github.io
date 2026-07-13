@@ -12,4 +12,4 @@ document.addEventListener('keydown', (e) => {
 
 document.addEventListener('mousedown', () => {
     window.parent.postMessage({ type: 'iframe-click' }, '*');
-});
+}, true);
