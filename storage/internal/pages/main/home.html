@@ -331,7 +331,7 @@
                         return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
                     });
                     const latest = sortedBlogs[0];
-                    const parsedHTML = await marked.parse(latest.content);
+                    const parsedHTML = await marked.parse(latest.content, { breaks: true, gfm: true });
                     
                     const dateDisplay = latest.date.replace(/\//g, '-');
                     

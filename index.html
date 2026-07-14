@@ -321,6 +321,20 @@
         </div>
     </div>
 
+    <div id="edit-item-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="edit-item-title">Edit Item</h2>
+                <button class="modal-close" onclick="closeEditItemModal()">x</button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="edit-item-name" class="ascii-input" placeholder="Name">
+                <input type="text" id="edit-item-link" class="ascii-input" placeholder="Link (optional)">
+                <button class="btn-primary" onclick="saveEditItem()" style="width: 100%;">[ Save ]</button>
+            </div>
+        </div>
+    </div>
+
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="/storage/internal/scripts/main.js"></script>
 </body>

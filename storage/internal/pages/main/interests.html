@@ -22,6 +22,7 @@
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
         }
+        body { margin: 0; box-sizing: border-box; background: transparent; }
         .interest-outer { margin-bottom: 3.5rem; position: relative; }
         .interest-title { color: hsl(var(--accent)); margin-bottom: 1.5rem; font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
         .tilt-wrapper { display: block; perspective: 1000px; user-select: none; position: relative; }
@@ -347,7 +348,11 @@
 
         function fitText(el) {
             let fs = 0.85; el.style.fontSize = fs + 'rem';
-            while (el.scrollHeight > el.offsetHeight && fs > 0.5) { fs -= 0.02; el.style.fontSize = fs + 'rem'; }
+            for (let i = 0; i < 4 && el.scrollHeight > el.offsetHeight && fs > 0.5; i++) {
+                const ratio = el.offsetHeight / el.scrollHeight;
+                fs = Math.max(0.5, fs * ratio * 0.97);
+                el.style.fontSize = fs + 'rem';
+            }
         }
 
         async function initAuth() {

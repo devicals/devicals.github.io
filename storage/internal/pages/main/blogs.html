@@ -231,9 +231,8 @@
             const cardHeight = 280; 
             const gap = 20;
             const padding = 20;
-            
-            let cols = 1; 
 
+            // Vertical list layout: single column, cards stacked top-to-bottom
             let maxTop = 0;
 
             cards.forEach((card, idx) => {
@@ -244,10 +243,8 @@
                     card.style.top = pos.top;
                     card.style.width = cardWidth + 'px';
                 } else {
-                    const col = idx % cols;
-                    const row = Math.floor(idx / cols);
-                    card.style.left = (padding + col * (cardWidth + gap)) + 'px';
-                    card.style.top = (padding + row * (cardHeight + gap)) + 'px';
+                    card.style.left = padding + 'px';
+                    card.style.top = (padding + idx * (cardHeight + gap)) + 'px';
                     card.style.width = cardWidth + 'px';
                 }
                 

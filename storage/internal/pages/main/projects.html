@@ -254,13 +254,22 @@
             if (currentTab) switchTab(currentTab, true);
         }
 
-        function switchTab(tabKey, skipRender = false) {
+        function switchTab(tabKey, skipHashUpdate = false) {
             currentTab = tabKey;
             document.querySelectorAll('.project-tab').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabKey);
             });
-            window.parent.location.hash = `page=projects&tab=${tabKey}`;
-            
+
+            if (!skipHashUpdate) {
+                // Build the hash fresh each time so it never appends to
+                // whatever was there before, and use replaceState so tab
+                // switches don't pile up new browser history entries.
+                const params = new URLSearchParams();
+                params.set('page', 'projects');
+                params.set('tab', tabKey);
+                window.parent.history.replaceState(null, '', '#' + params.toString());
+            }
+
             renderCardsForActiveTab();
         }
 

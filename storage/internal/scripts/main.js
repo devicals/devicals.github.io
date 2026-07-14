@@ -10,6 +10,8 @@ const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
 let currentAnnouncements = [];
 let homeData = null;
+let currentEditCategory = null;
+let currentEditIdx = null;
 window.highestZ = 100;
 const homeWindows = ['win-bio', 'win-skills', 'win-socials', 'win-blog'];
 
@@ -398,13 +400,13 @@ function makeDraggable(winId, handleId) {
         win.style.left = clamp(newLeft, 0, maxLeft) + "px";
         win.style.bottom = 'auto';
         win.style.right = 'auto';
-        localStorage.setItem('win_pos_' + winId, JSON.stringify({top: win.style.top, left: win.style.left}));
     }
 
     function closeDragElement() {
         document.onmouseup = null; document.onmousemove = null;
         document.ontouchend = null; document.ontouchmove = null;
         document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'auto');
+        localStorage.setItem('win_pos_' + winId, JSON.stringify({top: win.style.top, left: win.style.left}));
     }
 }
 
@@ -740,6 +742,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
     `;
     
     if (isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
+    win.style.display = 'flex';
     win.style.zIndex = ++window.highestZ;
     
     win.querySelectorAll('.resize-handle').forEach(h => h.remove());
@@ -838,17 +841,29 @@ window.deleteItem = async (category, idx, e) => {
     await syncHomeToSupabase();
 };
 
-window.editItem = async (category, idx, e) => {
+window.editItem = (category, idx, e) => {
     e.stopPropagation(); e.preventDefault();
+    currentEditCategory = category;
+    currentEditIdx = idx;
     const item = homeData[category][idx];
-    const currentName = category === 'skills' ? item.skill : item.name;
-    const name = prompt("Edit Name:", currentName);
-    if (name && name.trim() !== '') {
-        const link = prompt("Edit Link:", item.link || '');
-        if (category === 'skills') item.skill = name.trim(); else item.name = name.trim();
-        item.link = link ? link.trim() : null;
-        await syncHomeToSupabase();
-    }
+    document.getElementById('edit-item-title').textContent = category === 'skills' ? 'Edit Skill' : 'Edit Social';
+    document.getElementById('edit-item-name').value = category === 'skills' ? item.skill : item.name;
+    document.getElementById('edit-item-link').value = item.link || '';
+    document.getElementById('edit-item-modal').classList.add('active');
+};
+
+window.closeEditItemModal = () => document.getElementById('edit-item-modal').classList.remove('active');
+
+window.saveEditItem = async () => {
+    const name = document.getElementById('edit-item-name').value.trim();
+    if (!name) return;
+    const link = document.getElementById('edit-item-link').value.trim();
+    const item = homeData[currentEditCategory][currentEditIdx];
+    if (currentEditCategory === 'skills') item.skill = name; else item.name = name;
+    item.link = link || null;
+    closeEditItemModal();
+    await syncHomeToSupabase();
+    renderHomePage();
 };
 
 async function refreshDiscordUI() {
@@ -936,10 +951,10 @@ async function loadCustomPages() {
         container.appendChild(document.createElement('br'));
     });
 
-    container.innerHTML += `
+    container.insertAdjacentHTML('beforeend', `
         <div class="nav-folder">System/</div>
         <div class="nav-item">└─ <span class="fake-link" onclick="openPreferences()">Settings</span></div>
-    `;
+    `);
 }
 
 function resolvePath(relativePath, baseDir) {

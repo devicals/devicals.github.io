@@ -19,7 +19,8 @@
         --accent: 160 84% 39%;
         --accent-foreground: 0 0% 0%;
       }
-      * { border-radius: 0 !important; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+      ::-webkit-scrollbar { display: none !important; }
+      * { border-radius: 0 !important; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; box-sizing: border-box; scrollbar-width: none !important; -ms-overflow-style: none !important; }
       body { font-family: 'JetBrains Mono', monospace; background: transparent; color: hsl(var(--foreground)); margin: 0; padding: 0; overflow-x: hidden; height: 100vh; }
       html { height: 100%; }
 
