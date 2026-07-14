@@ -259,7 +259,7 @@
             document.querySelectorAll('.project-tab').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabKey);
             });
-            window.parent.history.replaceState(null, null, "#page=projects&tab=" + tabKey);
+            window.parent.location.hash = `page=projects&tab=${tabKey}`;
             
             renderCardsForActiveTab();
         }

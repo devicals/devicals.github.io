@@ -871,7 +871,6 @@ async function loadLatestBlogPreview() {
                 return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
             });
             const latest = sortedBlogs[0];
-            marked.use({ breaks: true, gfm: true });
             const parsedHTML = await marked.parse(latest.content);
             
             const dateDisplay = latest.date.replace(/\//g, '-');
@@ -1007,7 +1006,7 @@ window.loadPage = async function(pageName, args = '') {
             }
 
             const resolvedPath = resolvePath(customPage.path, '/storage/internal/pages/custom/');
-            const typeInfo = (customPage.type && typeof customPage.type === 'object') ? customPage.type : { type: customPage.type || 'html' };
+            const typeInfo = typeof customPage.type === 'object' ? customPage.type : { type: customPage.type };
             let pageType = typeInfo.type || 'raw';
             if (pageType === 'refsection') pageType = 'section'; 
 
@@ -1021,8 +1020,6 @@ window.loadPage = async function(pageName, args = '') {
                 targetUrl = `${pageBase}md-viewer.html?file=${encodeURIComponent(resolvedPath)}&rootId=${pageName}`;
             } else if (pageType === 'html') {
                 targetUrl = resolvedPath + (resolvedPath.includes('?') ? '&' : '?') + `rootId=${pageName}`;
-            } else {
-                targetUrl = resolvedPath;
             }
         }
     }
