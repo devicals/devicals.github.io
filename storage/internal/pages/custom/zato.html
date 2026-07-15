@@ -712,7 +712,17 @@
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const x = clientX - rect.left, y = clientY - rect.top;
       const cx = rect.width / 2, cy = rect.height / 2;
-      card.style.transform = 'rotateX(' + ((cy-y)/6) + 'deg) rotateY(' + ((x-cx)/10) + 'deg) scale3d(1.06,1.06,1.06)';
+
+      // Max tilt angle is inversely proportional to the card's own
+      // width/height, so bigger/longer cards tilt less and don't clip.
+      const TILT_K = 900; // deg*px, tuned so a ~150px item tilts ~6deg, an ~800px item tilts ~1deg
+      const maxTiltY = Math.min(10, TILT_K / rect.width);
+      const maxTiltX = Math.min(10, (TILT_K * 0.6) / rect.height);
+
+      const percentX = cx ? (x - cx) / cx : 0;
+      const percentY = cy ? (cy - y) / cy : 0;
+
+      card.style.transform = 'rotateX(' + (percentY * maxTiltX) + 'deg) rotateY(' + (percentX * maxTiltY) + 'deg) scale3d(1.06,1.06,1.06)';
     }
 
     function makeTiltWrapper(item, tier) {

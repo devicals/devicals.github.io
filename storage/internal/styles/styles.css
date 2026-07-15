@@ -69,7 +69,7 @@ a:hover { color: hsl(var(--accent)); }
     cursor: move;
     user-select: none;
     line-height: 1;
-    background: transparent;
+    background: hsl(var(--card));
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -79,7 +79,7 @@ a:hover { color: hsl(var(--accent)); }
     color: hsl(var(--muted-foreground));
     font-size: 12px;
     line-height: 1;
-    background: transparent;
+    background: hsl(var(--card));
 }
 
 .ascii-window-action {
@@ -93,6 +93,7 @@ a:hover { color: hsl(var(--accent)); }
     transition: background 0.2s, color 0.2s;
     user-select: none;
     color: hsl(var(--muted-foreground));
+    background: hsl(var(--card));
 }
 
 .ascii-minimize-btn:hover {

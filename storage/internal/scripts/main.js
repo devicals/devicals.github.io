@@ -253,6 +253,42 @@ window.minimizeWindow = function(id, title) {
     }
 };
 
+window.toggleMaximizeWindow = function(id) {
+    const win = document.getElementById(id);
+    if (!win) return;
+    const btn = win.querySelector('.ascii-maximize-btn');
+    const PAD = 8; // 5-10px padding when maximized
+
+    if (win.dataset.maximized === 'true') {
+        // Restore to previous position/size
+        const prev = JSON.parse(win.dataset.prevBounds || '{}');
+        win.style.top = prev.top || '';
+        win.style.left = prev.left || '';
+        win.style.right = prev.right || '';
+        win.style.bottom = prev.bottom || '';
+        win.style.width = prev.width || '';
+        win.style.height = prev.height || '';
+        win.dataset.maximized = 'false';
+        if (btn) btn.textContent = '□';
+    } else {
+        // Save current position/size, then fill the desktop with padding
+        win.dataset.prevBounds = JSON.stringify({
+            top: win.style.top, left: win.style.left,
+            right: win.style.right, bottom: win.style.bottom,
+            width: win.style.width, height: win.style.height
+        });
+        win.style.top = PAD + 'px';
+        win.style.left = PAD + 'px';
+        win.style.right = PAD + 'px';
+        win.style.bottom = PAD + 'px';
+        win.style.width = 'auto';
+        win.style.height = 'auto';
+        win.dataset.maximized = 'true';
+        if (btn) btn.textContent = '❐';
+    }
+    win.style.zIndex = ++window.highestZ;
+};
+
 function addTaskbarItem(id, title) {
     const container = document.getElementById('taskbar-items');
     if (document.getElementById('tb-item-' + id)) return;
@@ -299,6 +335,7 @@ function getResizeHandleStyle(dir) {
 
 function setupResizeDrag(win, h, dir) {
     h.onmousedown = (e) => {
+        if (win.dataset.maximized === 'true') return;
         e.preventDefault();
         e.stopPropagation();
         const startX = e.clientX;
@@ -369,6 +406,7 @@ function makeDraggable(winId, handleId) {
 
     function dragMouseDown(e) {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (win.dataset.maximized === 'true') return;
         e.preventDefault();
         win.style.zIndex = ++window.highestZ;
         if (e.type === 'touchstart') {
@@ -582,7 +620,7 @@ function applyAnnouncements(data) {
             item.style.borderBottom = '1px dashed hsl(var(--border))';
             item.style.fontSize = '12px';
             item.style.lineHeight = '1.5';
-            item.innerHTML = marked.parse(ann, { renderer });
+            item.innerHTML = marked.parse(ann, { renderer, breaks: true, gfm: true });
             notifList.appendChild(item);
         });
         if (data.length === 0) {
@@ -630,7 +668,7 @@ function applyAnnouncements(data) {
 function displayAnnouncement(index, announcements) {
     const content = document.getElementById('announcement-content');
     const renderer = new marked.Renderer();
-    content.innerHTML = marked.parse(announcements[index], { renderer });
+    content.innerHTML = marked.parse(announcements[index], { renderer, breaks: true, gfm: true });
 }
 
 async function saveAnnouncements(updatedList) {
@@ -732,6 +770,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
             ${rightContent ? `<div class="ascii-right-content">${rightContent}</div>` : ''}
             <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px;">
                 <div class="ascii-minimize-btn" onclick="minimizeWindow('${id}', '${title}')" style="cursor:pointer; color: hsl(var(--accent)); font-weight: bold; padding-bottom: 5px;">_</div>
+                <div class="ascii-maximize-btn" onclick="toggleMaximizeWindow('${id}')" style="cursor:pointer; color: hsl(var(--accent)); font-weight: bold;">${win.dataset.maximized === 'true' ? '❐' : '□'}</div>
                 ${homeWindows.includes(id) ? '' : `<div class="ascii-close-btn" onclick="closeWindow('${id}')" style="cursor:pointer; color: hsl(var(--destructive)); font-weight: bold;">x</div>`}
             </div>
             <div class="ascii-header-line" style="width: 10px;"></div>
@@ -754,7 +793,7 @@ function createWindow(id, title, rightContent, contentHTML, bounds, adminControl
 async function renderHomePage() {
     if (!homeData) return;
 
-    let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
+    let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '', { breaks: true, gfm: true })}</div>`;
     createWindow('win-bio', 'about me', '', bioHTML, {left: '20px', top: '20px', width: '450px'}, 
         `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
 
@@ -886,7 +925,7 @@ async function loadLatestBlogPreview() {
                 return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
             });
             const latest = sortedBlogs[0];
-            const parsedHTML = await marked.parse(latest.content);
+            const parsedHTML = await marked.parse(latest.content, { breaks: true, gfm: true });
             
             const dateDisplay = latest.date.replace(/\//g, '-');
             
@@ -894,7 +933,7 @@ async function loadLatestBlogPreview() {
                 <div style="cursor: pointer; line-height: 1.6; height: 100%; display: flex; flex-direction: column;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
                     <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
                     <div style="color:hsl(var(--foreground)); flex-grow: 1; overflow: hidden; position: relative;">
-                        <div style="mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); height: 100%;">
+                        <div style="mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); height: 100%; white-space: pre-wrap;">
                             ${parsedHTML}
                         </div>
                     </div>

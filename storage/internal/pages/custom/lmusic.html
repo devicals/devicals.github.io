@@ -17,8 +17,8 @@
         }
         * { 
             border-radius: 0 !important; 
-            -webkit-font-smoothing: antialiased; 
-            -webkit-tap-highlight-color: transparent; 
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
             scrollbar-width: none !important;
             -ms-overflow-style: none !important;
         }
@@ -31,25 +31,153 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
-        .tilt-wrapper { display: block; perspective: 1000px; user-select: none; position: relative; }
-        .interest-fav-list .tilt-wrapper { perspective: 2000px; margin-bottom: 15px; }
-        .fav-card, .interest-grid-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease; transform-style: preserve-3d; pointer-events: none; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; transform: translateZ(1px); }
-        .tilt-wrapper:hover .fav-card, .tilt-wrapper:hover .interest-grid-card, .tilt-wrapper.is-tapped .fav-card, .tilt-wrapper.is-tapped .interest-grid-card { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.06); box-shadow: 0 20px 50px rgba(0,0,0,0.7); z-index: 100; }
-        body.is-admin .tilt-wrapper { cursor: grab; }
-        .fav-card { padding: 35px; display: flex; justify-content: space-between; align-items: center; gap: 20px; overflow: hidden; }
-        .fav-title { font-size: 1.4rem; font-weight: 700; color: #fff; transition: transform 0.4s ease; transform-style: preserve-3d; }
-        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; margin-top: 8px; white-space: pre-wrap; line-height: 1.4; }
-        .tilt-wrapper:hover .fav-title, .tilt-wrapper.is-tapped .fav-title { transform: translateZ(25px); }
-        .fav-tags { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; max-width: 50%; transform-style: preserve-3d; }
-        .tag-box { font-size: 0.7rem; padding: 4px 10px; border: 1px solid; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(10, 10, 10, 0.8); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease; will-change: transform; backface-visibility: hidden; outline: 1px solid transparent; }
-        .tilt-wrapper:hover .tag-box, .tilt-wrapper.is-tapped .tag-box { transform: translateZ(var(--rand-z, 40px)) translateY(var(--rand-y, -2px)) rotateZ(var(--rand-r, 0deg)); filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.5)); }
+        .tilt-wrapper {
+            display: block;
+            perspective: 1000px;
+            user-select: none;
+            position: relative;
+        }
+        .favorite-list .tilt-wrapper {
+            perspective: 2000px; 
+            margin-bottom: 12px;
+        }
+        .fav-card, .liked-card {
+            background: rgba(5,5,5,0.85);
+            border: 1px solid hsl(var(--foreground) / 0.3);
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+            transform-style: preserve-3d;
+            pointer-events: none;
+            will-change: transform;
+            backface-visibility: hidden;
+            outline: 1px solid transparent; 
+            transform: translateZ(1px); 
+        }
+        .tilt-wrapper:hover .fav-card, 
+        .tilt-wrapper:hover .liked-card,
+        .tilt-wrapper.is-tapped .fav-card,
+        .tilt-wrapper.is-tapped .liked-card {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            z-index: 100;
+        }
+        body.is-admin .tilt-wrapper {
+            cursor: grab;
+        }
+        .fav-tags { 
+            display: flex; 
+            gap: 12px; 
+            flex-wrap: wrap; 
+            justify-content: flex-end; 
+            max-width: 50%; 
+            transform-style: preserve-3d;
+        }
+        .tag-box { 
+            font-size: 0.7rem; 
+            padding: 4px 10px; 
+            border: 1px solid; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            background: rgba(10, 10, 10, 0.7);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+            will-change: transform;
+            backface-visibility: hidden;
+            outline: 1px solid transparent;
+        }
+        .tilt-wrapper:hover .tag-box,
+        .tilt-wrapper.is-tapped .tag-box {
+            transform: 
+                translateZ(var(--rand-z, 40px)) 
+                translateY(var(--rand-y, -2px)) 
+                rotateZ(var(--rand-r, 0deg));
+            filter: drop-shadow(4px 8px 10px rgba(0,0,0,0.5));
+        }
         .tag-accent { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
         .tag-golden { border-color: #ffcc00; color: #ffcc00; }
-        .tag-gray { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.6); }
-        .interest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-        .interest-grid .tilt-wrapper { height: 85px; }
-        .interest-grid-card { height: 100%; padding: 10px; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.2; word-break: break-word; font-size: 0.85rem; color: #ccc; pointer-events: auto !important; cursor: pointer; position: relative; }
-        
+        .tag-gray { border-color: #ffffff; color: #ffffff; opacity: 0.8; }
+        .fav-card {
+            padding: 35px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            overflow: hidden;
+        }
+        .fav-info-group { transform-style: preserve-3d; }
+        .fav-title { 
+            font-size: 1.4rem; 
+            font-weight: 700; 
+            color: #fff; 
+            margin-bottom: 6px; 
+            transition: transform 0.4s ease;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+        }
+        .tilt-wrapper:hover .fav-title,
+        .tilt-wrapper.is-tapped .fav-title { 
+            transform: translateZ(20px); 
+        }
+        .fav-comment { font-size: 0.85rem; opacity: 0.6; display: block; white-space: pre-wrap; line-height: 1.4; }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        .games-grid .tilt-wrapper { height: 85px; }
+        .liked-card {
+            height: 100%;
+            padding: 8px;
+            text-align: center;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+            line-height: 1.2;
+            position: relative;
+        }
+        .liked-card.tooltip-container { pointer-events: auto !important; cursor: pointer; }
+        .liked-card .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: hsl(var(--card));
+            color: hsl(var(--foreground));
+            text-align: center;
+            border: 1px solid hsl(var(--border));
+            padding: 8px 12px;
+            font-size: 11px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            white-space: normal;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+        .liked-card .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: hsl(var(--card)) transparent transparent transparent;
+        }
+        .liked-card:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        @media (max-width: 1000px) { .games-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 750px) { 
+            .games-grid { grid-template-columns: repeat(3, 1fr); } 
+            .fav-card { flex-direction: column; align-items: flex-start; padding: 25px; }
+            .fav-tags { justify-content: flex-start; max-width: 100%; margin-top: 25px; }
+        }
         .admin-action-btn {
             display: none;
             position: absolute;
@@ -71,30 +199,6 @@
         }
         body.is-admin .admin-action-btn {
             display: block;
-        }
-        .add-grid-item-container {
-            display: none;
-            width: 100%;
-            border: 2px dashed hsl(var(--border));
-            padding: 10px;
-            margin-bottom: 15px;
-            gap: 10px;
-        }
-        body.is-admin .add-grid-item-container {
-            display: flex;
-        }
-        .add-grid-item-container input {
-            flex: 1;
-            padding: 8px 12px;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .add-grid-item-container input:focus {
-            border-color: hsl(var(--accent));
         }
         .admin-section-btn {
             display: none;
@@ -206,80 +310,29 @@
         .btn-primary:active {
             transform: scale(0.98);
         }
-        .grid-add-btn {
-            background: hsl(var(--secondary) / 0.3);
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            width: 38px;
-            height: 38px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            backdrop-filter: blur(8px);
-        }
-        .grid-add-btn:hover {
-            background: hsl(var(--accent) / 0.1);
-            color: hsl(var(--accent));
-            border-color: hsl(var(--accent));
-        }
-        .grid-add-btn:active {
-            transform: scale(0.95);
-        }
         .tag-row-input {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        .interest-grid-card.tooltip-container {
-            position: relative;
-        }
-        .interest-grid-card .tooltip-text {
-            visibility: hidden;
-            width: 200px;
-            background-color: hsl(var(--card));
-            color: hsl(var(--foreground));
-            text-align: center;
-            border: 1px solid hsl(var(--border));
-            padding: 8px 12px;
-            font-size: 11px;
-            position: absolute;
-            z-index: 1000;
-            bottom: 110%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            pointer-events: none;
-            white-space: normal;
-            line-height: 1.4;
-            font-weight: 500;
-        }
-        .interest-grid-card .tooltip-text::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
-            border-style: solid;
-            border-color: hsl(var(--card)) transparent transparent transparent;
-        }
-        .interest-grid-card:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
     </style>
 </head>
 <body>
     <div class="page-container">
-        <div id="interests-content"></div>
+        <h1 class="page-title">Liked Music</h1>
+
+        <div class="game-section">
+            <h2 class="section-title">Favorites</h2>
+            <button class="admin-section-btn" onclick="openAddFavModal()">+ Add Favorite</button>
+            <div id="favorite-list" class="favorite-list"></div>
+        </div>
+
+        <div class="game-section">
+            <h2 class="section-title">Music I Drank</h2>
+            <div id="music-grid" class="games-grid"></div>
+        </div>
     </div>
 
-    <!-- Edit Favorites Modal -->
     <div id="fav-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -289,10 +342,10 @@
             <div class="modal-body">
                 <input type="text" id="fav-title-input" placeholder="Title">
                 <textarea id="fav-comment-input" placeholder="Comment"></textarea>
-                
+
                 <div style="border-top:1px dashed hsl(var(--border)); padding-top:12px; display:flex; flex-direction:column; gap:8px;">
                     <label style="font-size:11px; text-transform:uppercase; color:hsl(var(--muted-foreground));">Custom Tags</label>
-                    
+
                     <div class="tag-row-input">
                         <input type="text" id="tag-0-text" placeholder="Tag 1 (e.g. Peak)">
                         <select id="tag-0-style" style="width:120px;">
@@ -323,67 +376,13 @@
 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const MAPPINGS = {
-            'casual': 'Casual', 'intermediate': 'Intermediate', 'expert': 'Expert',
-            'betterthanyou': 'Better than you', 'obsessed': 'Obsessed', 'loveit': 'Love it',
-            'kindofloveit': 'Kind of love it', 'kindofhateit': 'Kind of hate it',
-            'ragequitting': 'Rage quitting', 'lfg': 'Looking for group',
-            'otp': 'Open to play', 'lft': 'Looking for tips',
-            'ott': 'Open to teach', 'ltd': 'Looking to discuss'
-        };
-
         const contentKey = "lmusic";
-        let interestsData = null;
+        let musicData = null;
         let isAdmin = false;
         let activeEditIdx = null;
         let dragItemIdx = null;
         let dragCategory = null;
         let spotifyTracks = [];
-
-        function randomizeTags(wrapper) {
-            wrapper.querySelectorAll('.tag-box').forEach(tag => {
-                tag.style.setProperty('--rand-z', `${Math.floor(Math.random() * 50) + 30}px`);
-                tag.style.setProperty('--rand-y', `${Math.floor(Math.random() * 12) * -1}px`);
-                tag.style.setProperty('--rand-r', `${Math.floor(Math.random() * 24) - 12}deg`);
-            });
-        }
-
-        function handleTilt(e) {
-            const wrapper = e.currentTarget;
-            const card = wrapper.querySelector('.fav-card, .interest-grid-card');
-            const rect = wrapper.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = clientX - rect.left, y = clientY - rect.top;
-            const centerX = rect.width / 2, centerY = rect.height / 2;
-            let rotX, rotY, scale;
-            if (card.classList.contains('fav-card')) {
-                rotX = Math.max(Math.min((centerY - y) / 15, 7), -7);
-                rotY = Math.max(Math.min((x - centerX) / 80, 7), -7);
-                scale = 1.03;
-            } else {
-                rotX = (centerY - y) / 6; rotY = (x - centerX) / 10; scale = 1.1;
-            }
-            card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
-        }
-
-        function createTiltWrapper(contentClass, innerHTML) {
-            const wrap = document.createElement('div');
-            wrap.className = 'tilt-wrapper';
-            wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
-            const start = () => { if (contentClass === 'fav-card') randomizeTags(wrap); wrap.classList.add('is-tapped'); };
-            wrap.addEventListener('mouseenter', start);
-            wrap.addEventListener('touchstart', (e) => { document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped')); start(); handleTilt(e); }, {passive: true});
-            wrap.addEventListener('mousemove', handleTilt);
-            wrap.addEventListener('touchmove', handleTilt, {passive: true});
-            wrap.addEventListener('mouseleave', () => { wrap.querySelector('div').style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1,1,1)`; wrap.classList.remove('is-tapped'); });
-            return wrap;
-        }
-
-        function fitText(el) {
-            let fs = 0.85; el.style.fontSize = fs + 'rem';
-            while (el.scrollHeight > el.offsetHeight && fs > 0.5) { fs -= 0.02; el.style.fontSize = fs + 'rem'; }
-        }
 
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -401,18 +400,7 @@
                 isAdmin = false;
                 document.body.classList.remove('is-admin');
             }
-            if (interestsData) renderPage();
-        }
-
-        async function syncToSupabase() {
-            if (!isAdmin) return;
-            const { error } = await supabaseClient
-                .from('site_content')
-                .update({ data: { favorites: interestsData.favorites, sections: [] } })
-                .eq('key', contentKey);
-            if (error) {
-                alert("Error saving: " + error.message);
-            }
+            if (musicData) renderPage();
         }
 
         async function loadSpotifySongs() {
@@ -428,12 +416,12 @@
                         return true;
                     });
                 }
-            } catch(e) {
+            } catch (e) {
                 console.error(e);
             }
         }
 
-        async function init() {
+        async function initDatabase() {
             await loadSpotifySongs();
 
             const { data, error } = await supabaseClient
@@ -443,138 +431,204 @@
                 .single();
 
             if (data && data.data) {
-                interestsData = data.data;
+                musicData = data.data;
                 renderPage();
             } else if (error && error.code === 'PGRST116') {
-                if (isAdmin) {
-                    interestsData = { 
-                        favorites: [], 
-                        sections: [] 
-                    };
-                    await supabaseClient
-                        .from('site_content')
-                        .insert({ key: contentKey, data: interestsData });
-                    renderPage();
-                } else {
-                    document.getElementById('interests-content').innerHTML = `
-                        <p style="color: hsl(var(--muted-foreground)); font-style: italic; text-align: center; margin-top: 50px;">This interest page is currently empty.</p>
-                    `;
-                }
+                musicData = { favorites: [], sections: [] };
+                renderPage();
             }
 
             supabaseClient
-                .channel('interests-realtime')
+                .channel('lmusic-realtime')
                 .on(
                     'postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'site_content', filter: `key=eq.${contentKey}` },
                     (payload) => {
                         if (payload.new && payload.new.data) {
-                            interestsData = payload.new.data;
+                            musicData = payload.new.data;
                             renderPage();
                         }
                     }
                 )
                 .subscribe();
+        }
 
-            await initAuth();
+        async function syncToSupabase() {
+            if (!isAdmin) return;
+            const { error } = await supabaseClient
+                .from('site_content')
+                .update({ data: { favorites: musicData.favorites, sections: [] } })
+                .eq('key', contentKey);
+            if (error) {
+                alert("Error saving: " + error.message);
+            }
         }
 
         function renderPage() {
-            const container = document.getElementById('interests-content');
+            renderFavorites(musicData.favorites);
+            renderMusicGrid(spotifyTracks);
+        }
+
+        function renderFavorites(favs) {
+            const container = document.getElementById('favorite-list');
             container.innerHTML = '';
+            if (!favs) return;
+            favs.forEach((fav, idx) => {
+                let tagsHTML = '';
+                (fav.tags || []).forEach(t => { tagsHTML += `<span class="tag-box tag-${t.style || 'accent'}">${t.tag}</span>`; });
 
-            if (interestsData.favorites) {
-                const sec = document.createElement('div');
-                sec.className = 'interest-outer';
-                sec.innerHTML = `
-                    <h2 class="interest-title">Favorites</h2>
-                    <button class="admin-section-btn" onclick="openAddFavModal()">+ Add Favorite</button>
-                    <div class="interest-fav-list" id="fav-list-container"></div>
+                const inner = `
+                    <button class="admin-action-btn" id="edit-fav-btn-${idx}" style="top:4px; left:4px;">✎</button>
+                    <button class="admin-action-btn del-btn" id="del-fav-btn-${idx}" style="top:4px; right:4px;">✕</button>
+                    <div class="fav-info-group">
+                        <div class="fav-title">${fav.title}</div>
+                        ${fav.comment ? `<span class="fav-comment">${fav.comment}</span>` : ''}
+                    </div>
+                    <div class="fav-tags">${tagsHTML}</div>
                 `;
-                const list = sec.querySelector('.interest-fav-list');
-                
-                interestsData.favorites.forEach((fav, idx) => {
-                    let tagsHTML = '';
-                    const tagList = fav.tags || [];
-                    tagList.forEach(t => { tagsHTML += `<span class="tag-box tag-${t.style || 'accent'}">${t.tag}</span>`; });
-                    
-                    const inner = `
-                        <button class="admin-action-btn" id="edit-fav-btn-${idx}" style="top:4px; left:4px;">✎</button>
-                        <button class="admin-action-btn del-btn" id="del-fav-btn-${idx}" style="top:4px; right:4px;">✕</button>
-                        <div class="fav-info-group">
-                            <div class="fav-title">${fav.title}</div>
-                            <span class="fav-comment">${fav.comment || ''}</span>
-                        </div>
-                        <div class="fav-tags">${tagsHTML}</div>
-                    `;
-                    
-                    const wrap = createTiltWrapper('fav-card', inner);
-                    wrap.dataset.index = idx;
 
-                    if (isAdmin) {
-                        wrap.draggable = true;
-                        wrap.addEventListener('dragstart', (e) => {
-                            dragItemIdx = idx;
-                            dragCategory = 'favorites';
-                            e.dataTransfer.effectAllowed = 'move';
-                        });
-                        wrap.addEventListener('dragover', (e) => {
-                            if (dragCategory !== 'favorites') return;
-                            e.preventDefault();
-                        });
-                        wrap.addEventListener('drop', async (e) => {
-                            if (dragCategory !== 'favorites') return;
-                            e.preventDefault();
-                            const targetIdx = idx;
-                            if (dragItemIdx === targetIdx) return;
-                            const [reorderedItem] = interestsData.favorites.splice(dragItemIdx, 1);
-                            interestsData.favorites.splice(targetIdx, 0, reorderedItem);
-                            await syncToSupabase();
-                        });
-                    }
+                const wrap = createTiltWrapper('fav-card', inner);
+                wrap.dataset.index = idx;
 
-                    list.appendChild(wrap);
+                if (isAdmin) {
+                    wrap.draggable = true;
+                    wrap.addEventListener('dragstart', (e) => {
+                        dragItemIdx = idx;
+                        dragCategory = 'favorites';
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    wrap.addEventListener('dragover', (e) => {
+                        if (dragCategory !== 'favorites') return;
+                        e.preventDefault();
+                    });
+                    wrap.addEventListener('drop', async (e) => {
+                        if (dragCategory !== 'favorites') return;
+                        e.preventDefault();
+                        const targetIdx = idx;
+                        if (dragItemIdx === targetIdx) return;
+                        const [reorderedItem] = musicData.favorites.splice(dragItemIdx, 1);
+                        musicData.favorites.splice(targetIdx, 0, reorderedItem);
+                        await syncToSupabase();
+                    });
+                }
 
-                    const delBtn = document.getElementById(`del-fav-btn-${idx}`);
-                    if (delBtn) {
-                        delBtn.onclick = (e) => { e.stopPropagation(); deleteFavorite(idx); };
-                    }
+                container.appendChild(wrap);
 
-                    const editBtn = document.getElementById(`edit-fav-btn-${idx}`);
-                    if (editBtn) {
-                        editBtn.onclick = (e) => { e.stopPropagation(); openEditFavModal(fav, idx); };
-                    }
-                });
-                container.appendChild(sec);
-            }
+                const delBtn = document.getElementById(`del-fav-btn-${idx}`);
+                if (delBtn) {
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteFavorite(idx); };
+                }
 
-            const sec = document.createElement('div');
-            sec.className = 'interest-outer';
-            sec.innerHTML = `
-                <h2 class="interest-title">Music I Drank</h2>
-                <div class="interest-grid" id="grid-container-spotify"></div>
-            `;
-            const grid = sec.querySelector('.interest-grid');
-            
-            spotifyTracks.forEach((track) => {
+                const editBtn = document.getElementById(`edit-fav-btn-${idx}`);
+                if (editBtn) {
+                    editBtn.onclick = (e) => { e.stopPropagation(); openEditFavModal(fav, idx); };
+                }
+            });
+        }
+
+        function renderMusicGrid(tracks) {
+            const grid = document.getElementById('music-grid');
+            grid.innerHTML = '';
+            if (!tracks) return;
+            tracks.forEach((track) => {
                 const inner = `
                     ${track.title}
                     <span class="tooltip-text">${track.artists.join(', ')}</span>
                 `;
-                const wrap = createTiltWrapper('interest-grid-card tooltip-container', inner);
-                const card = wrap.querySelector('.interest-grid-card');
+                const wrap = createTiltWrapper('liked-card tooltip-container', inner);
+                const card = wrap.querySelector('.liked-card');
                 if (card) {
                     card.onclick = () => window.open(`https://open.spotify.com/track/${track.id}`, '_blank');
                 }
                 grid.appendChild(wrap);
             });
-            container.appendChild(sec);
+            document.querySelectorAll('.liked-card').forEach(fitText);
+        }
 
-            document.querySelectorAll('.interest-grid-card').forEach(fitText);
+        function randomizeTags(wrapper) {
+            const tags = wrapper.querySelectorAll('.tag-box');
+            tags.forEach(tag => {
+                const z = Math.floor(Math.random() * 50) + 30;
+                const y = Math.floor(Math.random() * 12) * -1;
+                const r = Math.floor(Math.random() * 24) - 12;
+                tag.style.setProperty('--rand-z', `${z}px`);
+                tag.style.setProperty('--rand-y', `${y}px`);
+                tag.style.setProperty('--rand-r', `${r}deg`);
+            });
+        }
+
+        function handleTilt(e) {
+            const wrapper = e.currentTarget;
+            const card = wrapper.querySelector('.fav-card, .liked-card');
+            const rect = wrapper.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            let rotX, rotY, scale;
+
+            if (card.classList.contains('fav-card')) {
+                rotX = (centerY - y) / 15;
+                rotY = (x - centerX) / 80;
+                rotX = Math.max(Math.min(rotX, 7), -7);
+                rotY = Math.max(Math.min(rotY, 7), -7);
+                scale = 1.03;
+            } else {
+                rotX = (centerY - y) / 6;
+                rotY = (x - centerX) / 10;
+                scale = 1.1;
+            }
+            card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) scale3d(${scale}, ${scale}, ${scale})`;
+        }
+
+        function resetAllTilts() {
+            document.querySelectorAll('.fav-card, .liked-card').forEach(card => {
+                card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                card.parentElement.classList.remove('is-tapped');
+            });
+        }
+
+        function createTiltWrapper(contentClass, innerHTML) {
+            const wrap = document.createElement('div');
+            wrap.className = 'tilt-wrapper';
+            wrap.innerHTML = `<div class="${contentClass}">${innerHTML}</div>`;
+            const startInteraction = () => {
+                if (contentClass === 'fav-card') randomizeTags(wrap);
+                wrap.classList.add('is-tapped');
+            };
+
+            wrap.addEventListener('mouseenter', startInteraction);
+            wrap.addEventListener('touchstart', (e) => {
+                resetAllTilts();
+                startInteraction();
+                handleTilt(e);
+            }, { passive: true });
+
+            wrap.addEventListener('mousemove', handleTilt);
+            wrap.addEventListener('touchmove', handleTilt, { passive: true });
+            wrap.addEventListener('mouseleave', () => {
+                const card = wrap.querySelector('.fav-card, .liked-card');
+                card.style.transform = `rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                wrap.classList.remove('is-tapped');
+            });
+            return wrap;
+        }
+
+        function fitText(el) {
+            let fontSize = 0.85;
+            el.style.fontSize = fontSize + 'rem';
+            for (let i = 0; i < 4 && el.scrollHeight > el.offsetHeight && fontSize > 0.5; i++) {
+                const ratio = el.offsetHeight / el.scrollHeight;
+                fontSize = Math.max(0.5, fontSize * ratio * 0.97);
+                el.style.fontSize = fontSize + 'rem';
+            }
         }
 
         window.openAddFavModal = () => {
             activeEditIdx = null;
+            document.getElementById('modal-title-label').textContent = "Add Favorite";
             document.getElementById('fav-title-input').value = '';
             document.getElementById('fav-comment-input').value = '';
             document.getElementById('tag-0-text').value = '';
@@ -586,6 +640,7 @@
 
         function openEditFavModal(fav, idx) {
             activeEditIdx = idx;
+            document.getElementById('modal-title-label').textContent = "Edit Favorite";
             document.getElementById('fav-title-input').value = fav.title;
             document.getElementById('fav-comment-input').value = fav.comment || '';
             const tag0 = fav.tags?.[0] || { tag: '', style: 'accent' };
@@ -625,15 +680,20 @@
 
         async function deleteFavorite(idx) {
             if (!confirm(`Are you sure you want to delete this favorite?`)) return;
-            interestsData.favorites = interestsData.favorites.filter((_, i) => i !== idx);
+            musicData.favorites = musicData.favorites.filter((_, i) => i !== idx);
             await syncToSupabase();
         }
 
         document.addEventListener('touchstart', (e) => {
-            if (!e.target.closest('.tilt-wrapper')) document.querySelectorAll('.is-tapped').forEach(w => w.classList.remove('is-tapped'));
+            if (!e.target.closest('.tilt-wrapper')) {
+                resetAllTilts();
+            }
         }, {passive: true});
 
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatabase();
+            initAuth();
+        });
     </script>
 </body>
 </html>
