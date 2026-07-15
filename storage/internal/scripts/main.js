@@ -53,13 +53,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 let konamiIndex = 0;
 const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
+function flashKonamiProgress() {
+    let flash = document.createElement('div');
+    flash.style.cssText = `
+        position: fixed; inset: 0; background: hsl(var(--accent) / 0.12);
+        pointer-events: none; z-index: 999999; opacity: 1;
+        transition: opacity 0.2s linear;
+    `;
+    document.body.appendChild(flash);
+    void flash.offsetHeight;
+    flash.style.opacity = '0';
+    setTimeout(() => flash.remove(), 200);
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Alt') {
+        e.preventDefault();
         window.toggleNav();
     }
     
     if (e.key === konamiCode[konamiIndex] || e.key.toLowerCase() === konamiCode[konamiIndex]) {
         konamiIndex++;
+        flashKonamiProgress();
         if (konamiIndex === konamiCode.length) {
             konamiIndex = 0;
             window.loadPage('witless');
@@ -457,6 +472,7 @@ function renderLoginPortal() {
 
 function renderAuthPortal(email, username, isSuperAdmin) {
     const portal = document.getElementById('settings-admin-portal');
+    
     let leftCol = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <div style="display:flex; flex-direction:column; gap:2px;">
@@ -573,12 +589,13 @@ window.updatePassword = async function() {
 };
 
 window.clearLocalData = function() {
-    if (confirm("Are you sure you want to completely clear all local website data? This will clear game progress unless backed up to your account, reset window positions, and reset your theme.")) {
+    if (confirm("Are you sure you want to completely clear all local website data? This will reset all minigame progress (unless saved to an account), window positions, and your theme settings.")) {
         localStorage.clear();
         sessionStorage.clear();
         location.reload();
     }
 };
+
 window.loadAdminUsers = async function() {
     const container = document.getElementById('admin-user-container');
     container.innerHTML = '<span style="font-size:11px; color:hsl(var(--muted-foreground));">Loading...</span>';
@@ -617,7 +634,18 @@ function openAdminUserSubmenu(user) {
                 <input type="text" id="admin-user-name" class="ascii-input" placeholder="Set Username" value="${user.username || ''}" style="margin:0;">
             </div>
             <div style="display:flex; gap:6px;">
-                <input type="password" id="admin-user-pass" class="ascii-input" placeholder="Set New Password (blank to skip)" style="margin:0;">
+                <input type="password" id="admin-user-pass" class="ascii-input" placeholder="Set New Password" style="margin:0;">
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;">
+                <div style="flex:1;">
+                    <label style="color:hsl(var(--muted-foreground)); font-size:9px;">MAX LEVEL</label>
+                    <input type="number" id="admin-user-level" class="ascii-input" value="${user.max_level || 1}" style="margin:0;">
+                </div>
+                <div style="flex:1;">
+                    <label style="color:hsl(var(--muted-foreground)); font-size:9px;">MAX STREAK</label>
+                    <input type="number" id="admin-user-streak" class="ascii-input" value="${user.max_streak || 0}" style="margin:0;">
+                </div>
             </div>
             
             <div style="display:flex; align-items:center; gap:6px;">
@@ -638,6 +666,8 @@ window.saveAdminUser = async function(userId) {
     const newUsername = document.getElementById('admin-user-name').value.trim();
     const newPassword = document.getElementById('admin-user-pass').value;
     const isCreator = document.getElementById('admin-user-creator').checked;
+    const maxLevel = parseInt(document.getElementById('admin-user-level').value) || 1;
+    const maxStreak = parseInt(document.getElementById('admin-user-streak').value) || 0;
     
     if(!confirm("Are you sure you want to save these changes?")) return;
     
@@ -647,7 +677,9 @@ window.saveAdminUser = async function(userId) {
         new_password: newPassword || null,
         make_creator: isCreator,
         do_ban: false,
-        do_delete: false
+        do_delete: false,
+        new_max_level: maxLevel,
+        new_max_streak: maxStreak
     });
     
     if (error) alert("Error updating user: " + error.message);
@@ -657,7 +689,7 @@ window.saveAdminUser = async function(userId) {
 window.banAdminUser = async function(userId, banState) {
     if(!confirm(`Are you sure you want to ${banState ? 'ban' : 'unban'} this user?`)) return;
     const { error } = await supabaseClient.rpc('admin_manage_user', {
-        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: banState, do_delete: false
+        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: banState, do_delete: false, new_max_level: null, new_max_streak: null
     });
     if (error) alert("Error updating ban state: " + error.message);
     else { alert(`User ${banState ? 'banned' : 'unbanned'}.`); loadAdminUsers(); }
@@ -666,7 +698,7 @@ window.banAdminUser = async function(userId, banState) {
 window.deleteAdminUser = async function(userId) {
     if(!confirm("WARNING: Are you sure you want to PERMANENTLY DELETE this user? This cannot be undone.")) return;
     const { error } = await supabaseClient.rpc('admin_manage_user', {
-        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: false, do_delete: true
+        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: false, do_delete: true, new_max_level: null, new_max_streak: null
     });
     if (error) alert("Error deleting user: " + error.message);
     else { alert("User deleted."); loadAdminUsers(); }
@@ -1208,7 +1240,7 @@ window.loadPage = async function(pageName, args = '') {
         }
         const contentHTML = `<iframe class="page-iframe" src="/storage/internal/pages/custom/witless.html"></iframe>`;
         const bounds = getCenteredBounds(500, 560);
-        createWindow(winId, 'the witless', '', contentHTML, bounds);
+        createWindow(winId, 'THE WITLESS', '', contentHTML, bounds);
         return;
     }
 
@@ -1308,6 +1340,7 @@ window.openPreferences = () => {
 
     const win = document.getElementById('settings-window');
     win.style.display = 'flex';
+    
     if (isAdmin) win.style.width = '650px'; 
     else win.style.width = '300px';
 
@@ -1335,4 +1368,120 @@ window.resetWindowPositions = function() {
         }
     });
     location.reload();
+};
+
+window.clearLocalData = function() {
+    if (confirm("Are you sure you want to completely clear all local website data? This will reset all minigame progress (unless saved to an account), window positions, and your theme settings.")) {
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload();
+    }
+};
+
+window.loadAdminUsers = async function() {
+    const container = document.getElementById('admin-user-container');
+    container.innerHTML = '<span style="font-size:11px; color:hsl(var(--muted-foreground));">Loading...</span>';
+    
+    const { data, error } = await supabaseClient.rpc('admin_get_users');
+    if (error || !data) {
+        container.innerHTML = `<span style="font-size:11px; color:hsl(var(--destructive));">Failed to load: ${error?.message || 'Unknown Error'}</span>`;
+        return;
+    }
+    
+    container.innerHTML = '';
+    data.forEach(user => {
+        const row = document.createElement('div');
+        row.style.cssText = `display:flex; justify-content:space-between; align-items:center; padding:4px; font-size:11px; cursor:pointer; border-bottom:1px solid hsl(var(--border)/0.5);`;
+        row.innerHTML = `
+            <span style="color:${user.is_banned ? 'hsl(var(--destructive))' : 'hsl(var(--foreground))'}; font-weight:${user.is_creator ? 'bold' : 'normal'}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                ${user.username || 'Unknown'} <span style="color:hsl(var(--muted-foreground));">(${user.email})</span>
+            </span>
+            <span style="color:hsl(var(--accent)); padding-left:8px;">✎</span>
+        `;
+        row.onclick = () => openAdminUserSubmenu(user);
+        container.appendChild(row);
+    });
+};
+
+function openAdminUserSubmenu(user) {
+    const container = document.getElementById('admin-user-container');
+    container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:11px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid hsl(var(--border)); padding-bottom:4px;">
+                <span style="color:hsl(var(--accent)); font-weight:bold; overflow:hidden; text-overflow:ellipsis;">Manage: ${user.email}</span>
+                <button class="ascii-btn" onclick="loadAdminUsers()">[ Back ]</button>
+            </div>
+            
+            <div style="display:flex; gap:6px;">
+                <input type="text" id="admin-user-name" class="ascii-input" placeholder="Set Username" value="${user.username || ''}" style="margin:0;">
+            </div>
+            <div style="display:flex; gap:6px;">
+                <input type="password" id="admin-user-pass" class="ascii-input" placeholder="Set New Password" style="margin:0;">
+            </div>
+
+            <div style="display:flex; gap:6px; align-items:center;">
+                <div style="flex:1;">
+                    <label style="color:hsl(var(--muted-foreground)); font-size:9px;">MAX LEVEL</label>
+                    <input type="number" id="admin-user-level" class="ascii-input" value="${user.max_level || 1}" style="margin:0;">
+                </div>
+                <div style="flex:1;">
+                    <label style="color:hsl(var(--muted-foreground)); font-size:9px;">MAX STREAK</label>
+                    <input type="number" id="admin-user-streak" class="ascii-input" value="${user.max_streak || 0}" style="margin:0;">
+                </div>
+            </div>
+            
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="admin-user-creator" ${user.is_creator ? 'checked' : ''} style="accent-color:hsl(var(--accent)); width:14px; height:14px; cursor:pointer;">
+                <label for="admin-user-creator" style="cursor:pointer; user-select:none;">Creator Badge</label>
+            </div>
+            
+            <div style="display:flex; gap:6px; margin-top:4px;">
+                <button class="btn-primary" style="flex:1; padding:4px;" onclick="saveAdminUser('${user.id}')">Save Changes</button>
+                <button class="btn-primary" style="flex:1; padding:4px; background:hsl(var(--destructive)/0.2); color:hsl(var(--destructive)); border-color:hsl(var(--destructive));" onclick="banAdminUser('${user.id}', ${!user.is_banned})">${user.is_banned ? 'Unban' : 'Ban'}</button>
+                <button class="btn-primary" style="flex:1; padding:4px; background:hsl(var(--destructive)); color:hsl(var(--accent-foreground)); border-color:hsl(var(--destructive));" onclick="deleteAdminUser('${user.id}')">Delete</button>
+            </div>
+        </div>
+    `;
+}
+
+window.saveAdminUser = async function(userId) {
+    const newUsername = document.getElementById('admin-user-name').value.trim();
+    const newPassword = document.getElementById('admin-user-pass').value;
+    const isCreator = document.getElementById('admin-user-creator').checked;
+    const maxLevel = parseInt(document.getElementById('admin-user-level').value) || 1;
+    const maxStreak = parseInt(document.getElementById('admin-user-streak').value) || 0;
+    
+    if(!confirm("Are you sure you want to save these changes?")) return;
+    
+    const { error } = await supabaseClient.rpc('admin_manage_user', {
+        target_id: userId,
+        new_username: newUsername || null,
+        new_password: newPassword || null,
+        make_creator: isCreator,
+        do_ban: false,
+        do_delete: false,
+        new_max_level: maxLevel,
+        new_max_streak: maxStreak
+    });
+    
+    if (error) alert("Error updating user: " + error.message);
+    else { alert("User updated!"); loadAdminUsers(); }
+};
+
+window.banAdminUser = async function(userId, banState) {
+    if(!confirm(`Are you sure you want to ${banState ? 'ban' : 'unban'} this user?`)) return;
+    const { error } = await supabaseClient.rpc('admin_manage_user', {
+        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: banState, do_delete: false, new_max_level: null, new_max_streak: null
+    });
+    if (error) alert("Error updating ban state: " + error.message);
+    else { alert(`User ${banState ? 'banned' : 'unbanned'}.`); loadAdminUsers(); }
+};
+
+window.deleteAdminUser = async function(userId) {
+    if(!confirm("WARNING: Are you sure you want to PERMANENTLY DELETE this user? This cannot be undone.")) return;
+    const { error } = await supabaseClient.rpc('admin_manage_user', {
+        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: false, do_delete: true, new_max_level: null, new_max_streak: null
+    });
+    if (error) alert("Error deleting user: " + error.message);
+    else { alert("User deleted."); loadAdminUsers(); }
 };

@@ -6,6 +6,7 @@ if (window.self === window.top) {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Alt') {
+        e.preventDefault();
         window.parent.postMessage({ type: 'alt-pressed' }, '*');
     }
 });

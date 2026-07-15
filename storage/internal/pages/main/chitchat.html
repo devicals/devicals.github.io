@@ -508,14 +508,23 @@
             });
         }
 
-        function handleUserSession(session) {
+        async function handleUserSession(session) {
             const nameInput = document.getElementById('chat-name');
             const savedName = localStorage.getItem('chitchat_user_name');
             
             if (session && session.user) {
-                nameInput.value = savedName || 'Player';
-                nameInput.disabled = true;
-                nameInput.style.opacity = '0.6';
+                const { data } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+                const isCreator = data?.is_creator || false;
+                
+                nameInput.value = data ? data.username : (savedName || 'Player');
+                
+                if (isCreator) {
+                    nameInput.disabled = false;
+                    nameInput.style.opacity = '1';
+                } else {
+                    nameInput.disabled = true;
+                    nameInput.style.opacity = '0.6';
+                }
                 
                 if (session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
                     isAdmin = true;
@@ -535,7 +544,6 @@
                     anonId = Math.floor(Math.random() * 9000 + 1000);
                     localStorage.setItem('anon_device_id', anonId);
                 }
-                
                 nameInput.value = 'Anon#' + anonId;
                 nameInput.disabled = true;
                 nameInput.style.opacity = '0.6';
@@ -624,7 +632,9 @@
 
             if (!message && !drawing) return;
 
-            localStorage.setItem('chitchat_user_name', nameInput.value.trim());
+            if (!nameInput.disabled) {
+                localStorage.setItem('chitchat_user_name', name);
+            }
 
             let ip = 'Hidden';
             let country = 'Unknown';
@@ -652,7 +662,8 @@
                     is_creator: isCreatorChecked,
                     ip_address: ip,
                     country,
-                    is_vpn: isVpn
+                    is_vpn: isVpn,
+                    user_id: currentSession?.user?.id || null
                 })
                 .select('id')
                 .single();
