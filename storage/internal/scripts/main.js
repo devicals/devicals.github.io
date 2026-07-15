@@ -78,7 +78,7 @@ function clamp(val, min, max) {
 }
 
 window.addEventListener('message', e => {
-    if (e.data.type === 'ctrl-pressed') {
+    if (e.data.type === 'alt-pressed') {
         window.toggleNav();
     } else if (e.data.type === 'iframe-click') {
         const nav = document.getElementById('nav-window');
