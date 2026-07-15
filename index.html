@@ -271,8 +271,9 @@
                     </select>
                 </div>
                 <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px;"></div>
-                <div style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px; margin-top: 15px;">
-                    <button class="ascii-btn" onclick="resetWindowPositions()" style="width: 100%; border: 1px solid hsl(var(--border)); padding: 6px;">[ Reset Window Positions ]</button>
+                <div style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px; margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
+                    <button class="ascii-btn" onclick="resetWindowPositions()" style="width: 100%; border: 1px solid hsl(var(--border)); padding: 6px; color:hsl(var(--foreground)); background:hsl(var(--secondary));">[ Reset Window Positions ]</button>
+                    <button class="ascii-btn" onclick="clearLocalData()" style="width: 100%; border: 1px solid hsl(var(--destructive)/0.5); padding: 6px; color:hsl(var(--destructive)); background:hsl(var(--destructive)/0.05);">[ Clear All Local Data ]</button>
                 </div>
             </div>
         </div>

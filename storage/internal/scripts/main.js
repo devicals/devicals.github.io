@@ -8,6 +8,7 @@ let pendingPage = null;
 let titleIdx = 0;
 const rawTitle = "painful existence, silent suffering ";
 let isAdmin = false;
+let currentSession = null;
 let currentAnnouncements = [];
 let homeData = null;
 let currentEditCategory = null;
@@ -49,9 +50,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     startTitleAnimation();
 });
 
+let konamiIndex = 0;
+const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Alt') {
         window.toggleNav();
+    }
+    
+    if (e.key === konamiCode[konamiIndex] || e.key.toLowerCase() === konamiCode[konamiIndex]) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) {
+            konamiIndex = 0;
+            window.loadPage('witless');
+        }
+    } else {
+        konamiIndex = 0;
     }
 });
 
@@ -73,9 +87,7 @@ document.addEventListener('mousedown', (e) => {
     }
 });
 
-function clamp(val, min, max) {
-    return Math.max(min, Math.min(max, val));
-}
+function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
 function getCenteredBounds(width, height) {
     const left = clamp(Math.round((window.innerWidth - width) / 2), 20, Math.max(20, window.innerWidth - width - 20));
     const top = clamp(Math.round((window.innerHeight - height) / 2), 20, Math.max(20, window.innerHeight - height - 20));
@@ -83,69 +95,52 @@ function getCenteredBounds(width, height) {
 }
 
 window.addEventListener('message', e => {
-    if (e.data.type === 'alt-pressed') {
-        window.toggleNav();
-    } else if (e.data.type === 'iframe-click') {
+    if (e.data.type === 'alt-pressed') window.toggleNav();
+    else if (e.data.type === 'iframe-click') {
         const nav = document.getElementById('nav-window');
         if (nav && nav.classList.contains('nav-open')) window.toggleNav();
         const notifPane = document.getElementById('notif-pane');
         if (notifPane && notifPane.style.display === 'flex') window.toggleNotifications();
         
-        const iframes = document.querySelectorAll('.page-iframe');
-        iframes.forEach(ifr => {
+        document.querySelectorAll('.page-iframe').forEach(ifr => {
             if (ifr.contentWindow === e.source) {
                 const win = ifr.closest('.ascii-window');
-                if (win) {
-                    win.style.zIndex = ++window.highestZ;
-                }
+                if (win) win.style.zIndex = ++window.highestZ;
             }
         });
     } else if (e.data.type === 'minimize-iframe') {
-        const iframes = document.querySelectorAll('.page-iframe');
-        let senderId = null;
-        iframes.forEach(ifr => {
+        document.querySelectorAll('.page-iframe').forEach(ifr => {
             if (ifr.contentWindow === e.source) {
-                senderId = ifr.parentElement.parentElement.id;
+                const senderId = ifr.parentElement.parentElement.id;
+                minimizeWindow(senderId, e.data.title || senderId.replace('win-', ''));
             }
         });
-        if (senderId) {
-            minimizeWindow(senderId, e.data.title || senderId.replace('win-', ''));
-        }
     } else if (e.data.type === 'open-editor') {
         const editorId = 'win-editor-' + e.data.editorType;
         const title = e.data.title || 'Editor';
-        
         let contentHTML = '';
         if (e.data.editorType === 'blog') {
-            contentHTML = `
-                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
-                    <input type="text" id="editor-blog-title" class="ascii-input" placeholder="Title" value="${e.data.data?.title || ''}">
-                    <textarea id="editor-blog-content" class="ascii-input" style="flex: 1; min-height: 250px; resize: vertical;" placeholder="Content (Markdown supported)">${e.data.data?.content || ''}</textarea>
-                    <button class="btn-primary" onclick="submitEditorBlog('${e.data.id || ''}')">Save Post</button>
-                </div>
-            `;
+            contentHTML = `<div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                <input type="text" id="editor-blog-title" class="ascii-input" placeholder="Title" value="${e.data.data?.title || ''}">
+                <textarea id="editor-blog-content" class="ascii-input" style="flex: 1; min-height: 250px; resize: vertical;" placeholder="Content (Markdown supported)">${e.data.data?.content || ''}</textarea>
+                <button class="btn-primary" onclick="submitEditorBlog('${e.data.id || ''}')">Save Post</button>
+            </div>`;
         } else if (e.data.editorType === 'project') {
-            contentHTML = `
-                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
-                    <input type="text" id="editor-proj-name" class="ascii-input" placeholder="Project Name" value="${e.data.data?.name || ''}">
-                    <textarea id="editor-proj-desc" class="ascii-input" style="flex: 1; min-height: 150px; resize: vertical;" placeholder="Description">${e.data.data?.description || ''}</textarea>
-                    <input type="text" id="editor-proj-link" class="ascii-input" placeholder="Project URL" value="${e.data.data?.link || ''}">
-                    <button class="btn-primary" onclick="submitEditorProject('${e.data.tab || ''}', ${e.data.index !== undefined ? e.data.index : -1})">Save Project</button>
-                </div>
-            `;
+            contentHTML = `<div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                <input type="text" id="editor-proj-name" class="ascii-input" placeholder="Project Name" value="${e.data.data?.name || ''}">
+                <textarea id="editor-proj-desc" class="ascii-input" style="flex: 1; min-height: 150px; resize: vertical;" placeholder="Description">${e.data.data?.description || ''}</textarea>
+                <input type="text" id="editor-proj-link" class="ascii-input" placeholder="Project URL" value="${e.data.data?.link || ''}">
+                <button class="btn-primary" onclick="submitEditorProject('${e.data.tab || ''}', ${e.data.index !== undefined ? e.data.index : -1})">Save Project</button>
+            </div>`;
         } else if (e.data.editorType === 'download') {
-            contentHTML = `
-                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
-                    <input type="text" id="editor-dl-name" class="ascii-input" placeholder="Title/Name" value="${e.data.data?.name || ''}">
-                    <textarea id="editor-dl-desc" class="ascii-input" style="flex: 1; min-height: 150px; resize: vertical;" placeholder="Description">${e.data.data?.description || ''}</textarea>
-                    <input type="text" id="editor-dl-url" class="ascii-input" placeholder="Download URL" value="${e.data.data?.url || ''}">
-                    <button class="btn-primary" onclick="submitEditorDownload(${e.data.id !== undefined ? e.data.id : -1})">Save Download</button>
-                </div>
-            `;
+            contentHTML = `<div style="display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                <input type="text" id="editor-dl-name" class="ascii-input" placeholder="Title/Name" value="${e.data.data?.name || ''}">
+                <textarea id="editor-dl-desc" class="ascii-input" style="flex: 1; min-height: 150px; resize: vertical;" placeholder="Description">${e.data.data?.description || ''}</textarea>
+                <input type="text" id="editor-dl-url" class="ascii-input" placeholder="Download URL" value="${e.data.data?.url || ''}">
+                <button class="btn-primary" onclick="submitEditorDownload(${e.data.id !== undefined ? e.data.id : -1})">Save Download</button>
+            </div>`;
         }
-        
-        const bounds = { left: '150px', top: '100px', width: '500px', height: '480px' };
-        createWindow(editorId, title, '', contentHTML, bounds);
+        createWindow(editorId, title, '', contentHTML, { left: '150px', top: '100px', width: '500px', height: '480px' });
     }
 });
 
@@ -153,23 +148,17 @@ window.submitEditorBlog = async function(id) {
     const title = document.getElementById('editor-blog-title').value.trim();
     const content = document.getElementById('editor-blog-content').value.trim();
     if (!title || !content) return;
-
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
     let blogs = data ? data.data : [];
-
     if (id) {
         const blog = blogs.find(b => String(b.id) === String(id));
-        if (blog) {
-            blog.title = title;
-            blog.content = content;
-        }
+        if (blog) { blog.title = title; blog.content = content; }
     } else {
         const nextId = blogs.length > 0 ? Math.max(...blogs.map(b => b.id)) + 1 : 1;
         const today = new Date();
         const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
         blogs.unshift({ id: nextId, date: dateStr, title, content });
     }
-
     await supabaseClient.from('site_content').update({ data: blogs }).eq('key', 'blogs');
     closeWindow('win-editor-blog');
 };
@@ -179,22 +168,15 @@ window.submitEditorProject = async function(tab, index) {
     const description = document.getElementById('editor-proj-desc').value.trim();
     const link = document.getElementById('editor-proj-link').value.trim();
     if (!name || !link) return;
-
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let projData = data ? data.data : { tabs: {} };
-
     if (index !== -1) {
         const proj = projData.tabs[tab].projects[index];
-        if (proj) {
-            proj.name = name;
-            proj.description = description;
-            proj.link = link;
-        }
+        if (proj) { proj.name = name; proj.description = description; proj.link = link; }
     } else {
         if (!projData.tabs[tab].projects) projData.tabs[tab].projects = [];
         projData.tabs[tab].projects.push({ name, description, link });
     }
-
     await supabaseClient.from('site_content').update({ data: projData }).eq('key', 'projects');
     closeWindow('win-editor-project');
 };
@@ -204,22 +186,15 @@ window.submitEditorDownload = async function(id) {
     const description = document.getElementById('editor-dl-desc').value.trim();
     const url = document.getElementById('editor-dl-url').value.trim();
     if (!name || !url) return;
-
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
     let downloads = data ? data.data : [];
-
     if (id !== -1) {
         const dl = downloads.find(d => d.id === id);
-        if (dl) {
-            dl.name = name;
-            dl.description = description;
-            dl.url = url;
-        }
+        if (dl) { dl.name = name; dl.description = description; dl.url = url; }
     } else {
         const nextId = downloads.length > 0 ? Math.max(...downloads.map(d => d.id)) + 1 : 1;
         downloads.push({ id: nextId, name, description, url });
     }
-
     await supabaseClient.from('site_content').update({ data: downloads }).eq('key', 'downloads');
     closeWindow('win-editor-download');
 };
@@ -262,30 +237,15 @@ window.toggleMaximizeWindow = function(id) {
     const win = document.getElementById(id);
     if (!win) return;
     const btn = win.querySelector('.ascii-maximize-btn');
-    const PAD = 8; // 5-10px padding when maximized
-
+    const PAD = 8;
     if (win.dataset.maximized === 'true') {
         const prev = JSON.parse(win.dataset.prevBounds || '{}');
-        win.style.top = prev.top || '';
-        win.style.left = prev.left || '';
-        win.style.right = prev.right || '';
-        win.style.bottom = prev.bottom || '';
-        win.style.width = prev.width || '';
-        win.style.height = prev.height || '';
+        win.style.top = prev.top || ''; win.style.left = prev.left || ''; win.style.right = prev.right || ''; win.style.bottom = prev.bottom || ''; win.style.width = prev.width || ''; win.style.height = prev.height || '';
         win.dataset.maximized = 'false';
         if (btn) btn.textContent = '□';
     } else {
-        win.dataset.prevBounds = JSON.stringify({
-            top: win.style.top, left: win.style.left,
-            right: win.style.right, bottom: win.style.bottom,
-            width: win.style.width, height: win.style.height
-        });
-        win.style.top = PAD + 'px';
-        win.style.left = PAD + 'px';
-        win.style.right = PAD + 'px';
-        win.style.bottom = PAD + 'px';
-        win.style.width = 'auto';
-        win.style.height = 'auto';
+        win.dataset.prevBounds = JSON.stringify({ top: win.style.top, left: win.style.left, right: win.style.right, bottom: win.style.bottom, width: win.style.width, height: win.style.height });
+        win.style.top = PAD + 'px'; win.style.left = PAD + 'px'; win.style.right = PAD + 'px'; win.style.bottom = PAD + 'px'; win.style.width = 'auto'; win.style.height = 'auto';
         win.dataset.maximized = 'true';
         if (btn) btn.textContent = '❐';
     }
@@ -301,10 +261,7 @@ function addTaskbarItem(id, title) {
     btn.textContent = title;
     btn.onclick = () => {
         const win = document.getElementById(id);
-        if (win) {
-            win.style.display = 'flex';
-            win.style.zIndex = ++window.highestZ;
-        }
+        if (win) { win.style.display = 'flex'; win.style.zIndex = ++window.highestZ; }
         btn.remove();
     };
     container.appendChild(btn);
@@ -322,8 +279,7 @@ function makeResizable(win) {
 }
 
 function getResizeHandleStyle(dir) {
-    const size = '8px';
-    const offset = '-4px';
+    const size = '8px'; const offset = '-4px';
     let style = `position: absolute; z-index: 10000; background: transparent;`;
     if (dir === 'n') style += `top: ${offset}; left: 15px; right: 15px; height: ${size}; cursor: n-resize;`;
     if (dir === 's') style += `bottom: ${offset}; left: 4px; right: 4px; height: ${size}; cursor: s-resize;`;
@@ -339,113 +295,67 @@ function getResizeHandleStyle(dir) {
 function setupResizeDrag(win, h, dir) {
     h.onmousedown = (e) => {
         if (win.dataset.maximized === 'true') return;
-        e.preventDefault();
-        e.stopPropagation();
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startWidth = win.offsetWidth;
-        const startHeight = win.offsetHeight;
-        const startLeft = win.offsetLeft;
-        const startTop = win.offsetTop;
-        
+        e.preventDefault(); e.stopPropagation();
+        const startX = e.clientX, startY = e.clientY;
+        const startWidth = win.offsetWidth, startHeight = win.offsetHeight;
+        const startLeft = win.offsetLeft, startTop = win.offsetTop;
         document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'none');
 
         const onMouseMove = (moveEvent) => {
-            const dx = moveEvent.clientX - startX;
-            const dy = moveEvent.clientY - startY;
-
-            if (dir.includes('e')) {
-                const maxW = window.innerWidth - win.offsetLeft;
-                win.style.width = clamp(startWidth + dx, 200, maxW) + 'px';
-            }
+            const dx = moveEvent.clientX - startX, dy = moveEvent.clientY - startY;
+            if (dir.includes('e')) win.style.width = clamp(startWidth + dx, 200, window.innerWidth - win.offsetLeft) + 'px';
             if (dir.includes('w')) {
-                const maxW = startWidth + startLeft;
-                const newW = clamp(startWidth - dx, 200, maxW);
-                const actualDx = startWidth - newW;
-                win.style.width = newW + 'px';
-                win.style.left = (startLeft + actualDx) + 'px';
+                const newW = clamp(startWidth - dx, 200, startWidth + startLeft);
+                win.style.width = newW + 'px'; win.style.left = (startLeft + (startWidth - newW)) + 'px';
             }
-            if (dir.includes('s')) {
-                const maxH = window.innerHeight - win.offsetTop - 50;
-                win.style.height = clamp(startHeight + dy, 100, maxH) + 'px';
-            }
+            if (dir.includes('s')) win.style.height = clamp(startHeight + dy, 100, window.innerHeight - win.offsetTop - 50) + 'px';
             if (dir.includes('n')) {
-                const maxH = startHeight + startTop;
-                const newH = clamp(startHeight - dy, 100, maxH);
-                const actualDy = startHeight - newH;
-                win.style.height = newH + 'px';
-                win.style.top = (startTop + actualDy) + 'px';
+                const newH = clamp(startHeight - dy, 100, startHeight + startTop);
+                win.style.height = newH + 'px'; win.style.top = (startTop + (startHeight - newH)) + 'px';
             }
         };
 
         const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
+            document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp);
             document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'auto');
-            
-            localStorage.setItem('win_pos_' + win.id, JSON.stringify({
-                top: win.style.top,
-                left: win.style.left
-            }));
-            localStorage.setItem('win_size_' + win.id, JSON.stringify({
-                width: win.style.width,
-                height: win.style.height
-            }));
+            localStorage.setItem('win_pos_' + win.id, JSON.stringify({ top: win.style.top, left: win.style.left }));
+            localStorage.setItem('win_size_' + win.id, JSON.stringify({ width: win.style.width, height: win.style.height }));
         };
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
     };
 }
 
 function makeDraggable(winId, handleId) {
-    const win = document.getElementById(winId);
-    const handle = document.getElementById(handleId);
+    const win = document.getElementById(winId); const handle = document.getElementById(handleId);
     if (!win || !handle) return;
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     
-    handle.onmousedown = dragMouseDown;
-    handle.ontouchstart = dragMouseDown;
+    handle.onmousedown = dragMouseDown; handle.ontouchstart = dragMouseDown;
 
     function dragMouseDown(e) {
         if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
         if (win.dataset.maximized === 'true') return;
-        e.preventDefault();
-        win.style.zIndex = ++window.highestZ;
-        if (e.type === 'touchstart') {
-            pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
-        } else {
-            pos3 = e.clientX; pos4 = e.clientY;
-        }
+        e.preventDefault(); win.style.zIndex = ++window.highestZ;
+        if (e.type === 'touchstart') { pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY; } 
+        else { pos3 = e.clientX; pos4 = e.clientY; }
         document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'none');
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-        document.ontouchend = closeDragElement;
-        document.ontouchmove = elementDrag;
+        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
+        document.ontouchend = closeDragElement; document.ontouchmove = elementDrag;
     }
 
     function elementDrag(e) {
         e.preventDefault();
         let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
         let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-        pos1 = pos3 - clientX; pos2 = pos4 - clientY;
-        pos3 = clientX; pos4 = clientY;
-        
-        let newTop = win.offsetTop - pos2;
-        let newLeft = win.offsetLeft - pos1;
-        
-        const maxLeft = window.innerWidth - win.offsetWidth;
-        const maxTop = window.innerHeight - win.offsetHeight - 50;
-        
-        win.style.top = clamp(newTop, 0, maxTop) + "px";
-        win.style.left = clamp(newLeft, 0, maxLeft) + "px";
-        win.style.bottom = 'auto';
-        win.style.right = 'auto';
+        pos1 = pos3 - clientX; pos2 = pos4 - clientY; pos3 = clientX; pos4 = clientY;
+        let newTop = win.offsetTop - pos2, newLeft = win.offsetLeft - pos1;
+        win.style.top = clamp(newTop, 0, window.innerHeight - win.offsetHeight - 50) + "px";
+        win.style.left = clamp(newLeft, 0, window.innerWidth - win.offsetWidth) + "px";
+        win.style.bottom = 'auto'; win.style.right = 'auto';
     }
 
     function closeDragElement() {
-        document.onmouseup = null; document.onmousemove = null;
-        document.ontouchend = null; document.ontouchmove = null;
+        document.onmouseup = null; document.onmousemove = null; document.ontouchend = null; document.ontouchmove = null;
         document.querySelectorAll('.page-iframe').forEach(ifr => ifr.style.pointerEvents = 'auto');
         localStorage.setItem('win_pos_' + winId, JSON.stringify({top: win.style.top, left: win.style.left}));
     }
@@ -490,23 +400,30 @@ async function initAuth() {
     handleUserSession(session);
     supabaseClient.auth.onAuthStateChange((_event, session) => {
         handleUserSession(session);
-        const iframes = document.querySelectorAll('.page-iframe');
-        iframes.forEach(ifr => {
-            if (ifr.contentWindow) {
-                ifr.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
-            }
+        document.querySelectorAll('.page-iframe').forEach(ifr => {
+            if (ifr.contentWindow) ifr.contentWindow.postMessage({ type: 'auth-sync', session }, '*');
         });
     });
 }
 
-function handleUserSession(session) {
+async function handleUserSession(session) {
+    currentSession = session;
     const portal = document.getElementById('settings-admin-portal');
     if (!portal) return;
 
-    if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
-        isAdmin = true;
-        document.body.classList.add('is-admin');
-        renderAdminPortal(session.user.email);
+    if (session && session.user) {
+        const { data } = await supabaseClient.from('profiles').select('username').eq('id', session.user.id).single();
+        if (data) localStorage.setItem('chitchat_user_name', data.username);
+        
+        if (session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+            isAdmin = true;
+            document.body.classList.add('is-admin');
+            renderAuthPortal(session.user.email, data ? data.username : 'Unknown', true);
+        } else {
+            isAdmin = false;
+            document.body.classList.remove('is-admin');
+            renderAuthPortal(session.user.email, data ? data.username : 'Unknown', false);
+        }
     } else {
         isAdmin = false;
         document.body.classList.remove('is-admin');
@@ -519,33 +436,47 @@ function handleUserSession(session) {
 function renderLoginPortal() {
     const portal = document.getElementById('settings-admin-portal');
     portal.innerHTML = `
-        <input type="text" id="admin-email-field" class="ascii-input" style="margin:4px 0;" value="3rr0r.d3v@gmail.com" readonly>
-        <input type="password" id="admin-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
-        <button class="btn-primary" style="width:100%;" onclick="submitAdminLogin()">Login</button>
+        <div style="font-size:11px; color:hsl(var(--muted-foreground)); margin-bottom:8px; text-transform:uppercase; font-weight:bold;">Authentication</div>
+        <input type="email" id="auth-email-field" class="ascii-input" style="margin-bottom:6px;" placeholder="Email">
+        <input type="password" id="auth-password-field" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
+        <div style="display:flex; gap:8px;">
+            <button class="btn-primary" style="flex:1;" onclick="submitAuth('login')">Login</button>
+            <button class="btn-primary" style="flex:1; background:transparent; color:hsl(var(--foreground)); border-color:hsl(var(--border));" onclick="submitAuth('signup')">Sign Up</button>
+        </div>
     `;
 }
 
-async function submitAdminLogin() {
-    const email = document.getElementById('admin-email-field').value;
-    const password = document.getElementById('admin-password-field').value;
-    if (!password) return;
-    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) alert("Login Failed: " + error.message);
-}
-
-function renderAdminPortal(email) {
+function renderAuthPortal(email, username, isSuperAdmin) {
     const portal = document.getElementById('settings-admin-portal');
-    portal.innerHTML = `
+    let html = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span style="font-size:11px; color:hsl(var(--accent));">${email}</span>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+                <span style="font-size:13px; font-weight:bold; color:hsl(var(--foreground));">${username}</span>
+                <span style="font-size:10px; color:hsl(var(--accent));">${email}</span>
+            </div>
             <button class="ascii-btn del" onclick="supabaseClient.auth.signOut()">[ Logout ]</button>
         </div>
         
         <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
+            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">UPDATE PROFILE</label>
+            <div style="display:flex; gap:6px; margin-top:6px; margin-bottom:6px;">
+                <input type="text" id="auth-update-user" class="ascii-input" placeholder="New Username">
+                <button class="ascii-btn" onclick="updateUsername()" style="color:hsl(var(--accent));">[ Save ]</button>
+            </div>
+            <div style="display:flex; gap:6px;">
+                <input type="password" id="auth-update-pass" class="ascii-input" placeholder="New Password">
+                <button class="ascii-btn" onclick="updatePassword()" style="color:hsl(var(--accent));">[ Save ]</button>
+            </div>
+        </div>
+    `;
+
+    if (isSuperAdmin) {
+        html += `
+        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
-                <button id="show-hidden-btn" class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
-                <button id="hide-hidden-btn" class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
+                <button class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
+                <button class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
             </div>
         </div>
 
@@ -556,10 +487,68 @@ function renderAdminPortal(email) {
                 <textarea id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="resize:vertical; min-height:40px; width: 100%;"></textarea>
                 <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent)); align-self: flex-end;">[+ Add]</button>
             </div>
-        </div>
-    `;
-    renderManagerAnnouncements();
+        </div>`;
+    }
+
+    portal.innerHTML = html;
+    if (isSuperAdmin) renderManagerAnnouncements();
 }
+
+window.submitAuth = async function(action) {
+    const email = document.getElementById('auth-email-field').value;
+    const password = document.getElementById('auth-password-field').value;
+    if (!email || !password) return;
+    
+    if (action === 'signup') {
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) alert("Sign up failed: " + error.message);
+        else {
+            if (data.user) {
+                const randomUser = 'Player_' + Math.floor(Math.random() * 9999);
+                await supabaseClient.from('profiles').insert({ id: data.user.id, username: randomUser });
+            }
+            alert("Account created successfully. You are now logged in.");
+        }
+    } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) alert("Login failed: " + error.message);
+    }
+};
+
+window.updateUsername = async function() {
+    if (!currentSession) return;
+    const newName = document.getElementById('auth-update-user').value.trim();
+    if (!newName) return;
+    const { error } = await supabaseClient.from('profiles').update({ username: newName }).eq('id', currentSession.user.id);
+    if (error) {
+        alert("Failed to update username. " + (error.code === '23505' ? 'Name already taken.' : error.message));
+    } else {
+        localStorage.setItem('chitchat_user_name', newName);
+        document.getElementById('auth-update-user').value = '';
+        handleUserSession(currentSession); 
+        alert("Username updated!");
+    }
+};
+
+window.updatePassword = async function() {
+    if (!currentSession) return;
+    const newPass = document.getElementById('auth-update-pass').value;
+    if (!newPass) return;
+    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
+    if (error) alert("Failed to update password: " + error.message);
+    else {
+        document.getElementById('auth-update-pass').value = '';
+        alert("Password updated securely.");
+    }
+};
+
+window.clearLocalData = function() {
+    if (confirm("Are you sure you want to completely clear all local website data? This will clear game progress unless backed up to your account, reset window positions, and reset your theme.")) {
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload();
+    }
+};
 
 function renderManagerAnnouncements() {
     const listContainer = document.getElementById('ann-manager-list');
@@ -600,7 +589,7 @@ async function loadYAML(path) {
 
 async function loadAnnouncements() {
     try {
-        const { data, error } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data) applyAnnouncements(data.data);
         supabaseClient.channel('ann-realtime')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.announcements' },
@@ -611,7 +600,7 @@ async function loadAnnouncements() {
 
 function applyAnnouncements(data) {
     currentAnnouncements = data;
-    renderManagerAnnouncements();
+    if (isAdmin) renderManagerAnnouncements();
     
     const notifList = document.getElementById('notif-list');
     if (notifList) {
@@ -684,11 +673,7 @@ window.closeAnnouncement = function() {
     win.classList.add('fade-out');
     sessionStorage.setItem('announcement-closed', 'true');
     if (announcementInterval) clearInterval(announcementInterval);
-    
-    setTimeout(() => {
-        win.style.display = 'none';
-        win.classList.remove('fade-out');
-    }, 300);
+    setTimeout(() => { win.style.display = 'none'; win.classList.remove('fade-out'); }, 300);
 }
 
 async function initHomeDatabase() {
@@ -1091,6 +1076,22 @@ window.loadPage = async function(pageName, args = '') {
         }
         return;
     }
+    
+    if (pageName === 'witless') {
+        const winId = 'win-witless';
+        let existingWin = document.getElementById(winId);
+        if (existingWin) {
+            existingWin.style.display = 'flex';
+            existingWin.style.zIndex = ++window.highestZ;
+            const tbItem = document.getElementById('tb-item-' + winId);
+            if (tbItem) tbItem.remove();
+            return;
+        }
+        const contentHTML = `<iframe class="page-iframe" src="/storage/internal/pages/custom/witless.html"></iframe>`;
+        const bounds = getCenteredBounds(500, 560);
+        createWindow(winId, '1-S // THE WITLESS', '', contentHTML, bounds);
+        return;
+    }
 
     const winId = 'win-' + pageName;
     let existingWin = document.getElementById(winId);
@@ -1203,6 +1204,14 @@ window.openPreferences = () => {
 
 window.closePreferences = () => {
     document.getElementById('settings-window').style.display = 'none';
+};
+
+window.clearLocalData = function() {
+    if (confirm("Are you sure you want to completely clear all local website data? This will reset all minigame progress (unless saved to an account), window positions, and your theme settings.")) {
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload();
+    }
 };
 
 window.resetWindowPositions = function() {

@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
+    <!-- Add Supabase to the game -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         ::-webkit-scrollbar { display: none !important; }
@@ -48,9 +50,16 @@
             align-items: center;
             justify-content: center;
             padding: 30px 16px;
-            gap: 18px;
+            gap: 14px;
             -webkit-user-select: none;
             user-select: none;
+        }
+
+        .hud-row {
+            width: min(88vw, 460px);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
         }
 
         .hud {
@@ -63,6 +72,23 @@
         }
 
         .hud span { color: hsl(var(--accent)); font-weight: 700; }
+
+        .lb-btn {
+            background: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .lb-btn:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
 
         .board-wrap {
             position: relative;
@@ -138,6 +164,25 @@
             transition: opacity 0.4s ease-out;
         }
 
+        /* Leaderboard Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); padding: 24px; width: 90%; max-width: 400px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed hsl(var(--border)); padding-bottom: 10px; margin-bottom: 15px; }
+        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
+        .modal-close { background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer; font-size: 18px; font-weight: bold; }
+        .modal-close:hover { color: hsl(var(--destructive)); }
+        
+        .lb-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
+        .lb-tab { flex: 1; background: hsl(var(--background)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); padding: 6px; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: bold; text-transform: uppercase; text-align: center; }
+        .lb-tab.active { border-color: hsl(var(--accent)); color: hsl(var(--accent)); background: hsl(var(--accent) / 0.1); }
+        
+        .lb-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+        .lb-row { display: flex; justify-content: space-between; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); padding: 8px 12px; font-size: 12px; }
+        .lb-rank { color: hsl(var(--accent)); font-weight: bold; width: 28px; }
+        .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
+        .lb-score { font-weight: bold; }
+
         @media (max-width: 480px) {
             .hud { font-size: 11px; gap: 20px; }
         }
@@ -145,9 +190,12 @@
 </head>
 <body>
 
-    <div class="hud">
-        <div>LEVEL <span id="level-val">1</span></div>
-        <div>STREAK <span id="streak-val">0</span></div>
+    <div class="hud-row">
+        <div class="hud">
+            <div>LEVEL <span id="level-val">1</span></div>
+            <div>STREAK <span id="streak-val">0</span></div>
+        </div>
+        <button class="lb-btn" onclick="openLeaderboard()">Leaderboard</button>
     </div>
 
     <div class="board-wrap">
@@ -155,7 +203,52 @@
         <div id="flash"></div>
     </div>
 
+    <!-- Leaderboard Modal -->
+    <div id="lb-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Top Terminals</h2>
+                <button class="modal-close" onclick="closeLeaderboard()">×</button>
+            </div>
+            <div class="lb-tabs">
+                <button class="lb-tab active" id="tab-level" onclick="switchLbTab('level')">Highest Level</button>
+                <button class="lb-tab" id="tab-streak" onclick="switchLbTab('streak')">Best Streak</button>
+            </div>
+            <div class="lb-list" id="lb-list">
+                <!-- Data populated dynamically -->
+            </div>
+        </div>
+    </div>
+
     <script>
+        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let userProfile = null;
+        let currentLbTab = 'level';
+        async function initAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user) {
+                currentUser = session.user;
+                const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                userProfile = data;
+                checkAndSyncScore();
+            }
+            supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
+                currentUser = newSession?.user || null;
+                if (currentUser) {
+                    const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                    userProfile = data;
+                    checkAndSyncScore();
+                } else {
+                    userProfile = null;
+                }
+            });
+        }
+        initAuth();
+
         const COLOR_VAR = {
             white:  '160 50% 90%',
             red:    '0 70% 58%',
@@ -172,7 +265,7 @@
             pairs: [],
             blockers: [],
             cellMeta: [],
-            completed: [], // Now stores arrays of paths directly
+            completed: [],
             drag: null
         };
 
@@ -203,33 +296,28 @@
         }
 
         function computeConfig(level) {
-            const gridSize = Math.min(8, 3 + Math.floor((level - 1) / 4));
-            const maxPairsBySize = Math.max(1, Math.floor((gridSize * gridSize) / 6));
-            const pairCount = Math.min(maxPairsBySize, Math.min(6, 1 + Math.floor((level - 1) / 5)));
+            let gridSize = 3;
+            if (level >= 4) gridSize = 4;
+            if (level >= 9) gridSize = 5;
+            if (level >= 15) gridSize = 6;
+            if (level >= 22) gridSize = 7;
+            if (level >= 30) gridSize = 8;
 
-            let blockerCount;
-            if (level === 1) {
-                blockerCount = 1 + Math.floor(Math.random() * 2); // 1-2
-            } else {
-                blockerCount = Math.min(
-                    Math.floor((gridSize * gridSize) / 5) + 1,
-                    1 + Math.floor((level - 1) / 6) + Math.floor(Math.random() * 2)
-                );
-            }
+            let pairCount = 1;
+            if (level >= 6) pairCount = 2;
+            if (level >= 11) pairCount = 3;
+            if (level >= 18) pairCount = 4;
+            if (level >= 26) pairCount = 5;
 
-            let coloredCount = 0;
-            if (level >= 6) {
-                const colorChance = Math.min(0.9, (level - 6) * 0.05 + 0.15);
-                for (let i = 0; i < pairCount; i++) {
-                    if (Math.random() < colorChance) coloredCount++;
-                }
-                coloredCount = Math.min(coloredCount, 5, pairCount);
-            }
+            let blockerCount = 1 + Math.floor(Math.random() * 2);
+            if (gridSize >= 4) blockerCount += 1;
+            if (gridSize >= 5) blockerCount += 1;
+            if (gridSize >= 6) blockerCount += 1;
 
             const minLen = Math.max(2, Math.floor(gridSize * 0.6));
-            const maxLen = Math.max(minLen + 1, Math.floor(gridSize * 1.6));
+            const maxLen = Math.max(minLen + 1, Math.floor(gridSize * 1.5));
 
-            return { gridSize, pairCount, blockerCount, coloredCount, minLen, maxLen };
+            return { gridSize, pairCount, blockerCount, minLen, maxLen };
         }
 
         function generateRandomPath(gridSize, usedCells, minLen, maxLen) {
@@ -267,26 +355,22 @@
 
         function generateLevel(level) {
             const config = computeConfig(level);
-            const { gridSize, pairCount, blockerCount, coloredCount, minLen, maxLen } = config;
+            const { gridSize, pairCount, blockerCount, minLen, maxLen } = config;
+            const colorPool = ['white', 'red', 'blue', 'green', 'yellow', 'purple'];
 
             for (let attempt = 0; attempt < 25; attempt++) {
                 const usedCells = new Set();
                 const pairs = [];
-                const colorPool = shuffle(['red', 'blue', 'green', 'yellow', 'purple']);
-                let colorIdx = 0;
                 let ok = true;
-
-                const order = shuffle([...Array(pairCount).keys()]);
-                const coloredSet = new Set(order.slice(0, coloredCount));
 
                 for (let i = 0; i < pairCount; i++) {
                     const path = generateRandomPath(gridSize, usedCells, minLen, maxLen);
                     if (!path) { ok = false; break; }
                     path.forEach(cell => usedCells.add(cellKey(cell.r, cell.c)));
-                    const isColored = coloredSet.has(i);
+                    
                     pairs.push({
                         id: i,
-                        color: isColored ? colorPool[colorIdx++] : 'white',
+                        color: pairCount === 1 ? 'white' : colorPool[i + 1],
                         start: path[0],
                         end: path[path.length - 1]
                     });
@@ -433,6 +517,31 @@
             return false;
         }
 
+        function saveLocalProgress() {
+            localStorage.setItem('witless_save', JSON.stringify({ level: state.level, streak: state.streak }));
+        }
+
+        async function checkAndSyncScore() {
+            if (!currentUser || !userProfile) return;
+            let needsUpdate = false;
+            
+            if (state.level > (userProfile.max_level || 1)) {
+                userProfile.max_level = state.level;
+                needsUpdate = true;
+            }
+            if (state.streak > (userProfile.max_streak || 0)) {
+                userProfile.max_streak = state.streak;
+                needsUpdate = true;
+            }
+            
+            if (needsUpdate) {
+                await supabaseClient.from('profiles').update({
+                    max_level: userProfile.max_level,
+                    max_streak: userProfile.max_streak
+                }).eq('id', currentUser.id);
+            }
+        }
+
         function onPointerDown(e) {
             if (locked) return;
             const cell = cellFromPoint(e.clientX, e.clientY);
@@ -489,6 +598,14 @@
                 return;
             }
 
+            const endCell = drag.path[drag.path.length - 1];
+            const endMeta = state.cellMeta[endCell.r][endCell.c];
+
+            if (endMeta.type !== 'node') {
+                clearDragVisual(drag.path);
+                return;
+            }
+
             const valid = validatePath(drag);
 
             if (valid) {
@@ -497,11 +614,14 @@
                 flashBoard(false);
                 const totalPairs = state.pairs.length;
                 const done = state.completed.length;
+                
                 if (done >= totalPairs) {
                     lockFor(650);
                     setTimeout(() => {
                         state.level += 1;
                         state.streak += 1;
+                        saveLocalProgress();
+                        checkAndSyncScore();
                         startLevel(state.level);
                     }, 500);
                 }
@@ -511,8 +631,10 @@
                 lockFor(650);
                 setTimeout(() => {
                     state.streak = 0;
-                    state.level = 1;
-                    startLevel(1);
+                    saveLocalProgress();
+                    checkAndSyncScore();
+                    state.completed = [];
+                    render();
                 }, 500);
             }
         }
@@ -523,14 +645,14 @@
             const endCell = path[path.length - 1];
             const startMeta = state.cellMeta[startCell.r][startCell.c];
             const endMeta = state.cellMeta[endCell.r][endCell.c];
-            if (endMeta.type !== 'node') return false;
+
             if (endMeta.color !== startMeta.color) return false;
             if (sameCell(startCell, endCell)) return false;
 
             const seen = new Set();
             for (const cell of path) {
                 const key = cellKey(cell.r, cell.c);
-                if (seen.has(key)) return false; // Self-intersection
+                if (seen.has(key)) return false; 
                 seen.add(key);
                 if (cellIsCompleted(cell)) return false;
             }
@@ -564,11 +686,65 @@
             locked = true;
             setTimeout(() => { locked = false; }, ms);
         }
+        async function openLeaderboard() {
+            document.getElementById('lb-modal').classList.add('active');
+            fetchLeaderboard();
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('lb-modal').classList.remove('active');
+        }
+
+        function switchLbTab(tab) {
+            currentLbTab = tab;
+            document.getElementById('tab-level').classList.toggle('active', tab === 'level');
+            document.getElementById('tab-streak').classList.toggle('active', tab === 'streak');
+            fetchLeaderboard();
+        }
+
+        async function fetchLeaderboard() {
+            const listEl = document.getElementById('lb-list');
+            listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--muted-foreground)); padding: 20px;">Scanning terminals...</div>';
+            
+            const column = currentLbTab === 'level' ? 'max_level' : 'max_streak';
+            
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('username, max_level, max_streak')
+                .order(column, { ascending: false })
+                .limit(10);
+                
+            if (error || !data) {
+                listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--destructive)); padding: 20px;">Connection failed.</div>';
+                return;
+            }
+            
+            if (data.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--muted-foreground)); padding: 20px;">No terminal data found.</div>';
+                return;
+            }
+
+            listEl.innerHTML = data.map((player, idx) => `
+                <div class="lb-row">
+                    <span class="lb-rank">#${idx + 1}</span>
+                    <span class="lb-name">${player.username}</span>
+                    <span class="lb-score">${player[column]}</span>
+                </div>
+            `).join('');
+        }
 
         boardEl.addEventListener('pointerdown', onPointerDown);
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerUp);
+        const savedProgress = localStorage.getItem('witless_save');
+        if (savedProgress) {
+            try {
+                const parsed = JSON.parse(savedProgress);
+                state.level = parsed.level || 1;
+                state.streak = parsed.streak || 0;
+            } catch(e) {}
+        }
 
         startLevel(state.level);
     </script>

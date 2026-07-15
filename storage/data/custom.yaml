@@ -79,12 +79,6 @@ customPages:
         type:
           type: html
 
-      - id: witless
-        name: "The Witless"
-        path: ~/witless.html
-        type:
-          type: html
-
   archive:
     display: "Archives"
     sub:

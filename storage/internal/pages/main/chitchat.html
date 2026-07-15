@@ -509,13 +509,36 @@
         }
 
         function handleUserSession(session) {
-            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                isAdmin = true;
-                document.body.classList.add('is-admin');
-                document.getElementById('creator-badge-cb').checked = true;
+            const nameInput = document.getElementById('chat-name');
+            const savedName = localStorage.getItem('chitchat_user_name');
+            
+            if (session && session.user) {
+                nameInput.value = savedName || 'Player';
+                nameInput.disabled = true;
+                nameInput.style.opacity = '0.6';
+                
+                if (session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isAdmin = true;
+                    document.body.classList.add('is-admin');
+                    const cb = document.getElementById('creator-badge-cb');
+                    if (cb) cb.checked = true;
+                } else {
+                    isAdmin = false;
+                    document.body.classList.remove('is-admin');
+                }
             } else {
                 isAdmin = false;
                 document.body.classList.remove('is-admin');
+                
+                let anonId = localStorage.getItem('anon_device_id');
+                if (!anonId) {
+                    anonId = Math.floor(Math.random() * 9000 + 1000);
+                    localStorage.setItem('anon_device_id', anonId);
+                }
+                
+                nameInput.value = 'Anon#' + anonId;
+                nameInput.disabled = true;
+                nameInput.style.opacity = '0.6';
             }
             if (messagesList) renderMessages();
         }
