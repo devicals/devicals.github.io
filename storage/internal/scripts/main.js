@@ -978,7 +978,7 @@ async function loadCommitHistory() {
             `;
         }).join('');
 
-        createWindow('win-commits', 'Commit History', '', `<div style="display: flex; flex-direction: column;">${rows}</div>`,
+        createWindow('win-commits', 'commit history', '', `<div style="display: flex; flex-direction: column;">${rows}</div>`,
             {right: '20px', top: '20px', width: '420px', height: '420px'});
     } catch (e) {}
 }
@@ -1032,6 +1032,7 @@ async function loadCustomPages() {
 
     container.insertAdjacentHTML('beforeend', `
         <div class="nav-folder">System/</div>
+        <div class="nav-item">├─ <span class="fake-link" onclick="window.loadPage('commits')">Commit History</span></div>
         <div class="nav-item">└─ <span class="fake-link" onclick="openPreferences()">Settings</span></div>
     `);
 }

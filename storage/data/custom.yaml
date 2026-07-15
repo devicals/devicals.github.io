@@ -1,13 +1,4 @@
 customPages:
-  system:
-    display: "System"
-    sub:
-      - id: commits
-        name: "Commit History"
-        path: ~/commits.html
-        type:
-          type: html
-
   community:
     display: "Community"
     sub:
