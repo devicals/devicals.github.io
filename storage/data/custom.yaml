@@ -1,4 +1,13 @@
 customPages:
+  system:
+    display: "System"
+    sub:
+      - id: commits
+        name: "Commit History"
+        path: ~/commits.html
+        type:
+          type: html
+
   community:
     display: "Community"
     sub:
@@ -76,6 +85,12 @@ customPages:
       - id: zato
         name: "Z.A.T.O Live Tier List"
         path: ~/zato.html
+        type:
+          type: html
+
+      - id: witless
+        name: "The Witless"
+        path: ~/witless.html
         type:
           type: html
 

@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Control') {
+    if (e.key === 'Alt') {
         window.toggleNav();
     }
 });
@@ -817,6 +817,7 @@ async function renderHomePage() {
     refreshDiscordUI();
 
     loadLatestBlogPreview();
+    loadCommitHistory();
 }
 
 function renderGridItems(arr, containerId, category, textMapper, linkMapper) {
@@ -930,16 +931,55 @@ async function loadLatestBlogPreview() {
             const dateDisplay = latest.date.replace(/\//g, '-');
             
             createWindow('win-blog', 'latest blog', dateDisplay, `
-                <div style="cursor: pointer; line-height: 1.6; height: 100%; display: flex; flex-direction: column;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
-                    <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
-                    <div style="color:hsl(var(--foreground)); flex-grow: 1; overflow: hidden; position: relative;">
-                        <div style="mask-image: linear-gradient(to bottom, black 50%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%); height: 100%; white-space: pre-wrap;">
-                            ${parsedHTML}
-                        </div>
+                <div style="cursor: pointer; line-height: 1.6; display: flex; flex-direction: column; gap: 8px;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
+                    <div style="color:hsl(var(--accent)); font-weight:bold; font-size: 16px;">${latest.title}</div>
+                    <div style="color:hsl(var(--foreground)); white-space: pre-wrap;">
+                        ${parsedHTML}
                     </div>
                 </div>
-            `, {right: '20px', top: '20px', width: '500px', height: '280px'});
+            `, {right: '460px', top: '20px', width: '500px', height: '280px'});
         }
+    } catch (e) {}
+}
+
+async function loadCommitHistory() {
+    try {
+        const res = await fetch('https://api.github.com/repos/devicals/devicals.github.io/commits');
+        if (!res.ok) return;
+        const commits = await res.json();
+        if (!Array.isArray(commits) || commits.length === 0) return;
+
+        const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+        const rows = commits.map((c, idx) => {
+            const sha = (c.sha || '').substring(0, 7);
+            const rawMessage = c.commit?.message || '';
+            const lines = rawMessage.split('\n');
+            const summary = escapeHTML(lines[0]);
+            const body = escapeHTML(lines.slice(1).join('\n').trim());
+            const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
+            const dateStr = c.commit?.author?.date;
+            const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
+            const isLast = idx === commits.length - 1;
+
+            return `
+                <div style="display: flex; gap: 10px;">
+                    <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
+                        <div style="width: 1px; flex: 1; background: hsl(var(--border)); visibility: ${idx === 0 ? 'hidden' : 'visible'};"></div>
+                        <div style="color: hsl(var(--accent)); font-weight: bold; line-height: 1; font-size: 14px;">&#9679;</div>
+                        <div style="width: 1px; flex: 1; background: hsl(var(--border)); visibility: ${isLast ? 'hidden' : 'visible'};"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0; padding: 10px 0; ${isLast ? '' : 'border-bottom: 1px dashed hsl(var(--border) / 0.3);'}">
+                        <div style="white-space: pre-wrap; word-break: break-word; color: hsl(var(--foreground));">${summary}</div>
+                        ${body ? `<div style="white-space: pre-wrap; word-break: break-word; color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 4px;">${body}</div>` : ''}
+                        <div style="color: hsl(var(--muted-foreground)); font-size: 11px; margin-top: 4px;">${sha} &middot; ${author} &middot; ${dateDisplay}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        createWindow('win-commits', 'Commit History', '', `<div style="display: flex; flex-direction: column;">${rows}</div>`,
+            {right: '20px', top: '20px', width: '420px', height: '420px'});
     } catch (e) {}
 }
 
@@ -1082,7 +1122,7 @@ window.loadPage = async function(pageName, args = '') {
         targetUrl = args ? `${pageBase}${pageName}.html#${args}` : `${pageBase}${pageName}.html`;
     }
     
-    const contentHTML = `<iframe class="page-iframe" src="${targetUrl}" style="width: 100%; height: 100%; border: none; background: transparent; display: block;"></iframe>`;
+    const contentHTML = `<iframe class="page-iframe" src="${targetUrl}"></iframe>`;
     const bounds = { left: '50px', top: '50px', width: '800px', height: '600px' };
     createWindow(winId, title, '', contentHTML, bounds);
 };

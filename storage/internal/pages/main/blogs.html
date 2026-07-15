@@ -22,6 +22,8 @@
             height: 100vh; 
             overflow: hidden;
             background: transparent;
+            display: flex;
+            flex-direction: column;
         }
 
         .blog-content { word-wrap: break-word; line-height: 1.6; font-size: 13px; white-space: pre-wrap; }
@@ -73,6 +75,7 @@
             display: none;
             padding: 15px;
             padding-bottom: 0;
+            flex-shrink: 0;
         }
         body.is-admin #add-blog-container {
             display: block;
@@ -81,7 +84,7 @@
 </head>
 <body>
     
-    <div style="padding: 15px; border-bottom: 1px dashed hsl(var(--border)); display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2);">
+    <div style="padding: 15px; border-bottom: 1px dashed hsl(var(--border)); display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); flex-shrink: 0;">
         <label style="font-size:10px; color:hsl(var(--accent)); font-weight: bold;">JUMP TO ID:</label>
         <input type="number" id="blog-id-input" class="ascii-input" style="width:80px; margin: 0; padding: 4px;" placeholder="ID">
         <button onclick="window.jumpToBlog()" class="ascii-btn" style="border: 1px solid hsl(var(--border)); padding: 4px 10px;">Go</button>
@@ -92,7 +95,7 @@
         <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; width: 100%;" onclick="openAddBlogModal()">+ Create New Blog</button>
     </div>
 
-    <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 500px;"></div>
+    <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 0;"></div>
     
     <script type="module">
         import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
@@ -226,13 +229,15 @@
             const container = document.getElementById('tab-container');
             const cards = container.querySelectorAll('.blog-post-window');
             const containerWidth = container.clientWidth || window.innerWidth;
+            const containerHeight = container.clientHeight || window.innerHeight;
             
-            const cardWidth = Math.min(containerWidth - 40, 800); 
-            const cardHeight = 280; 
+            const cardWidth = Math.max(containerWidth - 40, 200); 
+            const cardHeight = Math.max(containerHeight - 40, 280); 
             const gap = 20;
             const padding = 20;
 
-            // Vertical list layout: single column, cards stacked top-to-bottom
+            // Vertical list layout: single column, cards stacked top-to-bottom,
+            // each card sized to fill the available width/height of the window.
             let maxTop = 0;
 
             cards.forEach((card, idx) => {
@@ -241,12 +246,12 @@
                     const pos = JSON.parse(savedPos);
                     card.style.left = pos.left;
                     card.style.top = pos.top;
-                    card.style.width = cardWidth + 'px';
                 } else {
                     card.style.left = padding + 'px';
                     card.style.top = (padding + idx * (cardHeight + gap)) + 'px';
-                    card.style.width = cardWidth + 'px';
                 }
+                card.style.width = cardWidth + 'px';
+                card.style.height = cardHeight + 'px';
                 
                 const topVal = parseInt(card.style.top) || 0;
                 if (topVal > maxTop) maxTop = topVal;
@@ -264,6 +269,12 @@
             }
             dummy.style.top = (maxTop + cardHeight + padding) + 'px';
         }
+
+        let resizeDebounceTimer = null;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeDebounceTimer);
+            resizeDebounceTimer = setTimeout(layoutCards, 100);
+        });
 
         function clamp(val, min, max) {
             return Math.max(min, Math.min(max, val));

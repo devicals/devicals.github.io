@@ -5,8 +5,8 @@ if (window.self === window.top) {
 }
 
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Control') {
-        window.parent.postMessage({ type: 'ctrl-pressed' }, '*');
+    if (e.key === 'Alt') {
+        window.parent.postMessage({ type: 'alt-pressed' }, '*');
     }
 });
 
