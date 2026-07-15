@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <!-- Add Supabase to the game -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -90,6 +89,11 @@
             color: hsl(var(--accent));
         }
 
+        .tooltip-container { position: relative; display: inline-flex; align-items: center; justify-content: center; cursor: help; pointer-events: auto; }
+        .info-icon { font-size: 13px; font-weight: bold; font-family: monospace; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); border-radius: 50% !important; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+        .tooltip-text { visibility: hidden; width: 200px; background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); text-align: center; padding: 8px 12px; font-size: 11px; position: absolute; z-index: 2500; bottom: 130%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; pointer-events: none; text-transform: none; line-height: 1.4; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+
         .board-wrap {
             position: relative;
             width: min(88vw, 460px);
@@ -153,18 +157,9 @@
         }
 
         #flash.bad { background: hsl(var(--destructive) / 0.4); }
+        #flash.show { opacity: 1; transition: opacity 0.05s linear; }
+        #flash.fade { opacity: 0; transition: opacity 0.4s ease-out; }
 
-        #flash.show {
-            opacity: 1;
-            transition: opacity 0.05s linear;
-        }
-
-        #flash.fade {
-            opacity: 0;
-            transition: opacity 0.4s ease-out;
-        }
-
-        /* Leaderboard Modal */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
         .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); padding: 24px; width: 90%; max-width: 400px; }
@@ -195,7 +190,13 @@
             <div>LEVEL <span id="level-val">1</span></div>
             <div>STREAK <span id="streak-val">0</span></div>
         </div>
-        <button class="lb-btn" onclick="openLeaderboard()">Leaderboard</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <div class="tooltip-container">
+                <div class="info-icon">?</div>
+                <div class="tooltip-text">Connect all matching nodes AND fill every empty square to complete the puzzle!</div>
+            </div>
+            <button class="lb-btn" onclick="openLeaderboard()">Leaderboard</button>
+        </div>
     </div>
 
     <div class="board-wrap">
@@ -207,7 +208,13 @@
     <div id="lb-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Top Terminals</h2>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <h2>Top Terminals</h2>
+                    <div class="tooltip-container">
+                        <div class="info-icon">i</div>
+                        <div class="tooltip-text">To save your score to the leaderboard, you must be logged in to your account via Settings!</div>
+                    </div>
+                </div>
                 <button class="modal-close" onclick="closeLeaderboard()">×</button>
             </div>
             <div class="lb-tabs">
@@ -296,104 +303,91 @@
         }
 
         function computeConfig(level) {
-            let gridSize = 3;
-            if (level >= 4) gridSize = 4;
-            if (level >= 9) gridSize = 5;
-            if (level >= 15) gridSize = 6;
-            if (level >= 22) gridSize = 7;
-            if (level >= 30) gridSize = 8;
-
-            let pairCount = 1;
-            if (level >= 6) pairCount = 2;
-            if (level >= 11) pairCount = 3;
-            if (level >= 18) pairCount = 4;
-            if (level >= 26) pairCount = 5;
-
-            let blockerCount = 1 + Math.floor(Math.random() * 2);
-            if (gridSize >= 4) blockerCount += 1;
-            if (gridSize >= 5) blockerCount += 1;
-            if (gridSize >= 6) blockerCount += 1;
-
-            const minLen = Math.max(2, Math.floor(gridSize * 0.6));
-            const maxLen = Math.max(minLen + 1, Math.floor(gridSize * 1.5));
-
-            return { gridSize, pairCount, blockerCount, minLen, maxLen };
+            if (level === 1) return { gridSize: 3, pairCount: 1, blockerCount: 0 };
+            if (level === 2) return { gridSize: 3, pairCount: 1, blockerCount: 1 };
+            if (level === 3) return { gridSize: 3, pairCount: 2, blockerCount: 0 };
+            if (level === 4) return { gridSize: 4, pairCount: 2, blockerCount: 2 };
+            if (level === 5) return { gridSize: 4, pairCount: 3, blockerCount: 1 };
+            
+            let gridSize = 4 + Math.floor((level - 5) / 5);
+            gridSize = Math.min(gridSize, 8);
+            
+            let pairCount = 2 + Math.floor((level - 3) / 4);
+            pairCount = Math.min(pairCount, 5);
+            
+            let blockerCount = 1 + Math.floor(Math.random() * 3);
+            if (gridSize >= 6) blockerCount += 2;
+            
+            return { gridSize, pairCount, blockerCount };
         }
-
-        function generateRandomPath(gridSize, usedCells, minLen, maxLen) {
-            for (let attempt = 0; attempt < 40; attempt++) {
-                const start = { r: Math.floor(Math.random() * gridSize), c: Math.floor(Math.random() * gridSize) };
-                if (usedCells.has(cellKey(start.r, start.c))) continue;
-
-                const path = [start];
-                const localUsed = new Set([cellKey(start.r, start.c)]);
-                const targetLen = minLen + Math.floor(Math.random() * (maxLen - minLen + 1));
-
-                let lastDir = null;
-                while (path.length < targetLen) {
-                    const cur = path[path.length - 1];
-                    let cands = neighbors(cur.r, cur.c, gridSize).filter(n =>
-                        !usedCells.has(cellKey(n.r, n.c)) && !localUsed.has(cellKey(n.r, n.c))
-                    );
-                    if (cands.length === 0) break;
-
-                    if (lastDir && Math.random() < 0.35) {
-                        const straight = cands.find(n => n.r - cur.r === lastDir.r && n.c - cur.c === lastDir.c);
-                        if (straight) cands = [straight];
-                    }
-
-                    const next = cands[Math.floor(Math.random() * cands.length)];
-                    lastDir = { r: next.r - cur.r, c: next.c - cur.c };
-                    path.push(next);
-                    localUsed.add(cellKey(next.r, next.c));
-                }
-
-                if (path.length >= Math.max(2, minLen)) return path;
-            }
-            return null;
-        }
-
         function generateLevel(level) {
-            const config = computeConfig(level);
-            const { gridSize, pairCount, blockerCount, minLen, maxLen } = config;
-            const colorPool = ['white', 'red', 'blue', 'green', 'yellow', 'purple'];
-
-            for (let attempt = 0; attempt < 25; attempt++) {
-                const usedCells = new Set();
-                const pairs = [];
-                let ok = true;
-
-                for (let i = 0; i < pairCount; i++) {
-                    const path = generateRandomPath(gridSize, usedCells, minLen, maxLen);
-                    if (!path) { ok = false; break; }
-                    path.forEach(cell => usedCells.add(cellKey(cell.r, cell.c)));
-                    
-                    pairs.push({
-                        id: i,
-                        color: pairCount === 1 ? 'white' : colorPool[i + 1],
-                        start: path[0],
-                        end: path[path.length - 1]
-                    });
+            let config = computeConfig(level);
+            
+            for(let attempt = 0; attempt < 2000; attempt++) {
+                let unvisited = new Set();
+                for(let r=0; r<config.gridSize; r++) {
+                    for(let c=0; c<config.gridSize; c++) unvisited.add(cellKey(r, c));
                 }
-
-                if (!ok) continue;
-
-                const emptyCells = [];
-                for (let r = 0; r < gridSize; r++) {
-                    for (let c = 0; c < gridSize; c++) {
-                        if (!usedCells.has(cellKey(r, c))) emptyCells.push({ r, c });
+                
+                let blockers = [];
+                let cellsArr = Array.from(unvisited);
+                shuffle(cellsArr);
+                for(let i=0; i<config.blockerCount; i++) {
+                    let bKey = cellsArr[i];
+                    unvisited.delete(bKey);
+                    blockers.push({r: parseInt(bKey.split(',')[0]), c: parseInt(bKey.split(',')[1])});
+                }
+                
+                let paths = [];
+                let validSeeds = true;
+                let remainingCells = Array.from(unvisited);
+                shuffle(remainingCells);
+                
+                for(let i=0; i<config.pairCount; i++) {
+                    if (remainingCells.length === 0) { validSeeds = false; break; }
+                    let sKey = remainingCells.pop();
+                    unvisited.delete(sKey);
+                    let r = parseInt(sKey.split(',')[0]);
+                    let c = parseInt(sKey.split(',')[1]);
+                    paths.push([{r, c}]);
+                }
+                
+                if (!validSeeds) continue;
+                let stuckCount = 0;
+                while(unvisited.size > 0 && stuckCount < paths.length) {
+                    stuckCount = 0;
+                    for(let i=0; i<paths.length; i++) {
+                        let path = paths[i];
+                        let head = path[path.length - 1];
+                        let n = neighbors(head.r, head.c, config.gridSize).filter(x => unvisited.has(cellKey(x.r, x.c)));
+                        if (n.length > 0) {
+                            let next = n[Math.floor(Math.random() * n.length)];
+                            path.push(next);
+                            unvisited.delete(cellKey(next.r, next.c));
+                        } else {
+                            stuckCount++;
+                        }
                     }
                 }
-                shuffle(emptyCells);
-                const blockers = emptyCells.slice(0, Math.min(blockerCount, emptyCells.length));
-
-                return { gridSize, pairs, blockers };
+                unvisited.forEach(uKey => {
+                    blockers.push({r: parseInt(uKey.split(',')[0]), c: parseInt(uKey.split(',')[1])});
+                });
+                
+                if (paths.every(p => p.length >= 2)) {
+                    const colorPool = ['white', 'red', 'blue', 'green', 'yellow', 'purple'];
+                    let pairs = paths.map((p, i) => ({
+                        id: i,
+                        color: config.pairCount === 1 ? 'white' : colorPool[(i % 5) + 1],
+                        start: p[0],
+                        end: p[p.length - 1]
+                    }));
+                    return { gridSize: config.gridSize, pairs, blockers };
+                }
             }
-
             return {
                 gridSize: 3,
                 pairs: [{ id: 0, color: 'white', start: { r: 0, c: 0 }, end: { r: 0, c: 1 } }],
-                blockers: []
+                blockers: [{r:0,c:2},{r:1,c:0},{r:1,c:1},{r:1,c:2},{r:2,c:0},{r:2,c:1},{r:2,c:2}]
             };
         }
 
@@ -460,9 +454,7 @@
             });
         }
 
-        function getCellEl(r, c) {
-            return boardEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
-        }
+        function getCellEl(r, c) { return boardEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
 
         function paintPath(path, color, permanent) {
             path.forEach(cell => {
@@ -504,10 +496,7 @@
             return { r: from.r, c: from.c + Math.sign(to.c - from.c) };
         }
 
-        function isAdjacent(a, b) {
-            return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1;
-        }
-
+        function isAdjacent(a, b) { return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1; }
         function sameCell(a, b) { return a.r === b.r && a.c === b.c; }
 
         function cellIsCompleted(cell) {
@@ -516,29 +505,37 @@
             }
             return false;
         }
+        
+        function checkAllCellsFilled() {
+            let filledCount = 0;
+            state.completed.forEach(p => filledCount += p.length);
+            const totalPlayable = (state.gridSize * state.gridSize) - state.blockers.length;
+            return filledCount === totalPlayable;
+        }
 
         function saveLocalProgress() {
             localStorage.setItem('witless_save', JSON.stringify({ level: state.level, streak: state.streak }));
         }
 
         async function checkAndSyncScore() {
-            if (!currentUser || !userProfile) return;
-            let needsUpdate = false;
-            
-            if (state.level > (userProfile.max_level || 1)) {
-                userProfile.max_level = state.level;
-                needsUpdate = true;
-            }
-            if (state.streak > (userProfile.max_streak || 0)) {
-                userProfile.max_streak = state.streak;
-                needsUpdate = true;
-            }
-            
-            if (needsUpdate) {
-                await supabaseClient.from('profiles').update({
-                    max_level: userProfile.max_level,
-                    max_streak: userProfile.max_streak
-                }).eq('id', currentUser.id);
+            if (!currentUser) return;
+            let currentLevel = state.level;
+            let currentStreak = state.streak;
+
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            let newMaxLevel = Math.max(currentLevel, profile?.max_level || 1);
+            let newMaxStreak = Math.max(currentStreak, profile?.max_streak || 0);
+            let username = profile?.username || localStorage.getItem('chitchat_user_name') || ('Player_' + Math.floor(Math.random() * 9999));
+
+            const { error } = await supabaseClient.from('profiles').upsert({
+                id: currentUser.id,
+                username: username,
+                max_level: newMaxLevel,
+                max_streak: newMaxStreak
+            });
+
+            if (!error && !userProfile) {
+                userProfile = { id: currentUser.id, username, max_level: newMaxLevel, max_streak: newMaxStreak };
             }
         }
 
@@ -616,14 +613,28 @@
                 const done = state.completed.length;
                 
                 if (done >= totalPairs) {
-                    lockFor(650);
-                    setTimeout(() => {
-                        state.level += 1;
-                        state.streak += 1;
-                        saveLocalProgress();
-                        checkAndSyncScore();
-                        startLevel(state.level);
-                    }, 500);
+                    if (checkAllCellsFilled()) {
+                        lockFor(650);
+                        setTimeout(() => {
+                            state.level += 1;
+                            state.streak += 1;
+                            saveLocalProgress();
+                            checkAndSyncScore();
+                            startLevel(state.level);
+                        }, 500);
+                    } else {
+                        state.completed.pop();
+                        clearDragVisual(drag.path);
+                        flashBoard(true);
+                        lockFor(650);
+                        setTimeout(() => {
+                            state.streak = 0;
+                            saveLocalProgress();
+                            checkAndSyncScore();
+                            state.completed = [];
+                            render();
+                        }, 500);
+                    }
                 }
             } else {
                 clearDragVisual(drag.path);

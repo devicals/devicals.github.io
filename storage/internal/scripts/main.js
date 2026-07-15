@@ -412,17 +412,26 @@ async function handleUserSession(session) {
     if (!portal) return;
 
     if (session && session.user) {
+        let username = 'Player';
         const { data } = await supabaseClient.from('profiles').select('username').eq('id', session.user.id).single();
-        if (data) localStorage.setItem('chitchat_user_name', data.username);
+        
+        if (data && data.username) {
+            username = data.username;
+        } else {
+            username = localStorage.getItem('chitchat_user_name') || ('Player_' + Math.floor(Math.random() * 9999));
+            await supabaseClient.from('profiles').upsert({ id: session.user.id, username: username });
+        }
+        
+        localStorage.setItem('chitchat_user_name', username);
         
         if (session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
             isAdmin = true;
             document.body.classList.add('is-admin');
-            renderAuthPortal(session.user.email, data ? data.username : 'Unknown', true);
+            renderAuthPortal(session.user.email, username, true);
         } else {
             isAdmin = false;
             document.body.classList.remove('is-admin');
-            renderAuthPortal(session.user.email, data ? data.username : 'Unknown', false);
+            renderAuthPortal(session.user.email, username, false);
         }
     } else {
         isAdmin = false;
@@ -460,12 +469,12 @@ function renderAuthPortal(email, username, isSuperAdmin) {
         <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
             <label style="color:hsl(var(--muted-foreground)); font-size:10px;">UPDATE PROFILE</label>
             <div style="display:flex; gap:6px; margin-top:6px; margin-bottom:6px;">
-                <input type="text" id="auth-update-user" class="ascii-input" placeholder="New Username">
-                <button class="ascii-btn" onclick="updateUsername()" style="color:hsl(var(--accent));">[ Save ]</button>
+                <input type="text" id="auth-update-user" class="ascii-input" placeholder="New Username" style="margin:0;">
+                <button class="btn-primary" onclick="updateUsername()" style="padding: 6px 12px; margin:0;">Save</button>
             </div>
             <div style="display:flex; gap:6px;">
-                <input type="password" id="auth-update-pass" class="ascii-input" placeholder="New Password">
-                <button class="ascii-btn" onclick="updatePassword()" style="color:hsl(var(--accent));">[ Save ]</button>
+                <input type="password" id="auth-update-pass" class="ascii-input" placeholder="New Password" style="margin:0;">
+                <button class="btn-primary" onclick="updatePassword()" style="padding: 6px 12px; margin:0;">Save</button>
             </div>
         </div>
     `;
