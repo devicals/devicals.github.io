@@ -933,7 +933,7 @@ async function loadLatestBlogPreview() {
             createWindow('win-blog', 'latest blog', dateDisplay, `
                 <div style="cursor: pointer; line-height: 1.6; display: flex; flex-direction: column; gap: 8px;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
                     <div style="color:hsl(var(--accent)); font-weight:bold; font-size: 16px;">${latest.title}</div>
-                    <div style="color:hsl(var(--foreground)); white-space: pre-wrap;">
+                    <div style="color:hsl(var(--foreground));">
                         ${parsedHTML}
                     </div>
                 </div>
