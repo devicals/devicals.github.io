@@ -4,158 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Witless</title>
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="/storage/internal/scripts/embed-detect.js"></script>
     <script src="/storage/internal/scripts/theme-manager.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <style>
         ::-webkit-scrollbar { display: none !important; }
-        * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        * { scrollbar-width: none !important; -ms-overflow-style: none !important; margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
         :root {
-            --background: 246 13% 5%;
-            --foreground: 160 50% 80%;
-            --card: 246 13% 5%;
-            --card-foreground: 160 50% 80%;
-            --accent: 160 100% 70%;
-            --accent-foreground: 0 0% 0%;
-            --border: 160 50% 50%;
-            --muted-foreground: 160 30% 50%;
+            --background: 246 13% 5%; --foreground: 160 50% 80%; --card: 246 13% 5%; --card-foreground: 160 50% 80%;
+            --accent: 160 100% 70%; --accent-foreground: 0 0% 0%; --border: 160 50% 50%; --muted-foreground: 160 30% 50%;
             --destructive: 0 80% 60%;
-
-            --c-white: 160 50% 90%;
-            --c-red: 0 70% 58%;
-            --c-blue: 205 75% 58%;
-            --c-green: 140 55% 50%;
-            --c-yellow: 48 80% 58%;
-            --c-purple: 275 55% 62%;
+            --c-white: 160 50% 90%; --c-red: 0 70% 58%; --c-blue: 205 75% 58%; --c-green: 140 55% 50%; --c-yellow: 48 80% 58%; --c-purple: 275 55% 62%;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
-
-        html, body {
-            font-family: 'JetBrains Mono', monospace;
-            background: transparent;
-            color: hsl(var(--foreground));
-            min-height: 100vh;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 16px;
-            gap: 14px;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-
-        .hud-row {
-            width: min(88vw, 460px);
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .hud {
-            display: flex;
-            gap: 28px;
-            font-size: 13px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: hsl(var(--muted-foreground));
-        }
-
+        html, body { font-family: 'JetBrains Mono', monospace; background: transparent; color: hsl(var(--foreground)); min-height: 100vh; }
+        body { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 16px; gap: 14px; user-select: none; }
+        
+        .hud-row { width: min(88vw, 460px); display: flex; justify-content: space-between; align-items: flex-end; }
+        .hud { display: flex; gap: 28px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: hsl(var(--muted-foreground)); }
         .hud span { color: hsl(var(--accent)); font-weight: 700; }
-
-        .lb-btn {
-            background: hsl(var(--secondary));
-            color: hsl(var(--foreground));
-            border: 1px solid hsl(var(--border));
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: all 0.2s;
-        }
-        .lb-btn:hover {
-            border-color: hsl(var(--accent));
-            color: hsl(var(--accent));
-        }
-
+        .lb-btn { background: hsl(var(--secondary)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); font-family: inherit; font-size: 11px; font-weight: 600; padding: 4px 10px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+        .lb-btn:hover { border-color: hsl(var(--accent)); color: hsl(var(--accent)); }
         .tooltip-container { position: relative; display: inline-flex; align-items: center; justify-content: center; cursor: help; pointer-events: auto; }
         .info-icon { font-size: 13px; font-weight: bold; font-family: monospace; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); border-radius: 50% !important; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
-        .tooltip-text { visibility: hidden; width: 200px; background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); text-align: center; padding: 8px 12px; font-size: 11px; position: absolute; z-index: 2500; bottom: 130%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; pointer-events: none; text-transform: none; line-height: 1.4; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .tooltip-text { visibility: hidden; width: 200px; background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--border)); text-align: center; padding: 8px 12px; font-size: 11px; position: absolute; z-index: 2500; bottom: 130%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; pointer-events: none; line-height: 1.4; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
 
-        .board-wrap {
-            position: relative;
-            width: min(88vw, 460px);
-            aspect-ratio: 1 / 1;
-        }
+        .board-wrap { position: relative; width: min(88vw, 460px); aspect-ratio: 1 / 1; }
+        #board { position: relative; width: 100%; height: 100%; display: grid; background: hsl(var(--card)); border: 1px solid hsl(var(--border) / 0.6); gap: 3px; padding: 3px; touch-action: none; }
+        .cell { position: relative; background: hsl(var(--background)); border: 1px solid hsl(var(--foreground) / 0.08); display: flex; align-items: center; justify-content: center; transition: background-color 0.06s linear; }
+        .cell .node { width: 42%; height: 42%; background: hsl(var(--cell-color, var(--foreground))); box-shadow: 0 0 0 2px hsl(var(--background)) inset; }
+        .cell .blocker { font-weight: 700; font-size: clamp(14px, 4vw, 22px); color: hsl(var(--destructive)); line-height: 1; }
+        .cell.filled { background: hsl(var(--cell-color, var(--foreground)) / 0.55); cursor: pointer; }
+        .cell.filled .node { box-shadow: 0 0 0 2px hsl(var(--cell-color, var(--foreground)) / 0.55) inset; }
+        .cell.dragging { background: hsl(var(--cell-color, var(--foreground)) / 0.32); }
 
-        #board {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: grid;
-            background: hsl(var(--card));
-            border: 1px solid hsl(var(--border) / 0.6);
-            gap: 3px;
-            padding: 3px;
-            touch-action: none;
-        }
-
-        .cell {
-            position: relative;
-            background: hsl(var(--background));
-            border: 1px solid hsl(var(--foreground) / 0.08);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.06s linear;
-        }
-
-        .cell .node {
-            width: 42%;
-            height: 42%;
-            background: hsl(var(--cell-color, var(--foreground)));
-            box-shadow: 0 0 0 2px hsl(var(--background)) inset;
-        }
-
-        .cell .blocker {
-            font-weight: 700;
-            font-size: clamp(14px, 4vw, 22px);
-            color: hsl(var(--destructive));
-            line-height: 1;
-        }
-
-        .cell.filled {
-            background: hsl(var(--cell-color, var(--foreground)) / 0.55);
-        }
-
-        .cell.filled .node {
-            box-shadow: 0 0 0 2px hsl(var(--cell-color, var(--foreground)) / 0.55) inset;
-        }
-
-        .cell.dragging {
-            background: hsl(var(--cell-color, var(--foreground)) / 0.32);
-        }
-
-        #flash {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            opacity: 0;
-            background: hsl(var(--accent) / 0.35);
-        }
-
+        #flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: hsl(var(--accent) / 0.35); }
         #flash.bad { background: hsl(var(--destructive) / 0.4); }
         #flash.show { opacity: 1; transition: opacity 0.05s linear; }
         #flash.fade { opacity: 0; transition: opacity 0.4s ease-out; }
@@ -167,24 +53,18 @@
         .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
         .modal-close { background: none; border: none; color: hsl(var(--muted-foreground)); cursor: pointer; font-size: 18px; font-weight: bold; }
         .modal-close:hover { color: hsl(var(--destructive)); }
-        
         .lb-tabs { display: flex; gap: 8px; margin-bottom: 15px; }
         .lb-tab { flex: 1; background: hsl(var(--background)); border: 1px solid hsl(var(--border)); color: hsl(var(--foreground)); padding: 6px; cursor: pointer; font-family: inherit; font-size: 11px; font-weight: bold; text-transform: uppercase; text-align: center; }
         .lb-tab.active { border-color: hsl(var(--accent)); color: hsl(var(--accent)); background: hsl(var(--accent) / 0.1); }
-        
         .lb-list { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
         .lb-row { display: flex; justify-content: space-between; background: hsl(var(--secondary)); border: 1px solid hsl(var(--border)); padding: 8px 12px; font-size: 12px; }
         .lb-rank { color: hsl(var(--accent)); font-weight: bold; width: 28px; }
         .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
         .lb-score { font-weight: bold; }
-
-        @media (max-width: 480px) {
-            .hud { font-size: 11px; gap: 20px; }
-        }
+        @media (max-width: 480px) { .hud { font-size: 11px; gap: 20px; } }
     </style>
 </head>
 <body>
-
     <div class="hud-row">
         <div class="hud">
             <div>LEVEL <span id="level-val">1</span></div>
@@ -198,13 +78,10 @@
             <button class="lb-btn" onclick="openLeaderboard()">Leaderboard</button>
         </div>
     </div>
-
     <div class="board-wrap">
         <div id="board"></div>
         <div id="flash"></div>
     </div>
-
-    <!-- Leaderboard Modal -->
     <div id="lb-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -221,9 +98,7 @@
                 <button class="lb-tab active" id="tab-level" onclick="switchLbTab('level')">Highest Level</button>
                 <button class="lb-tab" id="tab-streak" onclick="switchLbTab('streak')">Best Streak</button>
             </div>
-            <div class="lb-list" id="lb-list">
-                <!-- Data populated dynamically -->
-            </div>
+            <div class="lb-list" id="lb-list"></div>
         </div>
     </div>
 
@@ -235,95 +110,116 @@
         let currentUser = null;
         let userProfile = null;
         let currentLbTab = 'level';
+
+        const COLOR_VAR = { white:'160 50% 90%', red:'0 70% 58%', blue:'205 75% 58%', green:'140 55% 50%', yellow:'48 80% 58%', purple:'275 55% 62%' };
+        const state = { level: 1, streak: 0, gridSize: 3, pairs: [], blockers: [], cellMeta: [], completed: [], drag: null };
+        const boardEl = document.getElementById('board');
+        const flashEl = document.getElementById('flash');
+        let locked = false;
+
         async function initAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session && session.user) {
                 currentUser = session.user;
                 const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
                 userProfile = data;
-                checkAndSyncScore();
+                syncLoadProgress();
+            } else {
+                syncLoadProgress();
             }
             supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
                 currentUser = newSession?.user || null;
                 if (currentUser) {
                     const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
                     userProfile = data;
-                    checkAndSyncScore();
+                    syncLoadProgress();
                 } else {
                     userProfile = null;
                 }
             });
         }
-        initAuth();
 
-        const COLOR_VAR = {
-            white:  '160 50% 90%',
-            red:    '0 70% 58%',
-            blue:   '205 75% 58%',
-            green:  '140 55% 50%',
-            yellow: '48 80% 58%',
-            purple: '275 55% 62%'
-        };
+        function syncLoadProgress() {
+            let localLevel = 1, localStreak = 0;
+            try {
+                const parsed = JSON.parse(localStorage.getItem('witless_save'));
+                if (parsed) { localLevel = parsed.level || 1; localStreak = parsed.streak || 0; }
+            } catch(e) {}
 
-        const state = {
-            level: 1,
-            streak: 0,
-            gridSize: 3,
-            pairs: [],
-            blockers: [],
-            cellMeta: [],
-            completed: [],
-            drag: null
-        };
-
-        const boardEl = document.getElementById('board');
-        const flashEl = document.getElementById('flash');
-        const levelValEl = document.getElementById('level-val');
-        const streakValEl = document.getElementById('streak-val');
-
-        let locked = false;
-
-        function shuffle(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
+            if (userProfile) {
+                const dbLevel = userProfile.current_level || 1;
+                const dbStreak = userProfile.current_streak || 0;
+                
+                if (dbLevel > localLevel) {
+                    state.level = dbLevel; state.streak = dbStreak;
+                    saveLocalProgress();
+                } else if (localLevel > dbLevel || localStreak > dbStreak) {
+                    state.level = localLevel; state.streak = localStreak;
+                    checkAndSyncScore();
+                } else {
+                    state.level = localLevel; state.streak = localStreak;
+                }
+            } else {
+                state.level = localLevel; state.streak = localStreak;
             }
-            return arr;
+            startLevel(state.level);
         }
 
-        function cellKey(r, c) { return r + ',' + c; }
+        function saveLocalProgress() {
+            localStorage.setItem('witless_save', JSON.stringify({ level: state.level, streak: state.streak }));
+        }
 
+        async function checkAndSyncScore() {
+            if (!currentUser) return;
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            
+            let newMaxLevel = Math.max(state.level, profile?.max_level || 1);
+            let newMaxStreak = Math.max(state.streak, profile?.max_streak || 0);
+            
+            await supabaseClient.from('profiles').update({
+                current_level: state.level,
+                current_streak: state.streak,
+                max_level: newMaxLevel,
+                max_streak: newMaxStreak
+            }).eq('id', currentUser.id);
+            userProfile = { ...profile, current_level: state.level, current_streak: state.streak, max_level: newMaxLevel, max_streak: newMaxStreak };
+        }
+
+        function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+        function cellKey(r, c) { return r + ',' + c; }
         function neighbors(r, c, gridSize) {
             const out = [];
-            if (r > 0) out.push({ r: r - 1, c });
-            if (r < gridSize - 1) out.push({ r: r + 1, c });
-            if (c > 0) out.push({ r, c: c - 1 });
-            if (c < gridSize - 1) out.push({ r, c: c + 1 });
+            if (r > 0) out.push({ r: r - 1, c }); if (r < gridSize - 1) out.push({ r: r + 1, c });
+            if (c > 0) out.push({ r, c: c - 1 }); if (c < gridSize - 1) out.push({ r, c: c + 1 });
             return out;
         }
 
         function computeConfig(level) {
-            if (level === 1) return { gridSize: 3, pairCount: 1, blockerCount: 0 };
-            if (level === 2) return { gridSize: 3, pairCount: 1, blockerCount: 1 };
-            if (level === 3) return { gridSize: 3, pairCount: 2, blockerCount: 0 };
-            if (level === 4) return { gridSize: 4, pairCount: 2, blockerCount: 2 };
-            if (level === 5) return { gridSize: 4, pairCount: 3, blockerCount: 1 };
-            
-            let gridSize = 4 + Math.floor((level - 5) / 5);
-            gridSize = Math.min(gridSize, 8);
-            
-            let pairCount = 2 + Math.floor((level - 3) / 4);
-            pairCount = Math.min(pairCount, 5);
-            
-            let blockerCount = 1 + Math.floor(Math.random() * 3);
+            let gridSize = 3;
+            if (level >= 4) gridSize = 4;
+            if (level >= 9) gridSize = 5;
+            if (level >= 15) gridSize = 6;
+            if (level >= 22) gridSize = 7;
+            if (level >= 30) gridSize = 8;
+
+            let pairCount = 1;
+            if (level >= 6) pairCount = 2;
+            if (level >= 11) pairCount = 3;
+            if (level >= 18) pairCount = 4;
+            if (level >= 26) pairCount = 5;
+
+            let blockerCount = 0;
+            if (gridSize >= 4) blockerCount = 1 + Math.floor(Math.random() * 2);
             if (gridSize >= 6) blockerCount += 2;
-            
+            if (gridSize >= 8) blockerCount += 3;
+
             return { gridSize, pairCount, blockerCount };
         }
+
         function generateLevel(level) {
             let config = computeConfig(level);
             
-            for(let attempt = 0; attempt < 2000; attempt++) {
+            for(let attempt = 0; attempt < 5000; attempt++) {
                 let unvisited = new Set();
                 for(let r=0; r<config.gridSize; r++) {
                     for(let c=0; c<config.gridSize; c++) unvisited.add(cellKey(r, c));
@@ -347,12 +243,12 @@
                     if (remainingCells.length === 0) { validSeeds = false; break; }
                     let sKey = remainingCells.pop();
                     unvisited.delete(sKey);
-                    let r = parseInt(sKey.split(',')[0]);
-                    let c = parseInt(sKey.split(',')[1]);
+                    let r = parseInt(sKey.split(',')[0]); let c = parseInt(sKey.split(',')[1]);
                     paths.push([{r, c}]);
                 }
                 
                 if (!validSeeds) continue;
+                
                 let stuckCount = 0;
                 while(unvisited.size > 0 && stuckCount < paths.length) {
                     stuckCount = 0;
@@ -369,56 +265,36 @@
                         }
                     }
                 }
-                unvisited.forEach(uKey => {
-                    blockers.push({r: parseInt(uKey.split(',')[0]), c: parseInt(uKey.split(',')[1])});
-                });
                 
-                if (paths.every(p => p.length >= 2)) {
+                if (unvisited.size === 0 && paths.every(p => p.length >= 2)) {
                     const colorPool = ['white', 'red', 'blue', 'green', 'yellow', 'purple'];
                     let pairs = paths.map((p, i) => ({
-                        id: i,
-                        color: config.pairCount === 1 ? 'white' : colorPool[(i % 5) + 1],
-                        start: p[0],
-                        end: p[p.length - 1]
+                        id: i, color: config.pairCount === 1 ? 'white' : colorPool[(i % 5) + 1],
+                        start: p[0], end: p[p.length - 1]
                     }));
                     return { gridSize: config.gridSize, pairs, blockers };
                 }
             }
-            return {
-                gridSize: 3,
-                pairs: [{ id: 0, color: 'white', start: { r: 0, c: 0 }, end: { r: 0, c: 1 } }],
-                blockers: [{r:0,c:2},{r:1,c:0},{r:1,c:1},{r:1,c:2},{r:2,c:0},{r:2,c:1},{r:2,c:2}]
-            };
+            
+            return { gridSize: 3, pairs: [{ id: 0, color: 'white', start: { r: 0, c: 0 }, end: { r: 0, c: 1 } }], blockers: [{r:0,c:2},{r:1,c:0},{r:1,c:1},{r:1,c:2},{r:2,c:0},{r:2,c:1},{r:2,c:2}] };
         }
 
         function buildMeta(level) {
-            const gridSize = level.gridSize;
-            const meta = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => ({ type: 'empty' })));
-
+            const meta = Array.from({ length: level.gridSize }, () => Array.from({ length: level.gridSize }, () => ({ type: 'empty' })));
             level.pairs.forEach(pair => {
                 meta[pair.start.r][pair.start.c] = { type: 'node', color: pair.color };
                 meta[pair.end.r][pair.end.c] = { type: 'node', color: pair.color };
             });
-            level.blockers.forEach(b => {
-                meta[b.r][b.c] = { type: 'blocker' };
-            });
+            level.blockers.forEach(b => { meta[b.r][b.c] = { type: 'blocker' }; });
             return meta;
         }
 
         function startLevel(levelNum) {
             const gen = generateLevel(levelNum);
-            state.gridSize = gen.gridSize;
-            state.pairs = gen.pairs;
-            state.blockers = gen.blockers;
-            state.cellMeta = buildMeta(gen);
-            state.completed = [];
-            state.drag = null;
-            render();
-        }
-
-        function render() {
-            levelValEl.textContent = state.level;
-            streakValEl.textContent = state.streak;
+            state.gridSize = gen.gridSize; state.pairs = gen.pairs; state.blockers = gen.blockers;
+            state.cellMeta = buildMeta(gen); state.completed = []; state.drag = null;
+            document.getElementById('level-val').textContent = state.level;
+            document.getElementById('streak-val').textContent = state.streak;
 
             boardEl.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
             boardEl.style.gridTemplateRows = `repeat(${state.gridSize}, 1fr)`;
@@ -428,66 +304,42 @@
                 for (let c = 0; c < state.gridSize; c++) {
                     const meta = state.cellMeta[r][c];
                     const div = document.createElement('div');
-                    div.className = 'cell';
-                    div.dataset.r = r;
-                    div.dataset.c = c;
-
+                    div.className = 'cell'; div.dataset.r = r; div.dataset.c = c;
                     if (meta.type === 'node') {
                         div.style.setProperty('--cell-color', COLOR_VAR[meta.color]);
-                        const dot = document.createElement('div');
-                        dot.className = 'node';
-                        div.appendChild(dot);
+                        const dot = document.createElement('div'); dot.className = 'node'; div.appendChild(dot);
                     } else if (meta.type === 'blocker') {
-                        const x = document.createElement('div');
-                        x.className = 'blocker';
-                        x.textContent = 'X';
-                        div.appendChild(x);
+                        const x = document.createElement('div'); x.className = 'blocker'; x.textContent = 'X'; div.appendChild(x);
                     }
-
                     boardEl.appendChild(div);
                 }
             }
-
-            state.completed.forEach(path => {
-                const meta = state.cellMeta[path[0].r][path[0].c];
-                paintPath(path, meta.color, true);
-            });
         }
 
         function getCellEl(r, c) { return boardEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
-
         function paintPath(path, color, permanent) {
             path.forEach(cell => {
-                const el = getCellEl(cell.r, cell.c);
-                if (!el) return;
+                const el = getCellEl(cell.r, cell.c); if (!el) return;
                 el.style.setProperty('--cell-color', COLOR_VAR[color]);
-                el.classList.toggle('filled', !!permanent);
-                el.classList.toggle('dragging', !permanent);
+                el.classList.toggle('filled', !!permanent); el.classList.toggle('dragging', !permanent);
             });
         }
-
         function clearDragVisual(path) {
             path.forEach(cell => {
-                const el = getCellEl(cell.r, cell.c);
-                if (!el) return;
+                const el = getCellEl(cell.r, cell.c); if (!el) return;
                 el.classList.remove('dragging');
                 const meta = state.cellMeta[cell.r][cell.c];
-                if (meta.type === 'node') {
-                    el.style.setProperty('--cell-color', COLOR_VAR[meta.color]);
-                } else if (!el.classList.contains('filled')) {
-                    el.style.removeProperty('--cell-color');
-                }
+                if (meta.type === 'node') el.style.setProperty('--cell-color', COLOR_VAR[meta.color]);
+                else if (!el.classList.contains('filled')) el.style.removeProperty('--cell-color');
             });
         }
 
         function cellFromPoint(clientX, clientY) {
             const rect = boardEl.getBoundingClientRect();
-            const size = state.gridSize;
-            const x = clientX - rect.left;
-            const y = clientY - rect.top;
+            const x = clientX - rect.left, y = clientY - rect.top;
             if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
-            const c = Math.min(size - 1, Math.max(0, Math.floor((x / rect.width) * size)));
-            const r = Math.min(size - 1, Math.max(0, Math.floor((y / rect.height) * size)));
+            const c = Math.min(state.gridSize - 1, Math.max(0, Math.floor((x / rect.width) * state.gridSize)));
+            const r = Math.min(state.gridSize - 1, Math.max(0, Math.floor((y / rect.height) * state.gridSize)));
             return { r, c };
         }
 
@@ -495,57 +347,36 @@
             if (from.r !== to.r) return { r: from.r + Math.sign(to.r - from.r), c: from.c };
             return { r: from.r, c: from.c + Math.sign(to.c - from.c) };
         }
-
         function isAdjacent(a, b) { return Math.abs(a.r - b.r) + Math.abs(a.c - b.c) === 1; }
         function sameCell(a, b) { return a.r === b.r && a.c === b.c; }
-
-        function cellIsCompleted(cell) {
-            for (const path of state.completed) {
-                if (path.some(p => sameCell(p, cell))) return true;
-            }
-            return false;
-        }
-        
+        function cellIsCompleted(cell) { return state.completed.some(p => p.some(c => sameCell(c, cell))); }
         function checkAllCellsFilled() {
-            let filledCount = 0;
-            state.completed.forEach(p => filledCount += p.length);
-            const totalPlayable = (state.gridSize * state.gridSize) - state.blockers.length;
-            return filledCount === totalPlayable;
-        }
-
-        function saveLocalProgress() {
-            localStorage.setItem('witless_save', JSON.stringify({ level: state.level, streak: state.streak }));
-        }
-
-        async function checkAndSyncScore() {
-            if (!currentUser) return;
-            let currentLevel = state.level;
-            let currentStreak = state.streak;
-
-            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            let newMaxLevel = Math.max(currentLevel, profile?.max_level || 1);
-            let newMaxStreak = Math.max(currentStreak, profile?.max_streak || 0);
-            let username = profile?.username || localStorage.getItem('chitchat_user_name') || ('Player_' + Math.floor(Math.random() * 9999));
-
-            const { error } = await supabaseClient.from('profiles').upsert({
-                id: currentUser.id,
-                username: username,
-                max_level: newMaxLevel,
-                max_streak: newMaxStreak
-            });
-
-            if (!error && !userProfile) {
-                userProfile = { id: currentUser.id, username, max_level: newMaxLevel, max_streak: newMaxStreak };
-            }
+            let filledCount = 0; state.completed.forEach(p => filledCount += p.length);
+            return filledCount === ((state.gridSize * state.gridSize) - state.blockers.length);
         }
 
         function onPointerDown(e) {
             if (locked) return;
             const cell = cellFromPoint(e.clientX, e.clientY);
             if (!cell) return;
+
+            if (cellIsCompleted(cell)) {
+                const pathIdx = state.completed.findIndex(p => p.some(c => sameCell(c, cell)));
+                if (pathIdx !== -1) {
+                    const p = state.completed[pathIdx];
+                    state.completed.splice(pathIdx, 1);
+                    clearDragVisual(p);
+                }
+                const meta = state.cellMeta[cell.r][cell.c];
+                if (meta.type === 'node') {
+                    state.drag = { color: meta.color, path: [cell] };
+                    paintPath(state.drag.path, state.drag.color, false);
+                }
+                return;
+            }
+
             const meta = state.cellMeta[cell.r][cell.c];
             if (meta.type !== 'node') return;
-            if (cellIsCompleted(cell)) return; 
 
             state.drag = { color: meta.color, path: [cell] };
             paintPath(state.drag.path, state.drag.color, false);
@@ -573,12 +404,9 @@
                 return;
             }
 
-            let cursor = last;
-            let guard = 0;
+            let cursor = last; let guard = 0;
             while (!isAdjacent(cursor, cell) && guard < 20) {
-                cursor = stepToward(cursor, cell);
-                path.push(cursor);
-                guard++;
+                cursor = stepToward(cursor, cell); path.push(cursor); guard++;
             }
             path.push(cell);
             paintPath(path, state.drag.color, false);
@@ -587,125 +415,64 @@
 
         function onPointerUp(e) {
             if (!state.drag || locked) return;
-            const drag = state.drag;
-            state.drag = null;
-
-            if (drag.path.length < 2) {
-                clearDragVisual(drag.path);
-                return;
-            }
+            const drag = state.drag; state.drag = null;
+            if (drag.path.length < 2) { clearDragVisual(drag.path); return; }
 
             const endCell = drag.path[drag.path.length - 1];
             const endMeta = state.cellMeta[endCell.r][endCell.c];
+            if (endMeta.type !== 'node') { clearDragVisual(drag.path); return; }
 
-            if (endMeta.type !== 'node') {
-                clearDragVisual(drag.path);
-                return;
-            }
-
-            const valid = validatePath(drag);
-
-            if (valid) {
+            if (validatePath(drag)) {
                 state.completed.push(drag.path);
                 paintPath(drag.path, drag.color, true);
                 flashBoard(false);
-                const totalPairs = state.pairs.length;
-                const done = state.completed.length;
-                
-                if (done >= totalPairs) {
+                if (state.completed.length >= state.pairs.length) {
                     if (checkAllCellsFilled()) {
                         lockFor(650);
                         setTimeout(() => {
-                            state.level += 1;
-                            state.streak += 1;
-                            saveLocalProgress();
-                            checkAndSyncScore();
-                            startLevel(state.level);
+                            state.level += 1; state.streak += 1;
+                            saveLocalProgress(); checkAndSyncScore(); startLevel(state.level);
                         }, 500);
                     } else {
-                        state.completed.pop();
-                        clearDragVisual(drag.path);
-                        flashBoard(true);
-                        lockFor(650);
-                        setTimeout(() => {
-                            state.streak = 0;
-                            saveLocalProgress();
-                            checkAndSyncScore();
-                            state.completed = [];
-                            render();
-                        }, 500);
+                        state.completed.pop(); clearDragVisual(drag.path); flashBoard(true); lockFor(650);
+                        setTimeout(() => { state.streak = 0; saveLocalProgress(); checkAndSyncScore(); state.completed = []; startLevel(state.level); }, 500);
                     }
                 }
             } else {
-                clearDragVisual(drag.path);
-                flashBoard(true);
-                lockFor(650);
-                setTimeout(() => {
-                    state.streak = 0;
-                    saveLocalProgress();
-                    checkAndSyncScore();
-                    state.completed = [];
-                    render();
-                }, 500);
+                clearDragVisual(drag.path); flashBoard(true); lockFor(650);
+                setTimeout(() => { state.streak = 0; saveLocalProgress(); checkAndSyncScore(); state.completed = []; startLevel(state.level); }, 500);
             }
         }
 
         function validatePath(drag) {
-            const path = drag.path;
-            const startCell = path[0];
-            const endCell = path[path.length - 1];
-            const startMeta = state.cellMeta[startCell.r][startCell.c];
-            const endMeta = state.cellMeta[endCell.r][endCell.c];
-
-            if (endMeta.color !== startMeta.color) return false;
+            const path = drag.path, startCell = path[0], endCell = path[path.length - 1];
+            if (state.cellMeta[endCell.r][endCell.c].color !== state.cellMeta[startCell.r][startCell.c].color) return false;
             if (sameCell(startCell, endCell)) return false;
-
             const seen = new Set();
             for (const cell of path) {
                 const key = cellKey(cell.r, cell.c);
-                if (seen.has(key)) return false; 
+                if (seen.has(key) || cellIsCompleted(cell)) return false; 
                 seen.add(key);
-                if (cellIsCompleted(cell)) return false;
             }
-
-            for (let i = 1; i < path.length; i++) {
-                if (!isAdjacent(path[i - 1], path[i])) return false;
-            }
-
+            for (let i = 1; i < path.length; i++) if (!isAdjacent(path[i - 1], path[i])) return false;
             for (let i = 1; i < path.length - 1; i++) {
-                const cell = path[i];
-                const meta = state.cellMeta[cell.r][cell.c];
-                if (meta.type === 'blocker') return false;
-                if (meta.type === 'node') return false;
+                const meta = state.cellMeta[path[i].r][path[i].c];
+                if (meta.type === 'blocker' || meta.type === 'node') return false;
             }
-
             return true;
         }
 
         function flashBoard(bad) {
-            flashEl.classList.remove('show', 'fade', 'bad');
-            void flashEl.offsetWidth; 
+            flashEl.classList.remove('show', 'fade', 'bad'); void flashEl.offsetWidth; 
             if (bad) flashEl.classList.add('bad');
             flashEl.classList.add('show');
-            setTimeout(() => {
-                flashEl.classList.remove('show');
-                flashEl.classList.add('fade');
-            }, 120);
+            setTimeout(() => { flashEl.classList.remove('show'); flashEl.classList.add('fade'); }, 120);
         }
 
-        function lockFor(ms) {
-            locked = true;
-            setTimeout(() => { locked = false; }, ms);
-        }
-        async function openLeaderboard() {
-            document.getElementById('lb-modal').classList.add('active');
-            fetchLeaderboard();
-        }
+        function lockFor(ms) { locked = true; setTimeout(() => { locked = false; }, ms); }
 
-        function closeLeaderboard() {
-            document.getElementById('lb-modal').classList.remove('active');
-        }
-
+        async function openLeaderboard() { document.getElementById('lb-modal').classList.add('active'); fetchLeaderboard(); }
+        function closeLeaderboard() { document.getElementById('lb-modal').classList.remove('active'); }
         function switchLbTab(tab) {
             currentLbTab = tab;
             document.getElementById('tab-level').classList.toggle('active', tab === 'level');
@@ -716,31 +483,14 @@
         async function fetchLeaderboard() {
             const listEl = document.getElementById('lb-list');
             listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--muted-foreground)); padding: 20px;">Scanning terminals...</div>';
-            
             const column = currentLbTab === 'level' ? 'max_level' : 'max_streak';
-            
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('username, max_level, max_streak')
-                .order(column, { ascending: false })
-                .limit(10);
+            const { data, error } = await supabaseClient.from('profiles').select('username, max_level, max_streak').order(column, { ascending: false }).limit(10);
                 
-            if (error || !data) {
-                listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--destructive)); padding: 20px;">Connection failed.</div>';
-                return;
-            }
-            
-            if (data.length === 0) {
-                listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--muted-foreground)); padding: 20px;">No terminal data found.</div>';
-                return;
-            }
+            if (error || !data) { listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--destructive)); padding: 20px;">Connection failed.</div>'; return; }
+            if (data.length === 0) { listEl.innerHTML = '<div style="text-align:center; color:hsl(var(--muted-foreground)); padding: 20px;">No terminal data found.</div>'; return; }
 
             listEl.innerHTML = data.map((player, idx) => `
-                <div class="lb-row">
-                    <span class="lb-rank">#${idx + 1}</span>
-                    <span class="lb-name">${player.username}</span>
-                    <span class="lb-score">${player[column]}</span>
-                </div>
+                <div class="lb-row"><span class="lb-rank">#${idx + 1}</span><span class="lb-name">${player.username}</span><span class="lb-score">${player[column]}</span></div>
             `).join('');
         }
 
@@ -748,16 +498,8 @@
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerUp);
-        const savedProgress = localStorage.getItem('witless_save');
-        if (savedProgress) {
-            try {
-                const parsed = JSON.parse(savedProgress);
-                state.level = parsed.level || 1;
-                state.streak = parsed.streak || 0;
-            } catch(e) {}
-        }
 
-        startLevel(state.level);
+        initAuth();
     </script>
 </body>
 </html>

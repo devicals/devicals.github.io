@@ -457,7 +457,7 @@ function renderLoginPortal() {
 
 function renderAuthPortal(email, username, isSuperAdmin) {
     const portal = document.getElementById('settings-admin-portal');
-    let html = `
+    let leftCol = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <div style="display:flex; flex-direction:column; gap:2px;">
                 <span style="font-size:13px; font-weight:bold; color:hsl(var(--foreground));">${username}</span>
@@ -479,28 +479,48 @@ function renderAuthPortal(email, username, isSuperAdmin) {
         </div>
     `;
 
+    let rightCol = '';
     if (isSuperAdmin) {
-        html += `
-        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
-            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
-            <div style="display: flex; gap: 10px; margin-top: 8px;">
-                <button class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
-                <button class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
+        rightCol = `
+        <div style="display:flex; flex-direction:column; height:100%;">
+            <div style="margin-bottom:15px;">
+                <label style="color:hsl(var(--muted-foreground)); font-size:10px;">DEV OPTIONS</label>
+                <div style="display: flex; gap: 10px; margin-top: 8px;">
+                    <button class="ascii-btn" onclick="requestReveal()">[ Show Hidden ]</button>
+                    <button class="ascii-btn" onclick="requestHide()">[ Hide Hidden ]</button>
+                </div>
             </div>
-        </div>
 
-        <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px;">
-            <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
-            <div id="ann-manager-list" style="margin:8px 0; max-height:100px; overflow-y:auto; line-height:1.6;"></div>
-            <div style="display:flex; flex-direction: column; gap:6px;">
-                <textarea id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="resize:vertical; min-height:40px; width: 100%;"></textarea>
-                <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent)); align-self: flex-end;">[+ Add]</button>
+            <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; margin-bottom:15px;">
+                <label style="color:hsl(var(--muted-foreground)); font-size:10px;">ANNOUNCEMENTS</label>
+                <div id="ann-manager-list" style="margin:8px 0; max-height:80px; overflow-y:auto; line-height:1.6;"></div>
+                <div style="display:flex; flex-direction: column; gap:6px;">
+                    <textarea id="new-ann-input" class="ascii-input" placeholder="New announcement..." style="resize:vertical; min-height:40px; width: 100%;"></textarea>
+                    <button class="ascii-btn" onclick="addNewAnnouncement()" style="color:hsl(var(--accent)); align-self: flex-end;">[+ Add]</button>
+                </div>
+            </div>
+            
+            <div style="border-top:1px dashed hsl(var(--foreground)/0.3); padding-top:15px; flex:1; display:flex; flex-direction:column;">
+                <label style="color:hsl(var(--muted-foreground)); font-size:10px; display:flex; justify-content:space-between; align-items:center;">
+                    USER MANAGEMENT
+                    <button class="ascii-btn" onclick="loadAdminUsers()" style="font-size:10px;">[ Refresh ]</button>
+                </label>
+                <div id="admin-user-container" style="flex:1; margin-top:8px; max-height: 150px; overflow-y:auto; border: 1px solid hsl(var(--border)); background:hsl(var(--background)/0.5); padding:6px;">
+                    <span style="font-size:11px; color:hsl(var(--muted-foreground));">Click Refresh to load users.</span>
+                </div>
             </div>
         </div>`;
+        
+        portal.innerHTML = `
+            <div style="display:flex; gap:20px; align-items:stretch;">
+                <div style="flex:1; padding-right:20px; border-right:1px dashed hsl(var(--foreground)/0.3);">${leftCol}</div>
+                <div style="flex:1;">${rightCol}</div>
+            </div>
+        `;
+        renderManagerAnnouncements();
+    } else {
+        portal.innerHTML = leftCol;
     }
-
-    portal.innerHTML = html;
-    if (isSuperAdmin) renderManagerAnnouncements();
 }
 
 window.submitAuth = async function(action) {
@@ -515,6 +535,7 @@ window.submitAuth = async function(action) {
             if (data.user) {
                 const randomUser = 'Player_' + Math.floor(Math.random() * 9999);
                 await supabaseClient.from('profiles').insert({ id: data.user.id, username: randomUser });
+                localStorage.setItem('chitchat_user_name', randomUser);
             }
             alert("Account created successfully. You are now logged in.");
         }
@@ -557,6 +578,98 @@ window.clearLocalData = function() {
         sessionStorage.clear();
         location.reload();
     }
+};
+window.loadAdminUsers = async function() {
+    const container = document.getElementById('admin-user-container');
+    container.innerHTML = '<span style="font-size:11px; color:hsl(var(--muted-foreground));">Loading...</span>';
+    
+    const { data, error } = await supabaseClient.rpc('admin_get_users');
+    if (error || !data) {
+        container.innerHTML = `<span style="font-size:11px; color:hsl(var(--destructive));">Failed to load: ${error?.message || 'Unknown Error'}</span>`;
+        return;
+    }
+    
+    container.innerHTML = '';
+    data.forEach(user => {
+        const row = document.createElement('div');
+        row.style.cssText = `display:flex; justify-content:space-between; align-items:center; padding:4px; font-size:11px; cursor:pointer; border-bottom:1px solid hsl(var(--border)/0.5);`;
+        row.innerHTML = `
+            <span style="color:${user.is_banned ? 'hsl(var(--destructive))' : 'hsl(var(--foreground))'}; font-weight:${user.is_creator ? 'bold' : 'normal'}; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                ${user.username || 'Unknown'} <span style="color:hsl(var(--muted-foreground));">(${user.email})</span>
+            </span>
+            <span style="color:hsl(var(--accent)); padding-left:8px;">✎</span>
+        `;
+        row.onclick = () => openAdminUserSubmenu(user);
+        container.appendChild(row);
+    });
+};
+
+function openAdminUserSubmenu(user) {
+    const container = document.getElementById('admin-user-container');
+    container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:11px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid hsl(var(--border)); padding-bottom:4px;">
+                <span style="color:hsl(var(--accent)); font-weight:bold; overflow:hidden; text-overflow:ellipsis;">Manage: ${user.email}</span>
+                <button class="ascii-btn" onclick="loadAdminUsers()">[ Back ]</button>
+            </div>
+            
+            <div style="display:flex; gap:6px;">
+                <input type="text" id="admin-user-name" class="ascii-input" placeholder="Set Username" value="${user.username || ''}" style="margin:0;">
+            </div>
+            <div style="display:flex; gap:6px;">
+                <input type="password" id="admin-user-pass" class="ascii-input" placeholder="Set New Password (blank to skip)" style="margin:0;">
+            </div>
+            
+            <div style="display:flex; align-items:center; gap:6px;">
+                <input type="checkbox" id="admin-user-creator" ${user.is_creator ? 'checked' : ''} style="accent-color:hsl(var(--accent)); width:14px; height:14px; cursor:pointer;">
+                <label for="admin-user-creator" style="cursor:pointer; user-select:none;">Creator Badge</label>
+            </div>
+            
+            <div style="display:flex; gap:6px; margin-top:4px;">
+                <button class="btn-primary" style="flex:1; padding:4px;" onclick="saveAdminUser('${user.id}')">Save Changes</button>
+                <button class="btn-primary" style="flex:1; padding:4px; background:hsl(var(--destructive)/0.2); color:hsl(var(--destructive)); border-color:hsl(var(--destructive));" onclick="banAdminUser('${user.id}', ${!user.is_banned})">${user.is_banned ? 'Unban' : 'Ban'}</button>
+                <button class="btn-primary" style="flex:1; padding:4px; background:hsl(var(--destructive)); color:hsl(var(--accent-foreground)); border-color:hsl(var(--destructive));" onclick="deleteAdminUser('${user.id}')">Delete</button>
+            </div>
+        </div>
+    `;
+}
+
+window.saveAdminUser = async function(userId) {
+    const newUsername = document.getElementById('admin-user-name').value.trim();
+    const newPassword = document.getElementById('admin-user-pass').value;
+    const isCreator = document.getElementById('admin-user-creator').checked;
+    
+    if(!confirm("Are you sure you want to save these changes?")) return;
+    
+    const { error } = await supabaseClient.rpc('admin_manage_user', {
+        target_id: userId,
+        new_username: newUsername || null,
+        new_password: newPassword || null,
+        make_creator: isCreator,
+        do_ban: false,
+        do_delete: false
+    });
+    
+    if (error) alert("Error updating user: " + error.message);
+    else { alert("User updated!"); loadAdminUsers(); }
+};
+
+window.banAdminUser = async function(userId, banState) {
+    if(!confirm(`Are you sure you want to ${banState ? 'ban' : 'unban'} this user?`)) return;
+    const { error } = await supabaseClient.rpc('admin_manage_user', {
+        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: banState, do_delete: false
+    });
+    if (error) alert("Error updating ban state: " + error.message);
+    else { alert(`User ${banState ? 'banned' : 'unbanned'}.`); loadAdminUsers(); }
+};
+
+window.deleteAdminUser = async function(userId) {
+    if(!confirm("WARNING: Are you sure you want to PERMANENTLY DELETE this user? This cannot be undone.")) return;
+    const { error } = await supabaseClient.rpc('admin_manage_user', {
+        target_id: userId, new_username: null, new_password: null, make_creator: false, do_ban: false, do_delete: true
+    });
+    if (error) alert("Error deleting user: " + error.message);
+    else { alert("User deleted."); loadAdminUsers(); }
 };
 
 function renderManagerAnnouncements() {
@@ -1063,10 +1176,7 @@ window.loadPage = async function(pageName, args = '') {
     if (pageName === 'home') {
         homeWindows.forEach(id => {
             const el = document.getElementById(id);
-            if (el) {
-                el.style.display = 'flex';
-                el.style.zIndex = ++window.highestZ;
-            }
+            if (el) { el.style.display = 'flex'; el.style.zIndex = ++window.highestZ; }
             const tbItem = document.getElementById('tb-item-' + id);
             if (tbItem) tbItem.remove();
         });
@@ -1098,7 +1208,7 @@ window.loadPage = async function(pageName, args = '') {
         }
         const contentHTML = `<iframe class="page-iframe" src="/storage/internal/pages/custom/witless.html"></iframe>`;
         const bounds = getCenteredBounds(500, 560);
-        createWindow(winId, '1-S // THE WITLESS', '', contentHTML, bounds);
+        createWindow(winId, 'the witless', '', contentHTML, bounds);
         return;
     }
 
@@ -1198,8 +1308,11 @@ window.openPreferences = () => {
 
     const win = document.getElementById('settings-window');
     win.style.display = 'flex';
+    if (isAdmin) win.style.width = '650px'; 
+    else win.style.width = '300px';
+
     if (!localStorage.getItem('win_pos_settings-window')) {
-        const width = win.offsetWidth || 300;
+        const width = win.offsetWidth || (isAdmin ? 650 : 300);
         const height = win.offsetHeight || 300;
         const bounds = getCenteredBounds(width, height);
         win.style.left = bounds.left;
@@ -1213,14 +1326,6 @@ window.openPreferences = () => {
 
 window.closePreferences = () => {
     document.getElementById('settings-window').style.display = 'none';
-};
-
-window.clearLocalData = function() {
-    if (confirm("Are you sure you want to completely clear all local website data? This will reset all minigame progress (unless saved to an account), window positions, and your theme settings.")) {
-        localStorage.clear();
-        sessionStorage.clear();
-        location.reload();
-    }
 };
 
 window.resetWindowPositions = function() {
