@@ -185,7 +185,7 @@
                 card.className = 'ascii-window blog-post-window';
                 card.id = `blog-${blog.id}`;
                 card.dataset.index = idx;
-                card.style.height = '280px';
+                card.style.height = 'auto';
                 card.style.position = 'absolute';
 
                 card.innerHTML = `
@@ -194,11 +194,11 @@
                         <div class="ascii-title" style="font-size: 11px;">#${blog.id} - ${blog.date}</div>
                         <div class="ascii-header-line" style="flex:1;"></div>
                     </div>
-                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: 100%; box-sizing: border-box;">
+                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: auto; box-sizing: border-box;">
                         <div style="border-bottom: 1px dashed hsl(var(--border) / 0.5); padding-bottom: 5px;">
                             <a href="#" class="blog-title" id="title-anchor-${blog.id}" style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px; text-decoration: none;">${blog.title}</a>
                         </div>
-                        <div class="blog-content" style="flex-grow: 1; overflow-y: auto;">${htmlContent}</div>
+                        <div class="blog-content" style="flex-grow: 1;">${htmlContent}</div>
                         <div class="admin-action-row">
                             <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
                             <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
@@ -229,18 +229,17 @@
             const container = document.getElementById('tab-container');
             const cards = container.querySelectorAll('.blog-post-window');
             const containerWidth = container.clientWidth || window.innerWidth;
-            const containerHeight = container.clientHeight || window.innerHeight;
             
             const cardWidth = Math.max(containerWidth - 40, 200); 
-            const cardHeight = Math.max(containerHeight - 40, 280); 
             const gap = 20;
             const padding = 20;
-
-            // Vertical list layout: single column, cards stacked top-to-bottom,
-            // each card sized to fill the available width/height of the window.
-            let maxTop = 0;
+            let currentTop = padding;
+            let maxBottom = 0;
 
             cards.forEach((card, idx) => {
+                card.style.width = cardWidth + 'px';
+                card.style.height = 'auto';
+
                 const savedPos = localStorage.getItem(`blog_pos_${idx}`);
                 if (savedPos) {
                     const pos = JSON.parse(savedPos);
@@ -248,15 +247,16 @@
                     card.style.top = pos.top;
                 } else {
                     card.style.left = padding + 'px';
-                    card.style.top = (padding + idx * (cardHeight + gap)) + 'px';
+                    card.style.top = currentTop + 'px';
                 }
-                card.style.width = cardWidth + 'px';
-                card.style.height = cardHeight + 'px';
-                
-                const topVal = parseInt(card.style.top) || 0;
-                if (topVal > maxTop) maxTop = topVal;
-                
+
                 makeCardDraggable(card, card.querySelector('.card-drag-handle'));
+                const topVal = parseInt(card.style.top) || 0;
+                const renderedHeight = card.offsetHeight;
+                const bottomVal = topVal + renderedHeight;
+
+                if (bottomVal > maxBottom) maxBottom = bottomVal;
+                if (!savedPos) currentTop = topVal + renderedHeight + gap;
             });
             
             let dummy = document.getElementById('scroll-dummy');
@@ -267,7 +267,7 @@
                 dummy.style.width = '1px';
                 container.appendChild(dummy);
             }
-            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
+            dummy.style.top = (maxBottom + padding) + 'px';
         }
 
         let resizeDebounceTimer = null;

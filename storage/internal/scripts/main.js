@@ -76,6 +76,11 @@ document.addEventListener('mousedown', (e) => {
 function clamp(val, min, max) {
     return Math.max(min, Math.min(max, val));
 }
+function getCenteredBounds(width, height) {
+    const left = clamp(Math.round((window.innerWidth - width) / 2), 20, Math.max(20, window.innerWidth - width - 20));
+    const top = clamp(Math.round((window.innerHeight - height) / 2), 20, Math.max(20, window.innerHeight - height - 20));
+    return { left: left + 'px', top: top + 'px', width: width + 'px', height: height + 'px' };
+}
 
 window.addEventListener('message', e => {
     if (e.data.type === 'alt-pressed') {
@@ -260,7 +265,6 @@ window.toggleMaximizeWindow = function(id) {
     const PAD = 8; // 5-10px padding when maximized
 
     if (win.dataset.maximized === 'true') {
-        // Restore to previous position/size
         const prev = JSON.parse(win.dataset.prevBounds || '{}');
         win.style.top = prev.top || '';
         win.style.left = prev.left || '';
@@ -271,7 +275,6 @@ window.toggleMaximizeWindow = function(id) {
         win.dataset.maximized = 'false';
         if (btn) btn.textContent = '□';
     } else {
-        // Save current position/size, then fill the desktop with padding
         win.dataset.prevBounds = JSON.stringify({
             top: win.style.top, left: win.style.left,
             right: win.style.right, bottom: win.style.bottom,
@@ -802,7 +805,7 @@ async function renderHomePage() {
         <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
         <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
     </div><div id="skills-list"></div>`;
-    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '20px', width: '380px'});
+    createWindow('win-skills', 'skills', '', skillsHTML, {right: '20px', bottom: '70px', width: '380px'});
     renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
 
     let socialsHTML = `<div class="add-row">
@@ -812,7 +815,7 @@ async function renderHomePage() {
     </div>
     <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
     <div id="socials-list" style="margin-top:10px;"></div>`;
-    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '20px', width: '300px'});
+    createWindow('win-socials', 'socials', '', socialsHTML, {right: '420px', bottom: '70px', width: '300px'});
     renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
     refreshDiscordUI();
 
@@ -930,14 +933,22 @@ async function loadLatestBlogPreview() {
             
             const dateDisplay = latest.date.replace(/\//g, '-');
             
-            createWindow('win-blog', 'latest blog', dateDisplay, `
+            const blogWin = createWindow('win-blog', 'latest blog', dateDisplay, `
                 <div style="cursor: pointer; line-height: 1.6; display: flex; flex-direction: column; gap: 8px;" onclick="window.loadPage('blogs', 'id=${latest.id}')">
                     <div style="color:hsl(var(--accent)); font-weight:bold; font-size: 16px;">${latest.title}</div>
                     <div style="color:hsl(var(--foreground));">
                         ${parsedHTML}
                     </div>
                 </div>
-            `, {right: '460px', top: '20px', width: '500px', height: '280px'});
+            `, {right: '460px', top: '20px', width: '500px'});
+            if (!localStorage.getItem('win_size_win-blog')) {
+                blogWin.style.height = 'auto';
+                const contentEl = blogWin.querySelector('.ascii-content');
+                if (contentEl) {
+                    contentEl.style.flex = 'none';
+                    contentEl.style.overflowY = 'visible';
+                }
+            }
         }
     } catch (e) {}
 }
@@ -1137,7 +1148,7 @@ window.loadPage = async function(pageName, args = '') {
     }
     
     const contentHTML = `<iframe class="page-iframe" src="${targetUrl}"></iframe>`;
-    const bounds = { left: '50px', top: '50px', width: '800px', height: '600px' };
+    const bounds = getCenteredBounds(800, 600);
     createWindow(winId, title, '', contentHTML, bounds);
 };
 
@@ -1172,8 +1183,21 @@ window.closeLockModal = () => {
 }
 
 window.openPreferences = () => {
+    const nav = document.getElementById('nav-window');
+    if (nav && nav.classList.contains('nav-open')) window.toggleNav();
+
     const win = document.getElementById('settings-window');
     win.style.display = 'flex';
+    if (!localStorage.getItem('win_pos_settings-window')) {
+        const width = win.offsetWidth || 300;
+        const height = win.offsetHeight || 300;
+        const bounds = getCenteredBounds(width, height);
+        win.style.left = bounds.left;
+        win.style.top = bounds.top;
+        win.style.right = 'auto';
+        win.style.bottom = 'auto';
+    }
+
     win.style.zIndex = ++window.highestZ;
 };
 

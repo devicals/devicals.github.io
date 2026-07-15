@@ -261,9 +261,6 @@
             });
 
             if (!skipHashUpdate) {
-                // Build the hash fresh each time so it never appends to
-                // whatever was there before, and use replaceState so tab
-                // switches don't pile up new browser history entries.
                 const params = new URLSearchParams();
                 params.set('page', 'projects');
                 params.set('tab', tabKey);
@@ -321,8 +318,7 @@
             
             let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
             if (cols < 1) cols = 1;
-
-            let maxTop = 0;
+            let maxBottom = 0;
 
             cards.forEach((card, idx) => {
                 const savedPos = localStorage.getItem(`proj_pos_${currentTab}_${idx}`);
@@ -338,7 +334,8 @@
                 }
                 
                 const topVal = parseInt(card.style.top) || 0;
-                if (topVal > maxTop) maxTop = topVal;
+                const bottomVal = topVal + cardHeight;
+                if (bottomVal > maxBottom) maxBottom = bottomVal;
                 
                 makeCardDraggable(card, card.querySelector('.card-drag-handle'));
             });
@@ -351,7 +348,7 @@
                 dummy.style.width = '1px';
                 container.appendChild(dummy);
             }
-            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
+            dummy.style.top = (maxBottom + padding) + 'px';
         }
 
         function clamp(val, min, max) {
@@ -401,16 +398,10 @@
             }
         }
 
+        let resizeDebounceTimer = null;
         window.addEventListener('resize', () => {
-            const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.project-card-window');
-            let hasUnsaved = false;
-            cards.forEach(card => {
-                if (!localStorage.getItem(`proj_pos_${currentTab}_${card.dataset.index}`)) {
-                    hasUnsaved = true;
-                }
-            });
-            if (hasUnsaved) layoutCards();
+            clearTimeout(resizeDebounceTimer);
+            resizeDebounceTimer = setTimeout(layoutCards, 100);
         });
 
         window.createNewTab = () => {

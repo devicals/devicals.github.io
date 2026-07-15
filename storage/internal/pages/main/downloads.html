@@ -221,7 +221,7 @@
             let cols = Math.floor((containerWidth - padding * 2 + gap) / (cardWidth + gap));
             if (cols < 1) cols = 1;
 
-            let maxTop = 0;
+            let maxBottom = 0;
 
             cards.forEach((card, idx) => {
                 const savedPos = localStorage.getItem(`dl_pos_${idx}`);
@@ -237,7 +237,8 @@
                 }
                 
                 const topVal = parseInt(card.style.top) || 0;
-                if (topVal > maxTop) maxTop = topVal;
+                const bottomVal = topVal + cardHeight;
+                if (bottomVal > maxBottom) maxBottom = bottomVal;
                 
                 makeCardDraggable(card, card.querySelector('.card-drag-handle'));
             });
@@ -250,7 +251,7 @@
                 dummy.style.width = '1px';
                 container.appendChild(dummy);
             }
-            dummy.style.top = (maxTop + cardHeight + padding) + 'px';
+            dummy.style.top = (maxBottom + padding) + 'px';
         }
 
         function clamp(val, min, max) {
@@ -353,16 +354,10 @@
             await syncToSupabase();
         };
 
+        let resizeDebounceTimer = null;
         window.addEventListener('resize', () => {
-            const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.download-card-window');
-            let hasUnsaved = false;
-            cards.forEach(card => {
-                if (!localStorage.getItem(`dl_pos_${card.dataset.index}`)) {
-                    hasUnsaved = true;
-                }
-            });
-            if (hasUnsaved) layoutCards();
+            clearTimeout(resizeDebounceTimer);
+            resizeDebounceTimer = setTimeout(layoutCards, 100);
         });
 
         document.addEventListener('DOMContentLoaded', () => {
