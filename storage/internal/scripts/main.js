@@ -1067,6 +1067,19 @@ window.loadPage = async function(pageName, args = '') {
         return;
     }
 
+    if (pageName === 'commits') {
+        const commitsWin = document.getElementById('win-commits');
+        if (commitsWin) {
+            commitsWin.style.display = 'flex';
+            commitsWin.style.zIndex = ++window.highestZ;
+            const tbItem = document.getElementById('tb-item-win-commits');
+            if (tbItem) tbItem.remove();
+        } else {
+            await loadCommitHistory();
+        }
+        return;
+    }
+
     const winId = 'win-' + pageName;
     let existingWin = document.getElementById(winId);
     
