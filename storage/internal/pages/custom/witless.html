@@ -172,7 +172,7 @@
             pairs: [],
             blockers: [],
             cellMeta: [],
-            completed: {},
+            completed: [], // Now stores arrays of paths directly
             drag: null
         };
 
@@ -318,8 +318,8 @@
             const meta = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => ({ type: 'empty' })));
 
             level.pairs.forEach(pair => {
-                meta[pair.start.r][pair.start.c] = { type: 'node', color: pair.color, pairId: pair.id };
-                meta[pair.end.r][pair.end.c] = { type: 'node', color: pair.color, pairId: pair.id };
+                meta[pair.start.r][pair.start.c] = { type: 'node', color: pair.color };
+                meta[pair.end.r][pair.end.c] = { type: 'node', color: pair.color };
             });
             level.blockers.forEach(b => {
                 meta[b.r][b.c] = { type: 'blocker' };
@@ -333,7 +333,7 @@
             state.pairs = gen.pairs;
             state.blockers = gen.blockers;
             state.cellMeta = buildMeta(gen);
-            state.completed = {};
+            state.completed = [];
             state.drag = null;
             render();
         }
@@ -370,9 +370,9 @@
                 }
             }
 
-            Object.keys(state.completed).forEach(pairId => {
-                const pair = state.pairs.find(p => p.id === Number(pairId));
-                paintPath(state.completed[pairId], pair.color, true);
+            state.completed.forEach(path => {
+                const meta = state.cellMeta[path[0].r][path[0].c];
+                paintPath(path, meta.color, true);
             });
         }
 
@@ -426,15 +426,22 @@
 
         function sameCell(a, b) { return a.r === b.r && a.c === b.c; }
 
+        function cellIsCompleted(cell) {
+            for (const path of state.completed) {
+                if (path.some(p => sameCell(p, cell))) return true;
+            }
+            return false;
+        }
+
         function onPointerDown(e) {
             if (locked) return;
             const cell = cellFromPoint(e.clientX, e.clientY);
             if (!cell) return;
             const meta = state.cellMeta[cell.r][cell.c];
             if (meta.type !== 'node') return;
-            if (state.completed[meta.pairId]) return; // already solved this pair
+            if (cellIsCompleted(cell)) return; 
 
-            state.drag = { pairId: meta.pairId, color: meta.color, path: [cell] };
+            state.drag = { color: meta.color, path: [cell] };
             paintPath(state.drag.path, state.drag.color, false);
             e.preventDefault();
         }
@@ -485,11 +492,11 @@
             const valid = validatePath(drag);
 
             if (valid) {
-                state.completed[drag.pairId] = drag.path;
+                state.completed.push(drag.path);
                 paintPath(drag.path, drag.color, true);
                 flashBoard(false);
                 const totalPairs = state.pairs.length;
-                const done = Object.keys(state.completed).length;
+                const done = state.completed.length;
                 if (done >= totalPairs) {
                     lockFor(650);
                     setTimeout(() => {
@@ -516,16 +523,16 @@
             const endCell = path[path.length - 1];
             const startMeta = state.cellMeta[startCell.r][startCell.c];
             const endMeta = state.cellMeta[endCell.r][endCell.c];
-
             if (endMeta.type !== 'node') return false;
-            if (endMeta.pairId !== startMeta.pairId) return false;
+            if (endMeta.color !== startMeta.color) return false;
             if (sameCell(startCell, endCell)) return false;
 
             const seen = new Set();
             for (const cell of path) {
                 const key = cellKey(cell.r, cell.c);
-                if (seen.has(key)) return false;
+                if (seen.has(key)) return false; // Self-intersection
                 seen.add(key);
+                if (cellIsCompleted(cell)) return false;
             }
 
             for (let i = 1; i < path.length; i++) {
@@ -537,26 +544,14 @@
                 const meta = state.cellMeta[cell.r][cell.c];
                 if (meta.type === 'blocker') return false;
                 if (meta.type === 'node') return false;
-                if (cellIsCompleted(cell)) return false;
-            }
-
-            for (const cell of path) {
-                if (cellIsCompleted(cell) && !sameCell(cell, startCell) && !sameCell(cell, endCell)) return false;
             }
 
             return true;
         }
 
-        function cellIsCompleted(cell) {
-            for (const pairId in state.completed) {
-                if (state.completed[pairId].some(p => sameCell(p, cell))) return true;
-            }
-            return false;
-        }
-
         function flashBoard(bad) {
             flashEl.classList.remove('show', 'fade', 'bad');
-            void flashEl.offsetWidth; // restart animation
+            void flashEl.offsetWidth; 
             if (bad) flashEl.classList.add('bad');
             flashEl.classList.add('show');
             setTimeout(() => {
