@@ -78,6 +78,13 @@ customPages:
         path: ~/zato.html
         type:
           type: html
+        
+      - id: codes
+        name: "Code Translator"
+        path: ~/codes.html
+        type:
+          type: html
+        hidden: true
 
   archive:
     display: "Archives"
