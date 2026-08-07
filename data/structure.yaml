@@ -1,0 +1,174 @@
+- name: Index
+  type: folder
+  children:
+
+    - name: Home
+      type: file
+      fileType: html
+      url: pages/home.html
+
+    - name: Blogs
+      type: file
+      fileType: html
+      url: pages/blogs.html
+
+    - name: Community
+      type: folder
+      children:
+
+        - name: Chits & Chats
+          type: file
+          fileType: html
+          url: pages/chitchat.html
+
+        - name: Gallery
+          type: file
+          fileType: html
+          url: pages/gallery.html
+
+- name: Content
+  type: folder
+  children:
+
+    - name: Projects
+      type: file
+      fileType: html
+      url: pages/projects.html
+
+    - name: Downloads
+      type: file
+      fileType: html
+      url: pages/downloads.html
+
+    - name: Writing
+      type: folder
+      children:
+
+        - name: Books
+          type: folder
+          children:
+
+            - name: Halloween Specials
+              type: folder
+              children:
+
+                - name: O' Mother of Mine
+                  type: folder
+                  children:
+                    - name: The Lamb of Blood
+                      type: file
+                      fileType: md
+                      path: content/books/hs/omom/chapter_1.md
+
+                    - name: The Shepherd of Filth
+                      type: file
+                      fileType: md
+                      path: content/books/hs/omom/chapter_2.md
+
+                    - name: The Slaughtered Lamb
+                      type: file
+                      fileType: md
+                      path: content/books/hs/omom/chapter_3.md
+
+        - name: Poems
+          type: folder
+          children:
+
+            - name: first
+              type: folder
+              children:
+
+                - name: I "the song bird"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/1.md
+
+                - name: II "waking"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/2.md
+
+                - name: III "loss"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/3.md
+
+                - name: IV " "
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/4.md
+
+                - name: V "warm"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/5.md
+
+                - name: VI "stay."
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/6.md
+
+                - name: VII "river"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/7.md
+
+                - name: IIX "again"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/8.md
+
+                - name: IX "aching"
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/9.md
+
+                - name: X "bridge..."
+                  type: file
+                  fileType: md
+                  path: content/poems/c1/10.md
+
+- name: About Me
+  type: folder
+  children:
+
+    - name: Games I <3
+      type: file
+      fileType: html
+      url: pages/games.html
+
+    - name: Spotify
+      type: file
+      fileType: spotify
+
+- name: Other Stuff
+  type: folder
+  children:
+
+    - name: Tier List Maker
+      type: file
+      fileType: html
+      url: pages/ranking.html
+
+    - name: ZATO Live Tierlist
+      type: file
+      fileType: html
+      url: pages/zato.html
+
+    - name: World Clock Viewer
+      type: file
+      fileType: html
+      url: pages/worldclock.html
+
+    - name: Code Translator
+      type: file
+      fileType: html
+      url: pages/codes.html
+
+- name: System
+  type: folder
+  children:
+  
+    - name: Commit History
+      type: file
+      fileType: commits

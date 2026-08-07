@@ -8,6 +8,26 @@
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        .admin-dashboard-btn {
+            display: none;
+            padding: 12px 20px;
+            background: var(--bg-hover);
+            border-top: 1px solid var(--border);
+            color: var(--accent);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-dashboard-btn:hover { background: var(--bg-workspace); }
+        body.is-admin .admin-dashboard-btn { display: flex; }
+    </style>
 </head>
 <body>
     <style id="custom-css-block"></style>
@@ -16,6 +36,11 @@
         <div class="sidebar left-sidebar">
             <div id="nav-tree" class="nav-tree"></div>
             
+            <div class="admin-dashboard-btn" onclick="window.location.hash='admin'">
+                <span>Admin Dashboard</span>
+                <span>></span>
+            </div>
+
             <div class="sidebar-bottom-actions">
                 <div class="action-btn" id="auth-trigger" title="User Profile">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg>
@@ -33,10 +58,6 @@
             <div id="workspace" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
                 <iframe id="iframe-workspace" class="workspace-frame" style="display:none;"></iframe>
                 <div id="page-content" class="page-content markdown-body" style="display:none;"></div>
-                <div id="editor-workspace" class="page-content" style="display:none;"></div>
-            </div>
-            <div class="status-bar">
-                <span id="doc-char-count">0 words</span>
             </div>
         </div>
     </div>
@@ -73,12 +94,6 @@
                 <label>Custom CSS</label>
                 <textarea id="custom-css-input" class="ui-input" rows="4" placeholder="Enter custom CSS rules..."></textarea>
                 <button id="save-css" class="ui-btn">Apply Custom CSS</button>
-            </div>
-            <div id="admin-settings-link" class="settings-group" style="display: none;">
-                <div class="admin-link" onclick="openAdminFromSettings()">
-                    <span>Admin Dashboard</span>
-                    <span>></span>
-                </div>
             </div>
             <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">Close</button>
         </div>

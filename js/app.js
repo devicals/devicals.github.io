@@ -6,116 +6,13 @@ let currentUser = null;
 let currentProfile = null;
 let navData = { children: [] };
 let flatNodes = [];
-let showHiddenPages = false;
 let announcementTimer = null;
-let currentDocFile = null;
-window.pagesDb = {}; // Global page DB for markdown content
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
 
-const DEFAULT_NAV = {
-  "children": [
-    {
-      "name": "Index",
-      "type": "folder",
-      "children": [
-        { "name": "Home", "type": "file", "fileType": "html", "url": "pages/home.html" },
-        { "name": "Blogs", "type": "file", "fileType": "html", "url": "pages/blogs.html" },
-        {
-          "name": "Community",
-          "type": "folder",
-          "children": [
-            { "name": "Chits & Chats", "type": "file", "fileType": "html", "url": "pages/chitchat.html" },
-            { "name": "Gallery", "type": "file", "fileType": "html", "url": "pages/gallery.html" }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Content",
-      "type": "folder",
-      "children": [
-        { "name": "Projects", "type": "file", "fileType": "html", "url": "pages/projects.html" },
-        { "name": "Downloads", "type": "file", "fileType": "html", "url": "pages/downloads.html" },
-        {
-          "name": "Writing",
-          "type": "folder",
-          "children": [
-            {
-              "name": "Books",
-              "type": "folder",
-              "children": [
-                {
-                  "name": "Halloween Specials",
-                  "type": "folder",
-                  "children": [
-                    {
-                      "name": "O' Mother of Mine",
-                      "type": "folder",
-                      "children": [
-                        { "name": "The Lamb of Blood", "type": "file", "fileType": "md", "path": "content/books/hs/omom/chapter_1.md" },
-                        { "name": "The Shepherd of Filth", "type": "file", "fileType": "md", "path": "content/books/hs/omom/chapter_2.md" },
-                        { "name": "The Slaughtered Lamb", "type": "file", "fileType": "md", "path": "content/books/hs/omom/chapter_3.md" }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "name": "Poems",
-              "type": "folder",
-              "children": [
-                {
-                  "name": "first",
-                  "type": "folder",
-                  "children": [
-                    { "name": "I \"the song bird\"", "type": "file", "fileType": "md", "path": "content/poems/c1/1.md" },
-                    { "name": "II \"waking\"", "type": "file", "fileType": "md", "path": "content/poems/c1/2.md" },
-                    { "name": "III \"loss\"", "type": "file", "fileType": "md", "path": "content/poems/c1/3.md" },
-                    { "name": "IV \" \"", "type": "file", "fileType": "md", "path": "content/poems/c1/4.md" },
-                    { "name": "V \"warm\"", "type": "file", "fileType": "md", "path": "content/poems/c1/5.md" },
-                    { "name": "VI \"stay.\"", "type": "file", "fileType": "md", "path": "content/poems/c1/6.md" },
-                    { "name": "VII \"river\"", "type": "file", "fileType": "md", "path": "content/poems/c1/7.md" },
-                    { "name": "IIX \"again\"", "type": "file", "fileType": "md", "path": "content/poems/c1/8.md" },
-                    { "name": "IX \"the aching grew worse\"", "type": "file", "fileType": "md", "path": "content/poems/c1/9.md" },
-                    { "name": "X \"bridge...\"", "type": "file", "fileType": "md", "path": "content/poems/c1/10.md" }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "About Me",
-      "type": "folder",
-      "children": [
-        { "name": "Games I <3", "type": "file", "fileType": "html", "url": "pages/games.html" },
-        { "name": "Spotify", "type": "file", "fileType": "spotify" }
-      ]
-    },
-    {
-      "name": "Other Stuff",
-      "type": "folder",
-      "children": [
-        {
-          "name": "Tier List Maker",
-          "type": "folder",
-          "children": [
-            { "name": "ZATOcord Tierlist", "type": "file", "fileType": "html", "url": "pages/zato.html" }
-          ]
-        },
-        { "name": "World Clock Viewer", "type": "file", "fileType": "html", "url": "pages/worldclock.html" },
-        { "name": "Code Translator", "type": "file", "fileType": "html", "url": "pages/codes.html" }
-      ]
-    }
-  ]
-};
+marked.use({ breaks: true, gfm: true });
 
 document.addEventListener('DOMContentLoaded', async () => {
     loadSettingsLocally();
-    await fetchPagesDb(); // Fetch markdown DB upfront
     await loadNavigation();
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
@@ -234,7 +131,6 @@ async function initAuth() {
 async function handleSession(session) {
     currentUser = session?.user || null;
     currentProfile = null;
-    const adminLink = document.getElementById('admin-settings-link');
     
     if (currentUser) {
         try {
@@ -248,21 +144,17 @@ async function handleSession(session) {
                 if (setObj.data.dark_mode) localStorage.setItem('dark-mode', setObj.data.dark_mode);
                 loadSettingsLocally();
             }
-
-            if (currentProfile?.is_admin) {
-                adminLink.style.display = 'flex';
+            if(currentProfile?.is_admin) {
+                document.body.classList.add('is-admin');
             } else {
-                adminLink.style.display = 'none';
+                document.body.classList.remove('is-admin');
             }
-        } catch(e) {
-            adminLink.style.display = 'none';
-        }
+        } catch(e) {}
     } else {
-        adminLink.style.display = 'none';
+        document.body.classList.remove('is-admin');
     }
     
     renderAuthModal();
-    renderNavigation();
 }
 
 function renderAuthModal() {
@@ -319,32 +211,14 @@ window.updateProfile = async () => {
 document.getElementById('auth-trigger').onclick = () => document.getElementById('auth-modal').style.display = 'flex';
 document.getElementById('settings-trigger').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
 
-window.openAdminFromSettings = function() {
-    document.getElementById('settings-modal').style.display = 'none';
-    window.location.hash = 'admin';
-};
-
-async function fetchPagesDb() {
-    try {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'pages_db').single();
-        if (data && data.data) {
-            window.pagesDb = data.data;
-        }
-    } catch(e) {
-        window.pagesDb = {};
-    }
-}
-
 async function loadNavigation() {
     try {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'structure').single();
-        if (data && data.data && data.data.length > 0) {
-            navData = { children: data.data };
-        } else {
-            navData = DEFAULT_NAV;
-        }
+        const response = await fetch('data/structure.yaml');
+        const yamlText = await response.text();
+        const parsed = jsyaml.load(yamlText);
+        navData = { children: parsed };
     } catch (e) {
-        navData = DEFAULT_NAV;
+        console.error("Failed to load navigation", e);
     }
     renderNavigation();
 }
@@ -354,12 +228,8 @@ function renderNavigation() {
     container.innerHTML = '';
     flatNodes = [];
     
-    const canSeeHidden = currentProfile?.is_admin ? showHiddenPages : false;
-
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
-            if (node.hidden && !canSeeHidden) return;
-            
             const currentPath = [...pathPrefix, node.name];
             const currentPathHash = currentPath.join('/');
             const el = document.createElement('div');
@@ -422,10 +292,7 @@ async function handleRoute() {
     
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
-    const editorWorkspace = document.getElementById('editor-workspace');
     const breadcrumbs = document.getElementById('breadcrumbs');
-    
-    editorWorkspace.style.display = 'none';
 
     if (hash === 'admin') {
         iframe.style.display = 'none';
@@ -444,12 +311,10 @@ async function handleRoute() {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
             
-            const canSeeHidden = currentProfile?.is_admin ? showHiddenPages : false;
             let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
             
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
-                    if (child.hidden && !canSeeHidden) return;
                     const childPath = node.path + '/' + child.name;
                     html += `
                         <a href="#${childPath}" style="padding: 16px 20px; background:var(--bg-hover); border:1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: border-color 0.2s; font-size: 15px; font-weight: bold;">
@@ -473,6 +338,13 @@ async function handleRoute() {
             if (window.renderSpotify) window.renderSpotify();
             return;
         }
+
+        if (node.fileType === 'commits') {
+            iframe.style.display = 'none';
+            mdContainer.style.display = 'block';
+            await renderCommitsPage(mdContainer);
+            return;
+        }
         
         if (node.fileType === 'html') {
             mdContainer.style.display = 'none';
@@ -484,20 +356,10 @@ async function handleRoute() {
         if (node.fileType === 'md') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
-            currentDocFile = node.file;
             try {
-                let text = window.pagesDb[node.file];
-                if (!text) {
-                    const res = await fetch(node.file);
-                    text = res.ok ? await res.text() : '## Blank Page\nClick edit to add content.';
-                }
-                
-                let adminEditHeader = '';
-                if (currentProfile?.is_admin) {
-                    adminEditHeader = `<div class="editor-header"><span style="font-size:12px; color:var(--fg-muted)">Path: ${node.file}</span><button class="ui-btn" style="width:auto; margin:0;" onclick="openMarkdownEditor('${node.file}')">✎ Edit Page</button></div>`;
-                }
-                mdContainer.innerHTML = adminEditHeader + marked.parse(text);
-                updateWordCount(text);
+                const res = await fetch(node.file);
+                const text = res.ok ? await res.text() : '## Blank Page\nContent not found.';
+                mdContainer.innerHTML = marked.parse(text);
             } catch(e) {
                 mdContainer.innerHTML = '<h2>Error loading document</h2>';
             }
@@ -505,65 +367,52 @@ async function handleRoute() {
         }
     }
     
-    if (hash.startsWith('pages/')) {
-        mdContainer.style.display = 'none';
-        iframe.style.display = 'block';
-        iframe.src = hash;
-        return;
-    }
-    
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
     mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
 }
 
-window.openMarkdownEditor = async function(filePath) {
-    const iframe = document.getElementById('iframe-workspace');
-    const mdContainer = document.getElementById('page-content');
-    const editorWorkspace = document.getElementById('editor-workspace');
-
-    iframe.style.display = 'none';
-    mdContainer.style.display = 'none';
-    editorWorkspace.style.display = 'block';
-
+async function renderCommitsPage(container) {
+    container.innerHTML = '<h1>commit history</h1><p style="color:var(--fg-muted);">Loading commits...</p>';
     try {
-        let text = window.pagesDb[filePath];
-        if (!text) {
-            const res = await fetch(filePath);
-            text = res.ok ? await res.text() : '';
-        }
+        const res = await fetch('https://api.github.com/repos/devicals/devicals.github.io/commits');
+        if (!res.ok) throw new Error('Network response was not ok');
+        const commits = await res.json();
+        
+        const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        
+        const rows = commits.map((c, idx) => {
+            const sha = (c.sha || '').substring(0, 7);
+            const lines = (c.commit?.message || '').split('\n');
+            const summary = escapeHTML(lines[0]);
+            const body = escapeHTML(lines.slice(1).join('\n').trim());
+            const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
+            const dateStr = c.commit?.author?.date;
+            const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
+            const isLast = idx === commits.length - 1;
 
-        editorWorkspace.innerHTML = `
-            <div class="editor-header">
-                <h2 style="margin:0;">Edit Page: ${filePath}</h2>
-                <div style="display:flex; gap:12px;">
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="handleRoute()">Cancel</button>
-                    <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveMarkdownContent('${filePath}')">Save Page</button>
+            return `
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
+                        <div style="width: 2px; flex: 1; background: var(--border); visibility: ${idx === 0 ? 'hidden' : 'visible'};"></div>
+                        <div style="color: var(--accent); font-weight: bold; line-height: 1; font-size: 16px;">&#9679;</div>
+                        <div style="width: 2px; flex: 1; background: var(--border); visibility: ${isLast ? 'hidden' : 'visible'};"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0; padding-bottom: 20px; ${isLast ? '' : 'border-bottom: 1px dashed var(--border);'}">
+                        <div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-main); font-size: 16px; font-weight: bold;">${summary}</div>
+                        ${body ? `<div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-muted); font-size: 13px; margin-top: 8px;">${body}</div>` : ''}
+                        <div style="color: var(--fg-muted); font-size: 12px; margin-top: 10px;">
+                            <span style="color:var(--accent);">${sha}</span> &middot; ${author} &middot; ${dateDisplay}
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <textarea id="markdown-edit-area" class="ui-input" style="height: calc(100vh - 250px); resize: none; font-family: var(--font-ui); font-size:13px; line-height:1.6; padding: 20px;">${text}</textarea>
-        `;
-    } catch(e) {
-        guiAlert('Failed to load content for editing.', 'Error');
+            `;
+        }).join('');
+        
+        container.innerHTML = `<h1>commit history</h1><div style="margin-top:40px;">${rows}</div>`;
+    } catch (e) {
+        container.innerHTML = '<h1>commit history</h1><p style="color:var(--destructive);">Failed to load commit history.</p>';
     }
-};
-
-window.saveMarkdownContent = async function(filePath) {
-    const text = document.getElementById('markdown-edit-area').value;
-    try {
-        window.pagesDb[filePath] = text;
-        await supabaseClient.from('site_content').upsert({ key: 'pages_db', data: window.pagesDb });
-        guiAlert('Page saved successfully to Database.', 'Saved');
-        handleRoute();
-    } catch(e) {
-        guiAlert('Failed to save content.', 'Error');
-    }
-};
-
-function updateWordCount(text) {
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    const chars = text.length;
-    document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
 }
 
 async function loadAnnouncementsToast() {
@@ -574,17 +423,13 @@ async function loadAnnouncementsToast() {
             const textEl = document.getElementById('announcement-text');
             const bar = document.getElementById('announcement-bar');
 
-            textEl.textContent = data.data[data.data.length - 1]; // show latest
+            textEl.innerHTML = marked.parse(data.data[data.data.length - 1]);
             toast.style.display = 'flex';
             bar.style.width = '100%';
 
-            setTimeout(() => {
-                bar.style.width = '0%';
-            }, 50);
+            setTimeout(() => { bar.style.width = '0%'; }, 50);
 
-            announcementTimer = setTimeout(() => {
-                closeAnnouncementToast();
-            }, 30000);
+            announcementTimer = setTimeout(() => { closeAnnouncementToast(); }, 15000);
         }
     } catch(e) {}
 }
