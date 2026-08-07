@@ -9,7 +9,7 @@
 <body style="padding: 40px; overflow-y: auto;">
     <div class="markdown-body" style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
         <h1>about me</h1>
-        <p>👋 Sup! I'm <strong>Error Dev</strong>, an <em>Aussie</em>! I enjoy playing <a href="#About%20Me/Games%20I%20%3C3" onclick="window.parent.location.hash='About Me/Games I <3'">games</a> such as <em>Minecraft</em> and <em>Persona 5 Royal</em>, experimenting in <a href="https://powerpoint.office.com" target="_blank">Powerpoint</a>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <a href="https://github.com/devicals" target="_blank">Github</a>! Also check out my Minecraft projects at <a href="https://modrinth.com/organization/infiniverse" target="_blank">https://modrinth.com/organization/infiniverse</a>!</p>
+        <p>Sup! I'm <strong>Error Dev</strong>, an <em>Aussie</em>! I enjoy playing <a href="#About%20Me/Games%20I%20%3C3" onclick="window.parent.location.hash='About Me/Games I <3'">games</a> such as <em>Minecraft</em> and <em>Persona 5 Royal</em>, experimenting in <a href="https://powerpoint.office.com" target="_blank">Powerpoint</a>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <a href="https://github.com/devicals" target="_blank">Github</a>! Also check out my Minecraft projects at <a href="https://modrinth.com/organization/infiniverse" target="_blank">https://modrinth.com/organization/infiniverse</a>!</p>
         <p>Contact me at <a href="mailto:3rr0r.d3v@gmail.com">3rr0r.d3v@gmail.com</a>!</p>
 
         <h2>skills</h2>
@@ -26,7 +26,7 @@
 
         <h2>socials</h2>
         <ul>
-            <li><a id="discord-link" href="https://discord.com/users/989414384679927838" target="_blank">Discord</a></li>
+            <li><a href="https://discord.com/users/989414384679927838" target="_blank">Discord</a></li>
             <li><a href="https://steamcommunity.com/id/error_dev/" target="_blank">Steam</a></li>
             <li><a href="https://www.reddit.com/user/3RR0R_0FF1C1AL/" target="_blank">Reddit</a></li>
             <li><a href="https://www.youtube.com/@3rror_dev/" target="_blank">YouTube</a></li>
@@ -36,7 +36,7 @@
         </ul>
 
         <h2>latest blog</h2>
-        <div id="latest-blog-container" style="background:var(--bg-hover); padding:20px; border:1px solid var(--border); border-radius:8px !important; margin-top:20px; margin-bottom: 60px;">
+        <div id="latest-blog-container" style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); margin-top:30px; margin-bottom: 60px;">
             <span style="color:var(--fg-muted);">Loading latest blog post...</span>
         </div>
     </div>
@@ -57,9 +57,9 @@
                     });
                     const latest = sorted[0];
                     document.getElementById('latest-blog-container').innerHTML = `
-                        <div style="font-size:12px; color:var(--fg-muted); margin-bottom:6px;">${latest.date}</div>
-                        <div style="font-size:18px; font-weight:bold; color:var(--accent); margin-bottom:12px;">${latest.title}</div>
-                        <div style="font-size:14px; line-height:1.6;">${latest.content}</div>
+                        <div style="font-size:12px; color:var(--fg-muted); margin-bottom:10px;">${latest.date}</div>
+                        <div style="font-size:22px; font-weight:bold; color:var(--accent); margin-bottom:20px;">${latest.title}</div>
+                        <div style="font-size:15px; line-height:1.8;">${latest.content}</div>
                     `;
                 }
             } catch(e) {}

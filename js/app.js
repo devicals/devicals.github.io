@@ -9,6 +9,7 @@ let flatNodes = [];
 let showHiddenPages = false;
 let announcementTimer = null;
 let currentDocFile = null;
+window.pagesDb = {}; // Global page DB for markdown content
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
 
 const DEFAULT_NAV = {
@@ -114,6 +115,7 @@ const DEFAULT_NAV = {
 
 document.addEventListener('DOMContentLoaded', async () => {
     loadSettingsLocally();
+    await fetchPagesDb(); // Fetch markdown DB upfront
     await loadNavigation();
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
@@ -322,6 +324,17 @@ window.openAdminFromSettings = function() {
     window.location.hash = 'admin';
 };
 
+async function fetchPagesDb() {
+    try {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'pages_db').single();
+        if (data && data.data) {
+            window.pagesDb = data.data;
+        }
+    } catch(e) {
+        window.pagesDb = {};
+    }
+}
+
 async function loadNavigation() {
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'structure').single();
@@ -353,11 +366,11 @@ function renderNavigation() {
             
             if (node.type === 'folder') {
                 const isExp = expandedFolders.includes(currentPathHash);
-                el.innerHTML = `<div class="nav-item" onclick="window.location.hash='${currentPathHash.replace(/'/g, "\\'")}'"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> ${node.name}</div>`;
+                el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> <span style="font-weight:bold;">${node.name}</span></div>`;
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = `nav-children ${isExp ? 'expanded' : ''}`;
                 
-                el.querySelector('.nav-chevron').onclick = (e) => {
+                el.querySelector('.nav-item').addEventListener('click', (e) => {
                     e.stopPropagation();
                     const nowExp = childrenContainer.classList.toggle('expanded');
                     if (nowExp && !expandedFolders.includes(currentPathHash)) {
@@ -366,8 +379,9 @@ function renderNavigation() {
                         expandedFolders = expandedFolders.filter(p => p !== currentPathHash);
                     }
                     localStorage.setItem('expandedFolders', JSON.stringify(expandedFolders));
-                    e.target.textContent = nowExp ? 'v' : '>';
-                };
+                    el.querySelector('.nav-chevron').textContent = nowExp ? 'v' : '>';
+                    window.location.hash = currentPathHash;
+                });
 
                 el.appendChild(childrenContainer);
                 parentEl.appendChild(el);
@@ -375,8 +389,11 @@ function renderNavigation() {
                 buildTree(node.children || [], childrenContainer, currentPath);
             } else {
                 el.className = 'nav-item';
-                el.innerHTML = `<span style="width:12px"></span>${node.name}`;
-                el.onclick = () => window.location.hash = currentPathHash;
+                el.innerHTML = `<span style="width:14px"></span>${node.name}`;
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    window.location.hash = currentPathHash;
+                });
                 el.setAttribute('data-path', currentPathHash);
                 parentEl.appendChild(el);
                 flatNodes.push({ name: node.name, type: 'file', path: currentPathHash, fileType: node.fileType, url: node.url, file: node.path });
@@ -428,15 +445,15 @@ async function handleRoute() {
             mdContainer.style.display = 'block';
             
             const canSeeHidden = currentProfile?.is_admin ? showHiddenPages : false;
-            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:20px;">`;
+            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
             
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
                     if (child.hidden && !canSeeHidden) return;
                     const childPath = node.path + '/' + child.name;
                     html += `
-                        <a href="#${encodeURIComponent(childPath)}" style="padding: 10px 0; border-bottom: 1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: color 0.2s;">
-                            <span style="font-size:14px;">- ${child.name}</span>
+                        <a href="#${childPath}" style="padding: 16px 20px; background:var(--bg-hover); border:1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: border-color 0.2s; font-size: 15px; font-weight: bold;">
+                            ${child.name}
                         </a>
                     `;
                 });
@@ -469,18 +486,15 @@ async function handleRoute() {
             mdContainer.style.display = 'block';
             currentDocFile = node.file;
             try {
-                const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
-                let text = '';
-                if (data && data.data && data.data[node.file]) {
-                    text = data.data[node.file];
-                } else {
+                let text = window.pagesDb[node.file];
+                if (!text) {
                     const res = await fetch(node.file);
                     text = res.ok ? await res.text() : '## Blank Page\nClick edit to add content.';
                 }
                 
                 let adminEditHeader = '';
                 if (currentProfile?.is_admin) {
-                    adminEditHeader = `<div class="editor-header"><span style="font-size:11px; color:var(--fg-muted)">Path: ${node.file}</span><button class="ui-btn" style="width:auto; margin:0;" onclick="openMarkdownEditor('${node.file}')">✎ Edit Page</button></div>`;
+                    adminEditHeader = `<div class="editor-header"><span style="font-size:12px; color:var(--fg-muted)">Path: ${node.file}</span><button class="ui-btn" style="width:auto; margin:0;" onclick="openMarkdownEditor('${node.file}')">✎ Edit Page</button></div>`;
                 }
                 mdContainer.innerHTML = adminEditHeader + marked.parse(text);
                 updateWordCount(text);
@@ -513,24 +527,21 @@ window.openMarkdownEditor = async function(filePath) {
     editorWorkspace.style.display = 'block';
 
     try {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
-        let text = '';
-        if (data && data.data && data.data[filePath]) {
-            text = data.data[filePath];
-        } else {
+        let text = window.pagesDb[filePath];
+        if (!text) {
             const res = await fetch(filePath);
             text = res.ok ? await res.text() : '';
         }
 
         editorWorkspace.innerHTML = `
             <div class="editor-header">
-                <h2>Edit Page: ${filePath}</h2>
-                <div style="display:flex; gap:8px;">
+                <h2 style="margin:0;">Edit Page: ${filePath}</h2>
+                <div style="display:flex; gap:12px;">
                     <button class="ui-btn" style="width:auto; margin:0;" onclick="handleRoute()">Cancel</button>
                     <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveMarkdownContent('${filePath}')">Save Page</button>
                 </div>
             </div>
-            <textarea id="markdown-edit-area" class="ui-input" style="height: calc(100vh - 220px); resize: vertical; font-family: var(--font-ui); font-size:12px; line-height:1.6;">${text}</textarea>
+            <textarea id="markdown-edit-area" class="ui-input" style="height: calc(100vh - 250px); resize: none; font-family: var(--font-ui); font-size:13px; line-height:1.6; padding: 20px;">${text}</textarea>
         `;
     } catch(e) {
         guiAlert('Failed to load content for editing.', 'Error');
@@ -540,11 +551,9 @@ window.openMarkdownEditor = async function(filePath) {
 window.saveMarkdownContent = async function(filePath) {
     const text = document.getElementById('markdown-edit-area').value;
     try {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
-        const edits = data?.data || {};
-        edits[filePath] = text;
-        await supabaseClient.from('site_content').upsert({ key: 'page_edits', data: edits });
-        guiAlert('Page saved successfully.', 'Saved');
+        window.pagesDb[filePath] = text;
+        await supabaseClient.from('site_content').upsert({ key: 'pages_db', data: window.pagesDb });
+        guiAlert('Page saved successfully to Database.', 'Saved');
         handleRoute();
     } catch(e) {
         guiAlert('Failed to save content.', 'Error');

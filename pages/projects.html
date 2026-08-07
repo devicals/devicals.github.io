@@ -9,10 +9,13 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h1 style="margin:0;">Projects</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+            <h1 style="margin:0; font-size:32px;">Projects</h1>
+            <div id="admin-add-project-btn" style="display:none;">
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="addProject()">+ Add Project</button>
+            </div>
         </div>
-        <div id="project-tabs" style="display:flex; gap:10px; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:24px;"></div>
+        <div id="project-tabs" style="display:flex; gap:20px; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:40px;"></div>
         <div id="projects-grid" class="flat-list-container"></div>
     </div>
 
@@ -23,8 +26,14 @@
 
         let projectsData = { tabs: {} };
         let currentTabKey = null;
+        let isAdminLocal = false;
 
         async function initProjectsPage() {
+            isAdminLocal = window.parent.currentProfile?.is_admin || false;
+            if (isAdminLocal) {
+                document.getElementById('admin-add-project-btn').style.display = 'block';
+            }
+
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
             if (data && data.data) {
                 projectsData = data.data;
@@ -42,7 +51,7 @@
             keys.forEach(k => {
                 const btn = document.createElement('button');
                 btn.className = 'ui-btn';
-                btn.style.cssText = `width:auto; margin:0; border:none; border-bottom:2px solid transparent; background:transparent; border-radius:0 !important; ${k === currentTabKey ? 'border-color:var(--accent); color:var(--accent);' : ''}`;
+                btn.style.cssText = `width:auto; margin:0; border:none; border-bottom:2px solid transparent; background:transparent; font-size:16px; padding:0 0 4px 0; ${k === currentTabKey ? 'border-color:var(--accent); color:var(--accent);' : ''}`;
                 btn.textContent = projectsData.tabs[k].display;
                 btn.onclick = () => { currentTabKey = k; renderTabs(); };
                 tabsEl.appendChild(btn);
@@ -57,13 +66,39 @@
             if (!currentTabKey || !projectsData.tabs[currentTabKey]) return;
             const list = projectsData.tabs[currentTabKey].projects || [];
 
-            grid.innerHTML = list.map(p => `
-                <div class="flat-list-item">
-                    <a href="${p.link}" target="_blank" class="flat-title">${p.name} ↗</a>
-                    <div class="flat-desc">${p.description}</div>
+            grid.innerHTML = list.map((p, idx) => `
+                <div class="flat-list-item" style="padding-bottom:30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <a href="${p.link}" target="_blank" class="flat-title" style="font-size:24px;">${p.name} ↗</a>
+                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteProject(${idx})">Delete</button>` : ''}
+                    </div>
+                    <div class="flat-desc" style="font-size:15px;">${p.description}</div>
                 </div>
             `).join('');
         }
+
+        window.addProject = async () => {
+            if (!currentTabKey) return;
+            const name = await window.parent.guiPrompt("Project Name:", "", "Add Project");
+            if (!name) return;
+            const desc = await window.parent.guiPrompt("Project Description:", "", "Project Description");
+            const link = await window.parent.guiPrompt("Project Link URL:", "https://", "Project URL");
+            
+            if (!projectsData.tabs[currentTabKey].projects) projectsData.tabs[currentTabKey].projects = [];
+            projectsData.tabs[currentTabKey].projects.push({ name, description: desc, link });
+            
+            await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
+            renderGrid();
+        };
+
+        window.deleteProject = async (idx) => {
+            const conf = await window.parent.guiConfirm("Delete this project?", "Confirm Deletion");
+            if (conf) {
+                projectsData.tabs[currentTabKey].projects.splice(idx, 1);
+                await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
+                renderGrid();
+            }
+        };
 
         document.addEventListener('DOMContentLoaded', initProjectsPage);
     </script>

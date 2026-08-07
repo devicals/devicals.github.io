@@ -10,8 +10,8 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h1 style="margin:0;">Blogs</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+            <h1 style="margin:0; font-size:32px;">Blogs</h1>
             <div id="admin-add-blog-btn" style="display:none;">
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="openNewBlogModal()">+ Create Blog</button>
             </div>
@@ -27,10 +27,11 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let blogsList = [];
+        let isAdminLocal = false;
 
         async function initBlogsPage() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session?.user?.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+            isAdminLocal = window.parent.currentProfile?.is_admin || false;
+            if (isAdminLocal) {
                 document.getElementById('admin-add-blog-btn').style.display = 'block';
             }
 
@@ -48,10 +49,11 @@
                 return;
             }
             container.innerHTML = blogsList.map((b, i) => `
-                <div class="flat-list-item">
-                    <div class="flat-meta">${b.date}</div>
-                    <div class="flat-title" style="font-size:20px; margin-bottom:8px;">${b.title}</div>
-                    <div class="flat-desc markdown-body">${marked.parse(b.content)}</div>
+                <div class="flat-list-item" style="padding-bottom:40px;">
+                    <div class="flat-meta" style="font-size:13px; margin-bottom:10px;">${b.date}</div>
+                    <div class="flat-title" style="font-size:26px; margin-bottom:20px;">${b.title}</div>
+                    <div class="flat-desc markdown-body" style="font-size:15px;">${marked.parse(b.content)}</div>
+                    ${isAdminLocal ? `<button class="ui-btn" style="width:auto; align-self:flex-start; margin-top:20px; color:var(--destructive);" onclick="deleteBlog(${i})">Delete Post</button>` : ''}
                 </div>
             `).join('');
         }
@@ -66,8 +68,17 @@
             const today = new Date();
             const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
             blogsList.unshift({ id: nextId, date: dateStr, title, content });
-            await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs');
+            await supabaseClient.from('site_content').upsert({ key: 'blogs', data: blogsList });
             renderBlogs();
+        };
+
+        window.deleteBlog = async (idx) => {
+            const confirmed = await window.parent.guiConfirm("Delete this blog post?", "Confirm");
+            if (confirmed) {
+                blogsList.splice(idx, 1);
+                await supabaseClient.from('site_content').upsert({ key: 'blogs', data: blogsList });
+                renderBlogs();
+            }
         };
 
         document.addEventListener('DOMContentLoaded', initBlogsPage);

@@ -269,6 +269,13 @@
             revivedSet: [...revivedSet] 
         };
         localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
+        syncToSupabaseIfAdmin(state);
+    }
+
+    async function syncToSupabaseIfAdmin(state) {
+        if (window.parent.currentProfile?.is_admin) {
+            await window.parent.supabaseClient.from('zato_tierlist').update({ state }).eq('id', 1);
+        }
     }
 
     function applyState(state) {
