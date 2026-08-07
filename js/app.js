@@ -8,7 +8,7 @@ let navData = { children: [] };
 let flatNodes = [];
 let showHiddenPages = false;
 
-const DEFAULT_FALLBACK_NAV = {
+const DEFAULT_NAV = {
   "children": [
     {
       "name": "Index",
@@ -248,16 +248,21 @@ window.updateProfile = async () => {
 document.getElementById('auth-trigger').onclick = () => document.getElementById('auth-modal').style.display = 'flex';
 document.getElementById('settings-trigger').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
 
+window.openAdminFromSettings = function() {
+    document.getElementById('settings-modal').style.display = 'none';
+    window.location.hash = 'admin';
+};
+
 async function loadNavigation() {
     try {
         const res = await fetch('data/structure.json');
         if (res.ok) {
             navData = await res.json();
         } else {
-            navData = DEFAULT_FALLBACK_NAV;
+            navData = DEFAULT_NAV;
         }
     } catch (e) {
-        navData = DEFAULT_FALLBACK_NAV;
+        navData = DEFAULT_NAV;
     }
     renderNavigation();
 }
@@ -277,13 +282,13 @@ function renderNavigation() {
             const el = document.createElement('div');
             
             if (node.type === 'folder') {
-                el.innerHTML = `<div class="nav-item"><span class="nav-folder-icon ${node.collapsed ? '' : 'open'}">▶</span> ${node.name}</div>`;
+                el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${node.collapsed ? '>' : 'v'}</span> ${node.name}</div>`;
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = `nav-children ${node.collapsed ? '' : 'expanded'}`;
                 el.querySelector('.nav-item').onclick = (e) => {
-                    const icon = e.currentTarget.querySelector('.nav-folder-icon');
-                    icon.classList.toggle('open');
-                    childrenContainer.classList.toggle('expanded');
+                    const chev = e.currentTarget.querySelector('.nav-chevron');
+                    const isExp = childrenContainer.classList.toggle('expanded');
+                    chev.textContent = isExp ? 'v' : '>';
                 };
                 el.appendChild(childrenContainer);
                 parentEl.appendChild(el);
@@ -317,18 +322,21 @@ async function handleRoute() {
     
     highlightNav();
     
-    if (hash === 'admin') {
-        if (!currentProfile?.is_admin) { window.location.hash = 'Index/Home'; return; }
-        openAdminModal();
-        return;
-    }
-    
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
     const breadcrumbs = document.getElementById('breadcrumbs');
     const tocContainer = document.getElementById('toc-tree');
     
-    breadcrumbs.innerHTML = hash.split('/').map(p => `<span class="crumb-link">${p}</span>`).join(' > ');
+    if (hash === 'admin') {
+        iframe.style.display = 'none';
+        mdContainer.style.display = 'block';
+        breadcrumbs.innerHTML = 'System > Admin Dashboard';
+        tocContainer.innerHTML = '';
+        if (window.renderAdminPage) window.renderAdminPage();
+        return;
+    }
+
+    breadcrumbs.innerHTML = hash.split('/').map(p => `<span class="crumb-link" onclick="window.location.hash='${p}'">${p}</span>`).join(' > ');
     
     const node = flatNodes.find(n => n.path === hash);
     
@@ -346,7 +354,7 @@ async function handleRoute() {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
             iframe.src = node.url;
-            tocContainer.innerHTML = '<div style="color:var(--fg-muted); padding:8px;">Interactive Application</div>';
+            tocContainer.innerHTML = '';
             return;
         }
         
@@ -359,6 +367,7 @@ async function handleRoute() {
                     const text = await res.text();
                     mdContainer.innerHTML = marked.parse(text);
                     generateTOC();
+                    updateWordCount(text);
                 } else {
                     mdContainer.innerHTML = '<h2>404 - Document Not Found</h2>';
                     tocContainer.innerHTML = '';
@@ -385,6 +394,12 @@ async function handleRoute() {
     tocContainer.innerHTML = '';
 }
 
+function updateWordCount(text) {
+    const words = text.trim().split(/\s+/).length;
+    const chars = text.length;
+    document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
+}
+
 function generateTOC() {
     const tocContainer = document.getElementById('toc-tree');
     tocContainer.innerHTML = '';
@@ -394,7 +409,7 @@ function generateTOC() {
         const link = document.createElement('a');
         link.className = 'toc-item';
         link.textContent = h.textContent;
-        link.style.paddingLeft = (parseInt(h.tagName[1]) - 1) * 10 + 'px';
+        link.style.paddingLeft = (parseInt(h.tagName[1]) - 1) * 8 + 'px';
         link.onclick = () => h.scrollIntoView({behavior: 'smooth'});
         tocContainer.appendChild(link);
     });

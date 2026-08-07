@@ -1,9 +1,9 @@
 window.renderSpotify = async function() {
     const container = document.getElementById('spotify-inject');
     container.innerHTML = `
-        <h1>Spotify</h1>
-        <div id="spotify-status">Checking live playback presence...</div>
-        <div id="liked-songs-section" style="margin-top:24px;"></div>
+        <h1>about me</h1>
+        <div id="spotify-status">Checking live Spotify status...</div>
+        <div id="liked-songs-section" style="margin-top:30px;"></div>
     `;
     
     try {
@@ -15,22 +15,22 @@ window.renderSpotify = async function() {
             const sp = data.spotify;
             document.getElementById('spotify-status').innerHTML = `
                 <div class="spotify-container">
-                    <div class="spotify-title">CURRENTLY PLAYING</div>
+                    <div class="spotify-title">CURRENTLY PLAYING ON SPOTIFY</div>
                     <div class="spotify-track">${sp.song}</div>
                     <div class="spotify-artist">by ${sp.artist}</div>
-                    <div style="margin-top: 10px; font-size: 11px; color: var(--fg-muted);">Album: ${sp.album}</div>
+                    <div style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);">Album: ${sp.album}</div>
                 </div>
             `;
         } else {
             document.getElementById('spotify-status').innerHTML = `
                 <div class="spotify-container">
-                    <div class="spotify-title">CURRENTLY PLAYING</div>
-                    <div class="spotify-track">Offline / No active playback</div>
+                    <div class="spotify-title">CURRENTLY PLAYING ON SPOTIFY</div>
+                    <div class="spotify-track">Offline / Not playing right now</div>
                 </div>
             `;
         }
     } catch(e) {
-        document.getElementById('spotify-status').textContent = 'Live presence unavailable.';
+        document.getElementById('spotify-status').textContent = 'Live Spotify presence unavailable.';
     }
 
     try {
@@ -41,8 +41,8 @@ window.renderSpotify = async function() {
             const likedSection = document.getElementById('liked-songs-section');
             likedSection.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3>Liked Songs (${tracks.length})</h3>
-                    <input type="text" id="spotify-search" class="ui-input" placeholder="Search track, artist, album..." style="width:250px; margin:0;">
+                    <h2>Liked Songs Archive (${tracks.length})</h2>
+                    <input type="text" id="spotify-search" class="ui-input" placeholder="Search track, artist, album..." style="width:240px; margin:0;">
                 </div>
                 <div class="track-grid" id="track-grid-list"></div>
             `;

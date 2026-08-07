@@ -3,356 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Error Dev</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
-    <script src="/storage/internal/scripts/embed-detect.js"></script>
-    <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        ::-webkit-scrollbar { display: none !important; }
-        * { border-radius: 0 !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
-        
-        .desktop-area { position: absolute; inset: 0; overflow: hidden; }
-        
-        .text-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; line-height: 1.4; color: hsl(var(--foreground)); }
-        .text-line a { color: hsl(var(--foreground)); text-decoration: none; }
-        .text-line a:hover { color: hsl(var(--accent)); }
-        
-        .admin-actions { display: none; gap: 6px; }
-        body.is-admin .admin-actions { display: flex; }
-        
-        .add-row { display: none; gap: 6px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
-        body.is-admin .add-row { display: flex; }
-        
-        .admin-edit-only { display: none; cursor: pointer; color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: normal; }
-        body.is-admin .admin-edit-only { display: inline-block; }
-        .admin-edit-only:hover { color: hsl(var(--accent)); }
-        
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .modal-content { background: hsl(var(--card)); border: 1px solid hsl(var(--foreground) / 0.3); padding: 24px; width: 90%; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px dashed hsl(var(--foreground) / 0.3); }
-        .modal-header h2 { font-size: 14px; margin: 0; color: hsl(var(--accent)); text-transform: uppercase; }
-        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: hsl(var(--muted-foreground)); font-weight: 600; }
-        .modal-close:hover { color: hsl(var(--destructive)); }
-        .modal-body { display: flex; flex-direction: column; gap: 12px; }
-        .modal textarea { width: 100%; padding: 10px; background: rgba(0,0,0,0.5); border: 1px solid hsl(var(--foreground) / 0.3); color: hsl(var(--foreground)); font-family: inherit; font-size: 13px; outline: none; min-height: 250px; resize: vertical; }
-        .modal textarea:focus { border-color: hsl(var(--accent)); }
-        
-        /* Spacing and render normalization for blog contents */
-        .blog-body > *:first-child { margin-top: 0 !important; }
-        .blog-body pre { overflow-x: auto; white-space: pre; }
-        
-        @media (max-width: 768px) {
-            .desktop-area { overflow-y: auto; position: relative; padding: 20px; height: auto; display: flex; flex-direction: column; gap: 20px; }
-            .ascii-window { position: relative !important; left: 0 !important; top: 0 !important; width: 100% !important; transform: none !important; }
-        }
-    </style>
+    <title>Home</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
-<body>
-    <div class="desktop-area" id="desktop"></div>
+<body style="padding: 40px; overflow-y: auto;">
+    <div class="markdown-body" style="max-width: 800px; margin: 0 auto;">
+        <h1>about me</h1>
+        <p>👋 Sup! I'm <strong>Error Dev</strong>, an <em>Aussie</em>! I enjoy playing <a href="pages/games.html">games</a> such as <em>Minecraft</em> and <em>Persona 5 Royal</em>, experimenting in <a href="https://powerpoint.office.com" target="_blank">Powerpoint</a>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <a href="https://github.com/devicals" target="_blank">Github</a>! Also check out my Minecraft projects at <a href="https://modrinth.com/organization/infiniverse" target="_blank">https://modrinth.com/organization/infiniverse</a>!</p>
+        <p>Contact me at <a href="mailto:3rr0r.d3v@gmail.com">3rr0r.d3v@gmail.com</a>!</p>
 
-    <div id="bio-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Edit Bio</h2>
-                <button class="modal-close" onclick="closeBioModal()">x</button>
-            </div>
-            <div class="modal-body">
-                <textarea id="bio-textarea-input" placeholder="Biography Markdown..."></textarea>
-                <button class="ascii-btn" onclick="saveBio()" style="text-align: right; color: hsl(var(--accent));">[ Execute Save ]</button>
-            </div>
+        <h2>skills</h2>
+        <ul>
+            <li><a href="https://html.com/" target="_blank">Hypertext Markup Language (HTML)</a></li>
+            <li><a href="https://www.javascript.com/" target="_blank">JavaScript (JS)</a></li>
+            <li><a href="https://yaml.org/" target="_blank">YAML Ain't Markup Language (YAML)</a></li>
+            <li><a href="https://www.json.org/" target="_blank">JS Object Notation (JSON)</a></li>
+            <li><a href="https://marketplace.visualstudio.com/items?itemName=error-dev.flexion-language" target="_blank">Flexion (Flexible Object Notation) (FLON)</a></li>
+            <li><a href="https://www.w3.org/Style/CSS/" target="_blank">Cascading Style Sheets (CSS)</a></li>
+            <li><a href="https://www.python.org/" target="_blank">Python (PY)</a></li>
+            <li><a href="https://mcbeet.dev/" target="_blank">Beet & Bolt (Minecraft Datapacks)</a></li>
+        </ul>
+
+        <h2>socials</h2>
+        <ul>
+            <li><a id="discord-link" href="https://discord.com/users/989414384679927838" target="_blank">Discord</a></li>
+            <li><a href="https://steamcommunity.com/id/error_dev/" target="_blank">Steam</a></li>
+            <li><a href="https://www.reddit.com/user/3RR0R_0FF1C1AL/" target="_blank">Reddit</a></li>
+            <li><a href="https://www.youtube.com/@3rror_dev/" target="_blank">YouTube</a></li>
+            <li><a href="https://www.deviantart.com/3rrordev" target="_blank">DeviantART</a></li>
+            <li><a href="https://x.com/error_dev_xt/" target="_blank">X / Twitter</a></li>
+            <li><a href="https://error-offixial.itch.io/" target="_blank">itch.io</a></li>
+        </ul>
+
+        <h2>latest blog</h2>
+        <div id="latest-blog-container" style="background:var(--bg-hover); padding:16px; border:1px solid var(--border); margin-top:12px;">
+            Loading latest blog post...
         </div>
     </div>
-    
-    <div id="edit-item-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="edit-item-title">Edit Item</h2>
-                <button class="modal-close" onclick="closeEditItemModal()">x</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="edit-item-name" class="ascii-input" placeholder="Name">
-                <input type="text" id="edit-item-link" class="ascii-input" placeholder="Link (optional)">
-                <button class="btn-primary" onclick="saveEditItem()" style="width: 100%;">[ Save ]</button>
-            </div>
-        </div>
-    </div>
-    
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        let homeData = null;
-        let isAdmin = false;
-        let dragItemIdx = null;
-        let dragCategory = null;
-        let highestZ = 100;
-        let currentEditCategory = null;
-        let currentEditIdx = null;
-
-        window.addEventListener('message', (e) => {
-            if (e.data && e.data.type === 'auth-sync') {
-                handleUserSession(e.data.session);
-            }
-        });
-
-        function handleUserSession(session) {
-            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                isAdmin = true;
-                document.body.classList.add('is-admin');
-            } else {
-                isAdmin = false;
-                document.body.classList.remove('is-admin');
-            }
-            if (homeData) renderPage();
-        }
-
-        async function initDatabase() {
-            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'home').single();
-            if (data && data.data) {
-                homeData = data.data;
-                renderPage();
-            }
-            supabaseClient.channel('home-realtime')
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.home' }, (payload) => {
-                    if (payload.new && payload.new.data) { homeData = payload.new.data; renderPage(); }
-                }).subscribe();
-        }
-
-        async function syncToSupabase() {
-            if (!isAdmin) return;
-            const { error } = await supabaseClient.from('site_content').update({ data: homeData }).eq('key', 'home');
-            if (error) alert("Error saving: " + error.message);
-        }
-
-        function makeDraggable(winId, handleId) {
-            const win = document.getElementById(winId);
-            const handle = document.getElementById(handleId);
-            if (!win || !handle) return;
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            
-            handle.onmousedown = dragMouseDown;
-            handle.ontouchstart = dragMouseDown;
-
-            function dragMouseDown(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
-                e.preventDefault();
-                win.style.zIndex = ++highestZ;
-                if (e.type === 'touchstart') {
-                    pos3 = e.touches[0].clientX; pos4 = e.touches[0].clientY;
-                } else {
-                    pos3 = e.clientX; pos4 = e.clientY;
-                }
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-                document.ontouchend = closeDragElement;
-                document.ontouchmove = elementDrag;
-            }
-
-            function elementDrag(e) {
-                e.preventDefault();
-                let clientX = e.type === 'touchmove' ? e.touches[0].clientX : e.clientX;
-                let clientY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
-                pos1 = pos3 - clientX; pos2 = pos4 - clientY;
-                pos3 = clientX; pos4 = clientY;
-                win.style.top = (win.offsetTop - pos2) + "px";
-                win.style.left = (win.offsetLeft - pos1) + "px";
-            }
-
-            function closeDragElement() {
-                document.onmouseup = null; document.onmousemove = null;
-                document.ontouchend = null; document.ontouchmove = null;
-            }
-            
-            win.addEventListener('mousedown', () => { win.style.zIndex = ++highestZ; });
-        }
-
-        function createWindow(id, title, rightContent, contentHTML, bounds, adminControls = '') {
-            let win = document.getElementById(id);
-            const isNew = !win;
-            if (isNew) {
-                win = document.createElement('div');
-                win.id = id;
-                win.className = 'ascii-window';
-                win.style.left = bounds.left;
-                win.style.top = bounds.top;
-                win.style.width = bounds.width;
-                document.getElementById('desktop').appendChild(win);
-            }
-            
-            win.innerHTML = `
-                <div class="ascii-corner tl">┌</div><div class="ascii-corner tr">┐</div><div class="ascii-corner bl">└</div><div class="ascii-corner br">┘</div>
-                <div class="ascii-title-container">
-                    <span class="ascii-title" id="${id}-drag">${title}</span>
-                    ${adminControls}
-                </div>
-                ${rightContent ? `
-                <div class="ascii-right-container">
-                    <span>${rightContent}</span>
-                </div>` : ''}
-                <div class="ascii-content">
-                    ${contentHTML}
-                </div>
-            `;
-            
-            if (isNew && window.innerWidth > 768) makeDraggable(id, `${id}-drag`);
-            return win;
-        }
-
-        async function renderPage() {
-            let bioHTML = `<div style="line-height:1.8;">${marked.parse(homeData.bio || '')}</div>`;
-            createWindow('win-bio', 'about me', '', bioHTML, {left: '20px', top: '20px', width: '450px'}, 
-                `<span class="admin-edit-only" onclick="openBioModal()">[✎]</span>`);
-
-            let skillsHTML = `<div class="add-row">
-                <input type="text" id="skill-n" class="ascii-input" placeholder="Skill Name" style="flex:1;">
-                <input type="text" id="skill-l" class="ascii-input" placeholder="URL (opt)" style="flex:1;">
-                <button class="ascii-btn" onclick="addSkill()" style="color:hsl(var(--accent));">[+]</button>
-            </div><div id="skills-list"></div>`;
-            createWindow('win-skills', 'skills', '', skillsHTML, {left: '500px', top: '150px', width: '380px'});
-            renderGridItems(homeData.skills, 'skills-list', 'skills', (item) => item.skill, (item) => item.link);
-
-            let socialsHTML = `<div class="add-row">
-                <input type="text" id="social-n" class="ascii-input" placeholder="Social Name" style="flex:1;">
-                <input type="text" id="social-l" class="ascii-input" placeholder="Profile URL" style="flex:1;">
-                <button class="ascii-btn" onclick="addSocial()" style="color:hsl(var(--accent));">[+]</button>
-            </div>
-            <div id="discord-live" class="text-line" style="color:hsl(var(--foreground)); font-weight:bold;">Loading Discord...</div>
-            <div id="socials-list" style="margin-top:10px;"></div>`;
-            createWindow('win-socials', 'socials', '', socialsHTML, {left: '920px', top: '100px', width: '300px'});
-            renderGridItems(homeData.socials, 'socials-list', 'socials', (item) => item.name, (item) => item.link);
-            refreshDiscordUI();
-
-            loadLatestBlogPreview();
-        }
-
-        function renderGridItems(arr, containerId, category, textMapper, linkMapper) {
-            const grid = document.getElementById(containerId);
-            if (!grid) return;
-            grid.innerHTML = '';
-            arr.forEach((item, idx) => {
-                const link = linkMapper(item);
-                const row = document.createElement('div');
-                row.className = 'text-line';
-                row.innerHTML = `
-                    <span style="flex:1; cursor:${isAdmin ? 'grab' : 'auto'};">${link ? `<a href="${link}" target="_blank">${textMapper(item)}</a>` : textMapper(item)}</span>
-                    <div class="admin-actions">
-                        <button class="ascii-btn" onclick="editItem('${category}', ${idx}, event)">[✎]</button>
-                        <button class="ascii-btn del" onclick="deleteItem('${category}', ${idx}, event)">[x]</button>
-                    </div>
-                `;
-                
-                if (isAdmin) {
-                    row.draggable = true;
-                    row.addEventListener('dragstart', (e) => { dragItemIdx = idx; dragCategory = category; e.dataTransfer.effectAllowed = 'move'; });
-                    row.addEventListener('dragover', (e) => e.preventDefault());
-                    row.addEventListener('drop', async (e) => {
-                        e.preventDefault(); if (dragCategory !== category) return;
-                        if (dragItemIdx === idx) return;
-                        const targetArr = homeData[category];
-                        const [reordered] = targetArr.splice(dragItemIdx, 1);
-                        targetArr.splice(idx, 0, reordered);
-                        await syncToSupabase();
-                    });
-                }
-                grid.appendChild(row);
-            });
-        }
-
-        window.openBioModal = () => { document.getElementById('bio-textarea-input').value = homeData.bio || ''; document.getElementById('bio-modal').classList.add('active'); };
-        window.closeBioModal = () => document.getElementById('bio-modal').classList.remove('active');
-        window.saveBio = async () => {
-            const bioText = document.getElementById('bio-textarea-input').value.trim();
-            if (!bioText) return;
-            homeData.bio = bioText;
-            closeBioModal();
-            await syncToSupabase();
-        };
-
-        window.editItem = (category, idx, e) => {
-            e.stopPropagation(); e.preventDefault();
-            currentEditCategory = category;
-            currentEditIdx = idx;
-            const item = homeData[category][idx];
-            document.getElementById('edit-item-title').textContent = category === 'skills' ? 'Edit Skill' : 'Edit Social';
-            document.getElementById('edit-item-name').value = category === 'skills' ? item.skill : item.name;
-            document.getElementById('edit-item-link').value = item.link || '';
-            document.getElementById('edit-item-modal').classList.add('active');
-        };
-        window.closeEditItemModal = () => document.getElementById('edit-item-modal').classList.remove('active');
-        window.saveEditItem = async () => {
-            const name = document.getElementById('edit-item-name').value.trim();
-            if (!name) return;
-            const link = document.getElementById('edit-item-link').value.trim();
-            const item = homeData[currentEditCategory][currentEditIdx];
-            if (currentEditCategory === 'skills') item.skill = name; else item.name = name;
-            item.link = link || null;
-            closeEditItemModal();
-            await syncToSupabase();
-            renderPage();
-        };
-
-        window.addSkill = async () => {
-            const n = document.getElementById('skill-n').value.trim();
-            const l = document.getElementById('skill-l').value.trim() || null;
-            if (!n) return; homeData.skills.push({ skill: n, link: l }); await syncToSupabase();
-        };
-        window.addSocial = async () => {
-            const n = document.getElementById('social-n').value.trim();
-            const l = document.getElementById('social-l').value.trim();
-            if (!n || !l) return; homeData.socials.push({ name: n, link: l }); await syncToSupabase();
-        };
-
-        window.deleteItem = async (category, idx, e) => {
-            e.stopPropagation(); e.preventDefault();
-            if (!confirm(`Delete item?`)) return;
-            homeData[category].splice(idx, 1);
-            await syncToSupabase();
-        };
-
-        async function refreshDiscordUI() {
+        async function loadHomeData() {
             try {
                 const res = await fetch('https://api.lanyard.rest/v1/users/989414384679927838');
                 const data = await res.json();
                 const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
                 const text = statusMap[data.data?.discord_status || 'offline'] || 'Offline';
-                document.getElementById('discord-live').innerHTML = `<a href="https://discord.com/users/989414384679927838" target="_blank">${text} on Discord</a>`;
+                document.getElementById('discord-link').textContent = `${text} on Discord`;
             } catch(e) {}
-        }
 
-        async function loadLatestBlogPreview() {
             try {
                 const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
                 if (data && data.data && data.data.length > 0) {
-                    const sortedBlogs = data.data.sort((a,b) => {
+                    const sorted = data.data.sort((a,b) => {
                         const pa = a.date.split('/'); const pb = b.date.split('/');
                         return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
                     });
-                    const latest = sortedBlogs[0];
-                    const parsedHTML = await marked.parse(latest.content, { breaks: true, gfm: true });
-                    
-                    const dateDisplay = latest.date.replace(/\//g, '-');
-                    
-                    createWindow('win-blog', 'latest blog', dateDisplay, `
-                        <div style="cursor: pointer; line-height: 1.6; display: flex; flex-direction: column;" onclick="window.parent.location.hash = 'page=blogs&id=${latest.id}'">
-                            <div style="color:hsl(var(--accent)); font-weight:bold; margin-bottom:12px; font-size: 16px;">${latest.title}</div>
-                            <div class="blog-body" style="color:hsl(var(--foreground)); word-wrap: break-word;">
-                                ${parsedHTML}
-                            </div>
-                        </div>
-                    `, {left: '50px', top: '550px', width: '500px'});
+                    const latest = sorted[0];
+                    document.getElementById('latest-blog-container').innerHTML = `
+                        <div style="font-size:12px; color:var(--fg-muted); margin-bottom:4px;">${latest.date}</div>
+                        <div style="font-size:16px; font-weight:bold; color:var(--accent); margin-bottom:8px;">${latest.title}</div>
+                        <div style="font-size:13px; line-height:1.6;">${latest.content}</div>
+                    `;
                 }
-            } catch (e) {}
+            } catch(e) {}
         }
-        function parseDate(d) { const p=d.split('/'); return new Date(p[2],p[1]-1,p[0]); }
 
-        document.addEventListener('DOMContentLoaded', () => { initDatabase(); });
+        document.addEventListener('DOMContentLoaded', loadHomeData);
     </script>
 </body>
 </html>
