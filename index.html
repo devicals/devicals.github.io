@@ -1,343 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>painful existence, silent suffering</title>
-    <link rel="icon" type="image/x-icon" href="/storage/assets/favicon.ico">
-    <link rel="stylesheet" href="/storage/internal/styles/styles.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        #mobile-blocker {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: hsl(var(--background));
-            z-index: 99999;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            font-family: 'JetBrains Mono', monospace;
-            color: hsl(var(--foreground));
-        }
-        @media (max-width: 768px) {
-            #mobile-blocker {
-                display: flex;
-            }
-            #desktop, #taskbar, iframe, .modal {
-                display: none !important;
-            }
-        }
-        #taskbar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-top: 1px solid hsl(var(--border));
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-        }
-        #start-button {
-            background: transparent;
-            border: 1px solid transparent;
-            color: hsl(var(--foreground));
-            font-size: 24px;
-            cursor: pointer;
-            height: 100%;
-            padding: 0 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
-        }
-        #start-button:hover {
-            background: hsl(var(--secondary));
-            border-color: hsl(var(--border));
-        }
-        #start-button.start-active {
-            background: hsl(var(--secondary));
-            border-color: hsl(var(--accent));
-        }
-        #start-icon {
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s;
-        }
-        #start-button.start-active #start-icon {
-            transform: rotate(180deg) scale(1.1);
-            color: hsl(var(--accent));
-        }
-        
-        #taskbar-items {
-            display: flex;
-            gap: 8px;
-            margin-left: 15px;
-            height: 100%;
-            align-items: center;
-            flex: 1;
-            overflow-x: auto;
-        }
-        .taskbar-item-btn {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-            padding: 0 15px;
-            height: 32px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            transition: background 0.2s;
-            white-space: nowrap;
-        }
-        .taskbar-item-btn:hover {
-            background: hsl(var(--secondary));
-        }
-
-        #notif-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            color: hsl(var(--foreground));
-            cursor: pointer;
-            padding: 0 15px;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.2s, border-color 0.2s;
-            margin-left: auto;
-        }
-        #notif-btn:hover {
-            background: hsl(var(--secondary));
-            border-color: hsl(var(--border));
-        }
-        #notif-btn.notif-active {
-            background: hsl(var(--secondary)) !important;
-            border-color: hsl(var(--accent)) !important;
-        }
-        #notif-btn.notif-active svg {
-            fill: hsl(var(--accent)) !important;
-            stroke: hsl(var(--accent)) !important;
-        }
-
-        #nav-window {
-            position: fixed;
-            left: 10px;
-            bottom: 70px;
-            top: 20px;
-            width: 300px;
-            z-index: 10001;
-            transform: translateX(-120%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-        }
-        #nav-window.nav-open {
-            transform: translateX(0);
-        }
-        .nav-vertical-text {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            padding: 15px 5px;
-            font-size: 10px;
-            letter-spacing: 1px;
-            color: hsl(var(--muted-foreground));
-            border-left: 1px dashed hsl(var(--border));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            background: rgba(0,0,0,0.2);
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; transform: translateY(0) scale(1); }
-            to { opacity: 0; transform: translateY(10px) scale(0.98); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .fade-out { animation: fadeOut 0.3s forwards; }
-        .fade-in { animation: fadeIn 0.3s forwards; }
-        
-        #ann-progress-container {
-            height: 2px;
-            background: hsl(var(--secondary));
-            width: 100%;
-            margin-top: 12px;
-        }
-        #ann-progress-bar {
-            height: 100%;
-            background: hsl(var(--accent));
-            width: 100%;
-        }
-        .resize-handle {
-            user-select: none;
-        }
-        #notif-list div {
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Portfolio</title>
+<link rel="icon" href="/assets/favicon.ico">
+<link rel="stylesheet" href="/assets/css/primary-theme.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div id="mobile-blocker">
-        <div>
-            <div style="font-size: 32px; margin-bottom: 15px; color: hsl(var(--accent));">✦</div>
-            <p>Please view this website on a larger desktop screen.</p>
-        </div>
+<div id="app">
+  <div id="sidebar-left">
+    <div id="nav-tree-wrap"><div id="nav-tree"></div></div>
+    <div id="profile-popup" class="popup"></div>
+    <div id="settings-popup" class="popup"></div>
+    <div id="sidebar-bottom">
+      <button id="profile-icon-btn"><span class="profile-icon-glyph">&#9790;</span></button>
+      <button id="settings-icon-btn">&#9776;</button>
     </div>
-
-    <div style="position:fixed; inset:0; background:hsl(var(--background)); z-index:-3;"></div>
-    <iframe src="/bg.html" style="position:fixed; inset:0; width:100%; height:100%; border:none; z-index:-2; pointer-events:none; user-select:none; opacity: 0.15;"></iframe>
-    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:-1; pointer-events:none;"></div>
-
-    <div id="desktop" class="desktop-area" style="height: calc(100% - 60px); width: 100%; position: absolute; inset: 0;">
-        
-        <div class="ascii-window" id="nav-window">
-            <div class="ascii-header-row">
-                <div class="ascii-header-line" style="width: 15px;"></div>
-                <div class="ascii-title">nav</div>
-                <div class="ascii-header-line" style="flex: 1;"></div>
-            </div>
-            <div class="ascii-content" style="padding: 0; flex: 1; display: flex; overflow: hidden;">
-                <div class="nav-tree" id="nav-tree-content" style="padding: 15px; flex: 1; overflow-y: auto;"></div>
-                <div class="nav-vertical-text">ALT TO TOGGLE</div>
-            </div>
-        </div>
-        
-        <div class="ascii-window" id="announcement-window" style="left: 20px; bottom: 80px; top: auto; width: auto; min-width: 300px; max-width: 450px; max-height: calc(100vh - 100px); z-index: 101; display:none;">
-            <div class="ascii-header-row">
-                <div class="ascii-header-line" style="width: 15px;"></div>
-                <div id="ann-drag" class="ascii-title">notice</div>
-                <div class="ascii-header-line" style="flex: 1;"></div>
-                <div class="ascii-close-btn" onclick="closeAnnouncement()" style="cursor: pointer; padding: 0 8px;">x</div>
-                <div class="ascii-header-line" style="width: 10px;"></div>
-            </div>
-            <div class="ascii-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column; overflow-y: auto;">
-                <div id="announcement-content" style="white-space: pre-wrap; word-wrap: break-word;"></div>
-                <div id="ann-progress-container"><div id="ann-progress-bar"></div></div>
-            </div>
-        </div>
-
-        <div class="ascii-window" id="notif-pane" style="right: 10px; bottom: 70px; top: auto; left: auto; width: 300px; z-index: 10001; display: none; position: fixed;">
-            <div class="ascii-header-row">
-                <div class="ascii-header-line" style="width: 15px;"></div>
-                <div id="notif-drag" class="ascii-title">Announcements</div>
-                <div class="ascii-header-line" style="flex: 1;"></div>
-            </div>
-            <div class="ascii-content" id="notif-list" style="padding: 15px; flex: 1; max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
-            </div>
-        </div>
-
-        <div class="ascii-window" id="settings-window" style="left: 20px; top: 40px; width: 300px; z-index: 105; display:none;">
-            <div class="ascii-header-row">
-                <div class="ascii-header-line" style="width: 15px;"></div>
-                <div id="set-drag" class="ascii-title">settings</div>
-                <div class="ascii-header-line" style="flex: 1;"></div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px;">
-                    <div class="ascii-minimize-btn" onclick="minimizeWindow('settings-window', 'settings.ini')" style="cursor:pointer; color: hsl(var(--accent)); font-weight: bold; padding-bottom: 5px;">_</div>
-                    <div class="ascii-maximize-btn" onclick="toggleMaximizeWindow('settings-window')" style="cursor:pointer; color: hsl(var(--accent)); font-weight: bold;">□</div>
-                    <div class="ascii-close-btn" onclick="closePreferences()" style="cursor:pointer; color: hsl(var(--destructive)); font-weight: bold;">x</div>
-                </div>
-                <div class="ascii-header-line" style="width: 10px;"></div>
-            </div>
-            <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
-                <div style="margin-bottom: 15px;">
-                    <select id="theme-select" class="ascii-input" onchange="changeTheme(this.value)">
-                        <option value="default">Default</option>
-                        <option value="original">Original</option>
-                        <option value="vitesse-dark">Vitesse Dark</option>
-                        <option value="evergreens">Evergreens</option>
-                        <option value="gruvbox">Gruvbox</option>
-                        <option value="ice-world">Ice World</option>
-                        <option value="purple-orange">Purple & Orange</option>
-                        <option value="orange-purple">Orange & Purple</option>
-                        <option value="pink-dream">Pink Dream</option>
-                        <option value="cyberpunk">Cyberpunk</option>
-                        <option value="desert">Desert</option>
-                    </select>
-                </div>
-                <div id="settings-admin-portal" style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px;"></div>
-                <div style="border-top: 1px dashed hsl(var(--foreground)/0.3); padding-top: 15px; margin-top: 15px; display:flex; flex-direction:column; gap:8px;">
-                    <button class="ascii-btn" onclick="resetWindowPositions()" style="width: 100%; border: 1px solid hsl(var(--border)); padding: 6px; color:hsl(var(--foreground)); background:hsl(var(--secondary));">[ Reset Window Positions ]</button>
-                    <button class="ascii-btn" onclick="clearLocalData()" style="width: 100%; border: 1px solid hsl(var(--destructive)/0.5); padding: 6px; color:hsl(var(--destructive)); background:hsl(var(--destructive)/0.05);">[ Clear All Local Data ]</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="ascii-window" id="lock-window" style="left: 50%; top: 50%; transform: translate(-50%, -50%); width: 300px; z-index: 2000; display:none;">
-            <div class="ascii-header-row">
-                <div class="ascii-header-line" style="width: 15px;"></div>
-                <div id="lock-drag" class="ascii-title">auth_required.exe</div>
-                <div class="ascii-header-line" style="flex: 1;"></div>
-                <div style="display: flex; align-items: center; gap: 8px; margin-left: 10px;">
-                    <div class="ascii-close-btn" onclick="closeLockModal()" style="cursor:pointer; color: hsl(var(--destructive)); font-weight: bold;">x</div>
-                </div>
-                <div class="ascii-header-line" style="width: 10px;"></div>
-            </div>
-            <div class="ascii-content" style="padding: 15px; flex: 1; overflow-y: auto;">
-                <input type="password" id="lock-input" class="ascii-input" style="margin-bottom:8px;" placeholder="Password">
-                <button class="btn-primary" onclick="checkLock()" style="width: 100%;">[ Unlock ]</button>
-            </div>
-        </div>
+  </div>
+  <div id="main">
+    <div id="breadcrumb"></div>
+    <div id="page-content"></div>
+  </div>
+  <div id="sidebar-right">
+    <div id="toc-wrap">
+      <h4>Table of Contents</h4>
+      <div id="toc-list"></div>
     </div>
-
-    <div id="taskbar">
-        <button id="start-button" onclick="toggleNav()">
-            <svg id="start-icon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
-            </svg>
-        </button>
-        <div id="taskbar-items"></div>
-        <button id="notif-btn" onclick="toggleNotifications()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-        </button>
+    <div id="graph-view-wrap">
+      <h4>Graph View</h4>
+      <canvas id="graph-canvas"></canvas>
     </div>
-
-    <div id="bio-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Edit_Bio.exe</h2>
-                <button class="modal-close" onclick="closeBioModal()">x</button>
-            </div>
-            <div class="modal-body">
-                <textarea id="bio-textarea-input" placeholder="Biography Markdown..."></textarea>
-                <button class="btn-primary" onclick="saveBio()" style="width: 100%;">[ Execute Save ]</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="edit-item-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="edit-item-title">Edit Item</h2>
-                <button class="modal-close" onclick="closeEditItemModal()">x</button>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="edit-item-name" class="ascii-input" placeholder="Name">
-                <input type="text" id="edit-item-link" class="ascii-input" placeholder="Link (optional)">
-                <button class="btn-primary" onclick="saveEditItem()" style="width: 100%;">[ Save ]</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="/storage/internal/scripts/main.js"></script>
+  </div>
+</div>
+<script src="/js/auth.js"></script>
+<script src="/js/router.js"></script>
+<script src="/js/pages/admin.js"></script>
+<script src="/js/graph.js"></script>
 </body>
 </html>

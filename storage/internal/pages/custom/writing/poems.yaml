@@ -1,7 +1,0 @@
-pages:
-  - id: c1
-    name: "first"
-    path: poems/depression.yaml
-    type:
-      type: section
-      display: "Cycle I"

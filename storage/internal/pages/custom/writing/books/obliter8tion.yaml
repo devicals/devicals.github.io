@@ -1,6 +1,0 @@
-pages:
-  - id: retribution
-    name: "Angel of Retribution"
-    path: obliter8tion/retribution.yaml
-    type:
-      type: section
