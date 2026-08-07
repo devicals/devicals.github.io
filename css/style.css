@@ -5,6 +5,11 @@
 }
 @font-face {
     font-family: 'Noto Serif SC';
+    src: url('../assets/fonts/Noto_Serif_SC/NotoSerifSC-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+}
+@font-face {
+    font-family: 'Noto Serif SC';
     src: url('../assets/fonts/Noto_Serif_SC/NotoSerifSC-Bold.ttf') format('truetype');
     font-weight: 700;
 }
@@ -27,6 +32,7 @@
     --fg-muted: #8c877d;
     --accent: #e6b450;
     --border: #3b372e;
+    --destructive: #cc5555;
     --font-text: 'Noto Serif SC', serif;
     --font-ui: 'Brass Mono', monospace;
 }
@@ -39,6 +45,7 @@
     --fg-muted: #7c776b;
     --accent: #d08770;
     --border: #d4d0c4;
+    --destructive: #b54040;
 }
 
 [data-theme="obsidian"] {
@@ -49,6 +56,7 @@
     --fg-muted: #8b8b8b;
     --accent: #7d5cf2;
     --border: #363636;
+    --destructive: #e05252;
 }
 
 * {
@@ -112,6 +120,7 @@ body {
     display: flex;
     align-items: center;
     user-select: none;
+    transition: background 0.15s, color 0.15s;
 }
 
 .nav-item:hover {
@@ -139,6 +148,7 @@ body {
     display: inline-block;
     width: 14px;
     transition: transform 0.2s;
+    font-size: 10px;
 }
 
 .nav-folder-icon.open {
@@ -160,11 +170,13 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
 }
 
 .action-btn:hover {
-    background: var(--bg-hover);
     color: var(--accent);
+    border-color: var(--accent);
 }
 
 .main-content {
@@ -180,6 +192,7 @@ body {
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
+    background: var(--bg-sidebar);
 }
 
 .breadcrumbs {
@@ -240,8 +253,9 @@ body {
 .markdown-body code {
     font-family: var(--font-ui);
     background: var(--bg-hover);
-    padding: 2px 4px;
+    padding: 2px 6px;
     font-size: 0.9em;
+    border: 1px solid var(--border);
 }
 
 .toc-container {
@@ -249,6 +263,7 @@ body {
     display: flex;
     flex-direction: column;
     border-bottom: 1px solid var(--border);
+    overflow: hidden;
 }
 
 .toc-tree {
@@ -264,6 +279,7 @@ body {
     color: var(--fg-muted);
     text-decoration: none;
     display: block;
+    transition: color 0.15s;
 }
 
 .toc-item:hover {
@@ -287,7 +303,7 @@ body {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.8);
-    z-index: 1000;
+    z-index: 2000;
     align-items: center;
     justify-content: center;
 }
@@ -296,17 +312,22 @@ body {
     background: var(--bg-sidebar);
     border: 1px solid var(--border);
     padding: 24px;
-    width: 400px;
+    width: 420px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
     font-family: var(--font-ui);
 }
 
 .modal-title {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
     color: var(--accent);
     margin-bottom: 16px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .ui-input {
@@ -314,9 +335,10 @@ body {
     background: var(--bg-main);
     border: 1px solid var(--border);
     color: var(--fg-main);
-    padding: 8px;
+    padding: 8px 12px;
     margin-bottom: 12px;
     font-family: inherit;
+    font-size: 12px;
     outline: none;
 }
 
@@ -331,9 +353,11 @@ body {
     padding: 8px 16px;
     cursor: pointer;
     font-family: inherit;
+    font-size: 12px;
     width: 100%;
     margin-bottom: 8px;
     font-weight: 600;
+    transition: all 0.2s;
 }
 
 .ui-btn:hover {
@@ -351,6 +375,7 @@ body {
     color: var(--fg-muted);
     font-size: 11px;
     text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .admin-link {
@@ -359,6 +384,10 @@ body {
     cursor: pointer;
     border: 1px solid var(--border);
     color: var(--accent);
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .admin-link:hover {
@@ -367,17 +396,19 @@ body {
 
 .modal-close {
     background: none;
-    border: none;
+    border: 1px solid var(--border);
     color: var(--fg-muted);
     cursor: pointer;
     width: 100%;
     padding: 8px;
     margin-top: 8px;
     font-family: inherit;
+    font-size: 12px;
 }
 
 .modal-close:hover {
     color: var(--fg-main);
+    border-color: var(--fg-main);
 }
 
 .profile-info {
@@ -385,6 +416,9 @@ body {
     flex-direction: column;
     align-items: center;
     margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
 }
 
 .profile-name {
@@ -397,6 +431,7 @@ body {
     font-size: 10px;
     color: var(--fg-muted);
     margin-top: 4px;
+    font-family: var(--font-ui);
 }
 
 .spotify-container {
@@ -439,5 +474,37 @@ body {
     padding: 10px;
     background: var(--bg-hover);
     border: 1px solid var(--border);
-    font-size: 13px;
+    font-size: 12px;
+    font-family: var(--font-ui);
+}
+
+.admin-card {
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.admin-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.user-status-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    margin-left: 6px;
+}
+
+.user-status-tag.banned {
+    border-color: var(--destructive);
+    color: var(--destructive);
+}
+
+.user-status-tag.admin {
+    border-color: var(--accent);
+    color: var(--accent);
 }

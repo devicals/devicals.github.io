@@ -4,16 +4,131 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentUser = null;
 let currentProfile = null;
-let navData = [];
+let navData = { children: [] };
 let flatNodes = [];
+let showHiddenPages = false;
+
+const DEFAULT_FALLBACK_NAV = {
+  "children": [
+    {
+      "name": "Index",
+      "type": "folder",
+      "children": [
+        { "name": "Home", "type": "file", "fileType": "html", "url": "pages/home.html" },
+        { "name": "Blogs", "type": "file", "fileType": "html", "url": "pages/blogs.html" },
+        {
+          "name": "Community",
+          "type": "folder",
+          "children": [
+            { "name": "Chits & Chats", "type": "file", "fileType": "html", "url": "pages/chitchat.html" },
+            { "name": "Gallery", "type": "file", "fileType": "html", "url": "pages/gallery.html" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content",
+      "type": "folder",
+      "children": [
+        { "name": "Projects", "type": "file", "fileType": "html", "url": "pages/projects.html" },
+        { "name": "Downloads", "type": "file", "fileType": "html", "url": "pages/downloads.html" },
+        {
+          "name": "Writing",
+          "type": "folder",
+          "children": [
+            {
+              "name": "Books",
+              "type": "folder",
+              "collapsed": true,
+              "children": [
+                { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/books/obliter8tion/retribution/intro_1.md", "hidden": true },
+                {
+                  "name": "Halloween Specials",
+                  "type": "folder",
+                  "children": [
+                    {
+                      "name": "O' Mother of Mine",
+                      "type": "folder",
+                      "children": [
+                        { "name": "The Lamb of Blood", "type": "file", "fileType": "md", "path": "content/books/hs/omom/chapter_1.md" },
+                        { "name": "The Shepherd of Filth", "type": "file", "fileType": "md", "path": "content/books/hs/omom/chapter_2.md" },
+                        { "name": "The Slaughtered Lamb", "type": "file", "fileType": "md", "path": "content/books/hs/omom/chapter_3.md" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Poems",
+              "type": "folder",
+              "collapsed": true,
+              "children": [
+                {
+                  "name": "first",
+                  "type": "folder",
+                  "children": [
+                    { "name": "I \"the song bird\"", "type": "file", "fileType": "md", "path": "content/poems/c1/1.md" },
+                    { "name": "II \"waking\"", "type": "file", "fileType": "md", "path": "content/poems/c1/2.md" },
+                    { "name": "III \"loss\"", "type": "file", "fileType": "md", "path": "content/poems/c1/3.md" },
+                    { "name": "IV \" \"", "type": "file", "fileType": "md", "path": "content/poems/c1/4.md" },
+                    { "name": "V \"warm\"", "type": "file", "fileType": "md", "path": "content/poems/c1/5.md" },
+                    { "name": "VI \"stay.\"", "type": "file", "fileType": "md", "path": "content/poems/c1/6.md" },
+                    { "name": "VII \"river\"", "type": "file", "fileType": "md", "path": "content/poems/c1/7.md" },
+                    { "name": "IIX \"again\"", "type": "file", "fileType": "md", "path": "content/poems/c1/8.md" },
+                    { "name": "IX \"the aching grew worse\"", "type": "file", "fileType": "md", "path": "content/poems/c1/9.md" },
+                    { "name": "X \"bridge...\"", "type": "file", "fileType": "md", "path": "content/poems/c1/10.md" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "About Me",
+      "type": "folder",
+      "children": [
+        { "name": "Games I <3", "type": "file", "fileType": "html", "url": "pages/games.html" },
+        { "name": "Spotify", "type": "file", "fileType": "spotify" }
+      ]
+    },
+    {
+      "name": "Other Stuff",
+      "type": "folder",
+      "children": [
+        {
+          "name": "Tier List Maker",
+          "type": "folder",
+          "children": [
+            { "name": "ZATOcord Tierlist", "type": "file", "fileType": "html", "url": "pages/zato.html" }
+          ]
+        },
+        { "name": "World Clock Viewer", "type": "file", "fileType": "html", "url": "pages/worldclock.html" },
+        { "name": "Code Translator", "type": "file", "fileType": "html", "url": "pages/codes.html" }
+      ]
+    },
+    {
+      "name": "Archived Pages",
+      "type": "folder",
+      "hidden": true,
+      "children": [
+        { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/books/obliter8tion/retribution/intro_1.md" },
+        { "name": "Oricade Songs", "type": "file", "fileType": "html", "url": "pages/gallery.html?type=audio" },
+        { "name": "Function Generator", "type": "file", "fileType": "html", "url": "pages/function_generator.html" }
+      ]
+    }
+  ]
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
     loadSettings();
-    await initAuth();
     await loadNavigation();
     initGraph();
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
+    initAuth();
 });
 
 function loadSettings() {
@@ -49,9 +164,13 @@ document.getElementById('save-css').onclick = () => {
 };
 
 async function initAuth() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    await handleSession(session);
-    supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        await handleSession(session);
+        supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
+    } catch (e) {
+        renderAuthModal();
+    }
 }
 
 async function handleSession(session) {
@@ -60,9 +179,17 @@ async function handleSession(session) {
     const adminLink = document.getElementById('admin-settings-link');
     
     if (currentUser) {
-        const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-        currentProfile = data;
-        if (currentProfile?.is_admin) adminLink.style.display = 'block';
+        try {
+            const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            currentProfile = data;
+            if (currentProfile?.is_admin) {
+                adminLink.style.display = 'block';
+            } else {
+                adminLink.style.display = 'none';
+            }
+        } catch(e) {
+            adminLink.style.display = 'none';
+        }
     } else {
         adminLink.style.display = 'none';
     }
@@ -76,10 +203,10 @@ function renderAuthModal() {
     if (currentUser) {
         container.innerHTML = `
             <div class="profile-info">
-                <div class="profile-name">${currentProfile?.username || 'User'}</div>
-                <div class="profile-id">ID: ${currentUser.id}</div>
+                <div class="profile-name">${currentProfile?.username || 'Authenticated User'}</div>
+                <div class="profile-id">${currentUser.id}</div>
             </div>
-            <input type="text" id="prof-name" class="ui-input" placeholder="Change Display Name">
+            <input type="text" id="prof-name" class="ui-input" placeholder="Set Display Name">
             <button class="ui-btn" onclick="updateProfile()">Save Name</button>
             <button class="ui-btn" onclick="supabaseClient.auth.signOut()">Logout</button>
         `;
@@ -96,20 +223,26 @@ function renderAuthModal() {
 window.authAction = async (action) => {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-pass').value;
-    if (action === 'signup') {
-        await supabaseClient.auth.signUp({ email, password });
-    } else {
-        await supabaseClient.auth.signInWithPassword({ email, password });
+    try {
+        if (action === 'signup') {
+            await supabaseClient.auth.signUp({ email, password });
+        } else {
+            await supabaseClient.auth.signInWithPassword({ email, password });
+        }
+    } catch(e) {
+        alert(e.message);
     }
 };
 
 window.updateProfile = async () => {
     const username = document.getElementById('prof-name').value;
-    if(!username) return;
-    await supabaseClient.from('profiles').upsert({ id: currentUser.id, username });
-    const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-    currentProfile = data;
-    renderAuthModal();
+    if(!username || !currentUser) return;
+    try {
+        await supabaseClient.from('profiles').upsert({ id: currentUser.id, username });
+        const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+        currentProfile = data;
+        renderAuthModal();
+    } catch(e) {}
 };
 
 document.getElementById('auth-trigger').onclick = () => document.getElementById('auth-modal').style.display = 'flex';
@@ -118,9 +251,15 @@ document.getElementById('settings-trigger').onclick = () => document.getElementB
 async function loadNavigation() {
     try {
         const res = await fetch('data/structure.json');
-        navData = await res.json();
-        renderNavigation();
-    } catch (e) {}
+        if (res.ok) {
+            navData = await res.json();
+        } else {
+            navData = DEFAULT_FALLBACK_NAV;
+        }
+    } catch (e) {
+        navData = DEFAULT_FALLBACK_NAV;
+    }
+    renderNavigation();
 }
 
 function renderNavigation() {
@@ -128,9 +267,11 @@ function renderNavigation() {
     container.innerHTML = '';
     flatNodes = [];
     
+    const canSeeHidden = showHiddenPages || (currentProfile?.is_admin === true);
+
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
-            if (node.hidden && !currentProfile?.is_admin) return;
+            if (node.hidden && !canSeeHidden) return;
             
             const currentPath = [...pathPrefix, node.name];
             const el = document.createElement('div');
@@ -160,7 +301,7 @@ function renderNavigation() {
     }
     buildTree(navData.children || [], container);
     highlightNav();
-    updateGraph();
+    if (window.updateGraph) window.updateGraph();
 }
 
 function highlightNav() {
@@ -175,6 +316,12 @@ async function handleRoute() {
     if (!hash) { hash = "Index/Home"; window.location.hash = hash; return; }
     
     highlightNav();
+    
+    if (hash === 'admin') {
+        if (!currentProfile?.is_admin) { window.location.hash = 'Index/Home'; return; }
+        openAdminModal();
+        return;
+    }
     
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
@@ -199,7 +346,7 @@ async function handleRoute() {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
             iframe.src = node.url;
-            tocContainer.innerHTML = '<div style="color:var(--fg-muted); padding:8px;">Interactive View</div>';
+            tocContainer.innerHTML = '<div style="color:var(--fg-muted); padding:8px;">Interactive Application</div>';
             return;
         }
         
@@ -255,6 +402,7 @@ function generateTOC() {
 
 function initGraph() {
     const canvas = document.getElementById('graph-canvas');
+    if(!canvas) return;
     const ctx = canvas.getContext('2d');
     let width, height;
     let nodes = [];
@@ -270,8 +418,8 @@ function initGraph() {
 
     window.updateGraph = () => {
         nodes = flatNodes.map(n => ({
-            x: Math.random() * width,
-            y: Math.random() * height,
+            x: Math.random() * (width || 200),
+            y: Math.random() * (height || 200),
             vx: 0, vy: 0,
             color: n.path.includes('Archived') ? '#ff6b6b' : 'var(--accent)',
             path: n.path
@@ -279,9 +427,13 @@ function initGraph() {
     };
 
     function draw() {
+        if(!width || !height) {
+            requestAnimationFrame(draw);
+            return;
+        }
         ctx.clearRect(0, 0, width, height);
         
-        ctx.strokeStyle = 'var(--border)';
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#3b372e';
         ctx.lineWidth = 1;
         for(let i=0; i<nodes.length; i++) {
             for(let j=i+1; j<nodes.length; j++) {
@@ -302,7 +454,8 @@ function initGraph() {
             n.vx *= 0.95; n.vy *= 0.95;
             n.x += n.vx; n.y += n.vy;
             
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue(n.color.replace('var(','').replace(')','')).trim() || n.color;
+            const accentVal = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e6b450';
+            ctx.fillStyle = n.color === 'var(--accent)' ? accentVal : n.color;
             ctx.beginPath();
             ctx.arc(n.x, n.y, 4, 0, Math.PI*2);
             ctx.fill();
