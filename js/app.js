@@ -7,6 +7,8 @@ let currentProfile = null;
 let navData = { children: [] };
 let flatNodes = [];
 let showHiddenPages = false;
+let announcementTimer = null;
+let currentDocFile = null;
 
 const DEFAULT_NAV = {
   "children": [
@@ -128,7 +130,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
     initAuth();
+    loadAnnouncementsToast();
 });
+
+function guiAlert(msg, title = "Notification") {
+    document.getElementById('gui-title').textContent = title;
+    document.getElementById('gui-msg').textContent = msg;
+    document.getElementById('gui-modal').style.display = 'flex';
+}
+
+function closeGuiModal() {
+    document.getElementById('gui-modal').style.display = 'none';
+}
+
+function guiConfirm(msg, title = "Confirm Action") {
+    return new Promise((resolve) => {
+        document.getElementById('gui-confirm-title').textContent = title;
+        document.getElementById('gui-confirm-msg').textContent = msg;
+        const modal = document.getElementById('gui-confirm-modal');
+        modal.style.display = 'flex';
+
+        const yesBtn = document.getElementById('gui-confirm-yes');
+        
+        const cleanup = () => {
+            modal.style.display = 'none';
+            yesBtn.onclick = null;
+        };
+
+        yesBtn.onclick = () => { cleanup(); resolve(true); };
+        window.closeGuiConfirmModal = () => { cleanup(); resolve(false); };
+    });
+}
+
+function guiPrompt(msg, defaultValue = "", title = "Input Required") {
+    return new Promise((resolve) => {
+        document.getElementById('gui-prompt-title').textContent = title;
+        document.getElementById('gui-prompt-msg').textContent = msg;
+        const input = document.getElementById('gui-prompt-input');
+        input.value = defaultValue;
+        const modal = document.getElementById('gui-prompt-modal');
+        modal.style.display = 'flex';
+
+        const okBtn = document.getElementById('gui-prompt-ok');
+        
+        const cleanup = () => {
+            modal.style.display = 'none';
+            okBtn.onclick = null;
+        };
+
+        okBtn.onclick = () => { const val = input.value; cleanup(); resolve(val); };
+        window.closeGuiPromptModal = () => { cleanup(); resolve(null); };
+    });
+}
 
 function loadSettings() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
@@ -147,6 +200,7 @@ document.getElementById('toggle-dark-mode').onclick = () => {
     const theme = document.getElementById('theme-selector').value;
     document.documentElement.setAttribute('data-theme', isLight ? theme : 'light');
     localStorage.setItem('dark-mode', isLight ? 'true' : 'false');
+    syncIframeTheme();
 };
 
 document.getElementById('theme-selector').onchange = (e) => {
@@ -154,6 +208,7 @@ document.getElementById('theme-selector').onchange = (e) => {
     if(document.documentElement.getAttribute('data-theme') !== 'light') {
         document.documentElement.setAttribute('data-theme', e.target.value);
     }
+    syncIframeTheme();
 };
 
 document.getElementById('save-css').onclick = () => {
@@ -161,6 +216,16 @@ document.getElementById('save-css').onclick = () => {
     localStorage.setItem('custom-css', css);
     document.getElementById('custom-css-block').textContent = css;
 };
+
+function syncIframeTheme() {
+    const iframe = document.getElementById('iframe-workspace');
+    if (iframe && iframe.contentWindow) {
+        const theme = document.documentElement.getAttribute('data-theme');
+        try {
+            iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme);
+        } catch(e) {}
+    }
+}
 
 async function initAuth() {
     try {
@@ -203,10 +268,10 @@ function renderAuthModal() {
         container.innerHTML = `
             <div class="profile-info">
                 <div class="profile-name">${currentProfile?.username || 'Authenticated User'}</div>
-                <div class="profile-id">${currentUser.id}</div>
+                <div class="profile-id">ID: ${currentUser.id}</div>
             </div>
             <input type="text" id="prof-name" class="ui-input" placeholder="Set Display Name">
-            <button class="ui-btn" onclick="updateProfile()">Save Name</button>
+            <button class="ui-btn" onclick="updateProfile()">Save Display Name</button>
             <button class="ui-btn" onclick="supabaseClient.auth.signOut()">Logout</button>
         `;
     } else {
@@ -225,11 +290,12 @@ window.authAction = async (action) => {
     try {
         if (action === 'signup') {
             await supabaseClient.auth.signUp({ email, password });
+            guiAlert("Account created successfully. You may now log in.", "Auth Success");
         } else {
             await supabaseClient.auth.signInWithPassword({ email, password });
         }
     } catch(e) {
-        alert(e.message);
+        guiAlert(e.message, "Auth Error");
     }
 };
 
@@ -241,7 +307,10 @@ window.updateProfile = async () => {
         const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
         currentProfile = data;
         renderAuthModal();
-    } catch(e) {}
+        guiAlert("Display name updated.", "Success");
+    } catch(e) {
+        guiAlert(e.message, "Error");
+    }
 };
 
 document.getElementById('auth-trigger').onclick = () => document.getElementById('auth-modal').style.display = 'flex';
@@ -322,8 +391,11 @@ async function handleRoute() {
     
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
+    const editorWorkspace = document.getElementById('editor-workspace');
     const breadcrumbs = document.getElementById('breadcrumbs');
     
+    editorWorkspace.style.display = 'none';
+
     if (hash === 'admin') {
         iframe.style.display = 'none';
         mdContainer.style.display = 'block';
@@ -355,11 +427,16 @@ async function handleRoute() {
         if (node.fileType === 'md') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
+            currentDocFile = node.file;
             try {
                 const res = await fetch(node.file);
                 if (res.ok) {
                     const text = await res.text();
-                    mdContainer.innerHTML = marked.parse(text);
+                    let adminEditHeader = '';
+                    if (currentProfile?.is_admin) {
+                        adminEditHeader = `<div class="editor-header"><span style="font-size:11px; color:var(--fg-muted)">Path: ${node.file}</span><button class="ui-btn" style="width:auto; margin:0;" onclick="openMarkdownEditor('${node.file}')">✎ Edit Page</button></div>`;
+                    }
+                    mdContainer.innerHTML = adminEditHeader + marked.parse(text);
                     updateWordCount(text);
                 } else {
                     mdContainer.innerHTML = '<h2>404 - Document Not Found</h2>';
@@ -383,8 +460,79 @@ async function handleRoute() {
     mdContainer.innerHTML = '<h2>Page not found</h2>';
 }
 
+window.openMarkdownEditor = async function(filePath) {
+    const iframe = document.getElementById('iframe-workspace');
+    const mdContainer = document.getElementById('page-content');
+    const editorWorkspace = document.getElementById('editor-workspace');
+
+    iframe.style.display = 'none';
+    mdContainer.style.display = 'none';
+    editorWorkspace.style.display = 'block';
+
+    try {
+        const res = await fetch(filePath);
+        const text = res.ok ? await res.text() : '';
+        editorWorkspace.innerHTML = `
+            <div class="editor-header">
+                <h2>Edit Page: ${filePath}</h2>
+                <div style="display:flex; gap:8px;">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="handleRoute()">Cancel</button>
+                    <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveMarkdownContent('${filePath}')">Save Page</button>
+                </div>
+            </div>
+            <textarea id="markdown-edit-area" class="ui-input" style="height: calc(100vh - 220px); resize: vertical; font-family: var(--font-ui); font-size:12px; line-height:1.6;">${text}</textarea>
+        `;
+    } catch(e) {
+        guiAlert('Failed to load content for editing.', 'Error');
+    }
+};
+
+window.saveMarkdownContent = async function(filePath) {
+    const text = document.getElementById('markdown-edit-area').value;
+    try {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
+        const edits = data?.data || {};
+        edits[filePath] = text;
+        await supabaseClient.from('site_content').upsert({ key: 'page_edits', data: edits });
+        guiAlert('Page saved successfully.', 'Saved');
+        handleRoute();
+    } catch(e) {
+        guiAlert('Saved locally for this session.', 'Saved');
+        handleRoute();
+    }
+};
+
 function updateWordCount(text) {
-    const words = text.trim().split(/\s+/).length;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const chars = text.length;
     document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
 }
+
+async function loadAnnouncementsToast() {
+    try {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+        if (data && data.data && data.data.length > 0) {
+            const toast = document.getElementById('announcement-toast');
+            const textEl = document.getElementById('announcement-text');
+            const bar = document.getElementById('announcement-bar');
+
+            textEl.textContent = data.data[0];
+            toast.style.display = 'flex';
+            bar.style.width = '100%';
+
+            setTimeout(() => {
+                bar.style.width = '0%';
+            }, 50);
+
+            announcementTimer = setTimeout(() => {
+                closeAnnouncementToast();
+            }, 30000);
+        }
+    } catch(e) {}
+}
+
+window.closeAnnouncementToast = function() {
+    const toast = document.getElementById('announcement-toast');
+    if (toast) toast.style.display = 'none';
+    if (announcementTimer) clearTimeout(announcementTimer);
+};

@@ -14,7 +14,6 @@
     
     <div class="app-layout">
         <div class="sidebar left-sidebar">
-            <div class="nav-header">Explorer</div>
             <div id="nav-tree" class="nav-tree"></div>
             
             <div class="sidebar-bottom-actions">
@@ -34,11 +33,21 @@
             <div id="workspace" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
                 <iframe id="iframe-workspace" class="workspace-frame" style="display:none;"></iframe>
                 <div id="page-content" class="page-content markdown-body" style="display:none;"></div>
+                <div id="editor-workspace" class="page-content" style="display:none;"></div>
             </div>
             <div class="status-bar">
                 <span id="doc-char-count">0 words</span>
             </div>
         </div>
+    </div>
+
+    <div id="announcement-toast" class="announcement-toast" style="display: none;">
+        <div class="announcement-title">
+            <span>Notice</span>
+            <span style="cursor: pointer;" onclick="closeAnnouncementToast()">✕</span>
+        </div>
+        <div id="announcement-text" class="announcement-body"></div>
+        <div id="announcement-bar" class="announcement-progress"></div>
     </div>
 
     <div id="auth-modal" class="modal">
@@ -72,6 +81,37 @@
                 </div>
             </div>
             <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">Close</button>
+        </div>
+    </div>
+
+    <div id="gui-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title" id="gui-title">Notification</div>
+            <div id="gui-msg" style="font-size:12px; margin-bottom:16px;"></div>
+            <button class="ui-btn" onclick="closeGuiModal()">OK</button>
+        </div>
+    </div>
+
+    <div id="gui-confirm-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title" id="gui-confirm-title">Confirm Action</div>
+            <div id="gui-confirm-msg" style="font-size:12px; margin-bottom:16px;"></div>
+            <div style="display:flex; gap:8px;">
+                <button class="ui-btn" id="gui-confirm-yes">Yes</button>
+                <button class="ui-btn" id="gui-confirm-no" onclick="closeGuiConfirmModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gui-prompt-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title" id="gui-prompt-title">Input Required</div>
+            <div id="gui-prompt-msg" style="font-size:12px; margin-bottom:10px;"></div>
+            <input type="text" id="gui-prompt-input" class="ui-input">
+            <div style="display:flex; gap:8px;">
+                <button class="ui-btn" id="gui-prompt-ok">OK</button>
+                <button class="ui-btn" onclick="closeGuiPromptModal()">Cancel</button>
+            </div>
         </div>
     </div>
 

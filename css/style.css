@@ -25,22 +25,24 @@
 }
 
 :root {
-    --bg-main: #1c1b18;
+    --bg-main: #141311;
     --bg-sidebar: #171614;
+    --bg-workspace: #1c1b18;
     --bg-hover: #26241f;
     --fg-main: #d6d1c4;
     --fg-muted: #8c877d;
     --accent: #e6b450;
     --accent-red: #d08770;
-    --border: #2d2a23;
+    --border: #2b2822;
     --destructive: #cc5555;
     --font-text: 'Noto Serif SC', serif;
     --font-ui: 'Brass Mono', monospace;
 }
 
 [data-theme="light"] {
-    --bg-main: #f5f3ed;
+    --bg-main: #e8e5dc;
     --bg-sidebar: #ebe7dd;
+    --bg-workspace: #f5f3ed;
     --bg-hover: #dfdbce;
     --fg-main: #3b372e;
     --fg-muted: #7c776b;
@@ -51,14 +53,15 @@
 }
 
 [data-theme="obsidian"] {
-    --bg-main: #1e1e1e;
+    --bg-main: #121212;
     --bg-sidebar: #161616;
+    --bg-workspace: #1e1e1e;
     --bg-hover: #2a2a2a;
     --fg-main: #dcddde;
     --fg-muted: #8b8b8b;
     --accent: #7d5cf2;
     --accent-red: #f38ba8;
-    --border: #363636;
+    --border: #2d2d2d;
     --destructive: #e05252;
 }
 
@@ -89,31 +92,26 @@ body {
     display: flex;
     height: 100vh;
     width: 100vw;
+    background: var(--bg-main);
+    padding: 8px;
+    gap: 8px;
 }
 
 .sidebar {
     background: var(--bg-sidebar);
-    border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    width: 260px;
+    width: 250px;
     flex-shrink: 0;
-}
-
-.nav-header {
-    font-family: var(--font-ui);
-    font-size: 10px;
-    text-transform: uppercase;
-    color: var(--fg-muted);
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    letter-spacing: 1.5px;
+    border-radius: 8px !important;
+    border: 1px solid var(--border);
+    overflow: hidden;
 }
 
 .nav-tree {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: 12px 8px;
     font-family: var(--font-ui);
     font-size: 12px;
 }
@@ -127,6 +125,7 @@ body {
     user-select: none;
     transition: background 0.1s, color 0.1s;
     gap: 6px;
+    border-radius: 4px !important;
 }
 
 .nav-item:hover {
@@ -137,12 +136,11 @@ body {
 .nav-item.active {
     color: var(--accent);
     background: var(--bg-hover);
-    border-left: 2px solid var(--accent);
+    font-weight: 600;
 }
 
 .nav-children {
     padding-left: 12px;
-    border-left: 1px solid var(--border);
     margin-left: 6px;
     display: none;
 }
@@ -161,25 +159,24 @@ body {
 .sidebar-bottom-actions {
     display: flex;
     padding: 10px 14px;
-    border-top: 1px solid var(--border);
-    gap: 12px;
+    gap: 16px;
+    align-items: center;
 }
 
 .action-btn {
     cursor: pointer;
     color: var(--fg-muted);
-    padding: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s, background 0.2s;
-    background: var(--bg-hover);
-    border: 1px solid var(--border);
+    transition: color 0.2s;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 
 .action-btn:hover {
     color: var(--accent);
-    border-color: var(--accent);
 }
 
 .main-content {
@@ -187,15 +184,19 @@ body {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    background: var(--bg-main);
+    background: var(--bg-workspace);
+    border-radius: 8px !important;
+    border: 1px solid var(--border);
+    overflow: hidden;
 }
 
 .top-bar {
-    padding: 10px 20px;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
-    background: var(--bg-sidebar);
+    justify-content: center;
+    background: var(--bg-workspace);
 }
 
 .breadcrumbs {
@@ -204,6 +205,8 @@ body {
     color: var(--fg-muted);
     display: flex;
     gap: 6px;
+    justify-content: center;
+    align-items: center;
 }
 
 .crumb-link {
@@ -225,7 +228,7 @@ body {
 .page-content {
     flex: 1;
     overflow-y: auto;
-    padding: 35px 50px;
+    padding: 35px 50px 80px 50px;
     max-width: 900px;
     margin: 0 auto;
     width: 100%;
@@ -297,14 +300,56 @@ body {
 
 .status-bar {
     border-top: 1px solid var(--border);
-    padding: 4px 16px;
+    padding: 6px 16px;
     font-family: var(--font-ui);
     font-size: 10px;
     color: var(--fg-muted);
     display: flex;
     justify-content: flex-end;
     gap: 16px;
+    background: var(--bg-workspace);
+}
+
+.announcement-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 320px;
     background: var(--bg-sidebar);
+    border: 1px solid var(--accent);
+    padding: 16px;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 6px !important;
+    overflow: hidden;
+}
+
+.announcement-title {
+    font-family: var(--font-ui);
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--accent);
+    letter-spacing: 1px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.announcement-body {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--fg-main);
+}
+
+.announcement-progress {
+    height: 2px;
+    background: var(--accent);
+    width: 100%;
+    transition: width 30s linear;
 }
 
 .modal {
@@ -320,21 +365,22 @@ body {
 .modal-box {
     background: var(--bg-sidebar);
     border: 1px solid var(--border);
-    padding: 20px;
-    width: 380px;
+    padding: 24px;
+    width: 440px;
     max-width: 90vw;
     max-height: 90vh;
     overflow-y: auto;
     font-family: var(--font-ui);
+    border-radius: 6px !important;
 }
 
 .modal-title {
     font-size: 13px;
     font-weight: bold;
     color: var(--accent);
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
+    padding-bottom: 8px;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -344,8 +390,8 @@ body {
     background: var(--bg-main);
     border: 1px solid var(--border);
     color: var(--fg-main);
-    padding: 8px;
-    margin-bottom: 10px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
     font-family: inherit;
     font-size: 11px;
     outline: none;
@@ -359,13 +405,14 @@ body {
     background: var(--bg-hover);
     border: 1px solid var(--border);
     color: var(--fg-main);
-    padding: 8px;
+    padding: 8px 14px;
     cursor: pointer;
     font-family: inherit;
     font-size: 11px;
     width: 100%;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-weight: 600;
+    transition: all 0.15s ease;
 }
 
 .ui-btn:hover {
@@ -374,7 +421,7 @@ body {
 }
 
 .settings-group {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .settings-group label {
@@ -387,7 +434,7 @@ body {
 }
 
 .admin-link {
-    padding: 10px 12px;
+    padding: 10px 14px;
     background: var(--bg-hover);
     cursor: pointer;
     border: 1px solid var(--border);
@@ -409,8 +456,8 @@ body {
     color: var(--fg-muted);
     cursor: pointer;
     width: 100%;
-    padding: 6px;
-    margin-top: 6px;
+    padding: 8px;
+    margin-top: 8px;
     font-family: inherit;
     font-size: 11px;
 }
@@ -424,8 +471,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 14px;
-    padding: 10px;
+    margin-bottom: 16px;
+    padding: 12px;
     background: var(--bg-main);
     border: 1px solid var(--border);
 }
@@ -446,8 +493,8 @@ body {
 .admin-user-card {
     background: var(--bg-hover);
     border: 1px solid var(--border);
-    padding: 10px;
-    margin-bottom: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
     font-family: var(--font-ui);
     font-size: 11px;
 }
@@ -473,12 +520,13 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px;
+    padding: 8px 12px;
     background: var(--bg-hover);
     border: 1px solid var(--border);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     font-family: var(--font-ui);
     font-size: 11px;
+    cursor: grab;
 }
 
 .spotify-container {
@@ -523,4 +571,13 @@ body {
     border: 1px solid var(--border);
     font-size: 12px;
     font-family: var(--font-ui);
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
 }

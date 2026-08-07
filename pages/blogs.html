@@ -4,434 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blogs - Error Dev</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/storage/internal/styles/styles.css">
-    <link rel="stylesheet" href="/storage/internal/styles/page-styles.css">
-    <script src="/storage/internal/scripts/embed-detect.js"></script>
-    <script src="/storage/internal/scripts/theme-manager.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        ::-webkit-scrollbar { display: none !important; }
-        * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
-        body { 
-            margin: 0; 
-            box-sizing: border-box; 
-            height: 100vh; 
-            overflow: hidden;
-            background: transparent;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .blog-content { word-wrap: break-word; line-height: 1.6; font-size: 13px; white-space: pre-wrap; }
-        
-        .admin-action-row {
-            display: none;
-            gap: 8px;
-            margin-top: 15px;
-            padding-top: 12px;
-            border-top: 1px dashed hsl(var(--border));
-        }
-        body.is-admin .admin-action-row {
-            display: flex;
-        }
-        .admin-btn {
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 10px;
-            cursor: pointer;
-            background: hsl(var(--secondary));
-            border: 1px solid hsl(var(--border));
-            color: hsl(var(--foreground));
-        }
-        .admin-btn:hover {
-            border-color: hsl(var(--accent));
-            color: hsl(var(--accent));
-        }
-        .admin-btn.danger-btn {
-            color: hsl(var(--destructive));
-            border-color: hsl(var(--destructive) / 0.4);
-        }
-        .admin-btn.danger-btn:hover {
-            border-color: hsl(var(--destructive));
-            background: hsl(var(--destructive) / 0.05);
-        }
-        .shiki-container { background: #121212; border: 1px solid #2d2e2e; margin: 1.5rem 0; overflow: hidden; }
-        .shiki-header { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; background: #181818; border-bottom: 1px solid #2d2e2e; }
-        .shiki-lang { color: #7e7e7e; font-size: 0.8rem; text-transform: uppercase; font-weight: 600; }
-        .shiki-actions { display: flex; gap: 8px; }
-        .shiki-btn { background: transparent; border: 1px solid #2d2e2e; color: #7e7e7e; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
-        .shiki-btn:hover { border-color: #dbd7ca; color: #dbd7ca; }
-        .shiki-btn.active { border-color: #4d937b; color: #4d937b; }
-        .shiki-container pre.shiki { margin: 0 !important; border: none !important; padding: 1rem !important; background-color: transparent !important; white-space: pre; overflow-x: auto; }
-        .shiki-container.wrap-enabled pre.shiki { white-space: pre-wrap; word-break: break-all; }
-        code.shiki-inline { background: #121212 !important; padding: 3px 6px !important; border: 1px solid #2d2e2e !important; font-family: 'JetBrains Mono', monospace !important; display: inline-block; vertical-align: middle; }
-        
-        #add-blog-container {
-            display: none;
-            padding: 15px;
-            padding-bottom: 0;
-            flex-shrink: 0;
-        }
-        body.is-admin #add-blog-container {
-            display: block;
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 </head>
-<body>
-    
-    <div style="padding: 15px; border-bottom: 1px dashed hsl(var(--border)); display: flex; gap: 10px; align-items: center; background: rgba(0,0,0,0.2); flex-shrink: 0;">
-        <label style="font-size:10px; color:hsl(var(--accent)); font-weight: bold;">JUMP TO ID:</label>
-        <input type="number" id="blog-id-input" class="ascii-input" style="width:80px; margin: 0; padding: 4px;" placeholder="ID">
-        <button onclick="window.jumpToBlog()" class="ascii-btn" style="border: 1px solid hsl(var(--border)); padding: 4px 10px;">Go</button>
-        <button onclick="window.copyRSS()" class="ascii-btn" id="rss-btn" style="border: 1px solid hsl(var(--border)); padding: 4px 10px;">RSS URL</button>
+<body style="padding: 40px; overflow-y: auto;">
+    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="margin:0;">Blogs</h1>
+            <div id="admin-add-blog-btn" style="display:none;">
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="openNewBlogModal()">+ Create Blog</button>
+            </div>
+        </div>
+        <div id="blogs-container" style="display:flex; flex-direction:column; gap:20px;">
+            Loading blogs...
+        </div>
     </div>
 
-    <div id="add-blog-container">
-        <button class="admin-btn" style="padding:10px 20px; font-size:13px; border-style:dashed; width: 100%;" onclick="openAddBlogModal()">+ Create New Blog</button>
-    </div>
+    <script>
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    <div id="tab-container" style="position: relative; flex: 1; overflow: auto; min-height: 0;"></div>
-    
-    <script type="module">
-        import { codeToHtml } from 'https://esm.sh/shiki@1.0.0';
+        let blogsList = [];
 
-        const SUPABASE_URL = "https://wtasesmqwpnbwzdynnas.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
-
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let blogsData = [];
-        let isAdmin = false;
-        let isShikiWrapEnabled = localStorage.getItem('shikiWrapEnabled') !== 'false';
-        let currentRenderId = 0;
-        let highestZ = 10;
-
-        marked.use({
-            breaks: true, gfm: true, async: true,
-            async walkTokens(token) {
-                if (token.type === 'code') {
-                    const shikiHtml = await codeToHtml(token.text, { lang: token.lang || 'text', theme: 'vitesse-dark' });
-                    const header = `<div class="shiki-header"><span class="shiki-lang">${token.lang || 'text'}</span><div class="shiki-actions"><button class="shiki-btn wrap-btn">Wrap</button><button class="shiki-btn copy-btn">Copy</button></div></div>`;
-                    token.type = 'html';
-                    token.text = `<div class="shiki-container">${header}${shikiHtml}</div>`;
-                } else if (token.type === 'codespan') {
-                    const raw = await codeToHtml(token.text, { lang: 'text', theme: 'vitesse-dark' });
-                    const inline = raw.replace(/<pre[^>]*>/, '').replace('</pre>', '').replace('<code', '<code class="shiki-inline"');
-                    token.type = 'html';
-                    token.text = inline;
-                }
-            }
-        });
-
-        async function initAuth() {
+        async function initBlogsPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            handleUserSession(session);
-            supabaseClient.auth.onAuthStateChange((_event, session) => {
-                handleUserSession(session);
-            });
-        }
-
-        window.addEventListener('message', e => {
-            if (e.data && e.data.type === 'auth-sync') {
-                handleUserSession(e.data.session);
-            } else if (e.data && e.data.type === 'hash-updated') {
-                const hash = e.data.args;
-                const params = new URLSearchParams(hash);
-                const id = params.get('id');
-                if (id) scrollToBlogId(id);
-            } else if (e.data && e.data.type === 'reset-inner-positions') {
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('blog_pos_')) {
-                        localStorage.removeItem(key);
-                    }
-                });
-                renderBlogs(blogsData);
+            if (session?.user?.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                document.getElementById('admin-add-blog-btn').style.display = 'block';
             }
-        });
 
-        function handleUserSession(session) {
-            if (session && session.user && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                isAdmin = true;
-                document.body.classList.add('is-admin');
-            } else {
-                isAdmin = false;
-                document.body.classList.remove('is-admin');
+            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
+            if (data && data.data) {
+                blogsList = data.data;
+                renderBlogs();
             }
-            renderBlogs(blogsData);
         }
 
-        function parseDate(dateStr) {
-            const [day, month, year] = dateStr.split('/').map(Number);
-            return new Date(year, month - 1, day);
+        function renderBlogs() {
+            const container = document.getElementById('blogs-container');
+            if(!blogsList.length) {
+                container.innerHTML = '<p style="color:var(--fg-muted)">No blog posts available.</p>';
+                return;
+            }
+            container.innerHTML = blogsList.map((b, i) => `
+                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:20px;">
+                    <div style="font-size:11px; color:var(--fg-muted);">${b.date}</div>
+                    <h2 style="color:var(--accent); font-size:18px; margin-top:4px; margin-bottom:10px;">${b.title}</h2>
+                    <div style="font-size:13px; line-height:1.6;" class="markdown-body">${marked.parse(b.content)}</div>
+                </div>
+            `).join('');
         }
 
-        async function renderBlogs(blogs) {
-            const renderId = ++currentRenderId;
-            const container = document.getElementById('tab-container');
-            container.innerHTML = '';
-
-            const parsedContent = await Promise.all(blogs.map(b => marked.parse(b.content)));
+        window.openNewBlogModal = async () => {
+            const title = await window.parent.guiPrompt("Blog Title:", "", "New Blog Post");
+            if (!title) return;
+            const content = await window.parent.guiPrompt("Blog Content (Markdown supported):", "", "New Blog Content");
+            if (!content) return;
             
-            if (renderId !== currentRenderId) return;
-
-            blogs.forEach((blog, idx) => {
-                const htmlContent = parsedContent[idx];
-                const card = document.createElement('div');
-                card.className = 'ascii-window blog-post-window';
-                card.id = `blog-${blog.id}`;
-                card.dataset.index = idx;
-                card.style.height = 'auto';
-                card.style.position = 'absolute';
-
-                card.innerHTML = `
-                    <div class="ascii-header-row card-drag-handle" style="cursor: move;">
-                        <div class="ascii-header-line" style="width: 15px;"></div>
-                        <div class="ascii-title" style="font-size: 11px;">#${blog.id} - ${blog.date}</div>
-                        <div class="ascii-header-line" style="flex:1;"></div>
-                    </div>
-                    <div class="ascii-content" style="padding: 15px; display: flex; flex-direction: column; gap: 8px; height: auto; box-sizing: border-box;">
-                        <div style="border-bottom: 1px dashed hsl(var(--border) / 0.5); padding-bottom: 5px;">
-                            <a href="#" class="blog-title" id="title-anchor-${blog.id}" style="color: hsl(var(--accent)); font-weight: bold; font-size: 14px; text-decoration: none;">${blog.title}</a>
-                        </div>
-                        <div class="blog-content" style="flex-grow: 1;">${htmlContent}</div>
-                        <div class="admin-action-row">
-                            <button class="admin-btn" id="edit-btn-${blog.id}">Edit</button>
-                            <button class="admin-btn danger-btn" id="del-btn-${blog.id}">Delete</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-
-                const titleAnchor = document.getElementById(`title-anchor-${blog.id}`);
-                if (titleAnchor) titleAnchor.onclick = (e) => window.copyBlogLink(e, blog.id);
-
-                const editBtn = document.getElementById(`edit-btn-${blog.id}`);
-                if (editBtn) editBtn.onclick = () => openEditBlogModal(blog);
-
-                const delBtn = document.getElementById(`del-btn-${blog.id}`);
-                if (delBtn) delBtn.onclick = () => deleteBlogPost(blog.id);
-            });
-
-            layoutCards();
-            setupShikiInteractions();
-            
-            const params = new URLSearchParams(window.location.hash.substring(1));
-            const id = params.get('id');
-            if (id) setTimeout(() => scrollToBlogId(id), 500);
-        }
-
-        function layoutCards() {
-            const container = document.getElementById('tab-container');
-            const cards = container.querySelectorAll('.blog-post-window');
-            const containerWidth = container.clientWidth || window.innerWidth;
-            
-            const cardWidth = Math.max(containerWidth - 40, 200); 
-            const gap = 20;
-            const padding = 20;
-            let currentTop = padding;
-            let maxBottom = 0;
-
-            cards.forEach((card, idx) => {
-                card.style.width = cardWidth + 'px';
-                card.style.height = 'auto';
-
-                const savedPos = localStorage.getItem(`blog_pos_${idx}`);
-                if (savedPos) {
-                    const pos = JSON.parse(savedPos);
-                    card.style.left = pos.left;
-                    card.style.top = pos.top;
-                } else {
-                    card.style.left = padding + 'px';
-                    card.style.top = currentTop + 'px';
-                }
-
-                makeCardDraggable(card, card.querySelector('.card-drag-handle'));
-                const topVal = parseInt(card.style.top) || 0;
-                const renderedHeight = card.offsetHeight;
-                const bottomVal = topVal + renderedHeight;
-
-                if (bottomVal > maxBottom) maxBottom = bottomVal;
-                if (!savedPos) currentTop = topVal + renderedHeight + gap;
-            });
-            
-            let dummy = document.getElementById('scroll-dummy');
-            if (!dummy) {
-                dummy = document.createElement('div');
-                dummy.id = 'scroll-dummy';
-                dummy.style.position = 'absolute';
-                dummy.style.width = '1px';
-                container.appendChild(dummy);
-            }
-            dummy.style.top = (maxBottom + padding) + 'px';
-        }
-
-        let resizeDebounceTimer = null;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeDebounceTimer);
-            resizeDebounceTimer = setTimeout(layoutCards, 100);
-        });
-
-        function clamp(val, min, max) {
-            return Math.max(min, Math.min(max, val));
-        }
-
-        function makeCardDraggable(win, handle) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            handle.onmousedown = dragMouseDown;
-
-            function dragMouseDown(e) {
-                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-                e.preventDefault();
-                win.style.zIndex = ++highestZ;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
-            }
-
-            function elementDrag(e) {
-                e.preventDefault();
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                
-                let newTop = win.offsetTop - pos2;
-                let newLeft = win.offsetLeft - pos1;
-                
-                const container = document.getElementById('tab-container');
-                const maxLeft = container.clientWidth - win.offsetWidth;
-                const maxTop = Math.max(container.clientHeight, container.scrollHeight) - win.offsetHeight;
-                
-                win.style.top = clamp(newTop, 0, maxTop) + "px";
-                win.style.left = clamp(newLeft, 0, maxLeft) + "px";
-            }
-
-            function closeDragElement() {
-                document.onmouseup = null;
-                document.onmousemove = null;
-                const idx = win.dataset.index;
-                localStorage.setItem(`blog_pos_${idx}`, JSON.stringify({
-                    left: win.style.left,
-                    top: win.style.top
-                }));
-            }
-        }
-
-        function setupShikiInteractions() {
-            document.querySelectorAll('.shiki-container').forEach(container => {
-                const wrapBtn = container.querySelector('.wrap-btn');
-                if (isShikiWrapEnabled) {
-                    container.classList.add('wrap-enabled');
-                    if (wrapBtn) { wrapBtn.classList.add('active'); wrapBtn.textContent = 'Wrap: On'; }
-                } else {
-                    if (wrapBtn) wrapBtn.textContent = 'Wrap: Off';
-                }
-            });
-        }
-
-        function scrollToBlogId(id) {
-            const el = document.getElementById(`blog-${id}`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.style.borderColor = 'hsl(var(--accent))';
-                setTimeout(() => el.style.borderColor = 'hsl(var(--border))', 2000);
-            } else {
-            }
-        }
-
-        async function syncToSupabase() {
-            const { error } = await supabaseClient
-                .from('site_content')
-                .update({ data: blogsData })
-                .eq('key', 'blogs');
-            if (error) {
-                alert("Error saving: " + error.message);
-            }
-        }
-
-        window.openAddBlogModal = () => {
-            window.parent.postMessage({ type: 'open-editor', editorType: 'blog', title: 'Create Blog Post' }, '*');
+            const nextId = blogsList.length > 0 ? Math.max(...blogsList.map(b => b.id || 0)) + 1 : 1;
+            const today = new Date();
+            const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+            blogsList.unshift({ id: nextId, date: dateStr, title, content });
+            await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs');
+            renderBlogs();
         };
 
-        window.openEditBlogModal = (blog) => {
-            window.parent.postMessage({ type: 'open-editor', editorType: 'blog', title: `Edit Blog Post #${blog.id}`, id: blog.id, data: blog }, '*');
-        };
-
-        window.deleteBlogPost = async (id) => {
-            if (!confirm(`Are you sure you want to delete Blog Post #${id}?`)) return;
-            blogsData = blogsData.filter(b => b.id !== id);
-            await syncToSupabase();
-        };
-
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.shiki-btn.copy-btn')) {
-                const container = e.target.closest('.shiki-container');
-                const codeBlock = container?.querySelector('pre.shiki code');
-                if (codeBlock) {
-                    navigator.clipboard.writeText(codeBlock.innerText).then(() => {
-                        e.target.textContent = 'Copied!';
-                        setTimeout(() => e.target.textContent = 'Copy', 2000);
-                    });
-                }
-            }
-            if (e.target.matches('.shiki-btn.wrap-btn')) {
-                isShikiWrapEnabled = !isShikiWrapEnabled;
-                localStorage.setItem('shikiWrapEnabled', isShikiWrapEnabled);
-                document.querySelectorAll('.shiki-container').forEach(container => {
-                    const wrapBtn = container.querySelector('.wrap-btn');
-                    container.classList.toggle('wrap-enabled', isShikiWrapEnabled);
-                    if (wrapBtn) {
-                        wrapBtn.classList.toggle('active', isShikiWrapEnabled);
-                        wrapBtn.textContent = isShikiWrapEnabled ? 'Wrap: On' : 'Wrap: Off';
-                    }
-                });
-            }
-        });
-
-        window.copyBlogLink = (e, id) => { e.preventDefault(); const url = `https://devicals.github.io/#page=blogs&id=${id}`; navigator.clipboard.writeText(url).then(() => { e.target.textContent = "Link Copied!"; setTimeout(() => { e.target.textContent = blogsData.find(b=>b.id===id).title; }, 2000); }); document.getElementById(`blog-${id}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); };
-        window.jumpToBlog = () => { 
-            const id = document.getElementById('blog-id-input').value; 
-            if (!id) return; 
-            scrollToBlogId(id);
-        };
-        window.copyRSS = () => { const url = "https://github.com/devicals/devicals.github.io/raw/refs/heads/main/storage/internal/blogs.xml"; navigator.clipboard.writeText(url).then(() => { const btn = document.getElementById('rss-btn'); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'RSS URL'; }, 2000); }); };
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('site_content')
-                    .select('data')
-                    .eq('key', 'blogs')
-                    .single();
-
-                if (data && data.data) {
-                    blogsData = data.data.sort((a, b) => parseDate(b.date) - parseDate(a.date));
-                    await renderBlogs(blogsData);
-                }
-
-                supabaseClient
-                    .channel('blogs-realtime')
-                    .on(
-                        'postgres_changes',
-                        { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.blogs' },
-                        async (payload) => {
-                            if (payload.new && payload.new.data) {
-                                blogsData = payload.new.data.sort((a, b) => parseDate(b.date) - parseDate(a.date));
-                                await renderBlogs(blogsData);
-                            }
-                        }
-                    )
-                    .subscribe();
-
-                await initAuth();
-            } catch (error) { console.error(error); }
-        });
+        document.addEventListener('DOMContentLoaded', initBlogsPage);
     </script>
 </body>
 </html>

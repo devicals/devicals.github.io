@@ -40,7 +40,7 @@ window.renderAdminSection = async function(section) {
             if (error || !data) {
                 view.innerHTML = `
                     <p style="color:var(--destructive)">Failed to load users from database.</p>
-                    <p style="font-size:11px; color:var(--fg-muted); margin-top:8px;">Ensure you have executed the required SQL setup functions in Supabase.</p>
+                    <p style="font-size:11px; color:var(--fg-muted); margin-top:8px;">Execute the SQL setup function in Supabase SQL Editor to enable user query RPC.</p>
                 `;
                 return;
             }
@@ -91,6 +91,8 @@ window.renderAdminSection = async function(section) {
     }
 };
 
+let draggedTreeItem = null;
+
 function renderVisualTreeBuilder() {
     const container = document.getElementById('visual-tree-builder');
     if (!container) return;
@@ -100,19 +102,53 @@ function renderVisualTreeBuilder() {
         nodes.forEach((node, idx) => {
             const row = document.createElement('div');
             row.className = 'tree-node-item';
+            row.draggable = true;
             row.innerHTML = `
                 <span style="font-weight:bold; color:var(--accent);">${node.type === 'folder' ? '[F]' : '[P]'}</span>
                 <span style="flex:1;">${node.name} ${node.hidden ? '<span style="color:var(--destructive)">(Hidden)</span>' : ''}</span>
-                <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px;" onclick="moveNode(event, ${idx}, -1)">↑</button>
-                <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px;" onclick="moveNode(event, ${idx}, 1)">↓</button>
                 <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px;" onclick="editNode(event, ${idx})">✎</button>
                 <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; color:var(--destructive);" onclick="deleteNode(event, ${idx})">✕</button>
             `;
-            
-            row.querySelector("button:nth-of-type(1)").onclick = () => moveNode(nodes, idx, -1);
-            row.querySelector("button:nth-of-type(2)").onclick = () => moveNode(nodes, idx, 1);
-            row.querySelector("button:nth-of-type(3)").onclick = () => editNode(nodes, idx);
-            row.querySelector("button:nth-of-type(4)").onclick = () => deleteNode(nodes, idx);
+
+            row.addEventListener('dragstart', (e) => {
+                e.stopPropagation();
+                draggedTreeItem = { arr: nodes, index: idx };
+                row.style.opacity = '0.4';
+            });
+
+            row.addEventListener('dragend', () => {
+                row.style.opacity = '1';
+                draggedTreeItem = null;
+            });
+
+            row.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                row.style.borderColor = 'var(--accent)';
+            });
+
+            row.addEventListener('dragleave', () => {
+                row.style.borderColor = 'var(--border)';
+            });
+
+            row.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                row.style.borderColor = 'var(--border)';
+                if (!draggedTreeItem || draggedTreeItem.arr !== nodes) return;
+                
+                const targetIdx = idx;
+                const sourceIdx = draggedTreeItem.index;
+                if (sourceIdx === targetIdx) return;
+                
+                const [moved] = nodes.splice(sourceIdx, 1);
+                nodes.splice(targetIdx, 0, moved);
+                renderNavigation();
+                renderVisualTreeBuilder();
+            });
+
+            row.querySelector("button:nth-of-type(1)").onclick = () => editNode(nodes, idx);
+            row.querySelector("button:nth-of-type(2)").onclick = () => deleteNode(nodes, idx);
 
             parentEl.appendChild(row);
             if (node.children) {
@@ -126,37 +162,31 @@ function renderVisualTreeBuilder() {
     buildVisualNodes(navData.children || [], container);
 }
 
-function moveNode(arr, idx, dir) {
-    if (idx + dir < 0 || idx + dir >= arr.length) return;
-    const temp = arr[idx];
-    arr[idx] = arr[idx + dir];
-    arr[idx + dir] = temp;
-    renderNavigation();
-    renderVisualTreeBuilder();
-}
-
-function editNode(arr, idx) {
+async function editNode(arr, idx) {
     const node = arr[idx];
-    const newName = prompt("Rename page/folder:", node.name);
-    if (newName) node.name = newName;
-    if (node.type === 'file') {
-        const isHidden = confirm("Hide this page from non-admins?");
-        node.hidden = isHidden;
+    const newName = await guiPrompt("Rename page/folder:", node.name, "Edit Name");
+    if (newName) {
+        node.name = newName;
+        if (node.type === 'file') {
+            const isHidden = await guiConfirm("Hide this page from non-admins?", "Page Visibility");
+            node.hidden = isHidden;
+        }
+        renderNavigation();
+        renderVisualTreeBuilder();
     }
-    renderNavigation();
-    renderVisualTreeBuilder();
 }
 
-function deleteNode(arr, idx) {
-    if (confirm(`Delete "${arr[idx].name}"?`)) {
+async function deleteNode(arr, idx) {
+    const confirmed = await guiConfirm(`Delete "${arr[idx].name}"?`, "Confirm Deletion");
+    if (confirmed) {
         arr.splice(idx, 1);
         renderNavigation();
         renderVisualTreeBuilder();
     }
 }
 
-window.addFolderNode = function() {
-    const name = prompt("New Folder Name:");
+window.addFolderNode = async function() {
+    const name = await guiPrompt("New Folder Name:", "", "Create Folder");
     if (name) {
         navData.children.push({ name, type: "folder", children: [] });
         renderNavigation();
@@ -164,16 +194,16 @@ window.addFolderNode = function() {
     }
 };
 
-window.addFileNode = function() {
-    const name = prompt("New Page Name:");
+window.addFileNode = async function() {
+    const name = await guiPrompt("New Page Name:", "", "Create Page");
     if (name) {
-        const isHtml = confirm("Is this an interactive HTML tool page? (Click OK for HTML, Cancel for Markdown)");
+        const isHtml = await guiConfirm("Is this an interactive HTML page? (Click Yes for HTML, Cancel for Markdown)", "Page Type");
         if (isHtml) {
-            const url = prompt("Enter HTML page URL (e.g. pages/custom.html):", "pages/");
-            navData.children.push({ name, type: "file", fileType: "html", url });
+            const url = await guiPrompt("Enter HTML page URL (e.g. pages/custom.html):", "pages/", "Set URL");
+            if (url) navData.children.push({ name, type: "file", fileType: "html", url });
         } else {
-            const path = prompt("Enter Markdown file path (e.g. content/note.md):", "content/");
-            navData.children.push({ name, type: "file", fileType: "md", path });
+            const path = await guiPrompt("Enter Markdown file path (e.g. content/note.md):", "content/", "Set File Path");
+            if (path) navData.children.push({ name, type: "file", fileType: "md", path });
         }
         renderNavigation();
         renderVisualTreeBuilder();
