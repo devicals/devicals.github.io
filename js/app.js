@@ -125,7 +125,6 @@ const DEFAULT_NAV = {
 document.addEventListener('DOMContentLoaded', async () => {
     loadSettings();
     await loadNavigation();
-    initGraph();
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
     initAuth();
@@ -306,7 +305,6 @@ function renderNavigation() {
     }
     buildTree(navData.children || [], container);
     highlightNav();
-    if (window.updateGraph) window.updateGraph();
 }
 
 function highlightNav() {
@@ -325,13 +323,11 @@ async function handleRoute() {
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
     const breadcrumbs = document.getElementById('breadcrumbs');
-    const tocContainer = document.getElementById('toc-tree');
     
     if (hash === 'admin') {
         iframe.style.display = 'none';
         mdContainer.style.display = 'block';
         breadcrumbs.innerHTML = 'System > Admin Dashboard';
-        tocContainer.innerHTML = '';
         if (window.renderAdminPage) window.renderAdminPage();
         return;
     }
@@ -345,7 +341,6 @@ async function handleRoute() {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
             mdContainer.innerHTML = '<div id="spotify-inject"></div>';
-            tocContainer.innerHTML = '';
             if (window.renderSpotify) window.renderSpotify();
             return;
         }
@@ -354,7 +349,6 @@ async function handleRoute() {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
             iframe.src = node.url;
-            tocContainer.innerHTML = '';
             return;
         }
         
@@ -366,15 +360,12 @@ async function handleRoute() {
                 if (res.ok) {
                     const text = await res.text();
                     mdContainer.innerHTML = marked.parse(text);
-                    generateTOC();
                     updateWordCount(text);
                 } else {
                     mdContainer.innerHTML = '<h2>404 - Document Not Found</h2>';
-                    tocContainer.innerHTML = '';
                 }
             } catch(e) {
                 mdContainer.innerHTML = '<h2>Error loading document</h2>';
-                tocContainer.innerHTML = '';
             }
             return;
         }
@@ -384,98 +375,16 @@ async function handleRoute() {
         mdContainer.style.display = 'none';
         iframe.style.display = 'block';
         iframe.src = hash;
-        tocContainer.innerHTML = '';
         return;
     }
     
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
     mdContainer.innerHTML = '<h2>Page not found</h2>';
-    tocContainer.innerHTML = '';
 }
 
 function updateWordCount(text) {
     const words = text.trim().split(/\s+/).length;
     const chars = text.length;
     document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
-}
-
-function generateTOC() {
-    const tocContainer = document.getElementById('toc-tree');
-    tocContainer.innerHTML = '';
-    const headers = document.getElementById('page-content').querySelectorAll('h1, h2, h3');
-    headers.forEach((h, i) => {
-        h.id = 'head-' + i;
-        const link = document.createElement('a');
-        link.className = 'toc-item';
-        link.textContent = h.textContent;
-        link.style.paddingLeft = (parseInt(h.tagName[1]) - 1) * 8 + 'px';
-        link.onclick = () => h.scrollIntoView({behavior: 'smooth'});
-        tocContainer.appendChild(link);
-    });
-}
-
-function initGraph() {
-    const canvas = document.getElementById('graph-canvas');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let width, height;
-    let nodes = [];
-    
-    function resize() {
-        width = canvas.parentElement.clientWidth;
-        height = canvas.parentElement.clientHeight - 30;
-        canvas.width = width;
-        canvas.height = height;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    window.updateGraph = () => {
-        nodes = flatNodes.map(n => ({
-            x: Math.random() * (width || 200),
-            y: Math.random() * (height || 200),
-            vx: 0, vy: 0,
-            color: n.path.includes('Archived') ? '#ff6b6b' : 'var(--accent)',
-            path: n.path
-        }));
-    };
-
-    function draw() {
-        if(!width || !height) {
-            requestAnimationFrame(draw);
-            return;
-        }
-        ctx.clearRect(0, 0, width, height);
-        
-        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#3b372e';
-        ctx.lineWidth = 1;
-        for(let i=0; i<nodes.length; i++) {
-            for(let j=i+1; j<nodes.length; j++) {
-                if(nodes[i].path.split('/')[0] === nodes[j].path.split('/')[0]) {
-                    ctx.beginPath();
-                    ctx.moveTo(nodes[i].x, nodes[i].y);
-                    ctx.lineTo(nodes[j].x, nodes[j].y);
-                    ctx.stroke();
-                }
-            }
-        }
-        
-        nodes.forEach(n => {
-            const dx = (width/2) - n.x;
-            const dy = (height/2) - n.y;
-            n.vx += dx * 0.0001;
-            n.vy += dy * 0.0001;
-            n.vx *= 0.95; n.vy *= 0.95;
-            n.x += n.vx; n.y += n.vy;
-            
-            const accentVal = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e6b450';
-            ctx.fillStyle = n.color === 'var(--accent)' ? accentVal : n.color;
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, 4, 0, Math.PI*2);
-            ctx.fill();
-        });
-        requestAnimationFrame(draw);
-    }
-    draw();
 }
