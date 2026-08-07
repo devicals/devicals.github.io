@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:20px;">Downloads</h1>
         <div id="downloads-list" style="display:flex; flex-direction:column; gap:16px;"></div>
     </div>
@@ -22,7 +22,7 @@
             if (data && data.data) {
                 const list = data.data;
                 document.getElementById('downloads-list').innerHTML = list.map(d => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px; display:flex; justify-content:space-between; align-items:center; gap:16px;">
+                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:16px; display:flex; justify-content:space-between; align-items:center; gap:16px;">
                         <div>
                             <div style="color:var(--accent); font-weight:bold; font-size:15px;">${d.name}</div>
                             <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">${d.description}</div>

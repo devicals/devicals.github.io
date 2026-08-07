@@ -29,9 +29,7 @@
             {
               "name": "Books",
               "type": "folder",
-              "collapsed": true,
               "children": [
-                { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/books/obliter8tion/retribution/intro_1.md", "hidden": true },
                 {
                   "name": "Halloween Specials",
                   "type": "folder",
@@ -52,7 +50,6 @@
             {
               "name": "Poems",
               "type": "folder",
-              "collapsed": true,
               "children": [
                 {
                   "name": "first",
@@ -97,16 +94,6 @@
         },
         { "name": "World Clock Viewer", "type": "file", "fileType": "html", "url": "pages/worldclock.html" },
         { "name": "Code Translator", "type": "file", "fileType": "html", "url": "pages/codes.html" }
-      ]
-    },
-    {
-      "name": "Archived Pages",
-      "type": "folder",
-      "hidden": true,
-      "children": [
-        { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/books/obliter8tion/retribution/intro_1.md" },
-        { "name": "Oricade Songs", "type": "file", "fileType": "html", "url": "pages/gallery.html?type=audio" },
-        { "name": "Function Generator", "type": "file", "fileType": "html", "url": "pages/function_generator.html" }
       ]
     }
   ]

@@ -121,17 +121,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAnnouncementsToast();
 });
 
-function guiAlert(msg, title = "Notification") {
+window.guiAlert = function(msg, title = "Notification") {
     document.getElementById('gui-title').textContent = title;
     document.getElementById('gui-msg').textContent = msg;
     document.getElementById('gui-modal').style.display = 'flex';
-}
+};
 
-function closeGuiModal() {
+window.closeGuiModal = function() {
     document.getElementById('gui-modal').style.display = 'none';
-}
+};
 
-function guiConfirm(msg, title = "Confirm Action") {
+window.guiConfirm = function(msg, title = "Confirm Action") {
     return new Promise((resolve) => {
         document.getElementById('gui-confirm-title').textContent = title;
         document.getElementById('gui-confirm-msg').textContent = msg;
@@ -144,9 +144,9 @@ function guiConfirm(msg, title = "Confirm Action") {
         yesBtn.onclick = () => { cleanup(); resolve(true); };
         window.closeGuiConfirmModal = () => { cleanup(); resolve(false); };
     });
-}
+};
 
-function guiPrompt(msg, defaultValue = "", title = "Input Required") {
+window.guiPrompt = function(msg, defaultValue = "", title = "Input Required") {
     return new Promise((resolve) => {
         document.getElementById('gui-prompt-title').textContent = title;
         document.getElementById('gui-prompt-msg').textContent = msg;
@@ -161,7 +161,7 @@ function guiPrompt(msg, defaultValue = "", title = "Input Required") {
         okBtn.onclick = () => { const val = input.value; cleanup(); resolve(val); };
         window.closeGuiPromptModal = () => { cleanup(); resolve(null); };
     });
-}
+};
 
 function loadSettingsLocally() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
@@ -325,7 +325,7 @@ window.openAdminFromSettings = function() {
 async function loadNavigation() {
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'structure').single();
-        if (data && data.data) {
+        if (data && data.data && data.data.length > 0) {
             navData = { children: data.data };
         } else {
             navData = DEFAULT_NAV;
@@ -499,7 +499,7 @@ async function handleRoute() {
     
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
-    mdContainer.innerHTML = '<h2 style="color:var(--destructive);">Page not found</h2>';
+    mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
 }
 
 window.openMarkdownEditor = async function(filePath) {
@@ -564,7 +564,7 @@ async function loadAnnouncementsToast() {
             const textEl = document.getElementById('announcement-text');
             const bar = document.getElementById('announcement-bar');
 
-            textEl.textContent = data.data[data.data.length - 1]; // show latest
+            textEl.textContent = data.data[data.data.length - 1];
             toast.style.display = 'flex';
             bar.style.width = '100%';
 

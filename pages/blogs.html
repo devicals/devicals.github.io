@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h1 style="margin:0;">Blogs</h1>
             <div id="admin-add-blog-btn" style="display:none;">
@@ -48,7 +48,7 @@
                 return;
             }
             container.innerHTML = blogsList.map((b, i) => `
-                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:20px;">
+                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:20px; border-radius:6px !important;">
                     <div style="font-size:11px; color:var(--fg-muted);">${b.date}</div>
                     <h2 style="color:var(--accent); font-size:18px; margin-top:4px; margin-bottom:10px;">${b.title}</h2>
                     <div style="font-size:13px; line-height:1.6;" class="markdown-body">${marked.parse(b.content)}</div>

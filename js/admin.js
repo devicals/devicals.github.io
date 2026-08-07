@@ -170,11 +170,11 @@ function renderVisualTreeBuilder() {
 
 async function editNode(arr, idx) {
     const node = arr[idx];
-    const newName = await guiPrompt("Rename page/folder:", node.name, "Edit Name");
+    const newName = await window.guiPrompt("Rename page/folder:", node.name, "Edit Name");
     if (newName) {
         node.name = newName;
         if (node.type === 'file') {
-            const isHidden = await guiConfirm("Hide this page from non-admins?", "Page Visibility");
+            const isHidden = await window.guiConfirm("Hide this page from non-admins?", "Page Visibility");
             node.hidden = isHidden;
         }
         await syncStructure();
@@ -184,7 +184,7 @@ async function editNode(arr, idx) {
 }
 
 async function deleteNode(arr, idx) {
-    const confirmed = await guiConfirm(`Delete "${arr[idx].name}"?`, "Confirm Deletion");
+    const confirmed = await window.guiConfirm(`Delete "${arr[idx].name}"?`, "Confirm Deletion");
     if (confirmed) {
         arr.splice(idx, 1);
         await syncStructure();
@@ -194,7 +194,7 @@ async function deleteNode(arr, idx) {
 }
 
 window.addFolderNode = async function() {
-    const name = await guiPrompt("New Folder Name:", "", "Create Folder");
+    const name = await window.guiPrompt("New Folder Name:", "", "Create Folder");
     if (name) {
         navData.children.push({ name, type: "folder", children: [] });
         await syncStructure();
@@ -204,15 +204,21 @@ window.addFolderNode = async function() {
 };
 
 window.addFileNode = async function() {
-    const name = await guiPrompt("New Page Name:", "", "Create Page");
+    const name = await window.guiPrompt("New Page Name:", "", "Create Page");
     if (name) {
-        const isHtml = await guiConfirm("Is this an interactive HTML page? (Click Yes for HTML, Cancel for Markdown)", "Page Type");
+        const isHtml = await window.guiConfirm("Is this an interactive HTML page? (Click Yes for HTML, Cancel for Markdown)", "Page Type");
         if (isHtml) {
-            const url = await guiPrompt("Enter HTML page URL (e.g. pages/custom.html):", "pages/", "Set URL");
+            const url = await window.guiPrompt("Enter HTML page URL (e.g. pages/custom.html):", "pages/", "Set URL");
             if (url) navData.children.push({ name, type: "file", fileType: "html", url });
         } else {
-            const path = await guiPrompt("Enter Markdown file path (e.g. content/note.md):", "content/new_page.md", "Set File Path");
-            if (path) navData.children.push({ name, type: "file", fileType: "md", path });
+            const path = await window.guiPrompt("Enter Markdown file path (e.g. content/note.md):", "content/new_page.md", "Set File Path");
+            if (path) {
+                navData.children.push({ name, type: "file", fileType: "md", path });
+                const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
+                const edits = data?.data || {};
+                edits[path] = `# ${name}\n\nNew page content.`;
+                await supabaseClient.from('site_content').upsert({ key: 'page_edits', data: edits });
+            }
         }
         await syncStructure();
         renderNavigation();

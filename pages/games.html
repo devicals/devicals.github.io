@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:20px;">Liked Games</h1>
         
         <h2>Favorites</h2>
@@ -31,18 +31,18 @@
                 const games = data.data;
                 
                 document.getElementById('fav-games-list').innerHTML = (games.favorites || []).map(g => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px;">
+                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:16px;">
                         <div style="font-size:16px; font-weight:bold; color:var(--accent);">${g.title}</div>
                         <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">${g.comment || ''}</div>
                     </div>
                 `).join('');
 
                 document.getElementById('liked-games-grid').innerHTML = (games.liked || []).map(title => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); padding:12px; text-align:center; font-size:12px;">${title}</div>
+                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:12px; text-align:center; font-size:12px;">${title}</div>
                 `).join('');
 
                 document.getElementById('wtp-games-grid').innerHTML = (games.wanttoplay || []).map(title => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); padding:12px; text-align:center; font-size:12px;">${title}</div>
+                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:12px; text-align:center; font-size:12px;">${title}</div>
                 `).join('');
             }
         }

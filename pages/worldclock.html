@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:20px;">World Clock Viewer</h1>
         <div id="clocks-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px;"></div>
     </div>
@@ -21,7 +21,7 @@
             grid.innerHTML = zones.map(z => {
                 const now = z === 'system' ? DateTime.now() : DateTime.now().setZone(z);
                 return `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px;">
+                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:8px !important; padding:16px;">
                         <div style="font-size:11px; color:var(--accent); font-weight:bold;">${z.toUpperCase()}</div>
                         <div style="font-size:24px; font-weight:bold; margin-top:8px;">${now.toFormat('HH:mm:ss')}</div>
                         <div style="font-size:11px; color:var(--fg-muted); margin-top:4px;">${now.toFormat('yyyy-MM-dd')}</div>

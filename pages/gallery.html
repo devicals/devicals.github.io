@@ -28,7 +28,7 @@
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
             <h1 style="margin:0;">Public Gallery Board</h1>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleUploadBox()">+ Add Art / Image</button>
@@ -39,6 +39,12 @@
                 <input type="text" id="gal-name" class="ui-input" placeholder="Your Name" style="margin:0;">
                 <input type="text" id="gal-title" class="ui-input" placeholder="Artwork Title" style="margin:0;">
             </div>
+            
+            <label style="font-size:11px; color:var(--fg-muted);">Upload Image File</label>
+            <input type="file" id="gal-file" class="ui-input" accept="image/*" style="margin-bottom:12px;">
+            
+            <div style="font-size:11px; color:var(--fg-muted); text-align:center; margin-bottom:12px;">- OR -</div>
+            
             <input type="text" id="gal-url" class="ui-input" placeholder="Image URL (Or click Draw below)" style="margin-bottom:12px;">
             
             <div style="display:flex; gap:12px;">
@@ -120,14 +126,14 @@
         async function initGallery() {
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
             if (data) {
-                galleryItems = data.filter(i => i.drawing || (i.message && i.message.startsWith('http')));
+                galleryItems = data.filter(i => i.drawing || (i.message && i.message.startsWith('http')) || (i.message && i.message.startsWith('data:')));
                 renderGallery();
             }
 
             supabaseClient.channel('gallery-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'guestbook' }, async () => {
                 const { data: updated } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
                 if (updated) {
-                    galleryItems = updated.filter(i => i.drawing || (i.message && i.message.startsWith('http')));
+                    galleryItems = updated.filter(i => i.drawing || (i.message && i.message.startsWith('http')) || (i.message && i.message.startsWith('data:')));
                     renderGallery();
                 }
             }).subscribe();
@@ -137,8 +143,8 @@
             const container = document.getElementById('gallery-container');
             container.innerHTML = galleryItems.map(item => `
                 <div class="gallery-card">
-                    <img src="${item.drawing || item.message}" alt="Artwork" loading="lazy">
-                    <div style="font-weight:bold; color:var(--accent); font-size:14px; margin-top:8px;">${item.message && !item.message.startsWith('http') ? item.message : 'Untitled'}</div>
+                    <img src="${item.drawing || (item.message.startsWith('http') || item.message.startsWith('data:') ? item.message : '')}" alt="Artwork" loading="lazy">
+                    <div style="font-weight:bold; color:var(--accent); font-size:14px; margin-top:8px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
                     <div style="font-size:11px; color:var(--fg-muted);">By ${item.name || 'Anonymous'}</div>
                 </div>
             `).join('');
@@ -148,24 +154,40 @@
             const name = document.getElementById('gal-name').value.trim() || 'Anonymous';
             const title = document.getElementById('gal-title').value.trim() || 'Untitled';
             const url = document.getElementById('gal-url').value.trim();
+            const fileInput = document.getElementById('gal-file');
             
             let drawingData = null;
-            if (canvasActive) {
+
+            if (fileInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    drawingData = e.target.result;
+                    await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
+                    finishPost();
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+                return;
+            } else if (canvasActive) {
                 drawingData = canvas.toDataURL('image/png');
             } else if (url) {
                 drawingData = url;
             } else {
-                alert("Please provide an image URL or draw something.");
+                window.parent.guiAlert("Please provide an image file, URL, or draw something.");
                 return;
             }
 
             await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
-            
+            finishPost();
+        };
+
+        function finishPost() {
             document.getElementById('gal-title').value = '';
             document.getElementById('gal-url').value = '';
+            document.getElementById('gal-file').value = '';
             clearCanvas();
             toggleUploadBox();
-        };
+            window.parent.guiAlert("Posted to gallery successfully!", "Success");
+        }
 
         document.addEventListener('DOMContentLoaded', initGallery);
     </script>

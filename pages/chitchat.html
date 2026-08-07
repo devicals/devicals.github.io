@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 750px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 750px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:20px;">Chits & Chats</h1>
         
         <div id="messages-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px; max-height:450px; overflow-y:auto; padding-right:6px;"></div>
@@ -55,7 +55,7 @@
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px;">
                         <div>
                             <strong style="color:var(--accent);">${escapeHTML(m.name || 'Anonymous')}</strong>
-                            ${m.is_creator ? '<span style="background:var(--accent); color:#000; padding:2px 4px; border-radius:4px !important; font-size:9px; margin-left:6px; font-weight:bold;">ADMIN</span>' : ''}
+                            ${m.is_creator ? '<span style="background:var(--accent); color:var(--bg-main); padding:2px 6px; border-radius:4px !important; font-size:9px; margin-left:6px; font-weight:bold; letter-spacing: 1px;">ADMIN</span>' : ''}
                         </div>
                         <span style="color:var(--fg-muted);">${new Date(m.created_at).toLocaleString()}</span>
                     </div>

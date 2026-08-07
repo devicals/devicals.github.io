@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div class="markdown-body" style="max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
+    <div class="markdown-body" style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
         <h1>about me</h1>
         <p>👋 Sup! I'm <strong>Error Dev</strong>, an <em>Aussie</em>! I enjoy playing <a href="#About%20Me/Games%20I%20%3C3" onclick="window.parent.location.hash='About Me/Games I <3'">games</a> such as <em>Minecraft</em> and <em>Persona 5 Royal</em>, experimenting in <a href="https://powerpoint.office.com" target="_blank">Powerpoint</a>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <a href="https://github.com/devicals" target="_blank">Github</a>! Also check out my Minecraft projects at <a href="https://modrinth.com/organization/infiniverse" target="_blank">https://modrinth.com/organization/infiniverse</a>!</p>
         <p>Contact me at <a href="mailto:3rr0r.d3v@gmail.com">3rr0r.d3v@gmail.com</a>!</p>
@@ -48,14 +48,6 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         async function loadHomeData() {
-            try {
-                const res = await fetch('https://api.lanyard.rest/v1/users/989414384679927838');
-                const data = await res.json();
-                const statusMap = { 'online': 'Online', 'dnd': 'DND', 'idle': 'Idle', 'offline': 'Offline' };
-                const text = statusMap[data.data?.discord_status || 'offline'] || 'Offline';
-                document.getElementById('discord-link').textContent = `${text} on Discord`;
-            } catch(e) {}
-
             try {
                 const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
                 if (data && data.data && data.data.length > 0) {

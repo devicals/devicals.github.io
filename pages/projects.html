@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h1 style="margin:0;">Projects</h1>
         </div>
@@ -58,7 +58,7 @@
             const list = projectsData.tabs[currentTabKey].projects || [];
 
             grid.innerHTML = list.map(p => `
-                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px; display:flex; flex-direction:column; gap:8px;">
+                <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:16px; display:flex; flex-direction:column; gap:8px;">
                     <a href="${p.link}" target="_blank" style="color:var(--accent); font-weight:bold; text-decoration:none;">${p.name} ↗</a>
                     <div style="font-size:12px; color:var(--fg-main); line-height:1.5;">${p.description}</div>
                 </div>

@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 60px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:20px;">Z.A.T.O Live Tier List</h1>
         <div id="zato-tier-container" style="display:flex; flex-direction:column; gap:4px;">
             Loading live tierlist...
@@ -37,11 +37,11 @@
             container.innerHTML = tiers.map(t => {
                 const items = tierItems[t.id] || [];
                 return `
-                    <div style="display:flex; border:1px solid var(--border); min-height:50px;">
+                    <div style="display:flex; border:1px solid var(--border); min-height:50px; border-radius:4px !important; overflow:hidden;">
                         <div style="width:70px; background:${t.color}; color:${t.text}; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:16px;">${t.label}</div>
                         <div style="flex:1; background:var(--bg-hover); padding:6px; display:flex; flex-wrap:wrap; gap:6px;">
                             ${items.map(item => `
-                                <div style="background:var(--bg-main); border:1px solid var(--border); padding:6px 10px; font-size:12px;">${item.label}</div>
+                                <div style="background:var(--bg-main); border:1px solid var(--border); padding:6px 10px; font-size:12px; border-radius:4px !important;">${item.label}</div>
                             `).join('')}
                         </div>
                     </div>
