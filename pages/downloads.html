@@ -8,8 +8,8 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:20px;">Downloads</h1>
-        <div id="downloads-list" style="display:flex; flex-direction:column; gap:16px;"></div>
+        <h1 style="margin-bottom:24px;">Downloads</h1>
+        <div id="downloads-list" class="flat-list-container"></div>
     </div>
 
     <script>
@@ -22,10 +22,10 @@
             if (data && data.data) {
                 const list = data.data;
                 document.getElementById('downloads-list').innerHTML = list.map(d => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:16px; display:flex; justify-content:space-between; align-items:center; gap:16px;">
-                        <div>
-                            <div style="color:var(--accent); font-weight:bold; font-size:15px;">${d.name}</div>
-                            <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">${d.description}</div>
+                    <div class="flat-list-item" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                        <div style="flex:1;">
+                            <div class="flat-title">${d.name}</div>
+                            <div class="flat-meta" style="margin-top:4px;">${d.description}</div>
                         </div>
                         <a href="${d.url}" target="_blank" class="ui-btn" style="width:auto; margin:0; text-decoration:none;">Download</a>
                     </div>

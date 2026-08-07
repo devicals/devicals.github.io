@@ -5,26 +5,78 @@
     <title>World Clock Viewer - Error Dev</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+    <style>
+        .clock-item {
+            padding: 16px 0;
+            border-bottom: 1px dashed var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:20px;">World Clock Viewer</h1>
-        <div id="clocks-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px;"></div>
+    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
+        <h1 style="margin-bottom:24px;">World Clock Viewer</h1>
+        
+        <div style="display:flex; gap:10px; margin-bottom:30px;">
+            <input type="text" id="new-clock-input" class="ui-input" style="margin:0; flex:1;" placeholder="Enter timezone (e.g. UTC, America/New_York)">
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="addClock()">+ Add Clock</button>
+        </div>
+
+        <div id="clocks-grid" style="display:flex; flex-direction:column; gap:0;"></div>
     </div>
 
     <script>
         const DateTime = luxon.DateTime;
-        const zones = ['system', 'UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo', 'Australia/Sydney'];
+        let zones = JSON.parse(localStorage.getItem('user_world_clocks')) || ['system', 'UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+
+        function addClock() {
+            const input = document.getElementById('new-clock-input').value.trim();
+            if(!input) return;
+            zones.push(input);
+            localStorage.setItem('user_world_clocks', JSON.stringify(zones));
+            document.getElementById('new-clock-input').value = '';
+            renderClocks();
+        }
+
+        window.removeClock = function(idx) {
+            zones.splice(idx, 1);
+            localStorage.setItem('user_world_clocks', JSON.stringify(zones));
+            renderClocks();
+        };
 
         function renderClocks() {
             const grid = document.getElementById('clocks-grid');
-            grid.innerHTML = zones.map(z => {
-                const now = z === 'system' ? DateTime.now() : DateTime.now().setZone(z);
+            grid.innerHTML = zones.map((z, idx) => {
+                let now;
+                try {
+                    now = z === 'system' ? DateTime.now() : DateTime.now().setZone(z);
+                    if (!now.isValid) throw new Error("Invalid");
+                } catch(e) {
+                    now = null;
+                }
+
+                if (!now) {
+                    return `
+                        <div class="clock-item">
+                            <div>
+                                <div style="font-size:12px; color:var(--destructive); font-weight:bold;">${z.toUpperCase()}</div>
+                                <div style="font-size:18px; font-weight:bold; margin-top:4px; color:var(--fg-muted);">Invalid Timezone</div>
+                            </div>
+                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); border-color:transparent; background:transparent;" onclick="removeClock(${idx})">✕</button>
+                        </div>
+                    `;
+                }
+
                 return `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:8px !important; padding:16px;">
-                        <div style="font-size:11px; color:var(--accent); font-weight:bold;">${z.toUpperCase()}</div>
-                        <div style="font-size:24px; font-weight:bold; margin-top:8px;">${now.toFormat('HH:mm:ss')}</div>
-                        <div style="font-size:11px; color:var(--fg-muted); margin-top:4px;">${now.toFormat('yyyy-MM-dd')}</div>
+                    <div class="clock-item">
+                        <div>
+                            <div style="font-size:12px; color:var(--accent); font-weight:bold;">${z.toUpperCase()}</div>
+                            <div style="font-size:24px; font-weight:bold; margin-top:4px;">${now.toFormat('HH:mm:ss')}</div>
+                            <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">${now.toFormat('yyyy-MM-dd')}</div>
+                        </div>
+                        <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); border-color:transparent; background:transparent;" onclick="removeClock(${idx})">✕</button>
                     </div>
                 `;
             }).join('');

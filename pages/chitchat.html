@@ -8,14 +8,14 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 750px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:20px;">Chits & Chats</h1>
+        <h1 style="margin-bottom:24px;">Chits & Chats</h1>
         
-        <div id="messages-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px; max-height:450px; overflow-y:auto; padding-right:6px;"></div>
+        <div id="messages-container" style="display:flex; flex-direction:column; gap:0; margin-bottom:24px; max-height:450px; overflow-y:auto; border:1px solid var(--border);"></div>
 
-        <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px; display:flex; flex-direction:column; gap:10px; border-radius:8px !important;">
-            <input type="text" id="chat-name" class="ui-input" placeholder="Your Name" style="margin:0;">
-            <textarea id="chat-msg" class="ui-input" rows="3" placeholder="Write a message..." style="margin:0;"></textarea>
-            <button class="ui-btn" onclick="sendChatMessage()" style="margin:0;">Post Message</button>
+        <div style="padding-top:16px;">
+            <input type="text" id="chat-name" class="ui-input" placeholder="Your Name">
+            <textarea id="chat-msg" class="ui-input" rows="3" placeholder="Write a message..."></textarea>
+            <button class="ui-btn" onclick="sendChatMessage()">Post Message</button>
         </div>
     </div>
 
@@ -51,15 +51,15 @@
         function renderChat() {
             const container = document.getElementById('messages-container');
             container.innerHTML = chatMessages.filter(m => !m.drawing && m.message).map(m => `
-                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:12px; border-radius:6px !important;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px;">
+                <div style="border-bottom:1px solid var(--border); padding:16px; background:var(--bg-main);">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:11px;">
                         <div>
                             <strong style="color:var(--accent);">${escapeHTML(m.name || 'Anonymous')}</strong>
-                            ${m.is_creator ? '<span style="background:var(--accent); color:var(--bg-main); padding:2px 6px; border-radius:4px !important; font-size:9px; margin-left:6px; font-weight:bold; letter-spacing: 1px;">ADMIN</span>' : ''}
+                            ${m.is_creator ? '<span style="background:var(--accent); color:var(--bg-main); padding:2px 6px; font-size:9px; margin-left:6px; font-weight:bold; letter-spacing: 1px;">ADMIN</span>' : ''}
                         </div>
                         <span style="color:var(--fg-muted);">${new Date(m.created_at).toLocaleString()}</span>
                     </div>
-                    <div style="font-size:13px; line-height:1.5;">${escapeHTML(m.message || '')}</div>
+                    <div style="font-size:13px; line-height:1.6; color:var(--fg-main);">${escapeHTML(m.message || '')}</div>
                 </div>
             `).join('');
             container.scrollTop = container.scrollHeight;

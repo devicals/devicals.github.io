@@ -9,11 +9,11 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <h1 style="margin:0;">Projects</h1>
         </div>
-        <div id="project-tabs" style="display:flex; gap:10px; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:20px;"></div>
-        <div id="projects-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:16px;"></div>
+        <div id="project-tabs" style="display:flex; gap:10px; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:24px;"></div>
+        <div id="projects-grid" class="flat-list-container"></div>
     </div>
 
     <script>
@@ -42,7 +42,7 @@
             keys.forEach(k => {
                 const btn = document.createElement('button');
                 btn.className = 'ui-btn';
-                btn.style.cssText = `width:auto; margin:0; ${k === currentTabKey ? 'border-color:var(--accent); color:var(--accent);' : ''}`;
+                btn.style.cssText = `width:auto; margin:0; border:none; border-bottom:2px solid transparent; background:transparent; border-radius:0 !important; ${k === currentTabKey ? 'border-color:var(--accent); color:var(--accent);' : ''}`;
                 btn.textContent = projectsData.tabs[k].display;
                 btn.onclick = () => { currentTabKey = k; renderTabs(); };
                 tabsEl.appendChild(btn);
@@ -58,9 +58,9 @@
             const list = projectsData.tabs[currentTabKey].projects || [];
 
             grid.innerHTML = list.map(p => `
-                <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:16px; display:flex; flex-direction:column; gap:8px;">
-                    <a href="${p.link}" target="_blank" style="color:var(--accent); font-weight:bold; text-decoration:none;">${p.name} ↗</a>
-                    <div style="font-size:12px; color:var(--fg-main); line-height:1.5;">${p.description}</div>
+                <div class="flat-list-item">
+                    <a href="${p.link}" target="_blank" class="flat-title">${p.name} ↗</a>
+                    <div class="flat-desc">${p.description}</div>
                 </div>
             `).join('');
         }

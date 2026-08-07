@@ -10,14 +10,14 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <h1 style="margin:0;">Blogs</h1>
             <div id="admin-add-blog-btn" style="display:none;">
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="openNewBlogModal()">+ Create Blog</button>
             </div>
         </div>
-        <div id="blogs-container" style="display:flex; flex-direction:column; gap:20px;">
-            Loading blogs...
+        <div id="blogs-container" class="flat-list-container">
+            <span style="color:var(--fg-muted);">Loading blogs...</span>
         </div>
     </div>
 
@@ -48,10 +48,10 @@
                 return;
             }
             container.innerHTML = blogsList.map((b, i) => `
-                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:20px; border-radius:6px !important;">
-                    <div style="font-size:11px; color:var(--fg-muted);">${b.date}</div>
-                    <h2 style="color:var(--accent); font-size:18px; margin-top:4px; margin-bottom:10px;">${b.title}</h2>
-                    <div style="font-size:13px; line-height:1.6;" class="markdown-body">${marked.parse(b.content)}</div>
+                <div class="flat-list-item">
+                    <div class="flat-meta">${b.date}</div>
+                    <div class="flat-title" style="font-size:20px; margin-bottom:8px;">${b.title}</div>
+                    <div class="flat-desc markdown-body">${marked.parse(b.content)}</div>
                 </div>
             `).join('');
         }

@@ -7,17 +7,17 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:20px;">Liked Games</h1>
+    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 80px;" class="markdown-body">
+        <h1 style="margin-bottom:30px;">Liked Games</h1>
         
         <h2>Favorites</h2>
-        <div id="fav-games-list" style="display:flex; flex-direction:column; gap:12px; margin-bottom:30px;"></div>
+        <ul id="fav-games-list" style="margin-bottom:30px;"></ul>
 
         <h2>Games I Like</h2>
-        <div id="liked-games-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px; margin-bottom:30px;"></div>
+        <ul id="liked-games-grid" style="margin-bottom:30px; display:flex; flex-direction:column; gap:6px;"></ul>
 
         <h2>Want to Play</h2>
-        <div id="wtp-games-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:12px;"></div>
+        <ul id="wtp-games-grid" style="display:flex; flex-direction:column; gap:6px;"></ul>
     </div>
 
     <script>
@@ -31,18 +31,18 @@
                 const games = data.data;
                 
                 document.getElementById('fav-games-list').innerHTML = (games.favorites || []).map(g => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:16px;">
-                        <div style="font-size:16px; font-weight:bold; color:var(--accent);">${g.title}</div>
-                        <div style="font-size:12px; color:var(--fg-muted); margin-top:4px;">${g.comment || ''}</div>
-                    </div>
+                    <li style="margin-bottom:12px;">
+                        <strong style="color:var(--accent); font-size:16px;">${g.title}</strong>
+                        ${g.comment ? `<div style="font-size:13px; color:var(--fg-muted); margin-top:2px;">${g.comment}</div>` : ''}
+                    </li>
                 `).join('');
 
                 document.getElementById('liked-games-grid').innerHTML = (games.liked || []).map(title => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:12px; text-align:center; font-size:12px;">${title}</div>
+                    <li>${title}</li>
                 `).join('');
 
                 document.getElementById('wtp-games-grid').innerHTML = (games.wanttoplay || []).map(title => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; padding:12px; text-align:center; font-size:12px;">${title}</div>
+                    <li>${title}</li>
                 `).join('');
             }
         }

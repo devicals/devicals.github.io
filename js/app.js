@@ -353,7 +353,7 @@ function renderNavigation() {
             
             if (node.type === 'folder') {
                 const isExp = expandedFolders.includes(currentPathHash);
-                el.innerHTML = `<div class="nav-item" onclick="window.location.hash='${currentPathHash}'"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> ${node.name}</div>`;
+                el.innerHTML = `<div class="nav-item" onclick="window.location.hash='${currentPathHash.replace(/'/g, "\\'")}'"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> ${node.name}</div>`;
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = `nav-children ${isExp ? 'expanded' : ''}`;
                 
@@ -389,9 +389,12 @@ function renderNavigation() {
 
 function highlightNav() {
     const hash = decodeURIComponent(window.location.hash.substring(1));
-    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    const active = document.querySelector(`.nav-item[data-path="${hash}"]`);
-    if(active) active.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('active');
+        if (el.getAttribute('data-path') === hash) {
+            el.classList.add('active');
+        }
+    });
 }
 
 async function handleRoute() {
@@ -425,17 +428,15 @@ async function handleRoute() {
             mdContainer.style.display = 'block';
             
             const canSeeHidden = currentProfile?.is_admin ? showHiddenPages : false;
-            let html = `<h1>📁 ${node.name}</h1><p style="color:var(--fg-muted);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:8px; margin-top:20px;">`;
+            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:20px;">`;
             
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
                     if (child.hidden && !canSeeHidden) return;
                     const childPath = node.path + '/' + child.name;
-                    const icon = child.type === 'folder' ? '📁' : '📄';
                     html += `
-                        <a href="#${encodeURIComponent(childPath)}" style="display:flex; align-items:center; gap:12px; padding:16px; background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; color:var(--fg-main); text-decoration:none; transition: border-color 0.2s;">
-                            <span style="font-size:20px;">${icon}</span>
-                            <span style="font-weight:bold; font-size:14px;">${child.name}</span>
+                        <a href="#${encodeURIComponent(childPath)}" style="padding: 10px 0; border-bottom: 1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: color 0.2s;">
+                            <span style="font-size:14px;">- ${child.name}</span>
                         </a>
                     `;
                 });
@@ -564,7 +565,7 @@ async function loadAnnouncementsToast() {
             const textEl = document.getElementById('announcement-text');
             const bar = document.getElementById('announcement-bar');
 
-            textEl.textContent = data.data[data.data.length - 1];
+            textEl.textContent = data.data[data.data.length - 1]; // show latest
             toast.style.display = 'flex';
             bar.style.width = '100%';
 
