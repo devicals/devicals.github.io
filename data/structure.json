@@ -1,0 +1,106 @@
+{
+  "children": [
+    {
+      "name": "Index",
+      "type": "folder",
+      "children": [
+        { "name": "Home", "type": "file", "path": "Home.md" },
+        { "name": "Blogs", "type": "file", "path": "Blogs.md" },
+        {
+          "name": "Community",
+          "type": "folder",
+          "children": [
+            { "name": "Chits & Chats", "type": "file", "path": "Chits_Chats.md" },
+            { "name": "Gallery", "type": "file", "path": "Gallery.md" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Content",
+      "type": "folder",
+      "children": [
+        { "name": "Projects", "type": "file", "path": "Projects.md" },
+        { "name": "Downloads", "type": "file", "path": "Downloads.md" },
+        {
+          "name": "Writing",
+          "type": "folder",
+          "children": [
+            {
+              "name": "Books",
+              "type": "folder",
+              "collapsed": true,
+              "children": [
+                { "name": "Obliteration", "type": "file", "path": "Obliteration.md", "hidden": true },
+                {
+                  "name": "Halloween Specials",
+                  "type": "folder",
+                  "children": [
+                    {
+                      "name": "O' Mother of Mine",
+                      "type": "folder",
+                      "children": [
+                        { "name": "The Lamb of Blood", "type": "file", "path": "Lamb.md" },
+                        { "name": "The Shepherd of Filth", "type": "file", "path": "Shepherd.md" },
+                        { "name": "The Slaughtered Lamb", "type": "file", "path": "Slaughtered.md" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Poems",
+              "type": "folder",
+              "collapsed": true,
+              "children": [
+                {
+                  "name": "first",
+                  "type": "folder",
+                  "children": [
+                    { "name": "I \"the song bird\"", "type": "file", "path": "poem1.md" },
+                    { "name": "II \"waking\"", "type": "file", "path": "poem2.md" },
+                    { "name": "III \"loss\"", "type": "file", "path": "poem3.md" }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "About Me",
+      "type": "folder",
+      "children": [
+        { "name": "Games I <3", "type": "file", "path": "Games.md" },
+        { "name": "Spotify", "type": "file", "path": "Spotify.md" }
+      ]
+    },
+    {
+      "name": "Other Stuff",
+      "type": "folder",
+      "children": [
+        {
+          "name": "Tier List Maker",
+          "type": "folder",
+          "children": [
+            { "name": "ZATOcord Tierlist", "type": "file", "path": "ZATO.md" }
+          ]
+        },
+        { "name": "World Clock Viewer", "type": "file", "path": "Clock.md" },
+        { "name": "Code Translator", "type": "file", "path": "Code.md" }
+      ]
+    },
+    {
+      "name": "Archived Pages",
+      "type": "folder",
+      "hidden": true,
+      "children": [
+        { "name": "Obliteration", "type": "file", "path": "Archived_Obliteration.md" },
+        { "name": "Oricade Songs", "type": "file", "path": "Oricade.md" },
+        { "name": "Function Generator", "type": "file", "path": "Generator.md" }
+      ]
+    }
+  ]
+}
