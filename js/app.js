@@ -360,6 +360,7 @@ async function handleRoute() {
                 const res = await fetch(node.file);
                 const text = res.ok ? await res.text() : '## Blank Page\nContent not found.';
                 mdContainer.innerHTML = marked.parse(text);
+                updateWordCount(text);
             } catch(e) {
                 mdContainer.innerHTML = '<h2>Error loading document</h2>';
             }
@@ -413,6 +414,12 @@ async function renderCommitsPage(container) {
     } catch (e) {
         container.innerHTML = '<h1>commit history</h1><p style="color:var(--destructive);">Failed to load commit history.</p>';
     }
+}
+
+function updateWordCount(text) {
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
 }
 
 async function loadAnnouncementsToast() {
