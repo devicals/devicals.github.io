@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Translation</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        ::-webkit-scrollbar { display: none !important; }
+        * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        
+        :root {
+            --background: 225 6% 7%;
+            --foreground: 0 0% 85%;
+            --card: 0 0% 9%;
+            --primary: 160 52% 45%;
+            --accent: 160 52% 45%;
+            --accent-foreground: 0 0% 98%;
+            --border: 225 6% 20%;
+            --muted-foreground: 225 5% 55%;
+            --secondary: 0 0% 12%;
+            --destructive: 0 60% 50%;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: hsl(var(--background));
+            color: hsl(var(--foreground));
+            padding: 40px;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .page-container { max-width: 1200px; margin: 0 auto; }
+
+        .page-title {
+            font-size: 32px;
+            color: hsl(var(--accent));
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 24px;
+        }
+
+        .project-tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid hsl(var(--border) / 0.5);
+        }
+        
+        .project-tab {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: hsl(var(--muted-foreground));
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .project-tab:hover {
+            color: hsl(var(--accent));
+            border-bottom-color: hsl(var(--accent) / 0.5);
+            background: linear-gradient(to top, hsl(var(--accent) / 0.05), transparent 80%);
+        }
+        
+        .project-tab.active {
+            color: hsl(var(--accent));
+            border-bottom-color: hsl(var(--accent));
+            background: linear-gradient(to top, hsl(var(--accent) / 0.15), transparent);
+        }
+
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(5,5,5,0.85);
+            border: 1px solid hsl(var(--foreground) / 0.3);
+            padding: 24px;
+            transition: border-color 0.2s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card:hover { border-color: hsl(var(--accent)); }
+        
+        .card-header {
+            font-size: 16px;
+            font-weight: 700;
+            color: hsl(var(--accent));
+            border-bottom: 1px dashed hsl(var(--foreground) / 0.3);
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .terminal-input, textarea, select {
+            width: 100%;
+            background: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            font-family: inherit;
+            padding: 10px 14px;
+            font-size: 13px;
+            outline: none;
+            resize: vertical;
+        }
+        
+        .terminal-input:focus, textarea:focus, select:focus {
+            border-color: hsl(var(--accent));
+            box-shadow: 0 0 5px hsl(var(--accent) / 0.2);
+        }
+        
+        textarea { min-height: 80px; }
+
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 16px;
+            background: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+            font-weight: 600;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: opacity 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn:hover { opacity: 0.85; }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--foreground));
+        }
+        .btn-outline:hover {
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
+        }
+        
+        .copy-btn {
+            background: hsl(var(--secondary));
+            border: 1px solid hsl(var(--border));
+            color: hsl(var(--muted-foreground));
+            font-size: 12px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            color: hsl(var(--accent));
+            border-color: hsl(var(--accent));
+        }
+
+        .label {
+            font-size: 12px;
+            color: hsl(var(--muted-foreground));
+            margin-bottom: -8px;
+            display: block;
+        }
+
+        .warn-text {
+            color: hsl(var(--destructive));
+            font-size: 12px;
+            min-height: 18px;
+        }
+
+        .w-full { width: 100%; }
+        .flex-1 { flex: 1; }
+        .group-box {
+            border: 1px solid hsl(var(--border));
+            padding: 15px;
+            background: hsl(var(--background) / 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .slider-row { display: flex; align-items: center; gap: 15px; }
+        input[type="range"] { flex: 1; accent-color: hsl(var(--accent)); }
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; }
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+        
+        @media (max-width: 768px) {
+            body { padding: 20px; }
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="page-container">
+        <h1 class="page-title">Code Translations</h1>
+        
+        <div class="project-tabs">
+            <button class="project-tab active" onclick="switchTab('tab-ciphers')">1. Custom Ciphers</button>
+            <button class="project-tab" onclick="switchTab('tab-bases')">2. Bases & ASCII</button>
+            <button class="project-tab" onclick="switchTab('tab-standard')">3. Standard Encodings</button>
+            <button class="project-tab" onclick="switchTab('tab-hashes')">4. Hashes & Generators</button>
+        </div>
+
+        <div id="tab-ciphers" class="tab-content active">
+            <div class="cards-grid">
+                
+                <div class="card">
+                    <div class="card-header">Code 1: Pointer Code</div>
+                    <span class="label">Input</span>
+                    <textarea id="ptr-in" placeholder="Enter text to encode or pointer sequence to decode..."></textarea>
+                    <div class="controls-row">
+                        <button class="btn" onclick="execPointer('encode')">Encode >></button>
+                        <button class="btn btn-outline" onclick="execPointer('decode')"><< Decode</button>
+                        <div class="warn-text flex-1" id="ptr-warn"></div>
+                    </div>
+                    <span class="label">Output</span>
+                    <textarea id="ptr-out" readonly></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('ptr-out')">Copy Output</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Code 2: Bracket Substitution</div>
+                    <span class="label">Input</span>
+                    <textarea id="brk-in" placeholder="Enter text or bracket pairs..."></textarea>
+                    <div class="controls-row">
+                        <button class="btn" onclick="execBracket('encode')">Encode >></button>
+                        <button class="btn btn-outline" onclick="execBracket('decode')"><< Decode</button>
+                        <div class="warn-text flex-1" id="brk-warn"></div>
+                    </div>
+                    <span class="label">Output</span>
+                    <textarea id="brk-out" readonly></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('brk-out')">Copy Output</button>
+                </div>
+
+                <div class="card" style="grid-column: 1 / -1;">
+                    <div class="card-header">Code 3: Math, Symbols & Numbers (Unified)</div>
+                    <span class="label">Input (e.g. "1204 + 69 / 51 almost 1205")</span>
+                    <textarea id="uni-in" placeholder="Enter words, numbers, and basic math operators..." style="min-height: 60px;"></textarea>
+                    <div class="controls-row">
+                        <button class="btn" onclick="execUnified('encode')">Encode to Unified Stream >></button>
+                        <button class="btn btn-outline" onclick="execUnified('decode')"><< Decode Stream</button>
+                        <div class="warn-text flex-1" id="uni-warn"></div>
+                    </div>
+                    <span class="label">Output Stream</span>
+                    <textarea id="uni-out" readonly style="min-height: 100px; font-size: 11px;"></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('uni-out')">Copy Output</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-bases" class="tab-content">
+            <div class="cards-grid">
+                
+                <div class="card">
+                    <div class="card-header">Arbitrary Base Converter</div>
+                    <span class="label">Numeric Value</span>
+                    <textarea id="base-in" placeholder="Value to convert..." style="min-height: 60px;"></textarea>
+                    
+                    <div class="controls-row">
+                        <div class="flex-1">
+                            <span class="label">Source Base (2-62)</span>
+                            <input type="number" id="base-from" class="terminal-input" value="10" min="2" max="62">
+                        </div>
+                        <div class="flex-1">
+                            <span class="label">Target Base (2-62)</span>
+                            <input type="number" id="base-to" class="terminal-input" value="16" min="2" max="62">
+                        </div>
+                    </div>
+                    <div class="controls-row">
+                        <button class="btn w-full" onclick="execBaseConvert()">Convert Base</button>
+                    </div>
+                    <div class="warn-text" id="base-warn"></div>
+                    
+                    <span class="label">Converted Value</span>
+                    <textarea id="base-out" readonly style="min-height: 60px;"></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('base-out')">Copy Output</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">ASCII Representation</div>
+                    <span class="label">Input String</span>
+                    <textarea id="ascii-in" placeholder="Text or encoded data..." style="min-height: 60px;"></textarea>
+                    
+                    <div class="controls-row">
+                        <select id="ascii-format" class="terminal-input flex-1">
+                            <option value="hex">Hexadecimal</option>
+                            <option value="bin">Binary</option>
+                            <option value="oct">Octal</option>
+                            <option value="base64">Base64</option>
+                        </select>
+                        <button class="btn" onclick="execAscii('encode')">Encode >></button>
+                        <button class="btn btn-outline" onclick="execAscii('decode')"><< Decode</button>
+                    </div>
+                    <div class="warn-text" id="ascii-warn"></div>
+                    
+                    <span class="label">Encoded/Decoded Result</span>
+                    <textarea id="ascii-out" readonly style="min-height: 60px;"></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('ascii-out')">Copy Output</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-standard" class="tab-content">
+            <div class="cards-grid">
+                
+                <div class="card">
+                    <div class="card-header">Standard Morse Code</div>
+                    <span class="label">Input Text or Morse Code</span>
+                    <textarea id="morse-in" placeholder="Text or Morse Code (. - /)..."></textarea>
+                    <div class="controls-row">
+                        <button class="btn" onclick="execMorse('encode')">Encode >></button>
+                        <button class="btn btn-outline" onclick="execMorse('decode')"><< Decode</button>
+                    </div>
+                    <div class="warn-text" id="morse-warn"></div>
+                    <span class="label">Output</span>
+                    <textarea id="morse-out" readonly></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('morse-out')">Copy Output</button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">URL Encoding</div>
+                    <span class="label">Input String</span>
+                    <textarea id="url-in" placeholder="String with special characters..."></textarea>
+                    <div class="controls-row">
+                        <button class="btn" onclick="execUrl('encode')">Encode URI</button>
+                        <button class="btn btn-outline" onclick="execUrl('decode')">Decode URI</button>
+                    </div>
+                    <div class="warn-text" id="url-warn"></div>
+                    <span class="label">Result</span>
+                    <textarea id="url-out" readonly></textarea>
+                    <button class="copy-btn w-full" onclick="copyToClipboard('url-out')">Copy Output</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-hashes" class="tab-content">
+            <div class="cards-grid">
+                
+                <div class="card">
+                    <div class="card-header">Cryptographic Hashes</div>
+                    <span class="label">Source String</span>
+                    <input type="text" id="hash-in" class="terminal-input" placeholder="String to hash..." oninput="execHashes()">
+                    <div class="warn-text" id="hash-warn"></div>
+                    
+                    <div class="group-box" style="margin-top: 10px;">
+                        <span class="label" style="display: flex; justify-content: space-between;">
+                            MD5
+                            <button class="copy-btn" onclick="copyToClipboard('hash-md5')">Copy</button>
+                        </span>
+                        <input type="text" id="hash-md5" class="terminal-input" readonly style="font-size: 11px;">
+                        
+                        <span class="label" style="display: flex; justify-content: space-between;">
+                            SHA-1
+                            <button class="copy-btn" onclick="copyToClipboard('hash-sha1')">Copy</button>
+                        </span>
+                        <input type="text" id="hash-sha1" class="terminal-input" readonly style="font-size: 11px;">
+                        
+                        <span class="label" style="display: flex; justify-content: space-between;">
+                            SHA-256
+                            <button class="copy-btn" onclick="copyToClipboard('hash-sha256')">Copy</button>
+                        </span>
+                        <input type="text" id="hash-sha256" class="terminal-input" readonly style="font-size: 11px;">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Identifiers & Secrets</div>
+                    
+                    <div class="group-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="label">UUID (v4)</span>
+                            <button class="btn btn-outline" style="padding: 2px 8px; font-size: 11px;" onclick="genUUID()">Generate</button>
+                        </div>
+                        <input type="text" id="gen-uuid" class="terminal-input" readonly>
+                    </div>
+
+                    <div class="group-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span class="label">Secret Generator</span>
+                            <span id="gen-len-display" class="label">Length: 16</span>
+                        </div>
+                        
+                        <div class="slider-row">
+                            <input type="range" id="gen-len" min="8" max="128" value="16" oninput="document.getElementById('gen-len-display').textContent = 'Length: ' + this.value">
+                        </div>
+                        
+                        <div class="checkbox-grid">
+                            <label class="checkbox-label"><input type="checkbox" id="gen-upper" checked> Uppercase (A-Z)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="gen-lower" checked> Lowercase (a-z)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="gen-num" checked> Numbers (0-9)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="gen-sym" checked> Symbols (!@#$)</label>
+                        </div>
+                        
+                        <div class="controls-row" style="margin-top: 5px;">
+                            <button class="btn flex-1" onclick="genPassword()">Gen Password</button>
+                            <button class="btn btn-outline flex-1" onclick="genKey('hex')">Gen Hex Key</button>
+                            <button class="btn btn-outline flex-1" onclick="genKey('base64')">Gen Base64 Key</button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="gen-out" class="terminal-input flex-1" readonly>
+                            <button class="copy-btn" onclick="copyToClipboard('gen-out')">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.project-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el.value) return;
+            navigator.clipboard.writeText(el.value).then(() => {
+                const orig = el.style.borderColor;
+                el.style.borderColor = 'hsl(var(--accent))';
+                setTimeout(() => el.style.borderColor = orig, 500);
+            });
+        }
+
+        function setWarn(id, msg) {
+            document.getElementById(id).textContent = msg;
+        }
+
+        function execPointer(dir) {
+            setWarn('ptr-warn', '');
+            const input = document.getElementById('ptr-in').value;
+            let out = "";
+            try {
+                if (dir === 'encode') {
+                    let text = input.toUpperCase().replace(/\.\s+|\./g, '\n\n').replace(/[ \t]+/g, '\n');
+                    let ptr = 0;
+                    
+                    for(let i=0; i<text.length; i++) {
+                        let c = text[i];
+                        if (c === '\n') {
+                            out += '\n';
+                            ptr = 0;
+                            continue;
+                        }
+                        
+                        let target = c.charCodeAt(0) - 65;
+                        if (target < 0 || target > 25) continue; 
+                        
+                        if (out.length > 0 && out[out.length-1] !== '\n' && out[out.length-1] !== ' ') {
+                            out += ' ';
+                        }
+                        
+                        if (target === ptr) {
+                            out += '><';
+                        } else {
+                            let right = (target - ptr + 26) % 26;
+                            let left = (ptr - target + 26) % 26;
+                            if (right <= left) {
+                                out += '>'.repeat(right);
+                            } else {
+                                out += '<'.repeat(left);
+                            }
+                            ptr = target;
+                        }
+                    }
+                } else {
+                    let sentences = input.split('\n\n');
+                    let ptr = 0;
+                    for(let s=0; s<sentences.length; s++) {
+                        if(s > 0) { out += ". "; ptr = 0; }
+                        let words = sentences[s].split('\n');
+                        for(let w=0; w<words.length; w++) {
+                            if(w > 0) { out += " "; ptr = 0; }
+                            let letters = words[w].split(' ');
+                            for(let l of letters) {
+                                l = l.trim();
+                                if(!l) continue;
+                                if(l === '><') {
+                                    out += String.fromCharCode(65 + ptr);
+                                } else {
+                                    let right = (l.match(/>/g) || []).length;
+                                    let left = (l.match(/</g) || []).length;
+                                    if(right > 0 && left === 0) ptr = (ptr + right) % 26;
+                                    else if(left > 0 && right === 0) ptr = (ptr - left + 260) % 26;
+                                    else throw "Invalid directional format";
+                                    
+                                    out += String.fromCharCode(65 + ptr);
+                                }
+                            }
+                        }
+                    }
+                }
+                document.getElementById('ptr-out').value = out;
+            } catch(e) {
+                setWarn('ptr-warn', "Error: " + e);
+            }
+        }
+
+        const BRACKET_MAP = {
+            'A':'()', 'B':'([', 'C':'(]', 'D':'({', 'E':'(}', 'F':'[(', 'G':'[)', 'H':'[]', 'I':'[{', 'J':'[}',
+            'K':'{(', 'L':'{)', 'M':'{[', 'N':'{]', 'O':'{}', 'P':')(', 'Q':'))', 'R':')[', 'S':')]', 'T':'){',
+            'U':')}', 'V':'](', 'W':'])', 'X':'][', 'Y':']{', 'Z':']}'
+        };
+        const REV_BRACKET_MAP = Object.fromEntries(Object.entries(BRACKET_MAP).map(([k,v])=>[v,k]));
+
+        function execBracket(dir) {
+            setWarn('brk-warn', '');
+            const input = document.getElementById('brk-in').value;
+            let out = "";
+            try {
+                if (dir === 'encode') {
+                    out = input.toUpperCase().replace(/[A-Z]/g, c => BRACKET_MAP[c]);
+                } else {
+                    let rgx = /\(\)|\(\[|\(\]|\(\{|\(\}|\[\(|\[\)|\[\]|\[\{|\[\}|\{\(|\{\)|\{\[|\{\]|\{\}|\)\(|\)\)|\)\[|\)\]|\)\{|\)\}|\]\(|\]\)|\]\[|\]\{|\]\}/g;
+                    out = input.replace(rgx, match => REV_BRACKET_MAP[match]);
+                }
+                document.getElementById('brk-out').value = out;
+            } catch(e) {
+                setWarn('brk-warn', "Processing error.");
+            }
+        }
+
+        const UNI_OPS = {'+':'(^.)', '-':'(.^)', '/':'(^-)', '*':'(-^)', '^':'(&^)', '%':'(^&)'};
+        const UNI_REV_OPS = Object.fromEntries(Object.entries(UNI_OPS).map(([k,v])=>[v,k]));
+        
+        function execUnified(dir) {
+            setWarn('uni-warn', '');
+            const input = document.getElementById('uni-in').value.trim();
+            let out = "";
+            try {
+                if (!input) return;
+                if (dir === 'encode') {
+                    let tokens = input.match(/\d+|[\+\-\/\*\^\%]|[A-Za-z]+/g) || [];
+                    for (let t of tokens) {
+                        if (/^\d+$/.test(t)) {
+                            let numStr = "";
+                            for(let char of t) {
+                                let d = parseInt(char);
+                                if(d===0) numStr+='{}';
+                                else if(d<=5) numStr+= '{' + '.'.repeat(d) + '}';
+                                else numStr+= '{' + '.'.repeat(10-d) + ',}';
+                            }
+                            out += `(${numStr})`;
+                        } else if (/^[\+\-\/\*\^\%]$/.test(t)) {
+                            out += UNI_OPS[t];
+                        } else {
+                            t = t.toUpperCase();
+                            for(let char of t) {
+                                let code = char.charCodeAt(0) - 65; 
+                                let group = Math.floor(code / 6); 
+                                let col = code % 6;
+                                let groupStr = ["....", "...", "..", ".", "'"][group];
+                                let colStr = [",", ":", ";", "-", "=", "+"][col];
+                                out += groupStr + colStr;
+                            }
+                        }
+                    }
+                    out = `[${out}]`;
+                } else {
+                    if(!input.startsWith('[') || !input.endsWith(']')) throw "Must be wrapped in [...]";
+                    let str = input.slice(1, -1);
+                    let i = 0;
+                    let lastType = null;
+                    
+                    while(i < str.length) {
+                        if(str[i] === '(') {
+                            let chunk6 = str.substr(i, 4); 
+                            if(UNI_REV_OPS[chunk6]) {
+                                out += " " + UNI_REV_OPS[chunk6] + " ";
+                                i += 4;
+                                lastType = 'op';
+                            } else {
+                                let end = str.indexOf(')', i);
+                                if(end === -1) throw "Unmatched '(' found in numbers.";
+                                let numBody = str.substring(i+1, end);
+                                let digitRegex = /\{([.,]*)\}/g, match;
+                                let numStr = "";
+                                while((match = digitRegex.exec(numBody)) !== null) {
+                                    let dots = match[1];
+                                    if(dots === "") numStr += "0";
+                                    else if(dots.endsWith(',')) numStr += (10 - (dots.length - 1)).toString();
+                                    else numStr += dots.length.toString();
+                                }
+                                if (lastType === 'word' || lastType === 'num') out += " ";
+                                out += numStr; 
+                                lastType = 'num';
+                                i = end + 1;
+                            }
+                        } else {
+                            let groupPrefix = "";
+                            while(i < str.length && (str[i] === '.' || str[i] === "'")) {
+                                groupPrefix += str[i];
+                                i++;
+                            }
+                            let groupIdx = {"....":0, "...":1, "..":2, ".":3, "'":4}[groupPrefix];
+                            if(groupIdx === undefined) throw "Invalid character group: " + groupPrefix;
+                            let colSym = str[i]; i++;
+                            let colIdx = [",", ":", ";", "-", "=", "+"].indexOf(colSym);
+                            if(colIdx === -1) throw "Invalid column symbol: " + colSym;
+                            
+                            if (lastType !== 'word' && lastType !== null && lastType !== 'op') out += " ";
+                            out += String.fromCharCode(65 + groupIdx * 6 + colIdx).toLowerCase();
+                            lastType = 'word';
+                        }
+                    }
+                }
+                document.getElementById('uni-out').value = out.trim();
+            } catch(e) {
+                setWarn('uni-warn', "Error: " + e);
+            }
+        }
+
+        const BASE_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        function execBaseConvert() {
+            setWarn('base-warn', '');
+            let val = document.getElementById('base-in').value.trim();
+            let fromB = parseInt(document.getElementById('base-from').value);
+            let toB = parseInt(document.getElementById('base-to').value);
+            
+            try {
+                if (!val) return;
+                if (fromB < 2 || fromB > 62 || toB < 2 || toB > 62) throw "Bases must be between 2 and 62.";
+                if (fromB <= 36) val = val.toUpperCase();
+                
+                let num = 0n;
+                let bFrom = BigInt(fromB);
+                for(let i=0; i<val.length; i++) {
+                    let idx = BASE_CHARSET.indexOf(val[i]);
+                    if (idx < 0 || idx >= fromB) throw `Invalid character '${val[i]}' for Base ${fromB}.`;
+                    num = num * bFrom + BigInt(idx);
+                }
+                
+                if (num === 0n) {
+                    document.getElementById('base-out').value = BASE_CHARSET[0];
+                    return;
+                }
+                
+                let res = "";
+                let bTo = BigInt(toB);
+                while(num > 0n) {
+                    res = BASE_CHARSET[Number(num % bTo)] + res;
+                    num /= bTo;
+                }
+                document.getElementById('base-out').value = res;
+            } catch (e) {
+                setWarn('base-warn', e);
+                document.getElementById('base-out').value = "";
+            }
+        }
+
+        function execAscii(dir) {
+            setWarn('ascii-warn', '');
+            let inText = document.getElementById('ascii-in').value;
+            let format = document.getElementById('ascii-format').value;
+            try {
+                if (!inText) { document.getElementById('ascii-out').value = ""; return; }
+                let outText = "";
+                
+                if (dir === 'encode') {
+                    if (format === 'base64') outText = btoa(unescape(encodeURIComponent(inText)));
+                    else {
+                        outText = Array.from(new TextEncoder().encode(inText)).map(code => {
+                            if(format === 'hex') return code.toString(16).padStart(2,'0');
+                            if(format === 'oct') return code.toString(8).padStart(3,'0');
+                            if(format === 'bin') return code.toString(2).padStart(8,'0');
+                        }).join(' ');
+                    }
+                } else {
+                    if (format === 'base64') outText = decodeURIComponent(escape(atob(inText)));
+                    else {
+                        let parts = inText.trim().split(/\s+/);
+                        let bytes = new Uint8Array(parts.length);
+                        let base = format === 'hex' ? 16 : (format === 'oct' ? 8 : 2);
+                        for(let i=0; i<parts.length; i++) bytes[i] = parseInt(parts[i], base);
+                        outText = new TextDecoder().decode(bytes);
+                    }
+                }
+                document.getElementById('ascii-out').value = outText;
+            } catch(e) {
+                setWarn('ascii-warn', "Invalid input for selected format.");
+            }
+        }
+
+        const MORSE_MAP = {
+            'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---',
+            'K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-',
+            'U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..',
+            '1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.','0':'-----'
+        };
+        const REV_MORSE_MAP = Object.fromEntries(Object.entries(MORSE_MAP).map(([k,v])=>[v,k]));
+
+        function execMorse(dir) {
+            setWarn('morse-warn', '');
+            let input = document.getElementById('morse-in').value.trim();
+            let out = "";
+            try {
+                if (dir === 'encode') {
+                    out = input.toUpperCase().split('').map(c => {
+                        if (c === ' ') return '/';
+                        return MORSE_MAP[c] || c;
+                    }).join(' ');
+                } else {
+                    out = input.split(' ').map(c => {
+                        if (c === '/') return ' ';
+                        return REV_MORSE_MAP[c] || c;
+                    }).join('');
+                }
+                document.getElementById('morse-out').value = out;
+            } catch(e) { setWarn('morse-warn', "Error processing Morse Code."); }
+        }
+
+        function execUrl(dir) {
+            setWarn('url-warn', '');
+            let input = document.getElementById('url-in').value;
+            try {
+                document.getElementById('url-out').value = dir === 'encode' ? encodeURIComponent(input) : decodeURIComponent(input);
+            } catch(e) { setWarn('url-warn', "Error during URL processing."); }
+        }
+
+        async function execHashes() {
+            setWarn('hash-warn', '');
+            const text = document.getElementById('hash-in').value;
+            if (!text) {
+                document.getElementById('hash-md5').value = '';
+                document.getElementById('hash-sha1').value = '';
+                document.getElementById('hash-sha256').value = '';
+                return;
+            }
+            
+            try {
+                const msgUint8 = new TextEncoder().encode(text);
+                const hashSHA1 = await crypto.subtle.digest('SHA-1', msgUint8);
+                const hashSHA256 = await crypto.subtle.digest('SHA-256', msgUint8);
+                
+                const toHex = buffer => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                document.getElementById('hash-sha1').value = toHex(hashSHA1);
+                document.getElementById('hash-sha256').value = toHex(hashSHA256);
+                
+                document.getElementById('hash-md5').value = md5Polyfill(text);
+                
+            } catch(e) { setWarn('hash-warn', "Web Crypto API error."); }
+        }
+
+        function md5Polyfill(str) {
+            var k = [], i = 0;
+            for (i = 0; i < 64; i++) { k[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296); }
+            var calcMD5 = function(str) {
+                var w = new Uint32Array(Math.ceil((str.length + 9) / 64) * 16),
+                    hash = new Uint32Array([1732584193, -271733879, -1732584194, 271733878]);
+                for (var i = 0; i < str.length; i++) w[i >> 2] |= str.charCodeAt(i) << ((i % 4) * 8);
+                w[str.length >> 2] |= 128 << ((str.length % 4) * 8);
+                w[w.length - 2] = str.length * 8;
+                for (var i = 0; i < w.length; i += 16) {
+                    var a = hash[0], b = hash[1], c = hash[2], d = hash[3];
+                    for (var j = 0; j < 64; j++) {
+                        var f, g;
+                        if (j < 16) { f = (b & c) | ((~b) & d); g = j; } 
+                        else if (j < 32) { f = (d & b) | ((~d) & c); g = (5 * j + 1) % 16; } 
+                        else if (j < 48) { f = b ^ c ^ d; g = (3 * j + 5) % 16; } 
+                        else { f = c ^ (b | (~d)); g = (7 * j) % 16; }
+                        var temp = d;
+                        d = c; c = b;
+                        b = b + (a + f + k[j] + w[i + g] << ([(j < 16) ? [7, 12, 17, 22] : (j < 32) ? [5, 9, 14, 20] : (j < 48) ? [4, 11, 16, 23] : [6, 10, 15, 21]][0][j % 4]) | (a + f + k[j] + w[i + g]) >>> (32 - [(j < 16) ? [7, 12, 17, 22] : (j < 32) ? [5, 9, 14, 20] : (j < 48) ? [4, 11, 16, 23] : [6, 10, 15, 21]][0][j % 4]));
+                        a = temp;
+                    }
+                    hash[0] += a; hash[1] += b; hash[2] += c; hash[3] += d;
+                }
+                var hex = '';
+                for (var i = 0; i < 4; i++) {
+                    for (var j = 0; j < 4; j++) {
+                        var hexBlock = ((hash[i] >> (j * 8)) & 0xFF).toString(16);
+                        hex += (hexBlock.length === 1) ? '0' + hexBlock : hexBlock;
+                    }
+                }
+                return hex;
+            };
+            return calcMD5(str);
+        }
+
+        function genUUID() {
+            document.getElementById('gen-uuid').value = crypto.randomUUID();
+        }
+
+        function genPassword() {
+            let len = parseInt(document.getElementById('gen-len').value);
+            let charset = "";
+            if (document.getElementById('gen-upper').checked) charset += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            if (document.getElementById('gen-lower').checked) charset += "abcdefghijklmnopqrstuvwxyz";
+            if (document.getElementById('gen-num').checked) charset += "0123456789";
+            if (document.getElementById('gen-sym').checked) charset += "!@#$%^&*()_+~`|}{[]:;?><,./-=";
+            
+            if (!charset) {
+                document.getElementById('gen-out').value = "Select at least one character type.";
+                return;
+            }
+            
+            let arr = new Uint32Array(len);
+            crypto.getRandomValues(arr);
+            let result = "";
+            for (let i = 0; i < len; i++) {
+                result += charset[arr[i] % charset.length];
+            }
+            document.getElementById('gen-out').value = result;
+        }
+
+        function genKey(format) {
+            let lenBytes = parseInt(document.getElementById('gen-len').value);
+            let arr = new Uint8Array(lenBytes);
+            crypto.getRandomValues(arr);
+            
+            if (format === 'hex') {
+                document.getElementById('gen-out').value = Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+            } else {
+                document.getElementById('gen-out').value = btoa(String.fromCharCode.apply(null, arr));
+            }
+        }
+        
+        genUUID();
+        genPassword();
+
+    </script>
+</body>
+</html>

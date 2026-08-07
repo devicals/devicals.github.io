@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body style="padding: 20px; overflow-y: auto;">
+    <h1>Admin Control Dashboard</h1>
+    
+    <div class="settings-group" style="margin-top: 20px;">
+        <label>User Management</label>
+        <div id="user-table">Loading users...</div>
+    </div>
+
+    <div class="settings-group">
+        <label>Announcements</label>
+        <textarea id="new-ann" class="ui-input" placeholder="Type new announcement..."></textarea>
+        <button class="ui-btn" onclick="postAnnouncement()">Post Announcement</button>
+        <div id="ann-list" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        async function initAdmin() {
+            const { data, error } = await supabaseClient.rpc('admin_get_users');
+            const table = document.getElementById('user-table');
+            
+            if (error || !data) {
+                table.innerHTML = '<p style="color:var(--destructive)">Failed to load user list or unauthorized.</p>';
+                return;
+            }
+
+            table.innerHTML = data.map(u => `
+                <div style="background:var(--bg-hover); padding:10px; border:1px solid var(--border); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>${u.username || 'Unnamed'}</strong> (${u.email})
+                        ${u.is_admin ? '<span style="color:var(--accent)"> [Admin]</span>' : ''}
+                    </div>
+                    <div>
+                        ${u.is_banned 
+                            ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="manage('${u.id}', 'unban')">Unban</button>` 
+                            : `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); border-color:var(--destructive);" onclick="manage('${u.id}', 'ban')">Ban</button>`
+                        }
+                        <button class="ui-btn" style="width:auto; margin:0;" onclick="manage('${u.id}', 'reset')">Reset Password</button>
+                        <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); border-color:var(--destructive);" onclick="manage('${u.id}', 'delete')">Delete User</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            loadAnnouncements();
+        }
+
+        async function manage(id, action) {
+            let do_ban = null, do_delete = false, do_reset = false;
+            if (action === 'ban') do_ban = true;
+            if (action === 'unban') do_ban = false;
+            if (action === 'delete') do_delete = true;
+            if (action === 'reset') do_reset = true;
+
+            await supabaseClient.rpc('admin_manage_user', {
+                target_id: id,
+                do_ban: do_ban,
+                do_delete: do_delete,
+                do_reset_pass: do_reset
+            });
+            initAdmin();
+        }
+
+        async function loadAnnouncements() {
+            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+            const list = document.getElementById('ann-list');
+            if (data && data.data) {
+                list.innerHTML = data.data.map((a, i) => `
+                    <div style="background:var(--bg-hover); padding:8px; border:1px solid var(--border); margin-bottom:4px; display:flex; justify-content:space-between;">
+                        <span>${a}</span>
+                        <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteAnn(${i})">Delete</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function postAnnouncement() {
+            const text = document.getElementById('new-ann').value.trim();
+            if (!text) return;
+            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+            const anns = data?.data || [];
+            anns.push(text);
+            await supabaseClient.from('site_content').update({ data: anns }).eq('key', 'announcements');
+            document.getElementById('new-ann').value = '';
+            loadAnnouncements();
+        }
+
+        async function deleteAnn(idx) {
+            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
+            const anns = data?.data || [];
+            anns.splice(idx, 1);
+            await supabaseClient.from('site_content').update({ data: anns }).eq('key', 'announcements');
+            loadAnnouncements();
+        }
+
+        document.addEventListener('DOMContentLoaded', initAdmin);
+    </script>
+</body>
+</html>

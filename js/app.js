@@ -77,10 +77,10 @@ function renderAuthModal() {
         container.innerHTML = `
             <div class="profile-info">
                 <div class="profile-name">${currentProfile?.username || 'User'}</div>
-                <div class="profile-id">${currentUser.id}</div>
+                <div class="profile-id">ID: ${currentUser.id}</div>
             </div>
-            <input type="text" id="prof-name" class="ui-input" placeholder="New Display Name">
-            <button class="ui-btn" onclick="updateProfile()">Update Name</button>
+            <input type="text" id="prof-name" class="ui-input" placeholder="Change Display Name">
+            <button class="ui-btn" onclick="updateProfile()">Save Name</button>
             <button class="ui-btn" onclick="supabaseClient.auth.signOut()">Logout</button>
         `;
     } else {
@@ -154,7 +154,7 @@ function renderNavigation() {
                 el.onclick = () => window.location.hash = pathHash;
                 el.setAttribute('data-path', pathHash);
                 parentEl.appendChild(el);
-                flatNodes.push({ name: node.name, path: pathHash, file: node.path });
+                flatNodes.push({ name: node.name, path: pathHash, fileType: node.fileType, url: node.url, file: node.path });
             }
         });
     }
@@ -176,40 +176,66 @@ async function handleRoute() {
     
     highlightNav();
     
-    if (hash === 'admin') {
-        if (!currentProfile?.is_admin) { window.location.hash = ''; return; }
-        renderAdminDashboard();
-        return;
-    }
-    
-    const node = flatNodes.find(n => n.path === hash);
-    const container = document.getElementById('page-content');
+    const iframe = document.getElementById('iframe-workspace');
+    const mdContainer = document.getElementById('page-content');
     const breadcrumbs = document.getElementById('breadcrumbs');
+    const tocContainer = document.getElementById('toc-tree');
     
     breadcrumbs.innerHTML = hash.split('/').map(p => `<span class="crumb-link">${p}</span>`).join(' > ');
     
-    if (node && node.file === "Spotify.md") {
-        container.innerHTML = '<div id="spotify-inject"></div>';
-        if(window.renderSpotify) window.renderSpotify();
+    const node = flatNodes.find(n => n.path === hash);
+    
+    if (node) {
+        if (node.fileType === 'spotify') {
+            iframe.style.display = 'none';
+            mdContainer.style.display = 'block';
+            mdContainer.innerHTML = '<div id="spotify-inject"></div>';
+            tocContainer.innerHTML = '';
+            if (window.renderSpotify) window.renderSpotify();
+            return;
+        }
+        
+        if (node.fileType === 'html') {
+            mdContainer.style.display = 'none';
+            iframe.style.display = 'block';
+            iframe.src = node.url;
+            tocContainer.innerHTML = '<div style="color:var(--fg-muted); padding:8px;">Interactive View</div>';
+            return;
+        }
+        
+        if (node.fileType === 'md') {
+            iframe.style.display = 'none';
+            mdContainer.style.display = 'block';
+            try {
+                const res = await fetch(node.file);
+                if (res.ok) {
+                    const text = await res.text();
+                    mdContainer.innerHTML = marked.parse(text);
+                    generateTOC();
+                } else {
+                    mdContainer.innerHTML = '<h2>404 - Document Not Found</h2>';
+                    tocContainer.innerHTML = '';
+                }
+            } catch(e) {
+                mdContainer.innerHTML = '<h2>Error loading document</h2>';
+                tocContainer.innerHTML = '';
+            }
+            return;
+        }
+    }
+    
+    if (hash.startsWith('pages/')) {
+        mdContainer.style.display = 'none';
+        iframe.style.display = 'block';
+        iframe.src = hash;
+        tocContainer.innerHTML = '';
         return;
     }
     
-    if (node) {
-        try {
-            const res = await fetch(`content/${node.file}`);
-            if (res.ok) {
-                const text = await res.text();
-                container.innerHTML = marked.parse(text);
-                generateTOC();
-            } else {
-                container.innerHTML = '<h2>404 - Not Found</h2>';
-            }
-        } catch(e) {
-            container.innerHTML = '<h2>Error loading page</h2>';
-        }
-    } else {
-        container.innerHTML = '<h2>Page not found</h2>';
-    }
+    iframe.style.display = 'none';
+    mdContainer.style.display = 'block';
+    mdContainer.innerHTML = '<h2>Page not found</h2>';
+    tocContainer.innerHTML = '';
 }
 
 function generateTOC() {

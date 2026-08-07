@@ -4,14 +4,14 @@
       "name": "Index",
       "type": "folder",
       "children": [
-        { "name": "Home", "type": "file", "path": "Home.md" },
-        { "name": "Blogs", "type": "file", "path": "Blogs.md" },
+        { "name": "Home", "type": "file", "fileType": "html", "url": "pages/home.html" },
+        { "name": "Blogs", "type": "file", "fileType": "html", "url": "pages/blogs.html" },
         {
           "name": "Community",
           "type": "folder",
           "children": [
-            { "name": "Chits & Chats", "type": "file", "path": "Chits_Chats.md" },
-            { "name": "Gallery", "type": "file", "path": "Gallery.md" }
+            { "name": "Chits & Chats", "type": "file", "fileType": "html", "url": "pages/chitchat.html" },
+            { "name": "Gallery", "type": "file", "fileType": "html", "url": "pages/gallery.html" }
           ]
         }
       ]
@@ -20,8 +20,8 @@
       "name": "Content",
       "type": "folder",
       "children": [
-        { "name": "Projects", "type": "file", "path": "Projects.md" },
-        { "name": "Downloads", "type": "file", "path": "Downloads.md" },
+        { "name": "Projects", "type": "file", "fileType": "html", "url": "pages/projects.html" },
+        { "name": "Downloads", "type": "file", "fileType": "html", "url": "pages/downloads.html" },
         {
           "name": "Writing",
           "type": "folder",
@@ -31,7 +31,7 @@
               "type": "folder",
               "collapsed": true,
               "children": [
-                { "name": "Obliteration", "type": "file", "path": "Obliteration.md", "hidden": true },
+                { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/Obliteration.md", "hidden": true },
                 {
                   "name": "Halloween Specials",
                   "type": "folder",
@@ -40,9 +40,9 @@
                       "name": "O' Mother of Mine",
                       "type": "folder",
                       "children": [
-                        { "name": "The Lamb of Blood", "type": "file", "path": "Lamb.md" },
-                        { "name": "The Shepherd of Filth", "type": "file", "path": "Shepherd.md" },
-                        { "name": "The Slaughtered Lamb", "type": "file", "path": "Slaughtered.md" }
+                        { "name": "The Lamb of Blood", "type": "file", "fileType": "md", "path": "content/Lamb.md" },
+                        { "name": "The Shepherd of Filth", "type": "file", "fileType": "md", "path": "content/Shepherd.md" },
+                        { "name": "The Slaughtered Lamb", "type": "file", "fileType": "md", "path": "content/Slaughtered.md" }
                       ]
                     }
                   ]
@@ -58,9 +58,16 @@
                   "name": "first",
                   "type": "folder",
                   "children": [
-                    { "name": "I \"the song bird\"", "type": "file", "path": "poem1.md" },
-                    { "name": "II \"waking\"", "type": "file", "path": "poem2.md" },
-                    { "name": "III \"loss\"", "type": "file", "path": "poem3.md" }
+                    { "name": "I \"the song bird\"", "type": "file", "fileType": "md", "path": "content/poem1.md" },
+                    { "name": "II \"waking\"", "type": "file", "fileType": "md", "path": "content/poem2.md" },
+                    { "name": "III \"loss\"", "type": "file", "fileType": "md", "path": "content/poem3.md" },
+                    { "name": "IV \" \"", "type": "file", "fileType": "md", "path": "content/poem4.md" },
+                    { "name": "V \"warm\"", "type": "file", "fileType": "md", "path": "content/poem5.md" },
+                    { "name": "VI \"stay.\"", "type": "file", "fileType": "md", "path": "content/poem6.md" },
+                    { "name": "VII \"river\"", "type": "file", "fileType": "md", "path": "content/poem7.md" },
+                    { "name": "IIX \"again\"", "type": "file", "fileType": "md", "path": "content/poem8.md" },
+                    { "name": "IX \"the aching grew worse\"", "type": "file", "fileType": "md", "path": "content/poem9.md" },
+                    { "name": "X \"bridge...\"", "type": "file", "fileType": "md", "path": "content/poem10.md" }
                   ]
                 }
               ]
@@ -73,8 +80,8 @@
       "name": "About Me",
       "type": "folder",
       "children": [
-        { "name": "Games I <3", "type": "file", "path": "Games.md" },
-        { "name": "Spotify", "type": "file", "path": "Spotify.md" }
+        { "name": "Games I <3", "type": "file", "fileType": "html", "url": "pages/games.html" },
+        { "name": "Spotify", "type": "file", "fileType": "spotify" }
       ]
     },
     {
@@ -85,11 +92,11 @@
           "name": "Tier List Maker",
           "type": "folder",
           "children": [
-            { "name": "ZATOcord Tierlist", "type": "file", "path": "ZATO.md" }
+            { "name": "ZATOcord Tierlist", "type": "file", "fileType": "html", "url": "pages/zato.html" }
           ]
         },
-        { "name": "World Clock Viewer", "type": "file", "path": "Clock.md" },
-        { "name": "Code Translator", "type": "file", "path": "Code.md" }
+        { "name": "World Clock Viewer", "type": "file", "fileType": "html", "url": "pages/worldclock.html" },
+        { "name": "Code Translator", "type": "file", "fileType": "html", "url": "pages/codes.html" }
       ]
     },
     {
@@ -97,9 +104,9 @@
       "type": "folder",
       "hidden": true,
       "children": [
-        { "name": "Obliteration", "type": "file", "path": "Archived_Obliteration.md" },
-        { "name": "Oricade Songs", "type": "file", "path": "Oricade.md" },
-        { "name": "Function Generator", "type": "file", "path": "Generator.md" }
+        { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/Obliteration.md" },
+        { "name": "Oricade Songs", "type": "file", "fileType": "html", "url": "pages/gallery.html?type=audio" },
+        { "name": "Function Generator", "type": "file", "fileType": "html", "url": "pages/function_generator.html" }
       ]
     }
   ]
