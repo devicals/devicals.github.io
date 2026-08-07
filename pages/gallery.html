@@ -2,46 +2,172 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gallery - Error Dev</title>
+    <title>Gallery Board - Error Dev</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .gallery-card {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            border-radius: 8px !important;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .gallery-card img {
+            width: 100%;
+            border-radius: 6px !important;
+            object-fit: contain;
+        }
+    </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 60px;">
-        <h1 style="margin-bottom:20px;">Gallery</h1>
-        <div id="gallery-container" style="display:flex; flex-direction:column; gap:20px;">
-            Loading gallery items...
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 60px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1 style="margin:0;">Public Gallery Board</h1>
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleUploadBox()">+ Add Art / Image</button>
+        </div>
+
+        <div id="gallery-upload-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; border-radius:8px !important; margin-bottom:24px;">
+            <div style="display:flex; gap:12px; margin-bottom:12px;">
+                <input type="text" id="gal-name" class="ui-input" placeholder="Your Name" style="margin:0;">
+                <input type="text" id="gal-title" class="ui-input" placeholder="Artwork Title" style="margin:0;">
+            </div>
+            <input type="text" id="gal-url" class="ui-input" placeholder="Image URL (Or click Draw below)" style="margin-bottom:12px;">
+            
+            <div style="display:flex; gap:12px;">
+                <button class="ui-btn" style="flex:1; margin:0;" onclick="toggleCanvas()">Toggle Draw Canvas</button>
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="postGallery()">Post to Gallery</button>
+            </div>
+
+            <div id="canvas-container" style="display:none; margin-top:16px;">
+                <div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;">
+                    <input type="color" id="brush-color" value="#ffffff" style="background:var(--bg-sidebar); border:1px solid var(--border); height:24px;">
+                    <input type="range" id="brush-size" min="1" max="20" value="3">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="clearCanvas()">Clear Canvas</button>
+                </div>
+                <canvas id="gal-canvas" style="background:var(--bg-main); border:1px solid var(--border); border-radius:4px !important; width:100%; height:300px; cursor:crosshair;"></canvas>
+            </div>
+        </div>
+
+        <div id="gallery-container" class="masonry-grid">
+            Loading public gallery...
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <script>
-        async function loadGalleryPage() {
-            const params = new URLSearchParams(window.location.search);
-            const galleryType = params.get('type');
-            
-            let fileToFetch = '/storage/data/oricade.yaml';
-            if (galleryType === 'audio') fileToFetch = '/storage/internal/pages/custom/oricade.yaml';
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-            try {
-                const res = await fetch(fileToFetch);
-                if (!res.ok) throw new Error('File not found');
-                const yamlText = await res.text();
-                const parsed = jsyaml.load(yamlText);
-                const items = parsed.items || [];
+        let galleryItems = [];
+        const canvas = document.getElementById('gal-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let canvasActive = false;
 
-                document.getElementById('gallery-container').innerHTML = items.map(item => `
-                    <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px;">
-                        <div style="color:var(--accent); font-weight:bold; font-size:14px; margin-bottom:8px;">${item.title || 'Untitled Item'}</div>
-                        ${item.description ? `<div style="font-size:12px; color:var(--fg-muted); margin-bottom:8px;">${item.description}</div>` : ''}
-                        ${item.path ? `<audio controls src="${item.path}" style="width:100%; margin-top:8px;"></audio>` : ''}
-                    </div>
-                `).join('');
-            } catch(e) {
-                document.getElementById('gallery-container').innerHTML = '<p style="color:var(--fg-muted)">Gallery empty or unavailable.</p>';
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width - 2;
+            canvas.height = 300;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            clearCanvas();
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#1c1b18';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+        canvas.addEventListener('mousemove', e => {
+            if (!isDrawing) return;
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.strokeStyle = document.getElementById('brush-color').value;
+            ctx.lineWidth = document.getElementById('brush-size').value;
+            ctx.stroke();
+        });
+        window.addEventListener('mouseup', () => isDrawing = false);
+
+        function toggleUploadBox() {
+            const box = document.getElementById('gallery-upload-box');
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleCanvas() {
+            const container = document.getElementById('canvas-container');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                canvasActive = true;
+                setTimeout(resizeCanvas, 50);
+            } else {
+                container.style.display = 'none';
+                canvasActive = false;
             }
         }
 
-        document.addEventListener('DOMContentLoaded', loadGalleryPage);
+        async function initGallery() {
+            const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
+            if (data) {
+                galleryItems = data.filter(i => i.drawing || (i.message && i.message.startsWith('http')));
+                renderGallery();
+            }
+
+            supabaseClient.channel('gallery-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'guestbook' }, async () => {
+                const { data: updated } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
+                if (updated) {
+                    galleryItems = updated.filter(i => i.drawing || (i.message && i.message.startsWith('http')));
+                    renderGallery();
+                }
+            }).subscribe();
+        }
+
+        function renderGallery() {
+            const container = document.getElementById('gallery-container');
+            container.innerHTML = galleryItems.map(item => `
+                <div class="gallery-card">
+                    <img src="${item.drawing || item.message}" alt="Artwork" loading="lazy">
+                    <div style="font-weight:bold; color:var(--accent); font-size:14px; margin-top:8px;">${item.message && !item.message.startsWith('http') ? item.message : 'Untitled'}</div>
+                    <div style="font-size:11px; color:var(--fg-muted);">By ${item.name || 'Anonymous'}</div>
+                </div>
+            `).join('');
+        }
+
+        window.postGallery = async () => {
+            const name = document.getElementById('gal-name').value.trim() || 'Anonymous';
+            const title = document.getElementById('gal-title').value.trim() || 'Untitled';
+            const url = document.getElementById('gal-url').value.trim();
+            
+            let drawingData = null;
+            if (canvasActive) {
+                drawingData = canvas.toDataURL('image/png');
+            } else if (url) {
+                drawingData = url;
+            } else {
+                alert("Please provide an image URL or draw something.");
+                return;
+            }
+
+            await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
+            
+            document.getElementById('gal-title').value = '';
+            document.getElementById('gal-url').value = '';
+            clearCanvas();
+            toggleUploadBox();
+        };
+
+        document.addEventListener('DOMContentLoaded', initGallery);
     </script>
 </body>
 </html>

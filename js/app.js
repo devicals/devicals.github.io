@@ -9,6 +9,7 @@ let flatNodes = [];
 let showHiddenPages = false;
 let announcementTimer = null;
 let currentDocFile = null;
+let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
 
 const DEFAULT_NAV = {
   "children": [
@@ -41,9 +42,7 @@ const DEFAULT_NAV = {
             {
               "name": "Books",
               "type": "folder",
-              "collapsed": true,
               "children": [
-                { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/books/obliter8tion/retribution/intro_1.md", "hidden": true },
                 {
                   "name": "Halloween Specials",
                   "type": "folder",
@@ -64,7 +63,6 @@ const DEFAULT_NAV = {
             {
               "name": "Poems",
               "type": "folder",
-              "collapsed": true,
               "children": [
                 {
                   "name": "first",
@@ -110,22 +108,12 @@ const DEFAULT_NAV = {
         { "name": "World Clock Viewer", "type": "file", "fileType": "html", "url": "pages/worldclock.html" },
         { "name": "Code Translator", "type": "file", "fileType": "html", "url": "pages/codes.html" }
       ]
-    },
-    {
-      "name": "Archived Pages",
-      "type": "folder",
-      "hidden": true,
-      "children": [
-        { "name": "Obliteration", "type": "file", "fileType": "md", "path": "content/books/obliter8tion/retribution/intro_1.md" },
-        { "name": "Oricade Songs", "type": "file", "fileType": "html", "url": "pages/gallery.html?type=audio" },
-        { "name": "Function Generator", "type": "file", "fileType": "html", "url": "pages/function_generator.html" }
-      ]
     }
   ]
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    loadSettings();
+    loadSettingsLocally();
     await loadNavigation();
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
@@ -151,11 +139,7 @@ function guiConfirm(msg, title = "Confirm Action") {
         modal.style.display = 'flex';
 
         const yesBtn = document.getElementById('gui-confirm-yes');
-        
-        const cleanup = () => {
-            modal.style.display = 'none';
-            yesBtn.onclick = null;
-        };
+        const cleanup = () => { modal.style.display = 'none'; yesBtn.onclick = null; };
 
         yesBtn.onclick = () => { cleanup(); resolve(true); };
         window.closeGuiConfirmModal = () => { cleanup(); resolve(false); };
@@ -172,18 +156,14 @@ function guiPrompt(msg, defaultValue = "", title = "Input Required") {
         modal.style.display = 'flex';
 
         const okBtn = document.getElementById('gui-prompt-ok');
-        
-        const cleanup = () => {
-            modal.style.display = 'none';
-            okBtn.onclick = null;
-        };
+        const cleanup = () => { modal.style.display = 'none'; okBtn.onclick = null; };
 
         okBtn.onclick = () => { const val = input.value; cleanup(); resolve(val); };
         window.closeGuiPromptModal = () => { cleanup(); resolve(null); };
     });
 }
 
-function loadSettings() {
+function loadSettingsLocally() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
     const theme = localStorage.getItem('theme') || 'primary';
     const customCss = localStorage.getItem('custom-css') || '';
@@ -200,6 +180,7 @@ document.getElementById('toggle-dark-mode').onclick = () => {
     const theme = document.getElementById('theme-selector').value;
     document.documentElement.setAttribute('data-theme', isLight ? theme : 'light');
     localStorage.setItem('dark-mode', isLight ? 'true' : 'false');
+    syncSettingsToServer();
     syncIframeTheme();
 };
 
@@ -208,6 +189,7 @@ document.getElementById('theme-selector').onchange = (e) => {
     if(document.documentElement.getAttribute('data-theme') !== 'light') {
         document.documentElement.setAttribute('data-theme', e.target.value);
     }
+    syncSettingsToServer();
     syncIframeTheme();
 };
 
@@ -215,15 +197,25 @@ document.getElementById('save-css').onclick = () => {
     const css = document.getElementById('custom-css-input').value;
     localStorage.setItem('custom-css', css);
     document.getElementById('custom-css-block').textContent = css;
+    syncSettingsToServer();
 };
 
 function syncIframeTheme() {
     const iframe = document.getElementById('iframe-workspace');
     if (iframe && iframe.contentWindow) {
         const theme = document.documentElement.getAttribute('data-theme');
-        try {
-            iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme);
-        } catch(e) {}
+        try { iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme); } catch(e) {}
+    }
+}
+
+async function syncSettingsToServer() {
+    if (currentUser) {
+        const payload = { 
+            theme: localStorage.getItem('theme'), 
+            custom_css: localStorage.getItem('custom-css'),
+            dark_mode: localStorage.getItem('dark-mode')
+        };
+        await supabaseClient.from('site_content').upsert({ key: 'settings_' + currentUser.id, data: payload });
     }
 }
 
@@ -244,10 +236,19 @@ async function handleSession(session) {
     
     if (currentUser) {
         try {
-            const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            currentProfile = data;
+            const { data: profData } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+            currentProfile = profData;
+            
+            const { data: setObj } = await supabaseClient.from('site_content').select('data').eq('key', 'settings_' + currentUser.id).single();
+            if (setObj && setObj.data) {
+                if (setObj.data.theme) localStorage.setItem('theme', setObj.data.theme);
+                if (setObj.data.custom_css) localStorage.setItem('custom-css', setObj.data.custom_css);
+                if (setObj.data.dark_mode) localStorage.setItem('dark-mode', setObj.data.dark_mode);
+                loadSettingsLocally();
+            }
+
             if (currentProfile?.is_admin) {
-                adminLink.style.display = 'block';
+                adminLink.style.display = 'flex';
             } else {
                 adminLink.style.display = 'none';
             }
@@ -272,7 +273,7 @@ function renderAuthModal() {
             </div>
             <input type="text" id="prof-name" class="ui-input" placeholder="Set Display Name">
             <button class="ui-btn" onclick="updateProfile()">Save Display Name</button>
-            <button class="ui-btn" onclick="supabaseClient.auth.signOut()">Logout</button>
+            <button class="ui-btn" onclick="supabaseClient.auth.signOut()" style="border-color:var(--destructive); color:var(--destructive);">Logout</button>
         `;
     } else {
         container.innerHTML = `
@@ -323,9 +324,9 @@ window.openAdminFromSettings = function() {
 
 async function loadNavigation() {
     try {
-        const res = await fetch('data/structure.json');
-        if (res.ok) {
-            navData = await res.json();
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'structure').single();
+        if (data && data.data) {
+            navData = { children: data.data };
         } else {
             navData = DEFAULT_NAV;
         }
@@ -340,35 +341,45 @@ function renderNavigation() {
     container.innerHTML = '';
     flatNodes = [];
     
-    const canSeeHidden = showHiddenPages || (currentProfile?.is_admin === true);
+    const canSeeHidden = currentProfile?.is_admin ? showHiddenPages : false;
 
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
             if (node.hidden && !canSeeHidden) return;
             
             const currentPath = [...pathPrefix, node.name];
+            const currentPathHash = currentPath.join('/');
             const el = document.createElement('div');
             
             if (node.type === 'folder') {
-                el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${node.collapsed ? '>' : 'v'}</span> ${node.name}</div>`;
+                const isExp = expandedFolders.includes(currentPathHash);
+                el.innerHTML = `<div class="nav-item" onclick="window.location.hash='${currentPathHash}'"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> ${node.name}</div>`;
                 const childrenContainer = document.createElement('div');
-                childrenContainer.className = `nav-children ${node.collapsed ? '' : 'expanded'}`;
-                el.querySelector('.nav-item').onclick = (e) => {
-                    const chev = e.currentTarget.querySelector('.nav-chevron');
-                    const isExp = childrenContainer.classList.toggle('expanded');
-                    chev.textContent = isExp ? 'v' : '>';
+                childrenContainer.className = `nav-children ${isExp ? 'expanded' : ''}`;
+                
+                el.querySelector('.nav-chevron').onclick = (e) => {
+                    e.stopPropagation();
+                    const nowExp = childrenContainer.classList.toggle('expanded');
+                    if (nowExp && !expandedFolders.includes(currentPathHash)) {
+                        expandedFolders.push(currentPathHash);
+                    } else if (!nowExp) {
+                        expandedFolders = expandedFolders.filter(p => p !== currentPathHash);
+                    }
+                    localStorage.setItem('expandedFolders', JSON.stringify(expandedFolders));
+                    e.target.textContent = nowExp ? 'v' : '>';
                 };
+
                 el.appendChild(childrenContainer);
                 parentEl.appendChild(el);
+                flatNodes.push({ name: node.name, type: 'folder', path: currentPathHash, children: node.children });
                 buildTree(node.children || [], childrenContainer, currentPath);
             } else {
                 el.className = 'nav-item';
-                el.textContent = node.name;
-                const pathHash = currentPath.join('/');
-                el.onclick = () => window.location.hash = pathHash;
-                el.setAttribute('data-path', pathHash);
+                el.innerHTML = `<span style="width:12px"></span>${node.name}`;
+                el.onclick = () => window.location.hash = currentPathHash;
+                el.setAttribute('data-path', currentPathHash);
                 parentEl.appendChild(el);
-                flatNodes.push({ name: node.name, path: pathHash, fileType: node.fileType, url: node.url, file: node.path });
+                flatNodes.push({ name: node.name, type: 'file', path: currentPathHash, fileType: node.fileType, url: node.url, file: node.path });
             }
         });
     }
@@ -404,11 +415,39 @@ async function handleRoute() {
         return;
     }
 
-    breadcrumbs.innerHTML = hash.split('/').map(p => `<span class="crumb-link" onclick="window.location.hash='${p}'">${p}</span>`).join(' > ');
+    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="window.location.hash='${arr.slice(0, i+1).join('/')}'">${p}</span>`).join(' > ');
     
     const node = flatNodes.find(n => n.path === hash);
     
     if (node) {
+        if (node.type === 'folder') {
+            iframe.style.display = 'none';
+            mdContainer.style.display = 'block';
+            
+            const canSeeHidden = currentProfile?.is_admin ? showHiddenPages : false;
+            let html = `<h1>📁 ${node.name}</h1><p style="color:var(--fg-muted);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:8px; margin-top:20px;">`;
+            
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(child => {
+                    if (child.hidden && !canSeeHidden) return;
+                    const childPath = node.path + '/' + child.name;
+                    const icon = child.type === 'folder' ? '📁' : '📄';
+                    html += `
+                        <a href="#${encodeURIComponent(childPath)}" style="display:flex; align-items:center; gap:12px; padding:16px; background:var(--bg-hover); border:1px solid var(--border); border-radius:6px !important; color:var(--fg-main); text-decoration:none; transition: border-color 0.2s;">
+                            <span style="font-size:20px;">${icon}</span>
+                            <span style="font-weight:bold; font-size:14px;">${child.name}</span>
+                        </a>
+                    `;
+                });
+            } else {
+                html += `<div style="color:var(--fg-muted); font-style:italic;">This folder is empty.</div>`;
+            }
+            
+            html += `</div>`;
+            mdContainer.innerHTML = html;
+            return;
+        }
+
         if (node.fileType === 'spotify') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
@@ -429,18 +468,21 @@ async function handleRoute() {
             mdContainer.style.display = 'block';
             currentDocFile = node.file;
             try {
-                const res = await fetch(node.file);
-                if (res.ok) {
-                    const text = await res.text();
-                    let adminEditHeader = '';
-                    if (currentProfile?.is_admin) {
-                        adminEditHeader = `<div class="editor-header"><span style="font-size:11px; color:var(--fg-muted)">Path: ${node.file}</span><button class="ui-btn" style="width:auto; margin:0;" onclick="openMarkdownEditor('${node.file}')">✎ Edit Page</button></div>`;
-                    }
-                    mdContainer.innerHTML = adminEditHeader + marked.parse(text);
-                    updateWordCount(text);
+                const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
+                let text = '';
+                if (data && data.data && data.data[node.file]) {
+                    text = data.data[node.file];
                 } else {
-                    mdContainer.innerHTML = '<h2>404 - Document Not Found</h2>';
+                    const res = await fetch(node.file);
+                    text = res.ok ? await res.text() : '## Blank Page\nClick edit to add content.';
                 }
+                
+                let adminEditHeader = '';
+                if (currentProfile?.is_admin) {
+                    adminEditHeader = `<div class="editor-header"><span style="font-size:11px; color:var(--fg-muted)">Path: ${node.file}</span><button class="ui-btn" style="width:auto; margin:0;" onclick="openMarkdownEditor('${node.file}')">✎ Edit Page</button></div>`;
+                }
+                mdContainer.innerHTML = adminEditHeader + marked.parse(text);
+                updateWordCount(text);
             } catch(e) {
                 mdContainer.innerHTML = '<h2>Error loading document</h2>';
             }
@@ -457,7 +499,7 @@ async function handleRoute() {
     
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
-    mdContainer.innerHTML = '<h2>Page not found</h2>';
+    mdContainer.innerHTML = '<h2 style="color:var(--destructive);">Page not found</h2>';
 }
 
 window.openMarkdownEditor = async function(filePath) {
@@ -470,8 +512,15 @@ window.openMarkdownEditor = async function(filePath) {
     editorWorkspace.style.display = 'block';
 
     try {
-        const res = await fetch(filePath);
-        const text = res.ok ? await res.text() : '';
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'page_edits').single();
+        let text = '';
+        if (data && data.data && data.data[filePath]) {
+            text = data.data[filePath];
+        } else {
+            const res = await fetch(filePath);
+            text = res.ok ? await res.text() : '';
+        }
+
         editorWorkspace.innerHTML = `
             <div class="editor-header">
                 <h2>Edit Page: ${filePath}</h2>
@@ -497,8 +546,7 @@ window.saveMarkdownContent = async function(filePath) {
         guiAlert('Page saved successfully.', 'Saved');
         handleRoute();
     } catch(e) {
-        guiAlert('Saved locally for this session.', 'Saved');
-        handleRoute();
+        guiAlert('Failed to save content.', 'Error');
     }
 };
 
@@ -516,7 +564,7 @@ async function loadAnnouncementsToast() {
             const textEl = document.getElementById('announcement-text');
             const bar = document.getElementById('announcement-bar');
 
-            textEl.textContent = data.data[0];
+            textEl.textContent = data.data[data.data.length - 1]; // show latest
             toast.style.display = 'flex';
             bar.style.width = '100%';
 

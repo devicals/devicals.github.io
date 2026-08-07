@@ -36,8 +36,8 @@
         </ul>
 
         <h2>latest blog</h2>
-        <div id="latest-blog-container" style="background:var(--bg-hover); padding:16px; border:1px solid var(--border); margin-top:12px; margin-bottom: 40px;">
-            Loading latest blog post...
+        <div id="latest-blog-container" style="background:var(--bg-hover); padding:20px; border:1px solid var(--border); border-radius:8px !important; margin-top:20px; margin-bottom: 60px;">
+            <span style="color:var(--fg-muted);">Loading latest blog post...</span>
         </div>
     </div>
 
@@ -65,9 +65,9 @@
                     });
                     const latest = sorted[0];
                     document.getElementById('latest-blog-container').innerHTML = `
-                        <div style="font-size:12px; color:var(--fg-muted); margin-bottom:4px;">${latest.date}</div>
-                        <div style="font-size:16px; font-weight:bold; color:var(--accent); margin-bottom:8px;">${latest.title}</div>
-                        <div style="font-size:13px; line-height:1.6;">${latest.content}</div>
+                        <div style="font-size:12px; color:var(--fg-muted); margin-bottom:6px;">${latest.date}</div>
+                        <div style="font-size:18px; font-weight:bold; color:var(--accent); margin-bottom:12px;">${latest.title}</div>
+                        <div style="font-size:14px; line-height:1.6;">${latest.content}</div>
                     `;
                 }
             } catch(e) {}

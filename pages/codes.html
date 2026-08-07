@@ -4,40 +4,332 @@
     <meta charset="UTF-8">
     <title>Code Translator - Error Dev</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 8px !important;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .card-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 5px;
+        }
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .warn-text { color: var(--destructive); font-size: 11px; }
+    </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 60px;">
-        <h1 style="margin-bottom:20px;">Code Translator</h1>
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 60px;">
+        <h1 style="margin-bottom:30px;">Code Translators & Utilities</h1>
         
-        <div class="settings-group">
-            <label>Input Text</label>
-            <textarea id="translator-input" class="ui-input" rows="4" placeholder="Type text here..."></textarea>
+        <h2>1. Custom Ciphers</h2>
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header">Code 1: Pointer Code</div>
+                <textarea id="ptr-in" class="ui-input" rows="3" placeholder="Text to encode or pointer sequence..."></textarea>
+                <div class="controls-row">
+                    <button class="ui-btn" onclick="execPointer('encode')">Encode</button>
+                    <button class="ui-btn" onclick="execPointer('decode')">Decode</button>
+                </div>
+                <div class="warn-text" id="ptr-warn"></div>
+                <textarea id="ptr-out" class="ui-input" rows="3" readonly></textarea>
+            </div>
+
+            <div class="card">
+                <div class="card-header">Code 2: Bracket Substitution</div>
+                <textarea id="brk-in" class="ui-input" rows="3" placeholder="Text or bracket pairs..."></textarea>
+                <div class="controls-row">
+                    <button class="ui-btn" onclick="execBracket('encode')">Encode</button>
+                    <button class="ui-btn" onclick="execBracket('decode')">Decode</button>
+                </div>
+                <div class="warn-text" id="brk-warn"></div>
+                <textarea id="brk-out" class="ui-input" rows="3" readonly></textarea>
+            </div>
+
+            <div class="card" style="grid-column: 1 / -1;">
+                <div class="card-header">Code 3: Unified Stream</div>
+                <textarea id="uni-in" class="ui-input" rows="3" placeholder="Words, numbers, and basic math..."></textarea>
+                <div class="controls-row">
+                    <button class="ui-btn" onclick="execUnified('encode')">Encode Stream</button>
+                    <button class="ui-btn" onclick="execUnified('decode')">Decode Stream</button>
+                </div>
+                <div class="warn-text" id="uni-warn"></div>
+                <textarea id="uni-out" class="ui-input" rows="3" readonly></textarea>
+            </div>
         </div>
 
-        <div style="display:flex; gap:10px; margin-bottom:20px;">
-            <button class="ui-btn" onclick="translateText('binary')">Binary</button>
-            <button class="ui-btn" onclick="translateText('hex')">Hexadecimal</button>
-            <button class="ui-btn" onclick="translateText('base64')">Base64</button>
-        </div>
+        <h2>2. Bases & ASCII</h2>
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header">Base Converter</div>
+                <textarea id="base-in" class="ui-input" rows="2" placeholder="Value to convert..."></textarea>
+                <div class="controls-row">
+                    <input type="number" id="base-from" class="ui-input" value="10" min="2" max="62" placeholder="From Base">
+                    <input type="number" id="base-to" class="ui-input" value="16" min="2" max="62" placeholder="To Base">
+                </div>
+                <button class="ui-btn" onclick="execBaseConvert()">Convert Base</button>
+                <div class="warn-text" id="base-warn"></div>
+                <textarea id="base-out" class="ui-input" rows="2" readonly></textarea>
+            </div>
 
-        <div class="settings-group">
-            <label>Translated Result</label>
-            <textarea id="translator-output" class="ui-input" rows="4" readonly></textarea>
+            <div class="card">
+                <div class="card-header">ASCII Representation</div>
+                <textarea id="ascii-in" class="ui-input" rows="2" placeholder="Input string..."></textarea>
+                <div class="controls-row">
+                    <select id="ascii-format" class="ui-input" style="flex:1;">
+                        <option value="hex">Hex</option>
+                        <option value="bin">Bin</option>
+                        <option value="oct">Oct</option>
+                        <option value="base64">Base64</option>
+                    </select>
+                </div>
+                <div class="controls-row">
+                    <button class="ui-btn" onclick="execAscii('encode')">Encode</button>
+                    <button class="ui-btn" onclick="execAscii('decode')">Decode</button>
+                </div>
+                <div class="warn-text" id="ascii-warn"></div>
+                <textarea id="ascii-out" class="ui-input" rows="2" readonly></textarea>
+            </div>
+        </div>
+        
+        <h2>3. Generators & Identifiers</h2>
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header">Identifiers</div>
+                <button class="ui-btn" onclick="genUUID()">Gen UUID (v4)</button>
+                <input type="text" id="gen-uuid" class="ui-input" readonly>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">Secret Generator</div>
+                <div style="font-size:11px; margin-bottom:8px;">Length: <span id="len-disp">16</span></div>
+                <input type="range" id="gen-len" min="8" max="128" value="16" oninput="document.getElementById('len-disp').textContent=this.value" style="margin-bottom:12px; width:100%; accent-color:var(--accent);">
+                <div class="controls-row">
+                    <button class="ui-btn" onclick="genPassword()">Password</button>
+                    <button class="ui-btn" onclick="genKey('hex')">Hex Key</button>
+                    <button class="ui-btn" onclick="genKey('base64')">B64 Key</button>
+                </div>
+                <input type="text" id="gen-out" class="ui-input" readonly>
+            </div>
         </div>
     </div>
 
     <script>
-        function translateText(mode) {
-            const input = document.getElementById('translator-input').value;
-            const output = document.getElementById('translator-output');
-            
-            if (mode === 'binary') {
-                output.value = input.split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' ');
-            } else if (mode === 'hex') {
-                output.value = input.split('').map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-            } else if (mode === 'base64') {
-                output.value = btoa(input);
-            }
+        function setWarn(id, msg) { document.getElementById(id).textContent = msg; }
+
+        function execPointer(dir) {
+            setWarn('ptr-warn', '');
+            const input = document.getElementById('ptr-in').value;
+            let out = "";
+            try {
+                if (dir === 'encode') {
+                    let text = input.toUpperCase().replace(/\.\s+|\./g, '\n\n').replace(/[ \t]+/g, '\n');
+                    let ptr = 0;
+                    for(let i=0; i<text.length; i++) {
+                        let c = text[i];
+                        if (c === '\n') { out += '\n'; ptr = 0; continue; }
+                        let target = c.charCodeAt(0) - 65;
+                        if (target < 0 || target > 25) continue; 
+                        if (out.length > 0 && out[out.length-1] !== '\n' && out[out.length-1] !== ' ') out += ' ';
+                        
+                        if (target === ptr) out += '><';
+                        else {
+                            let right = (target - ptr + 26) % 26;
+                            let left = (ptr - target + 26) % 26;
+                            if (right <= left) out += '>'.repeat(right);
+                            else out += '<'.repeat(left);
+                            ptr = target;
+                        }
+                    }
+                } else {
+                    let sentences = input.split('\n\n');
+                    let ptr = 0;
+                    for(let s=0; s<sentences.length; s++) {
+                        if(s > 0) { out += ". "; ptr = 0; }
+                        let words = sentences[s].split('\n');
+                        for(let w=0; w<words.length; w++) {
+                            if(w > 0) { out += " "; ptr = 0; }
+                            let letters = words[w].split(' ');
+                            for(let l of letters) {
+                                l = l.trim(); if(!l) continue;
+                                if(l === '><') out += String.fromCharCode(65 + ptr);
+                                else {
+                                    let right = (l.match(/>/g) || []).length, left = (l.match(/</g) || []).length;
+                                    if(right > 0 && left === 0) ptr = (ptr + right) % 26;
+                                    else if(left > 0 && right === 0) ptr = (ptr - left + 260) % 26;
+                                    out += String.fromCharCode(65 + ptr);
+                                }
+                            }
+                        }
+                    }
+                }
+                document.getElementById('ptr-out').value = out;
+            } catch(e) { setWarn('ptr-warn', "Error: " + e); }
+        }
+
+        const BRACKET_MAP = {
+            'A':'()', 'B':'([', 'C':'(]', 'D':'({', 'E':'(}', 'F':'[(', 'G':'[)', 'H':'[]', 'I':'[{', 'J':'[}',
+            'K':'{(', 'L':'{)', 'M':'{[', 'N':'{]', 'O':'{}', 'P':')(', 'Q':'))', 'R':')[', 'S':')]', 'T':'){',
+            'U':')}', 'V':'](', 'W':'])', 'X':'][', 'Y':']{', 'Z':']}'
+        };
+        const REV_BRACKET_MAP = Object.fromEntries(Object.entries(BRACKET_MAP).map(([k,v])=>[v,k]));
+
+        function execBracket(dir) {
+            setWarn('brk-warn', '');
+            const input = document.getElementById('brk-in').value;
+            try {
+                document.getElementById('brk-out').value = dir === 'encode' 
+                    ? input.toUpperCase().replace(/[A-Z]/g, c => BRACKET_MAP[c])
+                    : input.replace(/\(\)|\(\[|\(\]|\(\{|\(\}|\[\(|\[\)|\[\]|\[\{|\[\}|\{\(|\{\)|\{\[|\{\]|\{\}|\)\(|\)\)|\)\[|\)\]|\)\{|\)\}|\]\(|\]\)|\]\[|\]\{|\]\}/g, match => REV_BRACKET_MAP[match]);
+            } catch(e) { setWarn('brk-warn', "Processing error."); }
+        }
+
+        const UNI_OPS = {'+':'(^.)', '-':'(.^)', '/':'(^-)', '*':'(-^)', '^':'(&^)', '%':'(^&)'};
+        const UNI_REV_OPS = Object.fromEntries(Object.entries(UNI_OPS).map(([k,v])=>[v,k]));
+        
+        function execUnified(dir) {
+            setWarn('uni-warn', '');
+            const input = document.getElementById('uni-in').value.trim();
+            let out = "";
+            try {
+                if (!input) return;
+                if (dir === 'encode') {
+                    let tokens = input.match(/\d+|[\+\-\/\*\^\%]|[A-Za-z]+/g) || [];
+                    for (let t of tokens) {
+                        if (/^\d+$/.test(t)) {
+                            let numStr = "";
+                            for(let char of t) {
+                                let d = parseInt(char);
+                                if(d===0) numStr+='{}';
+                                else if(d<=5) numStr+= '{' + '.'.repeat(d) + '}';
+                                else numStr+= '{' + '.'.repeat(10-d) + ',}';
+                            }
+                            out += `(${numStr})`;
+                        } else if (/^[\+\-\/\*\^\%]$/.test(t)) {
+                            out += UNI_OPS[t];
+                        } else {
+                            for(let char of t.toUpperCase()) {
+                                let code = char.charCodeAt(0) - 65; 
+                                let groupStr = ["....", "...", "..", ".", "'"][Math.floor(code / 6)];
+                                let colStr = [",", ":", ";", "-", "=", "+"][code % 6];
+                                out += groupStr + colStr;
+                            }
+                        }
+                    }
+                    out = `[${out}]`;
+                } else {
+                    let str = input.slice(1, -1);
+                    let i = 0, lastType = null;
+                    while(i < str.length) {
+                        if(str[i] === '(') {
+                            let chunk6 = str.substr(i, 4); 
+                            if(UNI_REV_OPS[chunk6]) { out += " " + UNI_REV_OPS[chunk6] + " "; i += 4; lastType = 'op'; } 
+                            else {
+                                let end = str.indexOf(')', i);
+                                let numBody = str.substring(i+1, end);
+                                let match, numStr = "";
+                                let digitRegex = /\{([.,]*)\}/g;
+                                while((match = digitRegex.exec(numBody)) !== null) {
+                                    let dots = match[1];
+                                    if(dots === "") numStr += "0";
+                                    else if(dots.endsWith(',')) numStr += (10 - (dots.length - 1)).toString();
+                                    else numStr += dots.length.toString();
+                                }
+                                if (lastType === 'word' || lastType === 'num') out += " ";
+                                out += numStr; lastType = 'num'; i = end + 1;
+                            }
+                        } else {
+                            let groupPrefix = "";
+                            while(i < str.length && (str[i] === '.' || str[i] === "'")) { groupPrefix += str[i]; i++; }
+                            let groupIdx = {"....":0, "...":1, "..":2, ".":3, "'":4}[groupPrefix];
+                            let colIdx = [",", ":", ";", "-", "=", "+"].indexOf(str[i]); i++;
+                            if (lastType !== 'word' && lastType !== null && lastType !== 'op') out += " ";
+                            out += String.fromCharCode(65 + groupIdx * 6 + colIdx).toLowerCase();
+                            lastType = 'word';
+                        }
+                    }
+                }
+                document.getElementById('uni-out').value = out.trim();
+            } catch(e) { setWarn('uni-warn', "Error: " + e); }
+        }
+
+        const BASE_CHARSET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        function execBaseConvert() {
+            setWarn('base-warn', '');
+            let val = document.getElementById('base-in').value.trim();
+            let fromB = parseInt(document.getElementById('base-from').value);
+            let toB = parseInt(document.getElementById('base-to').value);
+            try {
+                if (!val) return;
+                if (fromB <= 36) val = val.toUpperCase();
+                let num = 0n, bFrom = BigInt(fromB), bTo = BigInt(toB);
+                for(let i=0; i<val.length; i++) {
+                    let idx = BASE_CHARSET.indexOf(val[i]);
+                    num = num * bFrom + BigInt(idx);
+                }
+                if (num === 0n) { document.getElementById('base-out').value = BASE_CHARSET[0]; return; }
+                let res = "";
+                while(num > 0n) { res = BASE_CHARSET[Number(num % bTo)] + res; num /= bTo; }
+                document.getElementById('base-out').value = res;
+            } catch (e) { setWarn('base-warn', e); }
+        }
+
+        function execAscii(dir) {
+            setWarn('ascii-warn', '');
+            let inText = document.getElementById('ascii-in').value;
+            let format = document.getElementById('ascii-format').value;
+            try {
+                if (!inText) return;
+                let outText = "";
+                if (dir === 'encode') {
+                    if (format === 'base64') outText = btoa(unescape(encodeURIComponent(inText)));
+                    else outText = Array.from(new TextEncoder().encode(inText)).map(c => format === 'hex' ? c.toString(16).padStart(2,'0') : (format === 'oct' ? c.toString(8).padStart(3,'0') : c.toString(2).padStart(8,'0'))).join(' ');
+                } else {
+                    if (format === 'base64') outText = decodeURIComponent(escape(atob(inText)));
+                    else {
+                        let parts = inText.trim().split(/\s+/);
+                        let bytes = new Uint8Array(parts.length);
+                        let base = format === 'hex' ? 16 : (format === 'oct' ? 8 : 2);
+                        for(let i=0; i<parts.length; i++) bytes[i] = parseInt(parts[i], base);
+                        outText = new TextDecoder().decode(bytes);
+                    }
+                }
+                document.getElementById('ascii-out').value = outText;
+            } catch(e) { setWarn('ascii-warn', "Invalid input for format."); }
+        }
+
+        function genUUID() { document.getElementById('gen-uuid').value = crypto.randomUUID(); }
+        function genPassword() {
+            let len = parseInt(document.getElementById('gen-len').value);
+            let charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+            let arr = new Uint32Array(len), result = "";
+            crypto.getRandomValues(arr);
+            for (let i = 0; i < len; i++) result += charset[arr[i] % charset.length];
+            document.getElementById('gen-out').value = result;
+        }
+        function genKey(format) {
+            let lenBytes = parseInt(document.getElementById('gen-len').value);
+            let arr = new Uint8Array(lenBytes);
+            crypto.getRandomValues(arr);
+            document.getElementById('gen-out').value = format === 'hex' ? Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('') : btoa(String.fromCharCode.apply(null, arr));
         }
     </script>
 </body>

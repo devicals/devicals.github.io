@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chits & Chats - Error Dev</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,7 +12,7 @@
         
         <div id="messages-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:24px; max-height:450px; overflow-y:auto; padding-right:6px;"></div>
 
-        <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px; display:flex; flex-direction:column; gap:10px;">
+        <div style="background:var(--bg-hover); border:1px solid var(--border); padding:16px; display:flex; flex-direction:column; gap:10px; border-radius:8px !important;">
             <input type="text" id="chat-name" class="ui-input" placeholder="Your Name" style="margin:0;">
             <textarea id="chat-msg" class="ui-input" rows="3" placeholder="Write a message..." style="margin:0;"></textarea>
             <button class="ui-btn" onclick="sendChatMessage()" style="margin:0;">Post Message</button>
@@ -26,8 +25,14 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let chatMessages = [];
+        let isAdminLocal = false;
 
         async function initChitChat() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                isAdminLocal = true;
+            }
+
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: true });
             if (data) {
                 chatMessages = data;
@@ -45,10 +50,13 @@
 
         function renderChat() {
             const container = document.getElementById('messages-container');
-            container.innerHTML = chatMessages.map(m => `
-                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:12px;">
+            container.innerHTML = chatMessages.filter(m => !m.drawing && m.message).map(m => `
+                <div style="background:var(--bg-hover); border:1px solid var(--border); padding:12px; border-radius:6px !important;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:11px;">
-                        <strong style="color:var(--accent);">${escapeHTML(m.name || 'Anonymous')}</strong>
+                        <div>
+                            <strong style="color:var(--accent);">${escapeHTML(m.name || 'Anonymous')}</strong>
+                            ${m.is_creator ? '<span style="background:var(--accent); color:#000; padding:2px 4px; border-radius:4px !important; font-size:9px; margin-left:6px; font-weight:bold;">ADMIN</span>' : ''}
+                        </div>
                         <span style="color:var(--fg-muted);">${new Date(m.created_at).toLocaleString()}</span>
                     </div>
                     <div style="font-size:13px; line-height:1.5;">${escapeHTML(m.message || '')}</div>
@@ -64,7 +72,7 @@
             const message = document.getElementById('chat-msg').value.trim();
             if (!message) return;
 
-            await supabaseClient.from('guestbook').insert({ name, message });
+            await supabaseClient.from('guestbook').insert({ name, message, is_creator: isAdminLocal });
             document.getElementById('chat-msg').value = '';
         };
 

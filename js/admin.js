@@ -52,7 +52,7 @@ window.renderAdminSection = async function(section) {
                 <div class="admin-user-card">
                     <div class="admin-user-card-header">
                         <div>
-                            <strong>${u.username || 'Unnamed'}</strong> (${u.email})
+                            <strong style="color:var(--accent);">${u.username || 'Unnamed'}</strong> <span style="color:var(--fg-muted)">(${u.email})</span>
                             ${u.is_admin ? '<span class="user-tag admin">ADMIN</span>' : ''}
                             ${u.is_banned ? '<span class="user-tag banned">BANNED</span>' : ''}
                         </div>
@@ -90,6 +90,10 @@ window.renderAdminSection = async function(section) {
         loadAdminAnnouncements();
     }
 };
+
+async function syncStructure() {
+    await supabaseClient.from('site_content').upsert({ key: 'structure', data: navData.children });
+}
 
 let draggedTreeItem = null;
 
@@ -131,7 +135,7 @@ function renderVisualTreeBuilder() {
                 row.style.borderColor = 'var(--border)';
             });
 
-            row.addEventListener('drop', (e) => {
+            row.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 row.style.borderColor = 'var(--border)';
@@ -143,6 +147,8 @@ function renderVisualTreeBuilder() {
                 
                 const [moved] = nodes.splice(sourceIdx, 1);
                 nodes.splice(targetIdx, 0, moved);
+                
+                await syncStructure();
                 renderNavigation();
                 renderVisualTreeBuilder();
             });
@@ -171,6 +177,7 @@ async function editNode(arr, idx) {
             const isHidden = await guiConfirm("Hide this page from non-admins?", "Page Visibility");
             node.hidden = isHidden;
         }
+        await syncStructure();
         renderNavigation();
         renderVisualTreeBuilder();
     }
@@ -180,6 +187,7 @@ async function deleteNode(arr, idx) {
     const confirmed = await guiConfirm(`Delete "${arr[idx].name}"?`, "Confirm Deletion");
     if (confirmed) {
         arr.splice(idx, 1);
+        await syncStructure();
         renderNavigation();
         renderVisualTreeBuilder();
     }
@@ -189,6 +197,7 @@ window.addFolderNode = async function() {
     const name = await guiPrompt("New Folder Name:", "", "Create Folder");
     if (name) {
         navData.children.push({ name, type: "folder", children: [] });
+        await syncStructure();
         renderNavigation();
         renderVisualTreeBuilder();
     }
@@ -202,9 +211,10 @@ window.addFileNode = async function() {
             const url = await guiPrompt("Enter HTML page URL (e.g. pages/custom.html):", "pages/", "Set URL");
             if (url) navData.children.push({ name, type: "file", fileType: "html", url });
         } else {
-            const path = await guiPrompt("Enter Markdown file path (e.g. content/note.md):", "content/", "Set File Path");
+            const path = await guiPrompt("Enter Markdown file path (e.g. content/note.md):", "content/new_page.md", "Set File Path");
             if (path) navData.children.push({ name, type: "file", fileType: "md", path });
         }
+        await syncStructure();
         renderNavigation();
         renderVisualTreeBuilder();
     }

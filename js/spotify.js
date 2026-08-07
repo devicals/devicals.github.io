@@ -1,73 +1,55 @@
+let spotifyInterval = null;
+
 window.renderSpotify = async function() {
+    if (spotifyInterval) clearInterval(spotifyInterval);
+
     const container = document.getElementById('spotify-inject');
     container.innerHTML = `
-        <h1>about me</h1>
+        <h1 style="margin-bottom:20px;">Spotify</h1>
         <div id="spotify-status">Checking live Spotify status...</div>
-        <div id="liked-songs-section" style="margin-top:30px;"></div>
+        
+        <div id="liked-songs-section" style="margin-top:40px;">
+            <h2>Public Liked Songs</h2>
+            <p style="font-size:12px; color:var(--fg-muted); margin-bottom:16px;">
+                Replace the URL in the iframe source inside js/spotify.js with your public Spotify playlist link to display your songs.
+            </p>
+            <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M?utm_source=generator&theme=0" width="100%" height="450" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+        </div>
     `;
     
-    try {
-        const res = await fetch('https://api.lanyard.rest/v1/users/989414384679927838');
-        const json = await res.json();
-        const data = json.data;
-        
-        if (data && data.listening_to_spotify && data.spotify) {
-            const sp = data.spotify;
-            document.getElementById('spotify-status').innerHTML = `
-                <div class="spotify-container">
-                    <div class="spotify-title">CURRENTLY PLAYING ON SPOTIFY</div>
-                    <div class="spotify-track">${sp.song}</div>
-                    <div class="spotify-artist">by ${sp.artist}</div>
-                    <div style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);">Album: ${sp.album}</div>
-                </div>
-            `;
-        } else {
-            document.getElementById('spotify-status').innerHTML = `
-                <div class="spotify-container">
-                    <div class="spotify-title">CURRENTLY PLAYING ON SPOTIFY</div>
-                    <div class="spotify-track">Offline / Not playing right now</div>
-                </div>
-            `;
-        }
-    } catch(e) {
-        document.getElementById('spotify-status').textContent = 'Live Spotify presence unavailable.';
-    }
+    const fetchStatus = async () => {
+        try {
+            const res = await fetch('https://api.lanyard.rest/v1/users/989414384679927838');
+            const json = await res.json();
+            const data = json.data;
+            
+            const statusBox = document.getElementById('spotify-status');
+            if(!statusBox) return; // Unmounted
 
-    try {
-        const resMusic = await fetch('music.json');
-        const musicData = await resMusic.json();
-        if (musicData && musicData[0] && musicData[0].tracks) {
-            const tracks = musicData[0].tracks;
-            const likedSection = document.getElementById('liked-songs-section');
-            likedSection.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h2>Liked Songs Archive (${tracks.length})</h2>
-                    <input type="text" id="spotify-search" class="ui-input" placeholder="Search track, artist, album..." style="width:240px; margin:0;">
-                </div>
-                <div class="track-grid" id="track-grid-list"></div>
-            `;
-            
-            const grid = document.getElementById('track-grid-list');
-            const renderTracks = (filtered) => {
-                grid.innerHTML = filtered.map(t => `
-                    <div class="track-row">
-                        <span><strong>${t.title}</strong> &mdash; ${t.artists.join(', ')}</span>
-                        <span style="color:var(--fg-muted)">${t.album}</span>
+            if (data && data.listening_to_spotify && data.spotify) {
+                const sp = data.spotify;
+                statusBox.innerHTML = `
+                    <div class="spotify-container" style="border-radius:12px !important;">
+                        <div class="spotify-title">CURRENTLY PLAYING ON SPOTIFY</div>
+                        <div class="spotify-track">${sp.song}</div>
+                        <div class="spotify-artist">by ${sp.artist}</div>
+                        <div style="margin-top: 8px; font-size: 11px; color: var(--fg-muted);">Album: ${sp.album}</div>
                     </div>
-                `).join('');
-            };
-            
-            renderTracks(tracks);
-            
-            document.getElementById('spotify-search').oninput = (e) => {
-                const query = e.target.value.toLowerCase();
-                const filtered = tracks.filter(t => 
-                    t.title.toLowerCase().includes(query) ||
-                    t.album.toLowerCase().includes(query) ||
-                    t.artists.some(a => a.toLowerCase().includes(query))
-                );
-                renderTracks(filtered);
-            };
+                `;
+            } else {
+                statusBox.innerHTML = `
+                    <div class="spotify-container" style="border-radius:12px !important;">
+                        <div class="spotify-title">CURRENTLY PLAYING ON SPOTIFY</div>
+                        <div class="spotify-track" style="color:var(--fg-muted);">Offline / Not playing right now</div>
+                    </div>
+                `;
+            }
+        } catch(e) {
+            const statusBox = document.getElementById('spotify-status');
+            if(statusBox) statusBox.textContent = 'Live Spotify presence unavailable.';
         }
-    } catch(e) {}
+    };
+
+    await fetchStatus();
+    spotifyInterval = setInterval(fetchStatus, 5000);
 };
