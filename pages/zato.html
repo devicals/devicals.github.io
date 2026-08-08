@@ -5,17 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Z.A.T.O Live Tier List</title>
   <link rel="stylesheet" href="../css/style.css">
-  <style>
+    <style>
       .tl-layout { display: flex; height: 100vh; background: var(--bg-workspace); }
       .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
       
-      .tl-sidebar { display: none; width: 300px; min-width: 300px; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-sidebar); padding: 20px; flex-direction: column; gap: 20px; flex-shrink: 0; }
-      body.is-admin .tl-sidebar { display: flex; }
+      .tl-sidebar { width: 300px; min-width: 300px; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-sidebar); padding: 20px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
+      body:not(.is-admin) .tl-sidebar { display: none; }
 
       .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
-      .tl-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 3px; }
+      .tl-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 3px; display: flex; align-items: center; gap: 12px; }
 
-      .live-badge { display: flex; align-items: center; gap: 6px; color: var(--accent); font-size: 12px; border: 1px solid var(--accent); padding: 4px 8px; font-weight: 700; }
+      select, input[type=text], button {
+        font-family: var(--font-ui); font-size: 12px; padding: 5px 9px;
+        background: var(--bg-main); border: 1px solid var(--border);
+        color: var(--fg-main); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
+      }
+      select:hover, input[type=text]:hover, button:hover { border-color: var(--accent); }
+
+      .btn-primary { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); font-weight: 700; }
 
       .tier-list {
         display: grid;
@@ -26,12 +33,11 @@
       }
 
       .tier-row { display: flex; align-items: stretch; border: 1px solid var(--border); transition: border-color 0.2s; position: relative; }
-      .tier-row.is-exec-row .tier-items { background: rgba(204, 85, 85, 0.15); }
 
       .tier-label {
         width: 80px; min-width: 80px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        font-size: 14px; font-weight: 700; letter-spacing: 1px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; font-weight: 700; letter-spacing: 1px;
         cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px;
         text-align: center; word-break: break-word; padding: 4px;
       }
@@ -39,24 +45,30 @@
       .tier-items {
         flex: 1; display: flex; flex-direction: column; gap: 0; padding: 0;
         background: var(--bg-hover); border-left: 1px solid var(--border);
-        min-height: 56px;
+        transition: background 0.15s; min-height: 56px; overflow: hidden;
       }
-      .tier-item-row { display: flex; flex-wrap: wrap; flex: 1; min-height: 56px; padding: 4px; gap: 4px; }
+      .tier-item-row { display: flex; flex: 1; min-height: 56px; overflow: hidden; }
       
-      .tilt-wrapper { flex: 0 0 auto; display: flex; flex-direction: column; user-select: none; min-width: 80px; }
+      .tilt-wrapper { flex: 1; display: flex; flex-direction: column; user-select: none; border-right: 1px dashed var(--border); min-width: 0; overflow: hidden; }
+      .tier-item-row .tilt-wrapper:last-child { border-right: none; }
 
       .tl-item {
-        padding: 6px 10px; background: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main);
-        text-align: center; font-size: 12px; word-break: break-word; line-height: 1.2;
+        width: 100%; flex: 1; min-height: 48px; display: flex; align-items: center;
+        padding: 6px 10px; background: transparent; color: var(--fg-main);
+        text-align: left; height: 100%; position: relative; overflow: hidden; box-sizing: border-box;
       }
-      .tl-item.exec-item { border-color: var(--destructive); color: var(--destructive); background: rgba(204,85,85,0.1); }
+
+      .tl-item-text-block { flex: 1; min-width: 0; overflow: hidden; }
+      .tl-item-label { font-size: 13px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: block; }
 
       .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: var(--bg-hover); border: 1px solid var(--border); }
-      .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; }
+      .pool-empty { font-size: 11px; color: var(--fg-muted); font-style: italic; width: 100%; text-align: center; padding: 12px 0; }
+      .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; max-width: 130px; border: 1px solid var(--border); }
+      .pool-area .tl-item { height: 56px; }
 
       .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
       .sidebar-label { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
-  </style>
+    </style>
   </head>
 
   <body>
@@ -64,7 +76,6 @@
     <div class="tl-main">
       <div class="tl-header">
         <div class="tl-title">Z.A.T.O Live Tier List</div>
-        <div class="live-badge">LIVE SYNC</div>
       </div>
       <div class="tier-list" id="tierList"></div>
     </div>
@@ -76,8 +87,8 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Add Item</div>
-        <input type="text" id="itemInput" placeholder="Item Name..." />
-        <button class="ui-btn" onclick="addItem()">+ Add</button>
+        <input type="text" id="itemInput" placeholder="Label or Item..." />
+        <button class="btn-primary" onclick="addItem()">+ Add</button>
       </div>
     </div>
   </div>
@@ -88,26 +99,18 @@
     const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    const TIERS_BASE = [
-      { id:'A', label:'A', color:'#FFD93B', text:'#2a1a00', isExec:false },
-      { id:'BA', label:'B ~ A', color:'#A8D63F', text:'#1a2a00', isExec:false },
-      { id:'Asya', label:'AsyaLarp', color:'#f38ba8', text:'#fff', isExec:false },
-      { id:'B', label:'B', color:'#3FD67A', text:'#003020', isExec:false },
-      { id:'SEA', label:'SEA', color:'#3FBDD6', text:'#002030', isExec:false },
-      { id:'Dweeb', label:'Dweeb', color:'#3F7ED6', text:'#fff', isExec:false },
-      { id:'E', label:'E', color:'#7B5EA7', text:'#fff', isExec:false },
-      { id:'EXEC', label:'EXECUTION', color:'#8B0000', text:'#ff6b6b', isExec:true }
-    ];
-
-    let allTiers = JSON.parse(JSON.stringify(TIERS_BASE));
+    let isAdmin = false;
+    let allTiers = [];
+    let activeTierIds = [];
+    let columns = 1;
     let tierItems = {};
     let poolItems = [];
+    let idCounter = 0;
     let dragItem = null, dragSrc = null;
-    let isAdmin = false;
 
-    async function init() {
-        const profile = window.parent.currentProfile;
-        if (profile?.is_admin) {
+    async function initDatabase() {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
             isAdmin = true;
             document.body.classList.add('is-admin');
         }
@@ -115,8 +118,6 @@
         const { data } = await supabaseClient.from('zato_tierlist').select('state').eq('id', 1).single();
         if (data && data.state) {
             applyState(data.state);
-        } else {
-            renderAll();
         }
 
         supabaseClient.channel('zato-realtime').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'zato_tierlist', filter: 'id=eq.1' }, (payload) => {
@@ -127,66 +128,78 @@
     }
 
     function applyState(state) {
+        allTiers = state.allTiers || [];
+        activeTierIds = state.activeTierIds || [];
+        columns = state.columns || 1;
         tierItems = state.tierItems || {};
         poolItems = state.poolItems || [];
+        idCounter = state.idCounter || 0;
         renderAll();
     }
 
-    async function syncState() {
+    async function syncToSupabase() {
         if (!isAdmin) return;
-        const state = { allTiers, tierItems, poolItems };
+        const state = { allTiers, activeTierIds, columns, tierItems, poolItems, idCounter };
         await supabaseClient.from('zato_tierlist').update({ state }).eq('id', 1);
     }
 
     function renderAll() {
+      document.documentElement.style.setProperty('--tier-cols', columns);
+      document.documentElement.style.setProperty('--tier-rows', String(Math.ceil(activeTierIds.length / columns)));
       renderTiers(); renderPool();
     }
 
     function renderTiers() {
       const list = document.getElementById('tierList'); list.innerHTML = '';
-      allTiers.forEach(tier => {
-        const row = document.createElement('div');
-        row.className = 'tier-row' + (tier.isExec ? ' is-exec-row' : '');
+      activeTierIds.forEach(id => {
+        const tier = allTiers.find(t => t.id === id);
+        if (!tier) return;
+        
+        const row = document.createElement('div'); row.className = 'tier-row';
+        const lbl = document.createElement('div'); lbl.className = 'tier-label'; lbl.style.background = tier.color; lbl.style.color = tier.text;
+        lbl.textContent = tier.label; row.appendChild(lbl);
 
-        const lbl = document.createElement('div');
-        lbl.className = 'tier-label';
-        lbl.style.background = tier.color; lbl.style.color = tier.text;
-        lbl.textContent = tier.label;
-        row.appendChild(lbl);
-
-        const itemsDiv = document.createElement('div');
-        itemsDiv.className = 'tier-items';
-        itemsDiv.dataset.tier = tier.id;
+        const itemsDiv = document.createElement('div'); itemsDiv.className = 'tier-items'; itemsDiv.dataset.tier = tier.id;
         setupDrop(itemsDiv);
+        const listItems = tierItems[tier.id] || [];
+        
+        const MAX_PER_ROW = 5;
+        const chunks = [];
+        for (let i = 0; i < listItems.length; i += MAX_PER_ROW) chunks.push(listItems.slice(i, i + MAX_PER_ROW));
+        if (chunks.length === 0) chunks.push([]);
 
-        const listArr = tierItems[tier.id] || [];
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'tier-item-row';
-        listArr.forEach(item => rowDiv.appendChild(makeCard(item, tier.id)));
-        itemsDiv.appendChild(rowDiv);
-        row.appendChild(itemsDiv);
-        list.appendChild(row);
+        chunks.forEach(chunk => {
+            const rowDiv = document.createElement('div'); rowDiv.className = 'tier-item-row';
+            chunk.forEach(item => rowDiv.appendChild(makeItemWrapper(item, tier.id)));
+            itemsDiv.appendChild(rowDiv);
+        });
+
+        row.appendChild(itemsDiv); list.appendChild(row);
       });
     }
 
     function renderPool() {
       const pool = document.getElementById('pool'); pool.innerHTML = '';
-      if (!poolItems.length) {
-        pool.innerHTML = '<div class="pool-empty">add items below</div>'; return;
-      }
-      poolItems.forEach(item => pool.appendChild(makeCard(item, '__pool__')));
+      if (!poolItems.length) { pool.innerHTML = '<div class="pool-empty">add items below</div>'; return; }
+      poolItems.forEach(item => pool.appendChild(makeItemWrapper(item, '__pool__')));
       setupDrop(pool);
     }
 
-    function makeCard(item, tier) {
+    function makeItemWrapper(item, tier) {
       const wrap = document.createElement('div'); wrap.className = 'tilt-wrapper';
       if (isAdmin) wrap.draggable = true;
-      const card = document.createElement('div');
-      card.className = 'tl-item' + (tier === 'EXEC' ? ' exec-item' : '');
-      card.textContent = item.label;
-      wrap.appendChild(card);
+      const card = document.createElement('div'); card.className = 'tl-item';
+      card.innerHTML = `<div class="tl-item-text-block"><span class="tl-item-label" title="${item.label}">${item.label}</span></div>`;
+      
+      if (isAdmin) {
+          const rem = document.createElement('button'); rem.className = 'tl-item-remove'; rem.textContent = '✕';
+          rem.onclick = e => { e.stopPropagation(); removeItem(item.id, tier); }; card.appendChild(rem);
+      }
 
-      wrap.addEventListener('dragstart', () => { dragItem = item; dragSrc = tier; });
+      wrap.appendChild(card);
+      if (isAdmin) {
+          wrap.addEventListener('dragstart', () => { dragItem = item; dragSrc = tier; });
+      }
       return wrap;
     }
 
@@ -197,30 +210,37 @@
         e.preventDefault(); if (!dragItem) return;
         const dest = el.dataset.tier;
         if (dest === dragSrc) return;
-        
-        if (dragSrc === '__pool__') poolItems = poolItems.filter(i => i.id !== dragItem.id);
-        else tierItems[dragSrc] = (tierItems[dragSrc] || []).filter(i => i.id !== dragItem.id);
-
+        removeFromSrc(dragItem.id, dragSrc);
         if (dest === '__pool__') poolItems.push(dragItem);
         else { if (!tierItems[dest]) tierItems[dest] = []; tierItems[dest].push(dragItem); }
-
-        dragItem = null; dragSrc = null; 
-        renderAll();
-        syncState();
+        dragItem = null; dragSrc = null; renderAll(); syncToSupabase();
       });
+    }
+
+    function removeItem(id, tier) {
+      if (!isAdmin) return;
+      if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
+      else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
+      renderAll(); syncToSupabase();
+    }
+
+    function removeFromSrc(id, tier) {
+      if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
+      else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
     }
 
     function addItem() {
       if (!isAdmin) return;
-      const input = document.getElementById('itemInput');
-      const val = input.value.trim(); if (!val) return;
-      poolItems.push({ id: 'item_' + Date.now(), label: val });
-      input.value = ''; 
-      renderAll();
-      syncState();
+      const input = document.getElementById('itemInput').value.trim();
+      if (!input) return;
+      poolItems.push({ id: 'item_' + (++idCounter), label: input });
+      document.getElementById('itemInput').value = '';
+      renderAll(); syncToSupabase();
     }
 
-    document.addEventListener('DOMContentLoaded', init);
+    document.getElementById('pool').dataset.tier = '__pool__';
+    setupDrop(document.getElementById('pool'));
+    document.addEventListener('DOMContentLoaded', initDatabase);
   </script>
   </body>
 </html>
