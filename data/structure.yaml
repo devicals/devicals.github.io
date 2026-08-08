@@ -128,6 +128,59 @@
                   fileType: md
                   path: content/poems/c1/X 'bridge'.md
 
+            - name: second
+              type: folder
+              children:
+
+                - name: I "sticks and stones"
+                  type: file
+                  fileType: md
+                  path: content/poems/c2/I 'sticks and stones'.md
+
+                - name: II "night"
+                  type: file
+                  fileType: md
+                  path: content/poems/c2/II 'night'.md
+
+                - name: III "figure"
+                  type: file
+                  fileType: md
+                  path: content/poems/c2/III 'figure'.md
+
+                - name: IV "bones"
+                  type: file
+                  fileType: md
+                  path: content/poems/c2/IV 'bones'.md
+
+                - name: V "bright"
+                  type: file
+                  fileType: md
+                  path: content/poems/c2/V 'bright'.md
+
+                - name: VI "bigger"
+                  type: file
+                  fileType: md
+                  path: content/poems/c2/VI 'bigger'.md
+
+            - name: short of a world left unsaid
+              type: folder
+              children:
+
+                - name: flower
+                  type: file
+                  fileType: md
+                  path: content/poems/short of a world unsaid/flower.md
+
+                - name: Rose of you and Thorn of thee
+                  type: file
+                  fileType: md
+                  path: content/poems/short of a world unsaid/Rose of you and Thorn of thee.md
+
+                - name: the reluctant
+                  type: file
+                  fileType: md
+                  path: content/poems/short of a world unsaid/the reluctant.md
+
 - name: About Me
   type: folder
   children:
