@@ -52,7 +52,8 @@ window.renderAdminSection = async function(section) {
                             ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">Unban</button>` 
                             : `<button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'ban')">Ban</button>`
                         }
-                        <button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'delete')">Kick / Delete</button>
+                        <button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'reset')">Reset Password</button>
+                        <button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'delete')">Delete Profile</button>
                     </div>
                 </div>
             `;
@@ -76,6 +77,24 @@ window.renderAdminSection = async function(section) {
             <div id="admin-ann-list" class="flat-list-container">Loading...</div>
         `;
         loadAdminAnnouncements();
+    } else if (section === 'music') {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'spotify_config').single();
+        const apiUrl = data?.data?.nowPlayingApiUrl || '';
+        const playlistId = data?.data?.likedPlaylistId || '';
+        view.innerHTML = `
+            <h2 style="margin-bottom:20px;">Spotify Settings</h2>
+            <div style="max-width:500px; padding:20px; border:1px solid var(--border); background:var(--bg-hover); display:flex; flex-direction:column; gap:16px;">
+                <div>
+                    <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:uppercase;">Now Playing API Endpoint (JSON)</label>
+                    <input type="text" id="admin-spotify-api" class="ui-input" value="${apiUrl}" style="margin:0;">
+                </div>
+                <div>
+                    <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:uppercase;">Liked Songs Playlist ID</label>
+                    <input type="text" id="admin-spotify-playlist" class="ui-input" value="${playlistId}" style="margin:0;">
+                </div>
+                <button class="ui-btn" style="width:auto; align-self:flex-start; margin:0;" onclick="adminSaveSpotify()">Save</button>
+            </div>
+        `;
     } else if (section === 'blogs') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
         let list = data?.data || [];
@@ -207,26 +226,14 @@ window.renderAdminSection = async function(section) {
                 </div>
             </div>
         `;
-    } else if (section === 'music') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'lastfm_config').single();
-        const user = data?.data?.username || '';
-        view.innerHTML = `
-            <h2 style="margin-bottom:20px;">Spotify / Last.fm Settings</h2>
-            <div style="max-width:500px; padding:20px; border:1px solid var(--border); background:var(--bg-hover);">
-                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:uppercase;">Last.fm Username (For Live Status)</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="admin-lastfm-user" class="ui-input" value="${user}" style="margin:0;">
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="adminSaveLastFm()">Save</button>
-                </div>
-            </div>
-        `;
     }
 };
 
-window.adminSaveLastFm = async function() {
-    const user = document.getElementById('admin-lastfm-user').value.trim();
-    await supabaseClient.from('site_content').upsert({ key: 'lastfm_config', data: { username: user } });
-    window.guiAlert("Last.fm configuration saved successfully.", "Success");
+window.adminSaveSpotify = async function() {
+    const nowPlayingApiUrl = document.getElementById('admin-spotify-api').value.trim();
+    const likedPlaylistId = document.getElementById('admin-spotify-playlist').value.trim();
+    await supabaseClient.from('site_content').upsert({ key: 'spotify_config', data: { nowPlayingApiUrl, likedPlaylistId } });
+    window.guiAlert("Spotify configuration saved successfully.", "Success");
 };
 
 // ==== Blog Functions ====
@@ -387,19 +394,25 @@ window.adminDeleteSimpleGame = async function(listKey, idx) {
 };
 
 window.adminUserAction = async (id, action) => {
-    let do_ban = null, do_delete = false, do_reset = false, promote = null;
-    if (action === 'ban') do_ban = true;
-    if (action === 'unban') do_ban = false;
-    if (action === 'delete') do_delete = true;
-    if (action === 'reset') do_reset = true;
-    if (action === 'promote') promote = true;
-    if (action === 'demote') promote = false;
-
-    if (promote !== null) {
-        await supabaseClient.from('profiles').update({ is_admin: promote }).eq('id', id);
-    } else {
-        await supabaseClient.rpc('admin_manage_user', { target_id: id, do_ban, do_delete, do_reset_pass: do_reset });
+    let updates = {};
+    if (action === 'ban') updates.is_banned = true;
+    if (action === 'unban') updates.is_banned = false;
+    if (action === 'promote') updates.is_admin = true;
+    if (action === 'demote') updates.is_admin = false;
+    
+    if (action === 'delete') {
+        if(!confirm("WARNING: Delete this user profile permanently?")) return;
+        await supabaseClient.from('profiles').delete().eq('id', id);
+        renderAdminSection('users');
+        return;
     }
+    if (action === 'reset') {
+        await supabaseClient.auth.admin.resetPasswordForEmail(id);
+        alert("Password reset email process triggered.");
+        return;
+    }
+
+    await supabaseClient.from('profiles').update(updates).eq('id', id);
     renderAdminSection('users');
 };
 
@@ -411,7 +424,7 @@ async function loadAdminAnnouncements() {
         if (data && data.data && data.data.length > 0) {
             list.innerHTML = data.data.map((a, i) => `
                 <div class="flat-list-item" style="flex-direction:row; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; line-height:1.6;">${a}</span>
+                    <span style="font-size:14px; line-height:1.6; white-space: pre-wrap;">${a}</span>
                     <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteAdminAnn(${i})">Delete</button>
                 </div>
             `).join('');

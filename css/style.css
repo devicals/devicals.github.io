@@ -39,6 +39,32 @@
     --destructive: #e05252;
 }
 
+@font-face {
+    font-family: 'Noto Serif SC';
+    src: url('../assets/fonts/Noto_Serif_SC/NotoSerifSC-Regular.ttf') format('truetype');
+    font-weight: 400;
+}
+@font-face {
+    font-family: 'Noto Serif SC';
+    src: url('../assets/fonts/Noto_Serif_SC/NotoSerifSC-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+}
+@font-face {
+    font-family: 'Noto Serif SC';
+    src: url('../assets/fonts/Noto_Serif_SC/NotoSerifSC-Bold.ttf') format('truetype');
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'Brass Mono';
+    src: url('../assets/fonts/BrassMono/BrassMono-Regular.ttf') format('truetype');
+    font-weight: 400;
+}
+@font-face {
+    font-family: 'Brass Mono';
+    src: url('../assets/fonts/BrassMono/BrassMono-Bold.ttf') format('truetype');
+    font-weight: 700;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -161,6 +187,24 @@ a:hover { color: var(--accent); }
     color: var(--accent);
 }
 
+.admin-dashboard-btn {
+    display: none;
+    padding: 16px 20px;
+    background: var(--bg-hover);
+    border-top: 1px solid var(--border);
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    justify-content: space-between;
+    align-items: center;
+}
+.admin-dashboard-btn:hover { background: var(--bg-workspace); }
+body.is-admin .admin-dashboard-btn { display: flex; }
+
 .main-content {
     flex: 1;
     display: flex;
@@ -242,7 +286,6 @@ a:hover { color: var(--accent); }
     text-transform: lowercase;
 }
 
-/* This fixes the ASCII art line breaking completely */
 .markdown-body p, .markdown-body li, .markdown-body span, .flat-desc {
     margin-bottom: 1.5rem;
     line-height: 1.8;

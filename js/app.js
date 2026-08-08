@@ -6,10 +6,11 @@ let currentUser = null;
 let currentProfile = null;
 let navData = { children: [] };
 let flatNodes = [];
-let windowHighestZ = 100;
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
+let commitPage = 1;
+let isLoadingCommits = false;
+let hasMoreCommits = true;
 
-// Important: Configure marked.js to treat single newlines as line breaks
 marked.use({ breaks: true, gfm: true });
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -351,13 +352,10 @@ async function handleRoute() {
         if (node.fileType === 'html') {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
-            
-            // Pass any query params to the iframe as well
             let finalUrl = node.url;
             if (fullHash.includes('?')) {
                 finalUrl += '?' + fullHash.split('?')[1];
             }
-            
             iframe.src = finalUrl;
             return;
         }
@@ -377,22 +375,10 @@ async function handleRoute() {
         }
     }
     
-    if (hash.startsWith('pages/')) {
-        mdContainer.style.display = 'none';
-        iframe.style.display = 'block';
-        iframe.src = hash;
-        return;
-    }
-    
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
     mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
 }
-
-// ==== COMMIT HISTORY PAGINATION ====
-let commitPage = 1;
-let isLoadingCommits = false;
-let hasMoreCommits = true;
 
 async function loadCommitHistory(container, append = false) {
     if(isLoadingCommits || !hasMoreCommits) return;
@@ -471,12 +457,12 @@ function updateWordCount(text) {
     document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
 }
 
-// ==== ANNOUNCEMENTS MULTI-TOAST LOGIC ====
 async function loadAnnouncementsToast() {
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data && data.data.length > 0) {
             const container = document.getElementById('toast-container');
+            if(!container) return;
             container.innerHTML = '';
             const dismissed = JSON.parse(sessionStorage.getItem('dismissed_anns') || '[]');
             
