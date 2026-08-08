@@ -6,47 +6,31 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .games-list-ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
+        .fav-card, .liked-card {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 8px;
+            transition: border-color 0.2s;
         }
-        .games-list-li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px dashed var(--border);
-            padding-bottom: 16px;
-        }
-        .games-list-li:last-child {
-            border-bottom: none;
-        }
+        .fav-card:hover, .liked-card:hover { border-color: var(--accent); }
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 40px; }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0 auto; padding-bottom: 80px;" class="markdown-body">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">Interests & Games</h1>
         
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Favorites</h2>
-            <button id="admin-add-fav" class="ui-btn" style="width:auto; display:none;" onclick="addFav()">+ Add Fav</button>
-        </div>
-        <ul id="fav-games-list" class="games-list-ul" style="margin-bottom:50px;"></ul>
+        <h2 style="color:var(--accent); margin-bottom:20px;">Favorites</h2>
+        <div id="fav-games-list" style="display:flex; flex-direction:column; gap:20px; margin-bottom:50px;"></div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Games I Like</h2>
-            <button id="admin-add-liked" class="ui-btn" style="width:auto; display:none;" onclick="addGrid('liked')">+ Add Liked</button>
-        </div>
-        <ul id="liked-games-grid" class="games-list-ul" style="margin-bottom:50px;"></ul>
+        <h2 style="color:var(--accent); margin-bottom:20px;">Games I Like</h2>
+        <div id="liked-games-grid" class="games-grid"></div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>Want to Play</h2>
-            <button id="admin-add-wtp" class="ui-btn" style="width:auto; display:none;" onclick="addGrid('wanttoplay')">+ Add WTP</button>
-        </div>
-        <ul id="wtp-games-grid" class="games-list-ul"></ul>
+        <h2 style="color:var(--accent); margin-bottom:20px;">Want to Play</h2>
+        <div id="wtp-games-grid" class="games-grid"></div>
     </div>
 
     <script>
@@ -55,16 +39,8 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let gamesData = { favorites: [], liked: [], wanttoplay: [] };
-        let isAdminLocal = false;
 
         async function initGamesPage() {
-            isAdminLocal = window.parent.currentProfile?.is_admin || false;
-            if (isAdminLocal) {
-                document.getElementById('admin-add-fav').style.display = 'block';
-                document.getElementById('admin-add-liked').style.display = 'block';
-                document.getElementById('admin-add-wtp').style.display = 'block';
-            }
-
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
             if (data && data.data) {
                 gamesData = data.data;
@@ -73,54 +49,22 @@
         }
 
         function renderAll() {
-            document.getElementById('fav-games-list').innerHTML = (gamesData.favorites || []).map((g, idx) => `
-                <li class="games-list-li">
-                    <div>
-                        <strong style="color:var(--accent); font-size:18px;">${g.title}</strong>
-                        ${g.comment ? `<div style="font-size:14px; color:var(--fg-muted); margin-top:6px;">${g.comment}</div>` : ''}
-                    </div>
-                    ${isAdminLocal ? `<button class="ui-btn" style="width:auto; color:var(--destructive); background:transparent;" onclick="delItem('favorites', ${idx})">✕</button>` : ''}
-                </li>
-            `).join('');
+            document.getElementById('fav-games-list').innerHTML = (gamesData.favorites || []).map((g) => `
+                <div class="fav-card">
+                    <strong style="color:var(--accent); font-size:20px;">${g.title}</strong>
+                    ${g.comment ? `<div style="font-size:14px; color:var(--fg-main); line-height:1.6; white-space:pre-wrap;">${g.comment}</div>` : ''}
+                </div>
+            `).join('') || '<p style="color:var(--fg-muted);">No favorites added.</p>';
 
-            const renderSimple = (arr, key) => (arr || []).map((title, idx) => `
-                <li class="games-list-li">
-                    <span style="font-size:16px;">${title}</span>
-                    ${isAdminLocal ? `<button class="ui-btn" style="width:auto; color:var(--destructive); background:transparent;" onclick="delItem('${key}', ${idx})">✕</button>` : ''}
-                </li>
-            `).join('');
+            const renderCards = (arr) => (arr || []).map((title) => `
+                <div class="liked-card">
+                    <span style="font-size:15px; font-weight:bold; color:var(--fg-main);">${title}</span>
+                </div>
+            `).join('') || '<p style="color:var(--fg-muted);">Empty list.</p>';
 
-            document.getElementById('liked-games-grid').innerHTML = renderSimple(gamesData.liked, 'liked');
-            document.getElementById('wtp-games-grid').innerHTML = renderSimple(gamesData.wanttoplay, 'wanttoplay');
+            document.getElementById('liked-games-grid').innerHTML = renderCards(gamesData.liked);
+            document.getElementById('wtp-games-grid').innerHTML = renderCards(gamesData.wanttoplay);
         }
-
-        window.addFav = async () => {
-            const title = await window.parent.guiPrompt("Favorite Game Title:");
-            if (!title) return;
-            const comment = await window.parent.guiPrompt("Comment (Optional):");
-            if(!gamesData.favorites) gamesData.favorites = [];
-            gamesData.favorites.push({ title, comment, tags: {} });
-            await supabaseClient.from('site_content').upsert({ key: 'games', data: gamesData });
-            renderAll();
-        };
-
-        window.addGrid = async (key) => {
-            const title = await window.parent.guiPrompt("Game Title:");
-            if (!title) return;
-            if(!gamesData[key]) gamesData[key] = [];
-            gamesData[key].push(title);
-            await supabaseClient.from('site_content').upsert({ key: 'games', data: gamesData });
-            renderAll();
-        };
-
-        window.delItem = async (key, idx) => {
-            const conf = await window.parent.guiConfirm("Delete this game?", "Confirm");
-            if (conf) {
-                gamesData[key].splice(idx, 1);
-                await supabaseClient.from('site_content').upsert({ key: 'games', data: gamesData });
-                renderAll();
-            }
-        };
 
         document.addEventListener('DOMContentLoaded', initGamesPage);
     </script>

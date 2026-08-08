@@ -52,8 +52,7 @@ window.renderAdminSection = async function(section) {
                             ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">Unban</button>` 
                             : `<button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'ban')">Ban</button>`
                         }
-                        <button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'reset')">Reset Password</button>
-                        <button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'delete')">Delete Profile</button>
+                        <button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'delete')">Kick / Delete</button>
                     </div>
                 </div>
             `;
@@ -71,29 +70,34 @@ window.renderAdminSection = async function(section) {
         view.innerHTML = `
             <h2 style="margin-bottom:20px;">Announcements</h2>
             <div class="settings-group" style="margin-bottom:40px;">
-                <textarea id="admin-ann-text" class="ui-input" rows="4" placeholder="New announcement text..."></textarea>
+                <textarea id="admin-ann-text" class="ui-input" rows="4" placeholder="New announcement text (Markdown supported)..."></textarea>
                 <button class="ui-btn" style="width:auto;" onclick="postAdminAnnouncement()">Post Announcement</button>
             </div>
             <div id="admin-ann-list" class="flat-list-container">Loading...</div>
         `;
         loadAdminAnnouncements();
     } else if (section === 'music') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'spotify_config').single();
-        const apiUrl = data?.data?.nowPlayingApiUrl || '';
-        const playlistId = data?.data?.likedPlaylistId || '';
+        let lastfmVal = '';
+        let embedVal = '';
+        try {
+            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'spotify_config').single();
+            if (data && data.data) {
+                lastfmVal = data.data.lastfm || '';
+                embedVal = data.data.embed || '';
+            }
+        } catch(e) {}
+
         view.innerHTML = `
-            <h2 style="margin-bottom:20px;">Spotify Settings</h2>
-            <div style="max-width:500px; padding:20px; border:1px solid var(--border); background:var(--bg-hover); display:flex; flex-direction:column; gap:16px;">
-                <div>
-                    <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:uppercase;">Now Playing API Endpoint (JSON)</label>
-                    <input type="text" id="admin-spotify-api" class="ui-input" value="${apiUrl}" style="margin:0;">
-                </div>
-                <div>
-                    <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:uppercase;">Liked Songs Playlist ID</label>
-                    <input type="text" id="admin-spotify-playlist" class="ui-input" value="${playlistId}" style="margin:0;">
-                </div>
-                <button class="ui-btn" style="width:auto; align-self:flex-start; margin:0;" onclick="adminSaveSpotify()">Save</button>
+            <h2 style="margin-bottom:20px;">Spotify / Music Settings</h2>
+            <div class="settings-group" style="margin-bottom:20px;">
+                <label>Last.fm Username (For Currently Playing Live Status)</label>
+                <input type="text" id="admin-lastfm-user" class="ui-input" value="${lastfmVal}" placeholder="e.g. your_lastfm_username">
             </div>
+            <div class="settings-group" style="margin-bottom:20px;">
+                <label>Spotify Embed URL or Track/Playlist ID</label>
+                <input type="text" id="admin-spotify-embed" class="ui-input" value="${embedVal}" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M or full embed URL">
+            </div>
+            <button class="ui-btn" style="width:auto;" onclick="saveAdminMusicConfig()">Save Music Settings</button>
         `;
     } else if (section === 'blogs') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
@@ -229,23 +233,49 @@ window.renderAdminSection = async function(section) {
     }
 };
 
-window.adminSaveSpotify = async function() {
-    const nowPlayingApiUrl = document.getElementById('admin-spotify-api').value.trim();
-    const likedPlaylistId = document.getElementById('admin-spotify-playlist').value.trim();
-    await supabaseClient.from('site_content').upsert({ key: 'spotify_config', data: { nowPlayingApiUrl, likedPlaylistId } });
-    window.guiAlert("Spotify configuration saved successfully.", "Success");
+window.saveAdminMusicConfig = async function() {
+    const lastfm = document.getElementById('admin-lastfm-user').value.trim();
+    const embed = document.getElementById('admin-spotify-embed').value.trim();
+    await supabaseClient.from('site_content').upsert({ key: 'spotify_config', data: { lastfm, embed } });
+    window.guiAlert("Music settings saved!", "Saved");
 };
 
-// ==== Blog Functions ====
 window.adminEditBlog = async function(idx) {
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
     let list = data?.data || [];
     let b = idx >= 0 ? list[idx] : { title: '', content: '' };
 
-    const title = await window.guiPrompt("Blog Title:", b.title, "Edit Blog Post");
-    if (title === null) return;
-    const content = await window.guiPrompt("Content (Markdown):", b.content, "Edit Blog Content");
-    if (content === null) return;
+    const modalBox = document.createElement('div');
+    modalBox.className = 'modal';
+    modalBox.id = 'admin-blog-modal';
+    modalBox.style.display = 'flex';
+    modalBox.innerHTML = `
+        <div class="modal-box" style="width:600px; max-width:95vw;">
+            <div class="modal-title">${idx >= 0 ? 'Edit Blog Post' : 'New Blog Post'}</div>
+            <div class="settings-group">
+                <label>Blog Title</label>
+                <input type="text" id="blog-modal-title" class="ui-input" value="${b.title || ''}" placeholder="Title">
+            </div>
+            <div class="settings-group">
+                <label>Content (Markdown)</label>
+                <textarea id="blog-modal-content" class="ui-input" rows="12" style="font-family:var(--font-ui); font-size:12px; line-height:1.6;" placeholder="Content...">${b.content || ''}</textarea>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="margin:0; background:var(--accent); color:var(--bg-main);" onclick="saveAdminBlogModal(${idx})">Save Post</button>
+                <button class="ui-btn" style="margin:0;" onclick="document.getElementById('admin-blog-modal').remove()">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modalBox);
+};
+
+window.saveAdminBlogModal = async function(idx) {
+    const title = document.getElementById('blog-modal-title').value.trim();
+    const content = document.getElementById('blog-modal-content').value;
+    if (!title || !content) return;
+
+    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
+    let list = data?.data || [];
 
     if (idx >= 0) {
         list[idx].title = title;
@@ -256,7 +286,9 @@ window.adminEditBlog = async function(idx) {
         const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
         list.unshift({ id: nextId, date: dateStr, title, content });
     }
+
     await supabaseClient.from('site_content').update({ data: list }).eq('key', 'blogs');
+    document.getElementById('admin-blog-modal').remove();
     renderAdminSection('blogs');
 };
 
@@ -269,7 +301,6 @@ window.adminDeleteEntry = async function(key, idx) {
     renderAdminSection(key);
 };
 
-// ==== Project Functions ====
 window.adminAddProjectTab = async function() {
     const name = await window.guiPrompt("Tab Name:");
     if (!name) return;
@@ -330,7 +361,6 @@ window.adminDeleteProject = async function(tabKey, idx) {
     renderAdminSection('projects');
 };
 
-// ==== Download Functions ====
 window.adminEditDownload = async function(idx) {
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
     let list = data?.data || [];
@@ -351,7 +381,6 @@ window.adminEditDownload = async function(idx) {
     renderAdminSection('downloads');
 };
 
-// ==== Game Functions ====
 window.adminAddFavGame = async function() {
     const title = await window.guiPrompt("Favorite Game Title:");
     if (!title) return;
@@ -393,29 +422,6 @@ window.adminDeleteSimpleGame = async function(listKey, idx) {
     renderAdminSection('games');
 };
 
-window.adminUserAction = async (id, action) => {
-    let updates = {};
-    if (action === 'ban') updates.is_banned = true;
-    if (action === 'unban') updates.is_banned = false;
-    if (action === 'promote') updates.is_admin = true;
-    if (action === 'demote') updates.is_admin = false;
-    
-    if (action === 'delete') {
-        if(!confirm("WARNING: Delete this user profile permanently?")) return;
-        await supabaseClient.from('profiles').delete().eq('id', id);
-        renderAdminSection('users');
-        return;
-    }
-    if (action === 'reset') {
-        await supabaseClient.auth.admin.resetPasswordForEmail(id);
-        alert("Password reset email process triggered.");
-        return;
-    }
-
-    await supabaseClient.from('profiles').update(updates).eq('id', id);
-    renderAdminSection('users');
-};
-
 async function loadAdminAnnouncements() {
     const list = document.getElementById('admin-ann-list');
     if (!list) return;
@@ -424,7 +430,7 @@ async function loadAdminAnnouncements() {
         if (data && data.data && data.data.length > 0) {
             list.innerHTML = data.data.map((a, i) => `
                 <div class="flat-list-item" style="flex-direction:row; justify-content:space-between; align-items:center;">
-                    <span style="font-size:14px; line-height:1.6; white-space: pre-wrap;">${a}</span>
+                    <span style="font-size:14px; line-height:1.6;">${a}</span>
                     <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteAdminAnn(${i})">Delete</button>
                 </div>
             `).join('');

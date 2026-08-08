@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div class="markdown-body" style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
@@ -36,7 +37,7 @@
         </ul>
 
         <h2>latest blog</h2>
-        <div id="latest-blog-container" style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); margin-top:30px; margin-bottom: 60px;">
+        <div id="latest-blog-container" style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); margin-top:30px; margin-bottom: 60px; cursor:pointer;">
             <span style="color:var(--fg-muted);">Loading latest blog post...</span>
         </div>
     </div>
@@ -47,6 +48,8 @@
         const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
+        marked.use({ breaks: true, gfm: true });
+
         async function loadHomeData() {
             try {
                 const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
@@ -56,11 +59,15 @@
                         return new Date(pb[2],pb[1]-1,pb[0]) - new Date(pa[2],pa[1]-1,pa[0]);
                     });
                     const latest = sorted[0];
-                    document.getElementById('latest-blog-container').innerHTML = `
+                    const container = document.getElementById('latest-blog-container');
+                    container.innerHTML = `
                         <div style="font-size:12px; color:var(--fg-muted); margin-bottom:10px;">${latest.date}</div>
                         <div style="font-size:22px; font-weight:bold; color:var(--accent); margin-bottom:20px;">${latest.title}</div>
-                        <div style="font-size:15px; line-height:1.8;">${latest.content}</div>
+                        <div style="font-size:15px; line-height:1.8; white-space:pre-wrap;">${marked.parse(latest.content)}</div>
                     `;
+                    container.onclick = () => {
+                        window.parent.location.hash = `#Index/Blogs&id=${latest.id}`;
+                    };
                 }
             } catch(e) {}
         }

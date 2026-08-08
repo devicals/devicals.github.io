@@ -12,9 +12,6 @@
     <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
             <h1 style="margin:0; font-size:32px;">Blogs</h1>
-            <div id="admin-add-blog-btn" style="display:none;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="openNewBlogModal()">+ Create Blog</button>
-            </div>
         </div>
         <div id="blogs-container" class="flat-list-container">
             <span style="color:var(--fg-muted);">Loading blogs...</span>
@@ -27,18 +24,14 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let blogsList = [];
-        let isAdminLocal = false;
+        marked.use({ breaks: true, gfm: true });
 
         async function initBlogsPage() {
-            isAdminLocal = window.parent.currentProfile?.is_admin || false;
-            if (isAdminLocal) {
-                document.getElementById('admin-add-blog-btn').style.display = 'block';
-            }
-
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
             if (data && data.data) {
                 blogsList = data.data;
                 renderBlogs();
+                setupScrollObserver();
             }
         }
 
@@ -48,38 +41,36 @@
                 container.innerHTML = '<p style="color:var(--fg-muted)">No blog posts available.</p>';
                 return;
             }
-            container.innerHTML = blogsList.map((b, i) => `
-                <div class="flat-list-item" style="padding-bottom:40px;">
-                    <div class="flat-meta" style="font-size:13px; margin-bottom:10px;">${b.date}</div>
-                    <div class="flat-title" style="font-size:26px; margin-bottom:20px;">${b.title}</div>
-                    <div class="flat-desc markdown-body" style="font-size:15px;">${marked.parse(b.content)}</div>
-                    ${isAdminLocal ? `<button class="ui-btn" style="width:auto; align-self:flex-start; margin-top:20px; color:var(--destructive);" onclick="deleteBlog(${i})">Delete Post</button>` : ''}
+            container.innerHTML = blogsList.map(b => `
+                <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:30px; margin-bottom:20px;">
+                    <div class="flat-meta" style="font-size:13px; margin-bottom:6px;">${b.date}</div>
+                    <div class="flat-title" style="font-size:24px; margin-bottom:16px;">${b.title}</div>
+                    <div class="flat-desc markdown-body" style="font-size:15px; white-space: pre-wrap;">${marked.parse(b.content)}</div>
                 </div>
             `).join('');
+
+            const hash = window.parent.location.hash;
+            if (hash.includes('&id=')) {
+                const id = hash.split('&id=')[1];
+                const el = document.getElementById(`blog-${id}`);
+                if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+            }
         }
 
-        window.openNewBlogModal = async () => {
-            const title = await window.parent.guiPrompt("Blog Title:", "", "New Blog Post");
-            if (!title) return;
-            const content = await window.parent.guiPrompt("Blog Content (Markdown supported):", "", "New Blog Content");
-            if (!content) return;
-            
-            const nextId = blogsList.length > 0 ? Math.max(...blogsList.map(b => b.id || 0)) + 1 : 1;
-            const today = new Date();
-            const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-            blogsList.unshift({ id: nextId, date: dateStr, title, content });
-            await supabaseClient.from('site_content').upsert({ key: 'blogs', data: blogsList });
-            renderBlogs();
-        };
+        function setupScrollObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('data-id');
+                        if (id) {
+                            window.parent.history.replaceState(null, '', `#Index/Blogs&id=${id}`);
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
 
-        window.deleteBlog = async (idx) => {
-            const confirmed = await window.parent.guiConfirm("Delete this blog post?", "Confirm");
-            if (confirmed) {
-                blogsList.splice(idx, 1);
-                await supabaseClient.from('site_content').upsert({ key: 'blogs', data: blogsList });
-                renderBlogs();
-            }
-        };
+            document.querySelectorAll('.flat-list-item').forEach(el => observer.observe(el));
+        }
 
         document.addEventListener('DOMContentLoaded', initBlogsPage);
     </script>

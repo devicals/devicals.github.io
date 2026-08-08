@@ -8,86 +8,76 @@
     <style>
       .tl-layout { display: flex; height: 100vh; background: var(--bg-workspace); }
       .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
+      
       .tl-sidebar { width: 300px; min-width: 300px; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-sidebar); padding: 20px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
 
       .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
-      .tl-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 3px; display: flex; align-items: center; gap: 12px; }
+      .tl-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 3px; }
       
       .top-bar { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
       .top-bar label { font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 1px; }
 
-      .tier-list { display: grid; grid-template-columns: repeat(var(--tier-cols, 1), 1fr); grid-auto-flow: column; grid-template-rows: repeat(var(--tier-rows, 15), auto); gap: 3px; }
+      select, input[type=text], button {
+        font-family: var(--font-ui); font-size: 12px; padding: 5px 9px;
+        background: var(--bg-main); border: 1px solid var(--border);
+        color: var(--fg-main); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
+      }
+      select:hover, input[type=text]:hover, button:hover { border-color: var(--accent); }
+      select:focus, input[type=text]:focus { border-color: var(--accent); }
+      button:hover { color: var(--accent); }
+
+      .btn-primary { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+      .btn-primary:hover { background: var(--accent); color: var(--bg-main); }
+
+      .tier-list {
+        display: grid;
+        grid-template-columns: repeat(var(--tier-cols, 1), 1fr);
+        grid-auto-flow: column;
+        grid-template-rows: repeat(var(--tier-rows, 15), auto);
+        gap: 3px;
+      }
+
       .tier-row { display: flex; align-items: stretch; border: 1px solid var(--border); transition: border-color 0.2s; position: relative; }
-      .tier-row.is-exec-row .tier-items { background: rgba(204, 85, 85, 0.1); }
       .tier-row:hover { border-color: var(--accent); }
 
-      .tier-label { width: 64px; min-width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 18px; font-weight: 700; letter-spacing: 1px; cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px; }
-      .tier-label.long-label { font-size: 9px; letter-spacing: 0.5px; }
-      .tier-label-btns { display: none; position: absolute; bottom: 2px; left: 0; right: 0; justify-content: center; }
-      .tier-row:hover .tier-label-btns { display: flex; }
-      .tier-lbl-btn { background: rgba(0,0,0,0.55); border: none; color: rgba(255,255,255,0.75); font-size: 9px; padding: 1px 6px; cursor: pointer; line-height: 1; pointer-events: auto; }
-      .tier-lbl-btn:hover { color: #fff; border: none; }
+      .tier-label {
+        width: 64px; min-width: 64px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        font-size: 18px; font-weight: 700; letter-spacing: 1px;
+        cursor: pointer; user-select: none; flex-shrink: 0; position: relative; min-height: 56px;
+      }
 
-      .tier-items { flex: 1; display: flex; flex-direction: column; gap: 0; padding: 0; background: var(--bg-hover); border-left: 1px solid var(--border); transition: background 0.15s; min-height: 56px; }
+      .tier-items {
+        flex: 1; display: flex; flex-direction: column; gap: 0; padding: 0;
+        background: var(--bg-hover); border-left: 1px solid var(--border);
+        transition: background 0.15s; min-height: 56px;
+      }
       .tier-items.drag-over { border-left-color: var(--accent); opacity: 0.8; }
       .tier-item-row { display: flex; flex: 1; min-height: 56px; }
+      
       .tilt-wrapper { flex: 1; display: flex; flex-direction: column; user-select: none; border-right: 1px dashed var(--border); min-width: 0; cursor: grab; }
       .tier-item-row .tilt-wrapper:last-child { border-right: none; }
-      .tier-item-row + .tier-item-row { border-top: 1px dashed var(--border); }
 
-      .tl-item { width: 100%; flex: 1; min-height: 48px; display: flex; align-items: center; gap: 7px; padding: 5px 28px 5px 7px; background: transparent; color: var(--fg-main); text-align: left; word-break: break-word; height: 100%; position: relative; overflow: hidden; }
-      .tl-item.revived { background: rgba(230,180,80,0.15); border-color: var(--accent); }
+      .tl-item {
+        width: 100%; flex: 1; min-height: 48px; display: flex; align-items: center; gap: 7px;
+        padding: 5px 28px 5px 7px; background: transparent; color: var(--fg-main);
+        text-align: left; word-break: break-word; height: 100%; position: relative; overflow: hidden;
+      }
+
       .tl-item-text-block { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-      .tl-item-label { font-size: clamp(10px, 1.1vw, 14px); line-height: 1.3; word-break: break-word; overflow-wrap: break-word; }
-      .tl-item-img-full { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
-      .tl-item-remove, .tl-item-edit { display: none; position: absolute; background: var(--bg-main); border: 1px solid var(--border); color: var(--fg-muted); cursor: pointer; font-size: 9px; padding: 2px 4px; line-height: 1; z-index: 2; }
-      .tilt-wrapper:hover .tl-item-remove, .tilt-wrapper:hover .tl-item-edit { display: block; }
-      .tl-item-remove { top: 2px; right: 2px; } .tl-item-edit { top: 2px; left: 2px; }
-      .tl-item-remove:hover { color: var(--destructive); border-color: var(--destructive); } .tl-item-edit:hover { color: var(--accent); border-color: var(--accent); }
+      .tl-item-label { font-size: 13px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 
-      .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: var(--bg-hover); border: 1px solid var(--border); transition: background 0.15s; }
-      .pool-area.drag-over { border-color: var(--accent); }
+      .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: var(--bg-hover); border: 1px solid var(--border); }
       .pool-empty { font-size: 11px; color: var(--fg-muted); font-style: italic; width: 100%; text-align: center; padding: 12px 0; }
       .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; max-width: 130px; border: 1px solid var(--border); }
       .pool-area .tl-item { height: 56px; }
 
       .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
       .sidebar-label { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
-      .export-btns { display: flex; flex-direction: column; gap: 8px; }
-      .export-btns button { width: 100%; text-align: center; }
-      
-      .saves-list { display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto; margin-top: 8px; }
-      .save-entry { display: flex; align-items: center; gap: 4px; padding: 6px; background: var(--bg-main); border: 1px solid var(--border); font-size: 11px; }
-      .save-entry-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-      .save-entry-name:hover { color: var(--accent); }
-      .save-entry-del { background: none; border: none; color: var(--fg-muted); font-size: 10px; padding: 1px 3px; cursor: pointer; }
-      .save-entry-del:hover { color: var(--destructive); }
-
-      .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 2500; align-items: center; justify-content: center; }
-      .modal-overlay.open { display: flex; }
-      .zato-modal { background: var(--bg-sidebar); border: 1px solid var(--border); padding: 24px; min-width: 300px; max-width: 440px; width: 94%; display: flex; flex-direction: column; gap: 12px; max-height: 92vh; overflow-y: auto; font-family: var(--font-ui); }
-      .modal-title { font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; border-bottom: 1px dashed var(--border); padding-bottom: 6px; margin-bottom: 6px; }
-      .modal-row { display: flex; flex-direction: column; gap: 4px; }
-      .modal-row label { font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 1px; }
-      .modal-color-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-      .color-preset { width: 22px; height: 22px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; }
-      .color-preset.active, .color-preset:hover { border-color: var(--accent); }
-      .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
-      
-      .tier-manage-list { display: flex; flex-direction: column; gap: 3px; max-height: 280px; overflow-y: auto; }
-      .tier-manage-entry { display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: var(--bg-main); border: 1px solid var(--border); }
-      .tier-manage-entry .swatch { width: 20px; height: 20px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
-      .tier-manage-entry .lbl { flex: 1; font-size: 12px; font-weight: 700; }
-      .tier-manage-entry .exec-badge { font-size: 9px; color: #ff6b6b; padding: 1px 4px; border: 1px solid #8B0000; }
-      .tier-manage-btns { display: flex; gap: 3px; }
     </style>
   </head>
 
   <body>
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="zato-modal" id="modalBox"></div>
-  </div>
-
   <div class="tl-layout">
     <div class="tl-main">
       <div class="tl-header">
@@ -95,12 +85,20 @@
       </div>
       <div class="top-bar">
         <label>Preset</label>
-        <select id="presetSel" class="ui-input" style="width:auto; margin:0;"><option value="full">Full</option></select>
-        <label style="margin-left:6px">Tier Cols</label>
-        <select id="colSel" class="ui-input" style="width:auto; margin:0;">
-          <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+        <select id="presetSel">
+          <option value="full">Full</option>
+          <option value="standard">Standard</option>
+          <option value="simple">Simple</option>
+          <option value="simple2">Simple 2</option>
+          <option value="extended">Extended</option>
+          <option value="complete">Complete</option>
         </select>
-        <button class="ui-btn" onclick="openManageTiers()" style="width:auto; margin:0; margin-left:4px">Edit Tiers</button>
+        <label style="margin-left:6px">Tier Cols</label>
+        <select id="colSel">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
       </div>
       <div class="tier-list" id="tierList"></div>
     </div>
@@ -112,100 +110,46 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Add Item</div>
-        <select id="itemType" class="ui-input" style="margin-bottom:6px;"><option value="text">Text</option><option value="image">Image URL</option></select>
-        <input type="text" id="itemInput" class="ui-input" style="margin-bottom:6px;" placeholder="Label or paste URL..." />
-        <input type="text" id="itemLabel" class="ui-input" style="margin-bottom:6px; display:none;" placeholder="Display label (optional)..." />
-        <button class="ui-btn" onclick="addItem()">+ Add</button>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-label">Saved Lists</div>
-        <div style="display:flex; gap:4px;">
-          <input type="text" id="saveNameInput" class="ui-input" placeholder="List name..." style="margin:0; flex:1;" />
-          <button class="ui-btn" style="width:auto; margin:0;" onclick="saveNamedList()">Save</button>
-        </div>
-        <div class="saves-list" id="savesList"></div>
+        <input type="text" id="itemInput" placeholder="Label or Item..." />
+        <button class="btn-primary" onclick="addItem()">+ Add</button>
       </div>
     </div>
   </div>
 
   <script>
-    const PRESET_COLORS = ['#FF3B3B','#FF6B3B','#FF9A3B','#FFD93B','#A8D63F','#3FD67A','#3FBDD6','#3F7ED6','#7B5EA7','#5A4080','#3D2B60','#4A4A4A','#2E2E2E','#1A1A1A','#8B0000','#C0392B','#E67E22','#27AE60','#2980B9','#8E44AD','#2C3E50','#ECF0F1'];
-
     const TIERS_BASE = [
-      { id:'S', label:'S', color:'#FF9A3B', text:'#fff', isExec:false },
-      { id:'A', label:'A', color:'#FFD93B', text:'#2a1a00', isExec:false },
-      { id:'B', label:'B', color:'#A8D63F', text:'#1a2a00', isExec:false },
-      { id:'C', label:'C', color:'#3FD67A', text:'#003020', isExec:false },
-      { id:'D', label:'D', color:'#3FBDD6', text:'#002030', isExec:false },
-      { id:'F', label:'F', color:'#7B5EA7', text:'#fff', isExec:false },
+      { id:'SSS', label:'SSS', color:'#FF3B3B', text:'#fff' },
+      { id:'SS',  label:'SS',  color:'#FF6B3B', text:'#fff' },
+      { id:'S',   label:'S',   color:'#FF9A3B', text:'#fff' },
+      { id:'A',   label:'A',   color:'#FFD93B', text:'#2a1a00' },
+      { id:'B',   label:'B',   color:'#A8D63F', text:'#1a2a00' },
+      { id:'C',   label:'C',   color:'#3FD67A', text:'#003020' },
+      { id:'D',   label:'D',   color:'#3FBDD6', text:'#002030' },
+      { id:'E',   label:'E',   color:'#3F7ED6', text:'#fff' },
+      { id:'F',   label:'F',   color:'#7B5EA7', text:'#fff' },
+      { id:'FF',  label:'FF',  color:'#5A4080', text:'#fff' },
+      { id:'FFF', label:'FFF', color:'#3D2B60', text:'#ccc' },
+      { id:'Z',   label:'Z',   color:'#4A4A4A', text:'#fff' }
     ];
 
-    let PRESET_LIST = [{ id:'standard', label:'Standard', tierIds: ['S','A','B','C','D','F'] }];
-    let PRESETS = {}; for (const p of PRESET_LIST) PRESETS[p.id] = p.tierIds;
-
-    let isDragging = false;
-    let dragItem = null, dragSrc = null;
-    const SAVES_KEY = 'tierlist_saves_local';
-    const LOCAL_STATE_KEY = 'tierlist_current_state_local';
+    let PRESETS = {
+      full: TIERS_BASE.map(t => t.id),
+      standard: ['S','A','B','C','D','F'],
+      simple: ['A','B','C','D','E','F'],
+      simple2: ['S','A','B','C','D'],
+      extended: ['SSS','SS','S','A','B','C','D','E','F','Z'],
+      complete: TIERS_BASE.map(t => t.id)
+    };
 
     let allTiers = JSON.parse(JSON.stringify(TIERS_BASE));
-    let activeTierIds = TIERS_BASE.map(t => t.id);
+    let activeTierIds = PRESETS.full;
     let columns = 1;
     let tierItems = {};
     let poolItems = [];
     let idCounter = 0;
+    let dragItem = null, dragSrc = null;
 
-    function getTier(id) { return allTiers.find(t => t.id === id); }
-    function getActiveTiers() { return activeTierIds.map(id => getTier(id)).filter(Boolean); }
-
-    function loadLocalState() {
-        try {
-            const data = JSON.parse(localStorage.getItem(LOCAL_STATE_KEY));
-            if (data) applyState(data); else renderAll();
-        } catch(e) { renderAll(); }
-        renderSavesList();
-    }
-
-    function saveLocalState() {
-        const state = { allTiers, activeTierIds, columns, tierItems, poolItems, idCounter };
-        localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
-    }
-
-    function applyState(state) {
-        allTiers = state.allTiers || []; activeTierIds = state.activeTierIds || [];
-        columns = state.columns || 1; tierItems = state.tierItems || {};
-        poolItems = state.poolItems || []; idCounter = state.idCounter || 0;
-        document.getElementById('colSel').value = columns;
-        renderAll();
-    }
-    
-    function getSaves() { try { return JSON.parse(localStorage.getItem(SAVES_KEY) || '{}'); } catch(e) { return {}; } }
-    function saveNamedList() {
-      const name = document.getElementById('saveNameInput').value.trim(); if (!name) return;
-      const saves = getSaves();
-      saves[name] = { allTiers, activeTierIds, columns, tierItems, poolItems, idCounter, savedAt: Date.now() };
-      localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
-      document.getElementById('saveNameInput').value = ''; renderSavesList();
-    }
-    function loadNamedList(name) {
-      const d = getSaves()[name]; if (!d) return;
-      applyState(d); saveLocalState();
-    }
-    function deleteNamedList(name) {
-      const saves = getSaves(); delete saves[name];
-      localStorage.setItem(SAVES_KEY, JSON.stringify(saves)); renderSavesList();
-    }
-    function renderSavesList() {
-      const el = document.getElementById('savesList'), saves = getSaves(), keys = Object.keys(saves);
-      if (!keys.length) { el.innerHTML = '<div style="font-size:11px;color:var(--fg-muted);font-style:italic;padding:4px 0">No saved lists</div>'; return; }
-      el.innerHTML = '';
-      keys.sort((a,b) => (saves[b].savedAt||0) - (saves[a].savedAt||0)).forEach(name => {
-        const entry = document.createElement('div'); entry.className = 'save-entry';
-        const nameEl = document.createElement('div'); nameEl.className = 'save-entry-name'; nameEl.textContent = name; nameEl.onclick = () => loadNamedList(name);
-        const del = document.createElement('button'); del.className = 'save-entry-del'; del.textContent = '✕'; del.onclick = () => deleteNamedList(name);
-        entry.appendChild(nameEl); entry.appendChild(del); el.appendChild(entry);
-      });
-    }
+    function getActiveTiers() { return activeTierIds.map(id => allTiers.find(t => t.id === id)).filter(Boolean); }
 
     function renderAll() {
       document.documentElement.style.setProperty('--tier-cols', columns);
@@ -216,31 +160,16 @@
     function renderTiers() {
       const list = document.getElementById('tierList'); list.innerHTML = '';
       getActiveTiers().forEach(tier => {
-        const row = document.createElement('div');
-        row.className = 'tier-row'; row.dataset.tierId = tier.id;
-
-        const lbl = document.createElement('div');
-        lbl.className = 'tier-label'; lbl.style.background = tier.color; lbl.style.color = tier.text;
-        const lblText = document.createElement('span'); lblText.textContent = tier.label; lbl.appendChild(lblText);
-        const lblBtns = document.createElement('div'); lblBtns.className = 'tier-label-btns';
-        const editBtn = document.createElement('button'); editBtn.className = 'tier-lbl-btn'; editBtn.textContent = '✎';
-        editBtn.onclick = e => { e.stopPropagation(); openEditTier(tier.id); };
-        lblBtns.appendChild(editBtn); lbl.appendChild(lblBtns); row.appendChild(lbl);
+        const row = document.createElement('div'); row.className = 'tier-row';
+        const lbl = document.createElement('div'); lbl.className = 'tier-label'; lbl.style.background = tier.color; lbl.style.color = tier.text;
+        lbl.textContent = tier.label; row.appendChild(lbl);
 
         const itemsDiv = document.createElement('div'); itemsDiv.className = 'tier-items'; itemsDiv.dataset.tier = tier.id;
         setupDrop(itemsDiv);
-        const tierItemList = tierItems[tier.id] || [];
-        if (tierItemList.length === 0) {
-          const emptyRow = document.createElement('div'); emptyRow.className = 'tier-item-row'; itemsDiv.appendChild(emptyRow);
-        } else {
-          const chunks = [];
-          for (let i = 0; i < tierItemList.length; i += 5) chunks.push(tierItemList.slice(i, i + 5));
-          chunks.forEach(chunk => {
-            const rowDiv = document.createElement('div'); rowDiv.className = 'tier-item-row';
-            chunk.forEach(item => rowDiv.appendChild(makeTiltWrapper(item, tier.id)));
-            itemsDiv.appendChild(rowDiv);
-          });
-        }
+        const listItems = tierItems[tier.id] || [];
+        const rowDiv = document.createElement('div'); rowDiv.className = 'tier-item-row';
+        listItems.forEach(item => rowDiv.appendChild(makeItemWrapper(item, tier.id)));
+        itemsDiv.appendChild(rowDiv);
         row.appendChild(itemsDiv); list.appendChild(row);
       });
     }
@@ -248,120 +177,55 @@
     function renderPool() {
       const pool = document.getElementById('pool'); pool.innerHTML = '';
       if (!poolItems.length) { pool.innerHTML = '<div class="pool-empty">add items below</div>'; return; }
-      poolItems.forEach(item => pool.appendChild(makeTiltWrapper(item, '__pool__')));
+      poolItems.forEach(item => pool.appendChild(makeItemWrapper(item, '__pool__')));
       setupDrop(pool);
     }
 
-    function makeTiltWrapper(item, tier) {
-      const wrap = document.createElement('div'); wrap.className = 'tilt-wrapper';
-      wrap.dataset.itemId = item.id; wrap.dataset.fromTier = tier; wrap.draggable = true;
-      const card = makeItemCard(item, tier); wrap.appendChild(card);
-      wrap.addEventListener('dragstart', e => { isDragging = true; dragItem = item; dragSrc = tier; setTimeout(() => wrap.style.opacity = '0.3', 0); e.dataTransfer.effectAllowed = 'move'; });
-      wrap.addEventListener('dragend', () => { isDragging = false; wrap.style.opacity = '1'; });
+    function makeItemWrapper(item, tier) {
+      const wrap = document.createElement('div'); wrap.className = 'tilt-wrapper'; wrap.draggable = true;
+      const card = document.createElement('div'); card.className = 'tl-item';
+      card.innerHTML = `<div class="tl-item-text-block"><div class="tl-item-label">${item.label}</div></div>`;
+      wrap.appendChild(card);
+      wrap.addEventListener('dragstart', () => { dragItem = item; dragSrc = tier; });
       return wrap;
     }
 
-    function makeItemCard(item, tier) {
-      const card = document.createElement('div'); card.className = 'tl-item';
-      if (item.type === 'image') {
-        card.style.padding = '0'; card.style.overflow = 'hidden';
-        if (item.url) { const img = document.createElement('img'); img.className = 'tl-item-img-full'; img.src = item.url; card.appendChild(img); }
-      } else {
-        const block = document.createElement('div'); block.className = 'tl-item-text-block';
-        const lbl = document.createElement('div'); lbl.className = 'tl-item-label'; lbl.textContent = item.label;
-        block.appendChild(lbl); card.appendChild(block);
-      }
-      const rem = document.createElement('button'); rem.className = 'tl-item-remove'; rem.textContent = '✕';
-      rem.onclick = e => { e.stopPropagation(); removeItem(item.id, tier); }; card.appendChild(rem);
-      return card;
-    }
-
     function setupDrop(el) {
-      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
-      el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+      el.addEventListener('dragover', e => e.preventDefault());
       el.addEventListener('drop', e => {
-        e.preventDefault(); el.classList.remove('drag-over'); if (!dragItem) return;
-        const dest = el.dataset.tier; if (dest === dragSrc) { dragItem = null; dragSrc = null; return; }
+        e.preventDefault(); if (!dragItem) return;
+        const dest = el.dataset.tier;
+        if (dest === dragSrc) return;
         removeFromSrc(dragItem.id, dragSrc);
-        if (dest === '__pool__') poolItems.push(dragItem); else { if (!tierItems[dest]) tierItems[dest] = []; tierItems[dest].push(dragItem); }
-        dragItem = null; dragSrc = null; renderAll(); saveLocalState();
+        if (dest === '__pool__') poolItems.push(dragItem);
+        else { if (!tierItems[dest]) tierItems[dest] = []; tierItems[dest].push(dragItem); }
+        dragItem = null; dragSrc = null; renderAll();
       });
     }
-    
-    function removeItem(id, tier) {
-      if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
-      else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
-      renderAll(); saveLocalState();
-    }
-    
+
     function removeFromSrc(id, tier) {
       if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
       else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
     }
 
     function addItem() {
-      const type = document.getElementById('itemType').value;
       const input = document.getElementById('itemInput').value.trim();
       if (!input) return;
-      const item = { id: 'item_' + (++idCounter), type, url: type === 'image' ? input : null, label: type === 'text' ? input : '' };
-      poolItems.push(item);
+      poolItems.push({ id: 'item_' + (++idCounter), label: input });
       document.getElementById('itemInput').value = '';
-      renderAll(); saveLocalState();
+      renderAll();
     }
 
-    function openEditTier(id) {
-      const tier = getTier(id); if (!tier) return;
-      const modal = document.getElementById('modalBox');
-      modal.innerHTML = `
-        <div class="modal-title">Edit Tier</div>
-        <div class="modal-row"><label>Label</label><input type="text" id="et-label" class="ui-input" value="${tier.label}" maxlength="12"></div>
-        <div class="modal-row"><label>Color</label><input type="color" id="et-color" value="${tier.color}"></div>
-        <div class="modal-btns">
-          <button class="ui-btn" style="width:auto; margin:0;" onclick="closeModal()">Cancel</button>
-          <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveEditTier('${id}')">Save</button>
-        </div>`;
-      openModal();
-    }
-
-    function saveEditTier(id) {
-      const tier = getTier(id); if (!tier) { closeModal(); return; }
-      tier.label  = document.getElementById('et-label').value.trim() || tier.label;
-      tier.color  = document.getElementById('et-color').value;
-      closeModal(); renderAll(); saveLocalState();
-    }
-
-    function openManageTiers() {
-      const modal = document.getElementById('modalBox'); modal.innerHTML = '';
-      const title = document.createElement('div'); title.className = 'modal-title'; title.textContent = 'Manage Tiers'; modal.appendChild(title);
-      const list = document.createElement('div'); list.className = 'tier-manage-list';
-      function rebuildList() {
-        list.innerHTML = '';
-        getActiveTiers().forEach((tier, idx) => {
-          const entry = document.createElement('div'); entry.className = 'tier-manage-entry';
-          const swatch = document.createElement('div'); swatch.className = 'swatch'; swatch.style.background = tier.color;
-          const lbl = document.createElement('div'); lbl.className = 'lbl'; lbl.textContent = tier.label;
-          const btns = document.createElement('div'); btns.className = 'tier-manage-btns';
-          const edBtn = document.createElement('button'); edBtn.className = 'ui-btn'; edBtn.style.cssText = 'width:auto; margin:0; padding:2px 6px; font-size:10px;'; edBtn.textContent = '✎';
-          edBtn.onclick = () => { closeModal(); openEditTier(tier.id); };
-          btns.appendChild(edBtn); entry.appendChild(swatch); entry.appendChild(lbl); entry.appendChild(btns); list.appendChild(entry);
-        });
-      }
-      rebuildList(); modal.appendChild(list);
-      const addBtn = document.createElement('button'); addBtn.className = 'ui-btn'; addBtn.textContent = 'Done';
-      addBtn.onclick = () => { closeModal(); renderAll(); saveLocalState(); };
-      modal.appendChild(addBtn); openModal();
-    }
-
-    function openModal()  { document.getElementById('modalOverlay').classList.add('open'); }
-    function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-
-    document.getElementById('itemType').addEventListener('change', function() {
-      document.getElementById('itemLabel').style.display = (this.value !== 'text' && this.value !== 'image') ? 'block' : 'none';
-      document.getElementById('itemInput').placeholder = this.value === 'text' ? 'Label...' : 'Paste URL...';
+    document.getElementById('presetSel').addEventListener('change', function() {
+      if (PRESETS[this.value]) { activeTierIds = PRESETS[this.value]; renderAll(); }
     });
-    document.getElementById('colSel').addEventListener('change', function() { columns = parseInt(this.value); renderAll(); saveLocalState(); });
+    document.getElementById('colSel').addEventListener('change', function() {
+      columns = parseInt(this.value); renderAll();
+    });
 
-    loadLocalState();
+    document.getElementById('pool').dataset.tier = '__pool__';
+    setupDrop(document.getElementById('pool'));
+    renderAll();
   </script>
   </body>
 </html>

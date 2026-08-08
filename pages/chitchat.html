@@ -13,7 +13,7 @@
         <div id="messages-container" style="display:flex; flex-direction:column; gap:0; margin-bottom:24px; max-height:450px; overflow-y:auto; border:1px solid var(--border);"></div>
 
         <div style="padding-top:16px;">
-            <input type="text" id="chat-name" class="ui-input" placeholder="Your Name" readonly style="opacity: 0.6; cursor: not-allowed;">
+            <input type="text" id="chat-name" class="ui-input" readonly placeholder="Name">
             <textarea id="chat-msg" class="ui-input" rows="3" placeholder="Write a message..."></textarea>
             <button class="ui-btn" onclick="sendChatMessage()">Post Message</button>
         </div>
@@ -26,21 +26,22 @@
 
         let chatMessages = [];
         let isAdminLocal = false;
+        let currentUser = null;
+        let currentProfile = null;
 
         async function initChitChat() {
-            isAdminLocal = window.parent.currentProfile?.is_admin || false;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            currentUser = session?.user || null;
 
-            const nameInput = document.getElementById('chat-name');
-            if (window.parent.currentUser) {
-                nameInput.value = window.parent.currentProfile?.username || "Player";
-            } else {
-                let anonId = localStorage.getItem('anon_device_id');
-                if (!anonId) {
-                    anonId = Math.floor(Math.random() * 90000 + 10000);
-                    localStorage.setItem('anon_device_id', anonId);
+            if (currentUser) {
+                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                currentProfile = prof;
+                if (prof?.is_admin || currentUser.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isAdminLocal = true;
                 }
-                nameInput.value = "Anonymous #" + anonId;
             }
+
+            setupNameField();
 
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: true });
             if (data) {
@@ -57,17 +58,45 @@
             }).subscribe();
         }
 
+        async function setupNameField() {
+            const nameInput = document.getElementById('chat-name');
+            if (isAdminLocal) {
+                nameInput.removeAttribute('readonly');
+                nameInput.value = currentProfile?.username || 'Error Dev';
+            } else if (currentProfile?.username) {
+                nameInput.setAttribute('readonly', 'readonly');
+                nameInput.value = currentProfile.username;
+            } else {
+                nameInput.setAttribute('readonly', 'readonly');
+                nameInput.value = await getAnonName();
+            }
+        }
+
+        async function getAnonName() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                let hash = 0;
+                for (let i = 0; i < data.ip.length; i++) hash = ((hash << 5) - hash) + data.ip.charCodeAt(i);
+                return "Anonymous #" + Math.abs(hash).toString().substring(0, 4);
+            } catch(e) {
+                return "Anonymous #" + Math.floor(Math.random()*9000 + 1000);
+            }
+        }
+
         function renderChat() {
             const container = document.getElementById('messages-container');
             container.innerHTML = chatMessages.filter(m => !m.drawing && m.message).map(m => `
                 <div style="border-bottom:1px solid var(--border); padding:16px; background:var(--bg-main); position:relative;">
-                    ${isAdminLocal ? `<button class="ui-btn" style="position:absolute; top:10px; right:10px; width:auto; margin:0; padding:2px 8px; font-size:10px; color:var(--destructive); background:transparent; border:none;" onclick="deleteMessage(${m.id})">✕</button>` : ''}
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:11px; padding-right: 20px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:11px;">
                         <div>
                             <strong style="color:var(--accent);">${escapeHTML(m.name || 'Anonymous')}</strong>
                             ${m.is_creator ? '<span style="background:var(--accent); color:var(--bg-main); padding:2px 6px; font-size:9px; margin-left:6px; font-weight:bold; letter-spacing: 1px;">ADMIN</span>' : ''}
                         </div>
-                        <span style="color:var(--fg-muted);">${new Date(m.created_at).toLocaleString()}</span>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span style="color:var(--fg-muted);">${new Date(m.created_at).toLocaleString()}</span>
+                            ${isAdminLocal ? `<button style="background:none; border:none; color:var(--destructive); cursor:pointer; font-weight:bold;" onclick="deleteMessage(${m.id})">✕</button>` : ''}
+                        </div>
                     </div>
                     <div style="font-size:13px; line-height:1.6; color:var(--fg-main);">${escapeHTML(m.message || '')}</div>
                 </div>
@@ -78,7 +107,7 @@
         function escapeHTML(str) { return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
         window.sendChatMessage = async () => {
-            const name = document.getElementById('chat-name').value.trim();
+            const name = document.getElementById('chat-name').value.trim() || 'Anonymous';
             const message = document.getElementById('chat-msg').value.trim();
             if (!message) return;
 
@@ -87,8 +116,10 @@
         };
 
         window.deleteMessage = async (id) => {
-            if(!await window.parent.guiConfirm("Delete this message?", "Confirm Deletion")) return;
-            await supabaseClient.from('guestbook').delete().eq('id', id);
+            if (!isAdminLocal) return;
+            if (confirm("Delete this message?")) {
+                await supabaseClient.from('guestbook').delete().eq('id', id);
+            }
         };
 
         document.addEventListener('DOMContentLoaded', initChitChat);
