@@ -81,52 +81,52 @@
                 - name: I "the song bird"
                   type: file
                   fileType: md
-                  path: content/poems/c1/IX 'aching'.md
+                  path: content/poems/c1/I 'the song bird'.md
 
                 - name: II "waking"
                   type: file
                   fileType: md
-                  path: content/poems/c1/V 'warm'.md
+                  path: content/poems/c1/II 'waking'.md
 
                 - name: III "loss"
                   type: file
                   fileType: md
-                  path: content/poems/c1/VI 'stay'.md
+                  path: content/poems/c1/III 'loss'.md
 
                 - name: IV " "
                   type: file
                   fileType: md
-                  path: content/poems/c1/VII 'river'.md
+                  path: content/poems/c1/IV '    '.md
 
                 - name: V "warm"
                   type: file
                   fileType: md
-                  path: content/poems/c1/X 'bridge'.md
+                  path: content/poems/c1/V 'warm'.md
 
                 - name: VI "stay."
                   type: file
                   fileType: md
-                  path: content/poems/c1/I 'the song bird'.md
+                  path: content/poems/c1/VI 'stay'.md
 
                 - name: VII "river"
                   type: file
                   fileType: md
-                  path: content/poems/c1/II 'waking'.md
+                  path: content/poems/c1/VII 'river'.md
 
                 - name: IIX "again"
                   type: file
                   fileType: md
-                  path: content/poems/c1/III 'loss'.md
+                  path: content/poems/c1/IIX 'again'.md
 
                 - name: IX "aching"
                   type: file
                   fileType: md
-                  path: content/poems/c1/IIX 'again'.md
+                  path: content/poems/c1/IX 'aching'.md
 
                 - name: X "bridge..."
                   type: file
                   fileType: md
-                  path: content/poems/c1/IV '    '.md
+                  path: content/poems/c1/X 'bridge'.md
 
 - name: About Me
   type: folder
