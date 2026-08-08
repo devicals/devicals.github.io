@@ -8,9 +8,9 @@ window.renderAdminPage = async function() {
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('projects')">Manage Projects</button>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('downloads')">Manage Downloads</button>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('games')">Manage Liked Games</button>
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('spotify')">Spotify API Config</button>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('users')">User Management</button>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('anns')">Announcements</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('music')">Music Settings</button>
         </div>
 
         <div id="admin-section-content"></div>
@@ -24,12 +24,13 @@ window.renderAdminSection = async function(section) {
 
     if (section === 'users') {
         try {
+            let users = [];
             const { data, error } = await supabaseClient.rpc('admin_get_users');
-            let users = data;
-            
-            if (error || !data) {
+            if (!error && data) {
+                users = data;
+            } else {
                 const fallback = await supabaseClient.from('profiles').select('*');
-                if(fallback.error) throw fallback.error;
+                if (fallback.error) throw fallback.error;
                 users = fallback.data;
             }
 
@@ -52,7 +53,6 @@ window.renderAdminSection = async function(section) {
                             ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">Unban</button>` 
                             : `<button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'ban')">Ban</button>`
                         }
-                        <button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'delete')">Kick / Delete</button>
                     </div>
                 </div>
             `;
@@ -64,40 +64,41 @@ window.renderAdminSection = async function(section) {
                 ${banned.map(renderRow).join('') || '<p style="color:var(--fg-muted); font-size:13px;">No banned users.</p>'}
             `;
         } catch (e) {
-            view.innerHTML = `<p style="color:var(--destructive)">Database connection error: ${e.message}</p>`;
+            view.innerHTML = `<p style="color:var(--destructive)">Error fetching users: ${e.message}</p>`;
         }
     } else if (section === 'anns') {
         view.innerHTML = `
             <h2 style="margin-bottom:20px;">Announcements</h2>
             <div class="settings-group" style="margin-bottom:40px;">
-                <textarea id="admin-ann-text" class="ui-input" rows="4" placeholder="New announcement text (Markdown supported)..."></textarea>
+                <textarea id="admin-ann-text" class="ui-input" rows="4" placeholder="New announcement text..."></textarea>
                 <button class="ui-btn" style="width:auto;" onclick="postAdminAnnouncement()">Post Announcement</button>
             </div>
             <div id="admin-ann-list" class="flat-list-container">Loading...</div>
         `;
         loadAdminAnnouncements();
-    } else if (section === 'music') {
-        let lastfmVal = '';
-        let embedVal = '';
-        try {
-            const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'spotify_config').single();
-            if (data && data.data) {
-                lastfmVal = data.data.lastfm || '';
-                embedVal = data.data.embed || '';
-            }
-        } catch(e) {}
+    } else if (section === 'spotify') {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'spotify_config').single();
+        const conf = data?.data || { client_id: '', client_secret: '', refresh_token: '' };
 
         view.innerHTML = `
-            <h2 style="margin-bottom:20px;">Spotify / Music Settings</h2>
-            <div class="settings-group" style="margin-bottom:20px;">
-                <label>Last.fm Username (For Currently Playing Live Status)</label>
-                <input type="text" id="admin-lastfm-user" class="ui-input" value="${lastfmVal}" placeholder="e.g. your_lastfm_username">
+            <h2 style="margin-bottom:20px;">Spotify API Configuration</h2>
+            <p style="color:var(--fg-muted); margin-bottom:20px; font-size:13px;">Enter your credentials from the Spotify Developer Dashboard to enable Currently Playing and Liked Songs.</p>
+
+            <div style="display:flex; flex-direction:column; gap:16px; max-width:600px;">
+                <div>
+                    <label style="display:block; margin-bottom:6px; color:var(--fg-muted); font-size:12px;">CLIENT ID</label>
+                    <input type="text" id="sp-client-id" class="ui-input" value="${conf.client_id || ''}">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:6px; color:var(--fg-muted); font-size:12px;">CLIENT SECRET</label>
+                    <input type="password" id="sp-client-secret" class="ui-input" value="${conf.client_secret || ''}">
+                </div>
+                <div>
+                    <label style="display:block; margin-bottom:6px; color:var(--fg-muted); font-size:12px;">REFRESH TOKEN</label>
+                    <input type="text" id="sp-refresh-token" class="ui-input" value="${conf.refresh_token || ''}">
+                </div>
+                <button class="ui-btn" style="width:auto;" onclick="saveSpotifyConfig()">Save Spotify Credentials</button>
             </div>
-            <div class="settings-group" style="margin-bottom:20px;">
-                <label>Spotify Embed URL or Track/Playlist ID</label>
-                <input type="text" id="admin-spotify-embed" class="ui-input" value="${embedVal}" placeholder="e.g. 37i9dQZF1DXcBWIGoYBM5M or full embed URL">
-            </div>
-            <button class="ui-btn" style="width:auto;" onclick="saveAdminMusicConfig()">Save Music Settings</button>
         `;
     } else if (section === 'blogs') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
@@ -113,7 +114,7 @@ window.renderAdminSection = async function(section) {
                     <div class="flat-list-item" style="flex-direction:row; justify-content:space-between; align-items:center;">
                         <div>
                             <div style="font-weight:bold; color:var(--accent); font-size:16px;">${b.title}</div>
-                            <div style="color:var(--fg-muted); font-size:12px;">ID: ${b.id} | Date: ${b.date}</div>
+                            <div style="color:var(--fg-muted); font-size:12px;">ID: #${b.id} | Date: ${b.date}</div>
                         </div>
                         <div style="display:flex; gap:10px;">
                             <button class="ui-btn" style="width:auto; margin:0;" onclick="adminEditBlog(${i})">Edit</button>
@@ -233,11 +234,16 @@ window.renderAdminSection = async function(section) {
     }
 };
 
-window.saveAdminMusicConfig = async function() {
-    const lastfm = document.getElementById('admin-lastfm-user').value.trim();
-    const embed = document.getElementById('admin-spotify-embed').value.trim();
-    await supabaseClient.from('site_content').upsert({ key: 'spotify_config', data: { lastfm, embed } });
-    window.guiAlert("Music settings saved!", "Saved");
+window.saveSpotifyConfig = async function() {
+    const client_id = document.getElementById('sp-client-id').value.trim();
+    const client_secret = document.getElementById('sp-client-secret').value.trim();
+    const refresh_token = document.getElementById('sp-refresh-token').value.trim();
+    
+    await supabaseClient.from('site_content').upsert({
+        key: 'spotify_config',
+        data: { client_id, client_secret, refresh_token }
+    });
+    guiAlert("Spotify credentials saved successfully!", "Success");
 };
 
 window.adminEditBlog = async function(idx) {
@@ -245,37 +251,10 @@ window.adminEditBlog = async function(idx) {
     let list = data?.data || [];
     let b = idx >= 0 ? list[idx] : { title: '', content: '' };
 
-    const modalBox = document.createElement('div');
-    modalBox.className = 'modal';
-    modalBox.id = 'admin-blog-modal';
-    modalBox.style.display = 'flex';
-    modalBox.innerHTML = `
-        <div class="modal-box" style="width:600px; max-width:95vw;">
-            <div class="modal-title">${idx >= 0 ? 'Edit Blog Post' : 'New Blog Post'}</div>
-            <div class="settings-group">
-                <label>Blog Title</label>
-                <input type="text" id="blog-modal-title" class="ui-input" value="${b.title || ''}" placeholder="Title">
-            </div>
-            <div class="settings-group">
-                <label>Content (Markdown)</label>
-                <textarea id="blog-modal-content" class="ui-input" rows="12" style="font-family:var(--font-ui); font-size:12px; line-height:1.6;" placeholder="Content...">${b.content || ''}</textarea>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <button class="ui-btn" style="margin:0; background:var(--accent); color:var(--bg-main);" onclick="saveAdminBlogModal(${idx})">Save Post</button>
-                <button class="ui-btn" style="margin:0;" onclick="document.getElementById('admin-blog-modal').remove()">Cancel</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modalBox);
-};
-
-window.saveAdminBlogModal = async function(idx) {
-    const title = document.getElementById('blog-modal-title').value.trim();
-    const content = document.getElementById('blog-modal-content').value;
-    if (!title || !content) return;
-
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
-    let list = data?.data || [];
+    const title = await window.guiPrompt("Blog Title:", b.title, "Edit Blog Post");
+    if (title === null) return;
+    const content = await window.guiPrompt("Content (Markdown):", b.content, "Edit Blog Content");
+    if (content === null) return;
 
     if (idx >= 0) {
         list[idx].title = title;
@@ -286,9 +265,7 @@ window.saveAdminBlogModal = async function(idx) {
         const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
         list.unshift({ id: nextId, date: dateStr, title, content });
     }
-
     await supabaseClient.from('site_content').update({ data: list }).eq('key', 'blogs');
-    document.getElementById('admin-blog-modal').remove();
     renderAdminSection('blogs');
 };
 
@@ -420,6 +397,24 @@ window.adminDeleteSimpleGame = async function(listKey, idx) {
     gData[listKey].splice(idx, 1);
     await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
     renderAdminSection('games');
+};
+
+window.adminUserAction = async (id, action) => {
+    let do_ban = null, do_delete = false, promote = null;
+    if (action === 'ban') do_ban = true;
+    if (action === 'unban') do_ban = false;
+    if (action === 'delete') do_delete = true;
+    if (action === 'promote') promote = true;
+    if (action === 'demote') promote = false;
+
+    if (promote !== null) {
+        await supabaseClient.from('profiles').update({ is_admin: promote }).eq('id', id);
+    } else if (do_ban !== null) {
+        await supabaseClient.from('profiles').update({ is_banned: do_ban }).eq('id', id);
+    } else if (do_delete) {
+        await supabaseClient.from('profiles').delete().eq('id', id);
+    }
+    renderAdminSection('users');
 };
 
 async function loadAdminAnnouncements() {

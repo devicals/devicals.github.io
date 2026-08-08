@@ -27,6 +27,33 @@
         }
         .admin-dashboard-btn:hover { background: var(--bg-workspace); }
         body.is-admin .admin-dashboard-btn { display: flex; }
+        
+        #announcement-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1500;
+            pointer-events: none;
+        }
+        
+        .announcement-toast {
+            width: 320px;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--accent);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+        .announcement-toast a {
+            color: var(--accent) !important;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -59,10 +86,13 @@
                 <iframe id="iframe-workspace" class="workspace-frame" style="display:none;"></iframe>
                 <div id="page-content" class="page-content markdown-body" style="display:none;"></div>
             </div>
+            <div class="status-bar">
+                <span id="doc-char-count">0 words</span>
+            </div>
         </div>
     </div>
 
-    <div id="announcements-container" style="position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 1500; pointer-events: none;"></div>
+    <div id="announcement-container"></div>
 
     <div id="auth-modal" class="modal">
         <div class="modal-box">

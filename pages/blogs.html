@@ -10,10 +10,8 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
-            <h1 style="margin:0; font-size:32px;">Blogs</h1>
-        </div>
-        <div id="blogs-container" class="flat-list-container">
+        <h1 style="margin-bottom:30px; font-size:32px; border-bottom:1px solid var(--border); padding-bottom:15px;">Blogs</h1>
+        <div id="blogs-container" class="flat-list-container" style="gap:24px;">
             <span style="color:var(--fg-muted);">Loading blogs...</span>
         </div>
     </div>
@@ -31,7 +29,6 @@
             if (data && data.data) {
                 blogsList = data.data;
                 renderBlogs();
-                setupScrollObserver();
             }
         }
 
@@ -41,19 +38,23 @@
                 container.innerHTML = '<p style="color:var(--fg-muted)">No blog posts available.</p>';
                 return;
             }
-            container.innerHTML = blogsList.map(b => `
-                <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:30px; margin-bottom:20px;">
-                    <div class="flat-meta" style="font-size:13px; margin-bottom:6px;">${b.date}</div>
-                    <div class="flat-title" style="font-size:24px; margin-bottom:16px;">${b.title}</div>
-                    <div class="flat-desc markdown-body" style="font-size:15px; white-space: pre-wrap;">${marked.parse(b.content)}</div>
+            container.innerHTML = blogsList.map((b) => `
+                <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:24px; margin-bottom:0;">
+                    <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted);">ID: #${b.id} &middot; Date: ${b.date}</div>
+                    <div class="flat-title" style="font-size:22px; margin-bottom:14px;">${b.title}</div>
+                    <div class="flat-desc markdown-body" style="font-size:14px; white-space: pre-wrap; line-height:1.7;">${marked.parse(b.content)}</div>
                 </div>
             `).join('');
 
-            const hash = window.parent.location.hash;
-            if (hash.includes('&id=')) {
-                const id = hash.split('&id=')[1];
-                const el = document.getElementById(`blog-${id}`);
-                if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+            setupScrollObserver();
+            
+            const params = new URLSearchParams(window.location.search);
+            const targetId = params.get('id');
+            if (targetId) {
+                setTimeout(() => {
+                    const el = document.getElementById(`blog-${targetId}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
             }
         }
 
@@ -61,9 +62,9 @@
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
-                        const id = entry.target.getAttribute('data-id');
+                        const id = entry.target.dataset.id;
                         if (id) {
-                            window.parent.history.replaceState(null, '', `#Index/Blogs&id=${id}`);
+                            window.parent.history.replaceState(null, null, `#Index/Blogs&id=${id}`);
                         }
                     }
                 });

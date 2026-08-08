@@ -6,10 +6,27 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .gallery-list { display: flex; flex-direction: column; gap: 40px; }
-        .gallery-item { display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; border-bottom: 1px dashed var(--border); position: relative; }
-        .gallery-item:last-child { border-bottom: none; }
-        .gallery-item img { width: 100%; max-width: 600px; object-fit: contain; border: 1px solid var(--border); }
+        .gallery-list {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+        .gallery-item {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 40px;
+            border-bottom: 1px dashed var(--border);
+        }
+        .gallery-item:last-child {
+            border-bottom: none;
+        }
+        .gallery-item img {
+            width: 100%;
+            max-width: 600px;
+            object-fit: contain;
+            border: 1px solid var(--border);
+        }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
@@ -21,7 +38,7 @@
 
         <div id="gallery-upload-box" style="display:none; border:1px solid var(--border); padding:20px; margin-bottom:40px;">
             <div style="display:flex; gap:12px; margin-bottom:12px;">
-                <input type="text" id="gal-name" class="ui-input" readonly placeholder="Your Name" style="margin:0;">
+                <input type="text" id="gal-name" class="ui-input" readonly disabled style="opacity:0.7; cursor:not-allowed; margin:0;" placeholder="Resolving Name...">
                 <input type="text" id="gal-title" class="ui-input" placeholder="Artwork Title" style="margin:0;">
             </div>
             
@@ -59,8 +76,7 @@
 
         let galleryItems = [];
         let isAdminLocal = false;
-        let currentUser = null;
-        let currentProfile = null;
+        let assignedName = "Anonymous #0000";
 
         const canvas = document.getElementById('gal-canvas');
         const ctx = canvas.getContext('2d');
@@ -81,7 +97,11 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        canvas.addEventListener('mousedown', e => { isDrawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
+        canvas.addEventListener('mousedown', e => {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
         canvas.addEventListener('mousemove', e => {
             if (!isDrawing) return;
             ctx.lineTo(e.offsetX, e.offsetY);
@@ -109,18 +129,16 @@
         }
 
         async function initGallery() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            currentUser = session?.user || null;
+            const profile = window.parent.currentProfile;
+            isAdminLocal = profile?.is_admin || false;
 
-            if (currentUser) {
-                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                currentProfile = prof;
-                if (prof?.is_admin || currentUser.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isAdminLocal = true;
-                }
+            if (profile && profile.username) {
+                assignedName = profile.username;
+            } else {
+                assignedName = await getAnonName();
             }
 
-            setupNameField();
+            document.getElementById('gal-name').value = assignedName;
 
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
             if (data) {
@@ -137,20 +155,6 @@
             }).subscribe();
         }
 
-        async function setupNameField() {
-            const nameInput = document.getElementById('gal-name');
-            if (isAdminLocal) {
-                nameInput.removeAttribute('readonly');
-                nameInput.value = currentProfile?.username || 'Error Dev';
-            } else if (currentProfile?.username) {
-                nameInput.setAttribute('readonly', 'readonly');
-                nameInput.value = currentProfile.username;
-            } else {
-                nameInput.setAttribute('readonly', 'readonly');
-                nameInput.value = await getAnonName();
-            }
-        }
-
         async function getAnonName() {
             try {
                 const res = await fetch('https://api.ipify.org?format=json');
@@ -159,7 +163,7 @@
                 for (let i = 0; i < data.ip.length; i++) hash = ((hash << 5) - hash) + data.ip.charCodeAt(i);
                 return "Anonymous #" + Math.abs(hash).toString().substring(0, 4);
             } catch(e) {
-                return "Anonymous #" + Math.floor(Math.random()*9000 + 1000);
+                return "Anonymous #" + Math.floor(Math.random() * 9000 + 1000);
             }
         }
 
@@ -167,23 +171,25 @@
             const container = document.getElementById('gallery-container');
             container.innerHTML = galleryItems.map(item => `
                 <div class="gallery-item">
-                    ${isAdminLocal ? `<button class="ui-btn" style="position:absolute; top:0; right:0; width:auto; color:var(--destructive);" onclick="deleteGalleryItem(${item.id})">Delete</button>` : ''}
                     <img src="${item.drawing || (item.message.startsWith('http') || item.message.startsWith('data:') ? item.message : '')}" alt="Artwork" loading="lazy">
-                    <div style="font-weight:bold; color:var(--accent); font-size:18px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
-                    <div style="font-size:12px; color:var(--fg-muted);">By ${item.name || 'Anonymous'} | ${new Date(item.created_at).toLocaleString()}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-weight:bold; color:var(--accent); font-size:18px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
+                            <div style="font-size:12px; color:var(--fg-muted);">By ${item.name || 'Anonymous'} | ${new Date(item.created_at).toLocaleString()}</div>
+                        </div>
+                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteGalleryItem(${item.id})">Delete</button>` : ''}
+                    </div>
                 </div>
             `).join('');
         }
 
         window.deleteGalleryItem = async (id) => {
-            if (!isAdminLocal) return;
-            if (confirm("Delete this gallery item?")) {
-                await supabaseClient.from('guestbook').delete().eq('id', id);
-            }
+            if(!isAdminLocal) return;
+            if(!confirm("Delete this artwork?")) return;
+            await supabaseClient.from('guestbook').delete().eq('id', id);
         };
 
         window.postGallery = async () => {
-            const name = document.getElementById('gal-name').value.trim() || 'Anonymous';
             const title = document.getElementById('gal-title').value.trim() || 'Untitled';
             const url = document.getElementById('gal-url').value.trim();
             const fileInput = document.getElementById('gal-file');
@@ -194,7 +200,7 @@
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     drawingData = e.target.result;
-                    await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
+                    await supabaseClient.from('guestbook').insert({ name: assignedName, message: title, drawing: drawingData });
                     finishPost();
                 };
                 reader.readAsDataURL(fileInput.files[0]);
@@ -204,11 +210,11 @@
             } else if (url) {
                 drawingData = url;
             } else {
-                alert("Please provide an image file, URL, or draw something.");
+                window.parent.guiAlert("Please provide an image file, URL, or draw something.");
                 return;
             }
 
-            await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
+            await supabaseClient.from('guestbook').insert({ name: assignedName, message: title, drawing: drawingData });
             finishPost();
         };
 
@@ -218,6 +224,7 @@
             document.getElementById('gal-file').value = '';
             clearCanvas();
             toggleUploadBox();
+            window.parent.guiAlert("Posted to gallery successfully!", "Success");
         }
 
         document.addEventListener('DOMContentLoaded', initGallery);

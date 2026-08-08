@@ -6,6 +6,7 @@ let currentUser = null;
 let currentProfile = null;
 let navData = { children: [] };
 let flatNodes = [];
+let commitPage = 1;
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
 
 marked.use({ breaks: true, gfm: true });
@@ -16,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.addEventListener('hashchange', handleRoute);
     handleRoute();
     initAuth();
-    loadAnnouncementsToast();
+    loadAnnouncementsToasts();
 });
 
 window.guiAlert = function(msg, title = "Notification") {
@@ -226,7 +227,7 @@ function renderNavigation() {
     const container = document.getElementById('nav-tree');
     container.innerHTML = '';
     flatNodes = [];
-    
+
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
             const currentPath = [...pathPrefix, node.name];
@@ -274,23 +275,21 @@ function renderNavigation() {
 }
 
 function highlightNav() {
-    const rawHash = decodeURIComponent(window.location.hash.substring(1));
-    const basePath = rawHash.split('&')[0];
+    const hash = decodeURIComponent(window.location.hash.substring(1)).split('&')[0];
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
-        if (el.getAttribute('data-path') === basePath) {
+        if (el.getAttribute('data-path') === hash) {
             el.classList.add('active');
         }
     });
 }
 
 async function handleRoute() {
-    let fullHash = decodeURIComponent(window.location.hash.substring(1));
-    if (!fullHash) { fullHash = "Index/Home"; window.location.hash = fullHash; return; }
+    let rawHash = decodeURIComponent(window.location.hash.substring(1));
+    if (!rawHash) { rawHash = "Index/Home"; window.location.hash = rawHash; return; }
     
-    const parts = fullHash.split('&');
-    const basePath = parts[0];
-    const queryParams = new URLSearchParams(parts.slice(1).join('&'));
+    let parts = rawHash.split('&');
+    let hash = parts[0];
     
     highlightNav();
     
@@ -298,7 +297,7 @@ async function handleRoute() {
     const mdContainer = document.getElementById('page-content');
     const breadcrumbs = document.getElementById('breadcrumbs');
 
-    if (basePath === 'admin') {
+    if (hash === 'admin') {
         iframe.style.display = 'none';
         mdContainer.style.display = 'block';
         breadcrumbs.innerHTML = 'System > Admin Dashboard';
@@ -306,9 +305,9 @@ async function handleRoute() {
         return;
     }
 
-    breadcrumbs.innerHTML = basePath.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="window.location.hash='${arr.slice(0, i+1).join('/')}'">${p}</span>`).join(' > ');
+    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="window.location.hash='${arr.slice(0, i+1).join('/')}'">${p}</span>`).join(' > ');
     
-    const node = flatNodes.find(n => n.path === basePath);
+    const node = flatNodes.find(n => n.path === hash);
     
     if (node) {
         if (node.type === 'folder') {
@@ -346,15 +345,15 @@ async function handleRoute() {
         if (node.fileType === 'commits') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
-            await renderCommitsPage(mdContainer);
+            commitPage = 1;
+            await renderCommitsPage(mdContainer, true);
             return;
         }
         
         if (node.fileType === 'html') {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
-            const extraQuery = queryParams.toString();
-            iframe.src = node.url + (extraQuery ? '?' + extraQuery : '');
+            iframe.src = node.url + (parts[1] ? '?' + parts[1] : '');
             return;
         }
         
@@ -365,6 +364,7 @@ async function handleRoute() {
                 const res = await fetch(node.file);
                 const text = res.ok ? await res.text() : '## Blank Page\nContent not found.';
                 mdContainer.innerHTML = marked.parse(text);
+                updateWordCount(text);
             } catch(e) {
                 mdContainer.innerHTML = '<h2>Error loading document</h2>';
             }
@@ -377,16 +377,24 @@ async function handleRoute() {
     mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
 }
 
-async function renderCommitsPage(container) {
-    container.innerHTML = '<h1>commit history</h1><p style="color:var(--fg-muted);">Loading commits...</p>';
+async function renderCommitsPage(container, reset = false) {
+    if (reset) {
+        container.innerHTML = '<h1>commit history</h1><div id="commits-list" style="margin-top:40px;"></div><button id="load-more-commits-btn" class="ui-btn" style="margin-top:20px;" onclick="loadMoreCommits()">Load More Commits</button>';
+    }
+    const listEl = document.getElementById('commits-list');
     try {
-        const res = await fetch('https://api.github.com/repos/devicals/devicals.github.io/commits?per_page=100');
-        if (!res.ok) throw new Error('Network response was not ok');
+        const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=15`);
+        if (!res.ok) throw new Error('Failed to fetch');
         const commits = await res.json();
         
         const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         
-        const rows = commits.map((c, idx) => {
+        if (commits.length === 0) {
+            document.getElementById('load-more-commits-btn').style.display = 'none';
+            return;
+        }
+
+        const rows = commits.map((c) => {
             const sha = (c.sha || '').substring(0, 7);
             const lines = (c.commit?.message || '').split('\n');
             const summary = escapeHTML(lines[0]);
@@ -394,16 +402,15 @@ async function renderCommitsPage(container) {
             const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
             const dateStr = c.commit?.author?.date;
             const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
-            const isLast = idx === commits.length - 1;
 
             return `
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
-                        <div style="width: 2px; flex: 1; background: var(--border); visibility: ${idx === 0 ? 'hidden' : 'visible'};"></div>
+                        <div style="width: 2px; flex: 1; background: var(--border);"></div>
                         <div style="color: var(--accent); font-weight: bold; line-height: 1; font-size: 16px;">&#9679;</div>
-                        <div style="width: 2px; flex: 1; background: var(--border); visibility: ${isLast ? 'hidden' : 'visible'};"></div>
+                        <div style="width: 2px; flex: 1; background: var(--border);"></div>
                     </div>
-                    <div style="flex: 1; min-width: 0; padding-bottom: 20px; ${isLast ? '' : 'border-bottom: 1px dashed var(--border);'}">
+                    <div style="flex: 1; min-width: 0; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
                         <div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-main); font-size: 16px; font-weight: bold;">${summary}</div>
                         ${body ? `<div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-muted); font-size: 13px; margin-top: 8px;">${body}</div>` : ''}
                         <div style="color: var(--fg-muted); font-size: 12px; margin-top: 10px;">
@@ -414,41 +421,42 @@ async function renderCommitsPage(container) {
             `;
         }).join('');
         
-        container.innerHTML = `<h1>commit history</h1><div style="margin-top:40px;">${rows}</div>`;
+        listEl.innerHTML += rows;
     } catch (e) {
-        container.innerHTML = '<h1>commit history</h1><p style="color:var(--destructive);">Failed to load commit history.</p>';
+        listEl.innerHTML += '<p style="color:var(--destructive);">Failed to load additional commits.</p>';
     }
 }
 
-async function loadAnnouncementsToast() {
+window.loadMoreCommits = function() {
+    commitPage++;
+    renderCommitsPage(document.getElementById('page-content'), false);
+};
+
+function updateWordCount(text) {
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
+}
+
+async function loadAnnouncementsToasts() {
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data && data.data.length > 0) {
-            const container = document.getElementById('announcements-container');
+            const container = document.getElementById('announcement-container');
             container.innerHTML = '';
-            
-            data.data.forEach((annText) => {
+
+            data.data.forEach((annText, idx) => {
                 const toast = document.createElement('div');
                 toast.className = 'announcement-toast';
-                
-                const titleDiv = document.createElement('div');
-                titleDiv.className = 'announcement-title';
-                titleDiv.innerHTML = `<span>Notice</span><span style="cursor: pointer;" onclick="this.closest('.announcement-toast').remove()">✕</span>`;
-                
-                const bodyDiv = document.createElement('div');
-                bodyDiv.className = 'announcement-body';
-                bodyDiv.innerHTML = marked.parse(annText);
-                
-                const barDiv = document.createElement('div');
-                barDiv.className = 'announcement-progress';
-                
-                toast.appendChild(titleDiv);
-                toast.appendChild(bodyDiv);
-                toast.appendChild(barDiv);
+                toast.id = `ann-toast-${idx}`;
+                toast.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:var(--accent); font-weight:bold; font-size:11px; text-transform:uppercase;">NOTICE</span>
+                        <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.parentElement.parentElement.remove()">✕</span>
+                    </div>
+                    <div style="font-size:13px; line-height:1.6; color:var(--fg-main);">${marked.parse(annText)}</div>
+                `;
                 container.appendChild(toast);
-
-                setTimeout(() => { barDiv.style.width = '0%'; }, 50);
-                setTimeout(() => { if (toast.parentNode) toast.remove(); }, 30000);
             });
         }
     } catch(e) {}

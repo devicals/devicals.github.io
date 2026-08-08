@@ -6,31 +6,39 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .fav-card, .liked-card {
-            background: var(--bg-hover);
-            border: 1px solid var(--border);
-            padding: 20px;
+        .games-list-ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            transition: border-color 0.2s;
+            gap: 20px;
         }
-        .fav-card:hover, .liked-card:hover { border-color: var(--accent); }
-        .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 40px; }
+        .games-list-li {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 20px;
+            text-align: left;
+        }
+        .games-list-li:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">Interests & Games</h1>
+    <div style="max-width: 850px; margin: 0; padding-bottom: 80px;" class="markdown-body">
+        <h1 style="margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; text-align: left;">interests & games</h1>
         
-        <h2 style="color:var(--accent); margin-bottom:20px;">Favorites</h2>
-        <div id="fav-games-list" style="display:flex; flex-direction:column; gap:20px; margin-bottom:50px;"></div>
+        <h2 style="text-align: left; margin-bottom: 20px;">favorites</h2>
+        <ul id="fav-games-list" class="games-list-ul" style="margin-bottom:50px;"></ul>
 
-        <h2 style="color:var(--accent); margin-bottom:20px;">Games I Like</h2>
-        <div id="liked-games-grid" class="games-grid"></div>
+        <h2 style="text-align: left; margin-bottom: 20px;">games i like</h2>
+        <ul id="liked-games-grid" class="games-list-ul" style="margin-bottom:50px;"></ul>
 
-        <h2 style="color:var(--accent); margin-bottom:20px;">Want to Play</h2>
-        <div id="wtp-games-grid" class="games-grid"></div>
+        <h2 style="text-align: left; margin-bottom: 20px;">want to play</h2>
+        <ul id="wtp-games-grid" class="games-list-ul"></ul>
     </div>
 
     <script>
@@ -50,20 +58,22 @@
 
         function renderAll() {
             document.getElementById('fav-games-list').innerHTML = (gamesData.favorites || []).map((g) => `
-                <div class="fav-card">
-                    <strong style="color:var(--accent); font-size:20px;">${g.title}</strong>
-                    ${g.comment ? `<div style="font-size:14px; color:var(--fg-main); line-height:1.6; white-space:pre-wrap;">${g.comment}</div>` : ''}
-                </div>
-            `).join('') || '<p style="color:var(--fg-muted);">No favorites added.</p>';
+                <li class="games-list-li">
+                    <div>
+                        <strong style="color:var(--accent); font-size:18px; display:block;">${g.title}</strong>
+                        ${g.comment ? `<div style="font-size:14px; color:var(--fg-main); margin-top:8px; line-height:1.6; white-space: pre-wrap;">${g.comment}</div>` : ''}
+                    </div>
+                </li>
+            `).join('');
 
-            const renderCards = (arr) => (arr || []).map((title) => `
-                <div class="liked-card">
-                    <span style="font-size:15px; font-weight:bold; color:var(--fg-main);">${title}</span>
-                </div>
-            `).join('') || '<p style="color:var(--fg-muted);">Empty list.</p>';
+            const renderSimple = (arr) => (arr || []).map((title) => `
+                <li class="games-list-li">
+                    <span style="font-size:16px; color:var(--fg-main);">${title}</span>
+                </li>
+            `).join('');
 
-            document.getElementById('liked-games-grid').innerHTML = renderCards(gamesData.liked);
-            document.getElementById('wtp-games-grid').innerHTML = renderCards(gamesData.wanttoplay);
+            document.getElementById('liked-games-grid').innerHTML = renderSimple(gamesData.liked);
+            document.getElementById('wtp-games-grid').innerHTML = renderSimple(gamesData.wanttoplay);
         }
 
         document.addEventListener('DOMContentLoaded', initGamesPage);
