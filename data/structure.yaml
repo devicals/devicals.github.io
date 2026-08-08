@@ -145,16 +145,6 @@
   type: folder
   children:
 
-    - name: Tier List Maker
-      type: file
-      fileType: html
-      url: pages/ranking.html
-
-    - name: ZATO Live Tierlist
-      type: file
-      fileType: html
-      url: pages/zato.html
-
     - name: World Clock Viewer
       type: file
       fileType: html
@@ -172,3 +162,17 @@
     - name: Commit History
       type: file
       fileType: commits
+
+    - name: Archive
+      type: folder
+      children:
+
+      - name: Tier List Maker
+            type: file
+            fileType: html
+            url: pages/ranking.html
+
+      - name: ZATO Live Tierlist
+        type: file
+        fileType: html
+        url: pages/zato.html
