@@ -1,0 +1,42 @@
+the noise has stopped.
+the static is gone.
+the aching is
+silenced.
+
+i stand at the edge.
+where the road ends
+and the \[end\] begins.
+
+i am done fixing the chair.
+i am done cleaning the stain.
+i am leaving the room.
+
+the addiction of breathing
+is finally
+​​	​		​​	​	*c u r e d*.​
+
+i look down.
+the water is dark.
+it is not a river anymore.
+it is a mirror.
+waiting to catch me.
+
+the bird does not sing.
+the bird does not fly.
+the bird
+
+​​	*l*
+​	​	*e*
+​	​	​	*t*
+​	​	​	​	*s*
+
+​	​	​	​	​	*g*
+​​		​	​	​	​	*o.*
+
+one step.
+
+​	*( thmp )*
+
+two steps.
+
+​	​	*(      )*
