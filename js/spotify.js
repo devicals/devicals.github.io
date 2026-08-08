@@ -6,8 +6,10 @@ window.renderSpotify = async function() {
     if (spotifyInterval) clearInterval(spotifyInterval);
 
     const container = document.getElementById('spotify-inject');
+
     container.innerHTML = `
         <h1 style="margin-bottom:30px;">Spotify / Music</h1>
+        
         <h2 style="margin-bottom:20px;">Currently Listening (Last.fm)</h2>
         <div id="spotify-status" style="margin-bottom:40px; min-height: 100px;">
             <span style="color:var(--fg-muted);">Loading status...</span>
@@ -20,7 +22,7 @@ window.renderSpotify = async function() {
     `;
 
     try {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'lastfm_config').single();
+        const { data } = await window.parent.supabaseClient.from('site_content').select('data').eq('key', 'lastfm_config').single();
         if (data && data.data) lastFmUser = data.data.username || '';
     } catch(e) {}
 
@@ -28,7 +30,7 @@ window.renderSpotify = async function() {
     spotifyInterval = setInterval(fetchStatus, 15000);
 
     try {
-        const res = await fetch('/music.json');
+        const res = await fetch('music.json');
         if(res.ok) {
             const rawJson = await res.json();
             if (rawJson && rawJson[0] && rawJson[0].tracks) {
@@ -46,7 +48,7 @@ async function fetchStatus() {
     if(!statusBox) return;
 
     if (!lastFmUser) {
-        statusBox.innerHTML = `<div style="color:var(--fg-muted); padding:20px; border:1px solid var(--border);">Last.fm username not configured. Admins can configure this via database or settings.</div>`;
+        statusBox.innerHTML = `<div style="color:var(--fg-muted); padding:20px; border:1px solid var(--border);">Last.fm username not configured. Admins can configure this via the Admin Dashboard under "Music Settings".</div>`;
         return;
     }
 
@@ -88,7 +90,7 @@ function renderLikedSongs() {
     const html = spotifyMusicData.map(track => {
         const artists = Array.isArray(track.artists) ? track.artists.join(', ') : track.artists;
         return `
-            <a href="https://open.spotify.com/track/${track.id}" target="_blank" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-hover); padding:12px 20px; border:1px solid var(--border); text-decoration:none; color:inherit;">
+            <a href="https://open.spotify.com/track/${track.id}" target="_blank" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-hover); padding:12px 20px; border:1px solid var(--border); text-decoration:none; color:inherit; transition:border-color 0.2s;">
                 <div style="display:flex; flex-direction:column; gap:4px;">
                     <span style="font-size:15px; font-weight:bold; color:var(--accent);">${track.title}</span>
                     <span style="font-size:12px; color:var(--fg-muted);">${artists} &middot; ${track.album}</span>

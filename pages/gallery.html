@@ -6,27 +6,10 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        .gallery-list {
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-        }
-        .gallery-item {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding-bottom: 40px;
-            border-bottom: 1px dashed var(--border);
-        }
-        .gallery-item:last-child {
-            border-bottom: none;
-        }
-        .gallery-item img {
-            width: 100%;
-            max-width: 600px;
-            object-fit: contain;
-            border: 1px solid var(--border);
-        }
+        .gallery-list { display: flex; flex-direction: column; gap: 40px; padding-bottom: 100px; }
+        .gallery-item { position: relative; display: flex; flex-direction: column; gap: 12px; padding-bottom: 40px; border-bottom: 1px dashed var(--border); }
+        .gallery-item:last-child { border-bottom: none; }
+        .gallery-item img { width: 100%; max-width: 600px; object-fit: contain; border: 1px solid var(--border); }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
@@ -38,7 +21,7 @@
 
         <div id="gallery-upload-box" style="display:none; border:1px solid var(--border); padding:20px; margin-bottom:40px;">
             <div style="display:flex; gap:12px; margin-bottom:12px;">
-                <input type="text" id="gal-name" class="ui-input" placeholder="Your Name" style="margin:0;">
+                <input type="text" id="gal-name" class="ui-input" placeholder="Your Name" readonly style="margin:0; opacity: 0.6; cursor: not-allowed;">
                 <input type="text" id="gal-title" class="ui-input" placeholder="Artwork Title" style="margin:0;">
             </div>
             
@@ -75,6 +58,8 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let galleryItems = [];
+        let isAdminLocal = false;
+
         const canvas = document.getElementById('gal-canvas');
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
@@ -126,6 +111,20 @@
         }
 
         async function initGallery() {
+            isAdminLocal = window.parent.currentProfile?.is_admin || false;
+
+            const nameInput = document.getElementById('gal-name');
+            if (window.parent.currentUser) {
+                nameInput.value = window.parent.currentProfile?.username || "Player";
+            } else {
+                let anonId = localStorage.getItem('anon_device_id');
+                if (!anonId) {
+                    anonId = Math.floor(Math.random() * 90000 + 10000);
+                    localStorage.setItem('anon_device_id', anonId);
+                }
+                nameInput.value = "Anonymous #" + anonId;
+            }
+
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
             if (data) {
                 galleryItems = data.filter(i => i.drawing || (i.message && i.message.startsWith('http')) || (i.message && i.message.startsWith('data:')));
@@ -145,6 +144,7 @@
             const container = document.getElementById('gallery-container');
             container.innerHTML = galleryItems.map(item => `
                 <div class="gallery-item">
+                    ${isAdminLocal ? `<button class="ui-btn" style="position:absolute; top:0; right:0; width:auto; margin:0; color:var(--destructive); background:transparent; border:none; padding:4px 8px;" onclick="deleteGalleryPost(${item.id})">✕ Delete</button>` : ''}
                     <img src="${item.drawing || (item.message.startsWith('http') || item.message.startsWith('data:') ? item.message : '')}" alt="Artwork" loading="lazy">
                     <div style="font-weight:bold; color:var(--accent); font-size:18px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
                     <div style="font-size:12px; color:var(--fg-muted);">By ${item.name || 'Anonymous'} | ${new Date(item.created_at).toLocaleString()}</div>
@@ -190,6 +190,11 @@
             toggleUploadBox();
             window.parent.guiAlert("Posted to gallery successfully!", "Success");
         }
+
+        window.deleteGalleryPost = async (id) => {
+            if(!await window.parent.guiConfirm("Delete this gallery post?", "Confirm Deletion")) return;
+            await supabaseClient.from('guestbook').delete().eq('id', id);
+        };
 
         document.addEventListener('DOMContentLoaded', initGallery);
     </script>

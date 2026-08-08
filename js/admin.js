@@ -10,6 +10,7 @@ window.renderAdminPage = async function() {
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('games')">Manage Liked Games</button>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('users')">User Management</button>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('anns')">Announcements</button>
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('music')">Music Settings</button>
         </div>
 
         <div id="admin-section-content"></div>
@@ -26,7 +27,6 @@ window.renderAdminSection = async function(section) {
             const { data, error } = await supabaseClient.rpc('admin_get_users');
             let users = data;
             
-            // Fallback if RPC fails or doesn't exist
             if (error || !data) {
                 const fallback = await supabaseClient.from('profiles').select('*');
                 if(fallback.error) throw fallback.error;
@@ -207,7 +207,26 @@ window.renderAdminSection = async function(section) {
                 </div>
             </div>
         `;
+    } else if (section === 'music') {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'lastfm_config').single();
+        const user = data?.data?.username || '';
+        view.innerHTML = `
+            <h2 style="margin-bottom:20px;">Spotify / Last.fm Settings</h2>
+            <div style="max-width:500px; padding:20px; border:1px solid var(--border); background:var(--bg-hover);">
+                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:uppercase;">Last.fm Username (For Live Status)</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="admin-lastfm-user" class="ui-input" value="${user}" style="margin:0;">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="adminSaveLastFm()">Save</button>
+                </div>
+            </div>
+        `;
     }
+};
+
+window.adminSaveLastFm = async function() {
+    const user = document.getElementById('admin-lastfm-user').value.trim();
+    await supabaseClient.from('site_content').upsert({ key: 'lastfm_config', data: { username: user } });
+    window.guiAlert("Last.fm configuration saved successfully.", "Success");
 };
 
 // ==== Blog Functions ====
@@ -367,7 +386,6 @@ window.adminDeleteSimpleGame = async function(listKey, idx) {
     renderAdminSection('games');
 };
 
-// ==== User / Account actions ====
 window.adminUserAction = async (id, action) => {
     let do_ban = null, do_delete = false, do_reset = false, promote = null;
     if (action === 'ban') do_ban = true;
@@ -385,7 +403,6 @@ window.adminUserAction = async (id, action) => {
     renderAdminSection('users');
 };
 
-// ==== Announcements ====
 async function loadAdminAnnouncements() {
     const list = document.getElementById('admin-ann-list');
     if (!list) return;

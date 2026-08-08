@@ -6,9 +6,10 @@ let currentUser = null;
 let currentProfile = null;
 let navData = { children: [] };
 let flatNodes = [];
-let announcementTimer = null;
+let windowHighestZ = 100;
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
 
+// Important: Configure marked.js to treat single newlines as line breaks
 marked.use({ breaks: true, gfm: true });
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -275,7 +276,7 @@ function renderNavigation() {
 }
 
 function highlightNav() {
-    const hash = decodeURIComponent(window.location.hash.substring(1));
+    const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0];
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
         if (el.getAttribute('data-path') === hash) {
@@ -285,7 +286,8 @@ function highlightNav() {
 }
 
 async function handleRoute() {
-    let hash = decodeURIComponent(window.location.hash.substring(1));
+    const fullHash = decodeURIComponent(window.location.hash.substring(1));
+    let hash = fullHash.split('?')[0];
     if (!hash) { hash = "Index/Home"; window.location.hash = hash; return; }
     
     highlightNav();
@@ -342,14 +344,21 @@ async function handleRoute() {
         if (node.fileType === 'commits') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
-            await renderCommitsPage(mdContainer);
+            await loadCommitHistory(mdContainer, false);
             return;
         }
         
         if (node.fileType === 'html') {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
-            iframe.src = node.url;
+            
+            // Pass any query params to the iframe as well
+            let finalUrl = node.url;
+            if (fullHash.includes('?')) {
+                finalUrl += '?' + fullHash.split('?')[1];
+            }
+            
+            iframe.src = finalUrl;
             return;
         }
         
@@ -368,21 +377,45 @@ async function handleRoute() {
         }
     }
     
+    if (hash.startsWith('pages/')) {
+        mdContainer.style.display = 'none';
+        iframe.style.display = 'block';
+        iframe.src = hash;
+        return;
+    }
+    
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
     mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
 }
 
-async function renderCommitsPage(container) {
-    container.innerHTML = '<h1>commit history</h1><p style="color:var(--fg-muted);">Loading commits...</p>';
+// ==== COMMIT HISTORY PAGINATION ====
+let commitPage = 1;
+let isLoadingCommits = false;
+let hasMoreCommits = true;
+
+async function loadCommitHistory(container, append = false) {
+    if(isLoadingCommits || !hasMoreCommits) return;
+    isLoadingCommits = true;
+    
+    if(!append) {
+        commitPage = 1;
+        hasMoreCommits = true;
+        container.innerHTML = '<h1 style="margin-bottom:40px;">commit history</h1><div id="commits-list" style="display:flex; flex-direction:column;"></div><div id="commits-loader" style="color:var(--fg-muted); padding:20px 0; text-align:center;">Loading commits...</div>';
+    }
+    
     try {
-        const res = await fetch('https://api.github.com/repos/devicals/devicals.github.io/commits');
-        if (!res.ok) throw new Error('Network response was not ok');
+        const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=20`);
         const commits = await res.json();
+        
+        if(commits.length < 20) hasMoreCommits = false;
+        
+        const list = container.querySelector('#commits-list');
+        const loader = container.querySelector('#commits-loader');
         
         const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         
-        const rows = commits.map((c, idx) => {
+        const rows = commits.map(c => {
             const sha = (c.sha || '').substring(0, 7);
             const lines = (c.commit?.message || '').split('\n');
             const summary = escapeHTML(lines[0]);
@@ -390,16 +423,15 @@ async function renderCommitsPage(container) {
             const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
             const dateStr = c.commit?.author?.date;
             const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
-            const isLast = idx === commits.length - 1;
 
             return `
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="width: 14px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center;">
-                        <div style="width: 2px; flex: 1; background: var(--border); visibility: ${idx === 0 ? 'hidden' : 'visible'};"></div>
+                        <div style="width: 2px; flex: 1; background: var(--border);"></div>
                         <div style="color: var(--accent); font-weight: bold; line-height: 1; font-size: 16px;">&#9679;</div>
-                        <div style="width: 2px; flex: 1; background: var(--border); visibility: ${isLast ? 'hidden' : 'visible'};"></div>
+                        <div style="width: 2px; flex: 1; background: var(--border);"></div>
                     </div>
-                    <div style="flex: 1; min-width: 0; padding-bottom: 20px; ${isLast ? '' : 'border-bottom: 1px dashed var(--border);'}">
+                    <div style="flex: 1; min-width: 0; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
                         <div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-main); font-size: 16px; font-weight: bold;">${summary}</div>
                         ${body ? `<div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-muted); font-size: 13px; margin-top: 8px;">${body}</div>` : ''}
                         <div style="color: var(--fg-muted); font-size: 12px; margin-top: 10px;">
@@ -410,9 +442,26 @@ async function renderCommitsPage(container) {
             `;
         }).join('');
         
-        container.innerHTML = `<h1>commit history</h1><div style="margin-top:40px;">${rows}</div>`;
+        if (list) list.insertAdjacentHTML('beforeend', rows);
+        
+        commitPage++;
+        isLoadingCommits = false;
+        
+        if(!hasMoreCommits && loader) {
+            loader.textContent = 'End of history.';
+        } else if(loader) {
+            loader.textContent = 'Scroll down to load more...';
+            const obs = new IntersectionObserver(entries => {
+                if(entries[0].isIntersecting) { 
+                    obs.disconnect(); 
+                    loadCommitHistory(container, true); 
+                }
+            });
+            obs.observe(loader);
+        }
     } catch (e) {
-        container.innerHTML = '<h1>commit history</h1><p style="color:var(--destructive);">Failed to load commit history.</p>';
+        if(!append) container.innerHTML = '<h1 style="margin-bottom:20px;">commit history</h1><p style="color:var(--destructive);">Failed to load.</p>';
+        isLoadingCommits = false;
     }
 }
 
@@ -422,27 +471,50 @@ function updateWordCount(text) {
     document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
 }
 
+// ==== ANNOUNCEMENTS MULTI-TOAST LOGIC ====
 async function loadAnnouncementsToast() {
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data && data.data.length > 0) {
-            const toast = document.getElementById('announcement-toast');
-            const textEl = document.getElementById('announcement-text');
-            const bar = document.getElementById('announcement-bar');
-
-            textEl.innerHTML = marked.parse(data.data[data.data.length - 1]);
-            toast.style.display = 'flex';
-            bar.style.width = '100%';
-
-            setTimeout(() => { bar.style.width = '0%'; }, 50);
-
-            announcementTimer = setTimeout(() => { closeAnnouncementToast(); }, 15000);
+            const container = document.getElementById('toast-container');
+            container.innerHTML = '';
+            const dismissed = JSON.parse(sessionStorage.getItem('dismissed_anns') || '[]');
+            
+            data.data.forEach((ann) => {
+                const hash = btoa(unescape(encodeURIComponent(ann))).slice(0, 15);
+                if (dismissed.includes(hash)) return;
+                
+                const toast = document.createElement('div');
+                toast.className = 'announcement-toast';
+                toast.innerHTML = `
+                    <div class="announcement-title">
+                        <span>Notice</span>
+                        <span style="cursor: pointer;" onclick="closeAnnouncementToast('${hash}', this)">✕</span>
+                    </div>
+                    <div class="announcement-body">${marked.parse(ann)}</div>
+                    <div class="announcement-progress" style="width:100%;"></div>
+                `;
+                container.appendChild(toast);
+                
+                setTimeout(() => {
+                    const bar = toast.querySelector('.announcement-progress');
+                    if(bar) bar.style.width = '0%';
+                }, 50);
+                
+                setTimeout(() => {
+                    closeAnnouncementToast(hash, toast.querySelector('.announcement-title span:last-child'));
+                }, 30000);
+            });
         }
     } catch(e) {}
 }
 
-window.closeAnnouncementToast = function() {
-    const toast = document.getElementById('announcement-toast');
-    if (toast) toast.style.display = 'none';
-    if (announcementTimer) clearTimeout(announcementTimer);
+window.closeAnnouncementToast = function(hash, el) {
+    const dismissed = JSON.parse(sessionStorage.getItem('dismissed_anns') || '[]');
+    if (!dismissed.includes(hash)) { 
+        dismissed.push(hash); 
+        sessionStorage.setItem('dismissed_anns', JSON.stringify(dismissed)); 
+    }
+    const toast = el.closest('.announcement-toast');
+    if (toast) toast.remove();
 };
