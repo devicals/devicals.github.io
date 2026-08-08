@@ -168,9 +168,9 @@
       children:
 
       - name: Tier List Maker
-            type: file
-            fileType: html
-            url: pages/ranking.html
+        type: file
+        fileType: html
+        url: pages/ranking.html
 
       - name: ZATO Live Tierlist
         type: file
