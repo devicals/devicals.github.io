@@ -19,9 +19,9 @@
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:40px; font-size: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">World Clocks</h1>
-        
+
         <div style="display:flex; gap:16px; margin-bottom:40px;">
             <input type="text" id="new-clock-input" class="ui-input" style="margin:0; flex:1;" placeholder="Enter timezone (e.g. UTC, America/New_York)">
             <button class="ui-btn" style="width:auto; margin:0;" onclick="addClock()">+ Add Clock</button>
@@ -52,16 +52,16 @@
             setInterval(renderClocks, 1000);
         }
 
-        window.addClock = async function() {
+        window.addClock = async function () {
             const input = document.getElementById('new-clock-input').value.trim();
-            if(!input) return;
+            if (!input) return;
             zones.push(input);
             await saveClocks();
             document.getElementById('new-clock-input').value = '';
             renderClocks();
         };
 
-        window.removeClock = async function(idx) {
+        window.removeClock = async function (idx) {
             zones.splice(idx, 1);
             await saveClocks();
             renderClocks();
@@ -82,7 +82,7 @@
                 try {
                     now = z === 'system' ? DateTime.now() : DateTime.now().setZone(z);
                     if (!now.isValid) throw new Error("Invalid");
-                } catch(e) {
+                } catch (e) {
                     now = null;
                 }
 

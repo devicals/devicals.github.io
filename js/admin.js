@@ -1,24 +1,32 @@
-window.renderAdminPage = async function() {
+const ADMIN_TABS = [
+    { key: 'blogs', label: 'Blogs' },
+    { key: 'projects', label: 'Projects' },
+    { key: 'downloads', label: 'Downloads' },
+    { key: 'games', label: 'Liked Games' },
+    { key: 'spotify', label: 'Spotify API' },
+    { key: 'users', label: 'Users' },
+    { key: 'anns', label: 'Announcements' }
+];
+
+window.renderAdminPage = async function () {
     const container = document.getElementById('page-content');
     container.innerHTML = `
-        <h1 style="margin-bottom:30px;">Admin Dashboard</h1>
-        
-        <div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:40px; border-bottom:1px solid var(--border); padding-bottom:20px;">
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('blogs')">Manage Blogs</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('projects')">Manage Projects</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('downloads')">Manage Downloads</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('games')">Manage Liked Games</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('spotify')">Spotify API Config</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('users')">User Management</button>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('anns')">Announcements</button>
-        </div>
-
+        <div class="admin-section-title" style="margin-bottom:8px; border-bottom:none; padding-bottom:0;">Admin Dashboard</div>
+        <div class="admin-tab-bar" id="admin-tab-bar"></div>
         <div id="admin-section-content"></div>
     `;
+    renderAdminTabBar('blogs');
     renderAdminSection('blogs');
 };
 
-window.renderAdminSection = async function(section) {
+function renderAdminTabBar(active) {
+    const bar = document.getElementById('admin-tab-bar');
+    bar.innerHTML = ADMIN_TABS.map(t => `
+        <button class="admin-tab-btn ${t.key === active ? 'active' : ''}" onclick="renderAdminTabBar('${t.key}'); renderAdminSection('${t.key}')">${t.label}</button>
+    `).join('');
+}
+
+window.renderAdminSection = async function (section) {
     const view = document.getElementById('admin-section-content');
     view.innerHTML = '<span style="color:var(--fg-muted);">Loading...</span>';
 
@@ -38,10 +46,10 @@ window.renderAdminSection = async function(section) {
             const banned = users.filter(u => u.is_banned);
 
             const renderRow = (u) => `
-                <div class="admin-user-card" style="padding:20px; border:1px solid var(--border); margin-bottom:16px;">
+                <div class="admin-user-card">
                     <div class="admin-user-card-header">
                         <div>
-                            <strong style="color:var(--accent); font-size:16px;">${u.username || 'Unnamed'}</strong> 
+                            <strong style="color:var(--accent); font-size:16px;">${u.username || 'Unnamed'}</strong>
                             <span style="color:var(--fg-muted); margin-left:8px;">(ID: ${u.id})</span>
                             ${u.is_admin ? '<span class="user-tag admin">ADMIN</span>' : ''}
                             ${u.is_banned ? '<span class="user-tag banned">BANNED</span>' : ''}
@@ -49,8 +57,8 @@ window.renderAdminSection = async function(section) {
                     </div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
                         <button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', '${u.is_admin ? 'demote' : 'promote'}')">${u.is_admin ? 'Demote' : 'Make Admin'}</button>
-                        ${u.is_banned 
-                            ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">Unban</button>` 
+                        ${u.is_banned
+                            ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">Unban</button>`
                             : `<button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'ban')">Ban</button>`
                         }
                     </div>
@@ -58,9 +66,9 @@ window.renderAdminSection = async function(section) {
             `;
 
             view.innerHTML = `
-                <h2 style="margin-bottom:20px;">Active Users (${active.length})</h2>
+                <div class="admin-section-title">Active Users (${active.length})</div>
                 ${active.map(renderRow).join('') || '<p style="color:var(--fg-muted); font-size:13px;">No active users.</p>'}
-                <h2 style="margin-top:40px; margin-bottom:20px;">Banned Users (${banned.length})</h2>
+                <div class="admin-section-title" style="margin-top:40px;">Banned Users (${banned.length})</div>
                 ${banned.map(renderRow).join('') || '<p style="color:var(--fg-muted); font-size:13px;">No banned users.</p>'}
             `;
         } catch (e) {
@@ -68,9 +76,9 @@ window.renderAdminSection = async function(section) {
         }
     } else if (section === 'anns') {
         view.innerHTML = `
-            <h2 style="margin-bottom:20px;">Announcements</h2>
-            <div class="settings-group" style="margin-bottom:40px;">
-                <textarea id="admin-ann-text" class="ui-input" rows="4" placeholder="New announcement text..."></textarea>
+            <div class="admin-section-title">Announcements</div>
+            <div class="admin-card" style="margin-bottom:40px;">
+                <textarea id="admin-ann-text" class="ui-input" rows="4" placeholder="New announcement text..." style="margin-bottom:12px;"></textarea>
                 <button class="ui-btn" style="width:auto;" onclick="postAdminAnnouncement()">Post Announcement</button>
             </div>
             <div id="admin-ann-list" class="flat-list-container">Loading...</div>
@@ -81,10 +89,9 @@ window.renderAdminSection = async function(section) {
         const conf = data?.data || { client_id: '', client_secret: '', refresh_token: '' };
 
         view.innerHTML = `
-            <h2 style="margin-bottom:20px;">Spotify API Configuration</h2>
+            <div class="admin-section-title">Spotify API Configuration</div>
             <p style="color:var(--fg-muted); margin-bottom:20px; font-size:13px;">Enter your credentials from the Spotify Developer Dashboard to enable Currently Playing and Liked Songs.</p>
-
-            <div style="display:flex; flex-direction:column; gap:16px; max-width:600px;">
+            <div class="admin-card" style="display:flex; flex-direction:column; gap:16px; max-width:600px;">
                 <div>
                     <label style="display:block; margin-bottom:6px; color:var(--fg-muted); font-size:12px;">CLIENT ID</label>
                     <input type="text" id="sp-client-id" class="ui-input" value="${conf.client_id || ''}">
@@ -103,15 +110,15 @@ window.renderAdminSection = async function(section) {
     } else if (section === 'blogs') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
         let list = data?.data || [];
-        
+
         view.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0;">Manage Blogs</h2>
+                <div class="admin-section-title" style="margin:0; border:none; padding:0;">Manage Blogs</div>
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="adminEditBlog(-1)">+ New Blog</button>
             </div>
             <div class="flat-list-container">
                 ${list.map((b, i) => `
-                    <div class="flat-list-item" style="flex-direction:row; justify-content:space-between; align-items:center;">
+                    <div class="admin-card admin-card-row">
                         <div>
                             <div style="font-weight:bold; color:var(--accent); font-size:16px;">${b.title}</div>
                             <div style="color:var(--fg-muted); font-size:12px;">ID: #${b.id} | Date: ${b.date}</div>
@@ -127,10 +134,10 @@ window.renderAdminSection = async function(section) {
     } else if (section === 'projects') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
         let tabs = data?.data?.tabs || {};
-        
+
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0;">Manage Projects</h2>
+                <div class="admin-section-title" style="margin:0; border:none; padding:0;">Manage Projects</div>
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="adminAddProjectTab()">+ New Tab</button>
             </div>
         `;
@@ -138,9 +145,9 @@ window.renderAdminSection = async function(section) {
         Object.keys(tabs).forEach(tabKey => {
             let projs = tabs[tabKey].projects || [];
             html += `
-                <div style="margin-bottom:40px; border:1px solid var(--border); padding:20px; background:var(--bg-hover);">
+                <div class="admin-card" style="margin-bottom:24px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                        <h3 style="margin:0;">Tab: ${tabs[tabKey].display}</h3>
+                        <h3 style="margin:0; color:var(--fg-main); font-weight:400;">Tab: ${tabs[tabKey].display}</h3>
                         <div style="display:flex; gap:10px;">
                             <button class="ui-btn" style="width:auto; margin:0;" onclick="adminAddProject('${tabKey}')">+ Add Project</button>
                             <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteProjectTab('${tabKey}')">Delete Tab</button>
@@ -164,15 +171,15 @@ window.renderAdminSection = async function(section) {
     } else if (section === 'downloads') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
         let list = data?.data || [];
-        
+
         view.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0;">Manage Downloads</h2>
+                <div class="admin-section-title" style="margin:0; border:none; padding:0;">Manage Downloads</div>
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="adminEditDownload(-1)">+ New Download</button>
             </div>
             <div class="flat-list-container">
                 ${list.map((d, i) => `
-                    <div class="flat-list-item" style="flex-direction:row; justify-content:space-between; align-items:center;">
+                    <div class="admin-card admin-card-row">
                         <div>
                             <div style="font-weight:bold; color:var(--accent); font-size:16px;">${d.name}</div>
                             <div style="color:var(--fg-muted); font-size:12px;">URL: ${d.url}</div>
@@ -188,7 +195,7 @@ window.renderAdminSection = async function(section) {
     } else if (section === 'games') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
         let gData = data?.data || { favorites: [], liked: [], wanttoplay: [] };
-        
+
         const renderSimpleList = (arr, key) => arr.map((item, i) => `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border); padding:8px 0;">
                 <span>${item}</span>
@@ -197,16 +204,16 @@ window.renderAdminSection = async function(section) {
         `).join('') || '<span style="color:var(--fg-muted);">Empty list.</span>';
 
         view.innerHTML = `
-            <h2 style="margin-bottom:20px;">Manage Liked Games</h2>
-            
-            <div style="margin-bottom:40px;">
+            <div class="admin-section-title">Manage Liked Games</div>
+
+            <div class="admin-card" style="margin-bottom:24px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>Favorites</h3>
+                    <h3 style="font-weight:400;">Favorites</h3>
                     <button class="ui-btn" style="width:auto; margin:0;" onclick="adminAddFavGame()">+ Add Favorite</button>
                 </div>
                 <div style="display:flex; flex-direction:column; gap:12px;">
                     ${(gData.favorites || []).map((f, i) => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); padding:12px; background:var(--bg-hover);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); padding:12px; background:var(--bg-main);">
                             <span><strong>${f.title}</strong></span>
                             <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteFavGame(${i})">Delete</button>
                         </div>
@@ -215,16 +222,16 @@ window.renderAdminSection = async function(section) {
             </div>
 
             <div style="display:flex; gap:20px;">
-                <div style="flex:1; border:1px solid var(--border); padding:15px; background:var(--bg-hover);">
+                <div class="admin-card" style="flex:1; margin-bottom:0;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                        <h4>Games I Like</h4>
+                        <h4 style="font-weight:400;">Games I Like</h4>
                         <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="adminAddSimpleGame('liked')">+ Add</button>
                     </div>
                     ${renderSimpleList(gData.liked, 'liked')}
                 </div>
-                <div style="flex:1; border:1px solid var(--border); padding:15px; background:var(--bg-hover);">
+                <div class="admin-card" style="flex:1; margin-bottom:0;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                        <h4>Want to Play</h4>
+                        <h4 style="font-weight:400;">Want to Play</h4>
                         <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="adminAddSimpleGame('wanttoplay')">+ Add</button>
                     </div>
                     ${renderSimpleList(gData.wanttoplay, 'wanttoplay')}
@@ -234,11 +241,11 @@ window.renderAdminSection = async function(section) {
     }
 };
 
-window.saveSpotifyConfig = async function() {
+window.saveSpotifyConfig = async function () {
     const client_id = document.getElementById('sp-client-id').value.trim();
     const client_secret = document.getElementById('sp-client-secret').value.trim();
     const refresh_token = document.getElementById('sp-refresh-token').value.trim();
-    
+
     await supabaseClient.from('site_content').upsert({
         key: 'spotify_config',
         data: { client_id, client_secret, refresh_token }
@@ -246,7 +253,7 @@ window.saveSpotifyConfig = async function() {
     guiAlert("Spotify credentials saved successfully!", "Success");
 };
 
-window.adminEditBlog = async function(idx) {
+window.adminEditBlog = async function (idx) {
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
     let list = data?.data || [];
     let b = idx >= 0 ? list[idx] : { title: '', content: '' };
@@ -269,8 +276,8 @@ window.adminEditBlog = async function(idx) {
     renderAdminSection('blogs');
 };
 
-window.adminDeleteEntry = async function(key, idx) {
-    if(!await window.guiConfirm("Delete this entry?", "Confirm")) return;
+window.adminDeleteEntry = async function (key, idx) {
+    if (!await window.guiConfirm("Delete this entry?", "Confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', key).single();
     let list = data?.data || [];
     list.splice(idx, 1);
@@ -278,20 +285,20 @@ window.adminDeleteEntry = async function(key, idx) {
     renderAdminSection(key);
 };
 
-window.adminAddProjectTab = async function() {
+window.adminAddProjectTab = async function () {
     const name = await window.guiPrompt("Tab Name:");
     if (!name) return;
     const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let pData = data?.data || { tabs: {} };
-    if(!pData.tabs) pData.tabs = {};
+    if (!pData.tabs) pData.tabs = {};
     pData.tabs[key] = { display: name, projects: [] };
     await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
     renderAdminSection('projects');
 };
 
-window.adminDeleteProjectTab = async function(tabKey) {
-    if(!await window.guiConfirm("Delete this entire tab and its projects?", "Confirm")) return;
+window.adminDeleteProjectTab = async function (tabKey) {
+    if (!await window.guiConfirm("Delete this entire tab and its projects?", "Confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let pData = data?.data || { tabs: {} };
     delete pData.tabs[tabKey];
@@ -299,29 +306,29 @@ window.adminDeleteProjectTab = async function(tabKey) {
     renderAdminSection('projects');
 };
 
-window.adminAddProject = async function(tabKey) {
+window.adminAddProject = async function (tabKey) {
     const name = await window.guiPrompt("Project Name:");
     if (!name) return;
     const desc = await window.guiPrompt("Description:");
     const link = await window.guiPrompt("Link URL:", "https://");
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let pData = data?.data || { tabs: {} };
-    if(!pData.tabs[tabKey].projects) pData.tabs[tabKey].projects = [];
+    if (!pData.tabs[tabKey].projects) pData.tabs[tabKey].projects = [];
     pData.tabs[tabKey].projects.push({ name, description: desc, link });
     await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
     renderAdminSection('projects');
 };
 
-window.adminEditProject = async function(tabKey, idx) {
+window.adminEditProject = async function (tabKey, idx) {
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let pData = data?.data || { tabs: {} };
     let proj = pData.tabs[tabKey].projects[idx];
-    
+
     const name = await window.guiPrompt("Project Name:", proj.name);
     if (name === null) return;
     const desc = await window.guiPrompt("Description:", proj.description);
     const link = await window.guiPrompt("Link URL:", proj.link);
-    
+
     proj.name = name;
     proj.description = desc;
     proj.link = link;
@@ -329,8 +336,8 @@ window.adminEditProject = async function(tabKey, idx) {
     renderAdminSection('projects');
 };
 
-window.adminDeleteProject = async function(tabKey, idx) {
-    if(!await window.guiConfirm("Delete this project?", "Confirm")) return;
+window.adminDeleteProject = async function (tabKey, idx) {
+    if (!await window.guiConfirm("Delete this project?", "Confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let pData = data?.data || { tabs: {} };
     pData.tabs[tabKey].projects.splice(idx, 1);
@@ -338,7 +345,7 @@ window.adminDeleteProject = async function(tabKey, idx) {
     renderAdminSection('projects');
 };
 
-window.adminEditDownload = async function(idx) {
+window.adminEditDownload = async function (idx) {
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
     let list = data?.data || [];
     let d = idx >= 0 ? list[idx] : { name: '', description: '', url: 'https://' };
@@ -358,20 +365,20 @@ window.adminEditDownload = async function(idx) {
     renderAdminSection('downloads');
 };
 
-window.adminAddFavGame = async function() {
+window.adminAddFavGame = async function () {
     const title = await window.guiPrompt("Favorite Game Title:");
     if (!title) return;
     const comment = await window.guiPrompt("Comment (Optional):");
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
     let gData = data?.data || { favorites: [], liked: [], wanttoplay: [] };
-    if(!gData.favorites) gData.favorites = [];
+    if (!gData.favorites) gData.favorites = [];
     gData.favorites.push({ title, comment, tags: {} });
     await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
     renderAdminSection('games');
 };
 
-window.adminDeleteFavGame = async function(idx) {
-    if(!await window.guiConfirm("Delete this favorite?", "Confirm")) return;
+window.adminDeleteFavGame = async function (idx) {
+    if (!await window.guiConfirm("Delete this favorite?", "Confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
     let gData = data?.data;
     gData.favorites.splice(idx, 1);
@@ -379,19 +386,19 @@ window.adminDeleteFavGame = async function(idx) {
     renderAdminSection('games');
 };
 
-window.adminAddSimpleGame = async function(listKey) {
+window.adminAddSimpleGame = async function (listKey) {
     const title = await window.guiPrompt("Game Title:");
     if (!title) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
     let gData = data?.data || { favorites: [], liked: [], wanttoplay: [] };
-    if(!gData[listKey]) gData[listKey] = [];
+    if (!gData[listKey]) gData[listKey] = [];
     gData[listKey].push(title);
     await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
     renderAdminSection('games');
 };
 
-window.adminDeleteSimpleGame = async function(listKey, idx) {
-    if(!await window.guiConfirm("Delete this item?", "Confirm")) return;
+window.adminDeleteSimpleGame = async function (listKey, idx) {
+    if (!await window.guiConfirm("Delete this item?", "Confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
     let gData = data?.data;
     gData[listKey].splice(idx, 1);
@@ -424,7 +431,7 @@ async function loadAdminAnnouncements() {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data && data.data.length > 0) {
             list.innerHTML = data.data.map((a, i) => `
-                <div class="flat-list-item" style="flex-direction:row; justify-content:space-between; align-items:center;">
+                <div class="admin-card admin-card-row">
                     <span style="font-size:14px; line-height:1.6;">${a}</span>
                     <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteAdminAnn(${i})">Delete</button>
                 </div>

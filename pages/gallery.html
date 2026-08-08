@@ -13,7 +13,7 @@
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
             <h1 style="margin:0;">Public Gallery Board</h1>
             <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleUploadBox()">+ Add Art / Image</button>
@@ -24,14 +24,14 @@
                 <input type="text" id="gal-name" class="ui-input" readonly placeholder="Your Name" style="margin:0;">
                 <input type="text" id="gal-title" class="ui-input" placeholder="Artwork Title" style="margin:0;">
             </div>
-            
+
             <label style="font-size:11px; color:var(--fg-muted);">Upload Image File</label>
             <input type="file" id="gal-file" class="ui-input" accept="image/*" style="margin-bottom:12px;">
-            
+
             <div style="font-size:11px; color:var(--fg-muted); text-align:center; margin-bottom:12px;">- OR -</div>
-            
+
             <input type="text" id="gal-url" class="ui-input" placeholder="Image URL (Or click Draw below)" style="margin-bottom:12px;">
-            
+
             <div style="display:flex; gap:12px;">
                 <button class="ui-btn" style="flex:1; margin:0;" onclick="toggleCanvas()">Toggle Draw Canvas</button>
                 <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="postGallery()">Post to Gallery</button>
@@ -115,7 +115,7 @@
             if (currentUser) {
                 const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
                 currentProfile = prof;
-                if (prof?.is_admin || currentUser.email.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                if (prof?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
                     isAdminLocal = true;
                 }
             }
@@ -158,8 +158,8 @@
                 let hash = 0;
                 for (let i = 0; i < data.ip.length; i++) hash = ((hash << 5) - hash) + data.ip.charCodeAt(i);
                 return "Anonymous #" + Math.abs(hash).toString().substring(0, 4);
-            } catch(e) {
-                return "Anonymous #" + Math.floor(Math.random()*9000 + 1000);
+            } catch (e) {
+                return "Anonymous #" + Math.floor(Math.random() * 9000 + 1000);
             }
         }
 
@@ -177,7 +177,8 @@
 
         window.deleteGalleryItem = async (id) => {
             if (!isAdminLocal) return;
-            if (confirm("Delete this gallery item?")) {
+            const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("Delete this gallery item?") : confirm("Delete this gallery item?");
+            if (ok) {
                 await supabaseClient.from('guestbook').delete().eq('id', id);
             }
         };
@@ -187,7 +188,7 @@
             const title = document.getElementById('gal-title').value.trim() || 'Untitled';
             const url = document.getElementById('gal-url').value.trim();
             const fileInput = document.getElementById('gal-file');
-            
+
             let drawingData = null;
 
             if (fileInput.files.length > 0) {

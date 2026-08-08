@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tier List Maker</title>
   <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
       .tl-layout { display: flex; height: 100vh; background: var(--bg-workspace); }
       .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
-      
-      .tl-sidebar { width: 300px; min-width: 300px; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-sidebar); padding: 20px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
+
+      .tl-sidebar { width: 320px; min-width: 320px; height: 100vh; overflow-y: auto; border-left: 1px solid var(--border); background: var(--bg-sidebar); padding: 20px; display: flex; flex-direction: column; gap: 20px; flex-shrink: 0; }
 
       .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
       .tl-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 3px; }
-      
+
       .top-bar { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
       .top-bar label { font-size: 10px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 1px; }
 
@@ -29,13 +30,7 @@
       .btn-primary { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); font-weight: 700; }
       .btn-primary:hover { background: var(--accent); color: var(--bg-main); }
 
-      .tier-list {
-        display: grid;
-        grid-template-columns: repeat(var(--tier-cols, 1), 1fr);
-        grid-auto-flow: column;
-        grid-template-rows: repeat(var(--tier-rows, 15), auto);
-        gap: 3px;
-      }
+      .tier-list { display: flex; flex-direction: column; gap: 3px; }
 
       .tier-row { display: flex; align-items: stretch; border: 1px solid var(--border); transition: border-color 0.2s; position: relative; }
       .tier-row.is-exec-row .tier-items { background: rgba(204, 85, 85, 0.15); }
@@ -48,28 +43,27 @@
       }
 
       .tier-items {
-        flex: 1; display: flex; flex-direction: column; gap: 0; padding: 0;
+        flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; padding: 6px;
         background: var(--bg-hover); border-left: 1px solid var(--border);
         transition: background 0.15s; min-height: 56px;
       }
-      .tier-item-row { display: flex; flex: 1; min-height: 56px; }
-      
-      .tilt-wrapper { flex: 1; display: flex; flex-direction: column; user-select: none; border-right: 1px dashed var(--border); min-width: 0; cursor: grab; }
-      .tier-item-row .tilt-wrapper:last-child { border-right: none; }
-      .tier-item-row + .tier-item-row { border-top: 1px dashed var(--border); }
+
+      .tilt-wrapper { flex: 0 0 auto; min-width: 90px; max-width: 200px; user-select: none; cursor: grab; }
 
       .tl-item {
-        width: 100%; flex: 1; min-height: 48px; display: flex; align-items: center; gap: 7px;
-        padding: 5px 12px; background: transparent; color: var(--fg-main);
-        text-align: left; word-break: break-word; height: 100%; position: relative; overflow: hidden;
+        width: 100%; height: 100%; min-height: 44px; display: flex; align-items: center; gap: 7px;
+        padding: 8px 12px; background: var(--bg-main); color: var(--fg-main);
+        text-align: left; position: relative; box-sizing: border-box; border: 1px solid var(--border);
       }
+      .tl-item-label { font-size: clamp(10px, 1.05vw, 13px); line-height: 1.25; overflow-wrap: anywhere; }
       .tl-item.revived { background: rgba(230,180,80,0.15); border: 1px solid var(--accent); }
 
       .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: var(--bg-hover); border: 1px solid var(--border); }
-      .pool-area .tilt-wrapper { flex: 0 0 auto; min-width: 70px; max-width: 130px; border: 1px solid var(--border); }
+      .pool-area .tilt-wrapper { min-width: 70px; max-width: 130px; border: 1px solid var(--border); }
 
       .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
       .sidebar-label { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+      .tl-hint { font-size: 10px; color: var(--fg-muted); }
     </style>
   </head>
 
@@ -77,7 +71,7 @@
   <div class="tl-layout">
     <div class="tl-main">
       <div class="tl-header">
-        <div class="tl-title">Tier List Maker (Local)</div>
+        <div class="tl-title" id="active-list-title">Tier List Maker (Untitled)</div>
       </div>
       <div class="top-bar">
         <label>Preset</label>
@@ -88,12 +82,6 @@
           <option value="simple2">Simple 2</option>
           <option value="extended">Extended</option>
           <option value="complete">Complete</option>
-        </select>
-        <label style="margin-left:6px">Tier Cols</label>
-        <select id="colSel" onchange="changeCols(this.value)">
-          <option value="1" selected>1</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
         </select>
       </div>
       <div class="tier-list" id="tierList"></div>
@@ -109,10 +97,39 @@
         <input type="text" id="itemInput" placeholder="Label or Item..." />
         <button class="btn-primary" onclick="addItem()">+ Add</button>
       </div>
+
+      <div class="sidebar-section tl-sidebar-block">
+        <div class="tl-sidebar-block-title">My Saved Tier Lists</div>
+        <div id="saved-lists-container" style="margin-bottom:12px;">
+          <span class="tl-hint">No saved lists yet.</span>
+        </div>
+        <input type="text" id="save-name-input" class="ui-input" placeholder="Tier list name..." style="margin-bottom:8px;">
+        <button class="ui-btn" onclick="saveCurrentList()">Save Current As New</button>
+      </div>
+
+      <div class="sidebar-section tl-sidebar-block">
+        <div class="tl-sidebar-block-title">Import / Export</div>
+        <button class="ui-btn" onclick="exportCurrentList()">Export as JSON</button>
+        <input type="file" id="import-file-input" accept="application/json" style="display:none;" onchange="importFromFile(event)">
+        <button class="ui-btn" onclick="document.getElementById('import-file-input').click()">Import from JSON</button>
+      </div>
+
+      <div class="sidebar-section tl-sidebar-block">
+        <div class="tl-sidebar-block-title">Share</div>
+        <div class="tl-hint" style="margin-bottom:8px;">Generate a code others can use to load a read-only copy of this exact list.</div>
+        <button class="ui-btn" onclick="generateShareCode()">Generate Share Code</button>
+        <div id="share-code-display" style="display:none; font-family:var(--font-ui); font-size:16px; color:var(--accent); text-align:center; padding:10px; border:1px solid var(--accent); margin-top:8px;"></div>
+        <input type="text" id="share-code-input" class="ui-input" placeholder="Enter a share code..." style="margin-top:14px;">
+        <button class="ui-btn" onclick="loadFromShareCode()">Load Share Code</button>
+      </div>
     </div>
   </div>
 
   <script>
+    const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+    const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
     const TIERS_BASE = [
       { id:'SSS',  label:'SSS',       color:'#FF3B3B', text:'#fff', isExec:false },
       { id:'SS',   label:'SS',        color:'#FF6B3B', text:'#fff', isExec:false },
@@ -126,7 +143,7 @@
       { id:'FF',   label:'FF',        color:'#5A4080', text:'#fff', isExec:false },
       { id:'FFF',  label:'FFF',       color:'#3D2B60', text:'#ccc', isExec:false },
       { id:'Z',    label:'Z',         color:'#4A4A4A', text:'#fff', isExec:false },
-      { id:'EXEC', label:'EXECUTION', color:'#8B0000', text:'#ff6b6b', isExec:true  },
+      { id:'EXEC', label:'EXECUTION', color:'#8B0000', text:'#ff6b6b', isExec:true }
     ];
 
     const PRESETS = {
@@ -139,21 +156,35 @@
     };
 
     let activeTierIds = PRESETS.full;
-    let columns = 1;
     let tierItems = {};
     let poolItems = [];
     let dragItem = null, dragSrc = null;
+    let currentListId = null;
+    let currentListName = "Untitled";
+    let userId = null;
+
+    function currentState() {
+      return { preset: document.getElementById('presetSel').value, activeTierIds, tierItems, poolItems };
+    }
+
+    function loadState(state) {
+      if (!state) return;
+      activeTierIds = state.activeTierIds || PRESETS.full;
+      tierItems = state.tierItems || {};
+      poolItems = state.poolItems || [];
+      if (state.preset) document.getElementById('presetSel').value = state.preset;
+      renderAll();
+    }
 
     function renderAll() {
-      document.documentElement.style.setProperty('--tier-cols', columns);
-      document.documentElement.style.setProperty('--tier-rows', String(Math.ceil(activeTierIds.length / columns)));
       renderTiers(); renderPool();
+      document.getElementById('active-list-title').textContent = `Tier List Maker (${currentListName})`;
     }
 
     function renderTiers() {
       const list = document.getElementById('tierList'); list.innerHTML = '';
       activeTierIds.forEach(id => {
-        const tier = TIERS_BASE.find(t => t.id === id); if(!tier) return;
+        const tier = TIERS_BASE.find(t => t.id === id); if (!tier) return;
         const row = document.createElement('div');
         row.className = 'tier-row' + (tier.isExec ? ' is-exec-row' : '');
         row.dataset.tierId = tier.id;
@@ -170,10 +201,7 @@
         setupDrop(itemsDiv);
 
         const listArr = tierItems[tier.id] || [];
-        const rowDiv = document.createElement('div');
-        rowDiv.className = 'tier-item-row';
-        listArr.forEach(item => rowDiv.appendChild(makeCard(item, tier.id)));
-        itemsDiv.appendChild(rowDiv);
+        listArr.forEach(item => itemsDiv.appendChild(makeCard(item, tier.id)));
         row.appendChild(itemsDiv);
         list.appendChild(row);
       });
@@ -182,7 +210,7 @@
     function renderPool() {
       const pool = document.getElementById('pool'); pool.innerHTML = '';
       if (!poolItems.length) {
-        pool.innerHTML = '<div class="pool-empty">add items below</div>'; return;
+        pool.innerHTML = '<div class="tl-hint">add items below</div>'; return;
       }
       poolItems.forEach(item => pool.appendChild(makeCard(item, '__pool__')));
       setupDrop(pool);
@@ -193,7 +221,7 @@
       wrap.draggable = true;
       const card = document.createElement('div');
       card.className = 'tl-item' + (tier === 'EXEC' ? ' revived' : '');
-      card.textContent = item.label;
+      card.innerHTML = `<span class="tl-item-label" title="${item.label}">${item.label}</span>`;
       wrap.appendChild(card);
 
       wrap.addEventListener('dragstart', () => { dragItem = item; dragSrc = tier; });
@@ -206,7 +234,7 @@
         e.preventDefault(); if (!dragItem) return;
         const dest = el.dataset.tier;
         if (dest === dragSrc) return;
-        
+
         if (dragSrc === '__pool__') poolItems = poolItems.filter(i => i.id !== dragItem.id);
         else tierItems[dragSrc] = (tierItems[dragSrc] || []).filter(i => i.id !== dragItem.id);
 
@@ -229,11 +257,134 @@
       renderAll();
     }
 
-    function changeCols(val) {
-      columns = parseInt(val); renderAll();
+    async function getSavedLists() {
+      if (userId) {
+        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'tierlists_' + userId).single();
+        return data?.data || [];
+      }
+      return JSON.parse(localStorage.getItem('local_tierlists') || '[]');
     }
 
-    renderAll();
+    async function setSavedLists(lists) {
+      if (userId) {
+        await supabaseClient.from('site_content').upsert({ key: 'tierlists_' + userId, data: lists });
+      } else {
+        localStorage.setItem('local_tierlists', JSON.stringify(lists));
+      }
+    }
+
+    async function refreshSavedListsUI() {
+      const lists = await getSavedLists();
+      const container = document.getElementById('saved-lists-container');
+      if (!lists.length) {
+        container.innerHTML = '<span class="tl-hint">No saved lists yet.</span>';
+        return;
+      }
+      container.innerHTML = lists.map(l => `
+        <div class="tl-saved-item">
+          <span class="tl-saved-item-name">${l.name}</span>
+          <button class="ui-btn tl-mini-btn" onclick="loadSavedList('${l.id}')">Load</button>
+          <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteSavedList('${l.id}')">Del</button>
+        </div>
+      `).join('');
+    }
+
+    window.saveCurrentList = async function () {
+      const nameInput = document.getElementById('save-name-input');
+      const name = nameInput.value.trim() || 'Untitled Tier List';
+      const lists = await getSavedLists();
+      const entry = { id: 'tl_' + Date.now(), name, state: currentState() };
+      lists.unshift(entry);
+      await setSavedLists(lists);
+      currentListId = entry.id;
+      currentListName = name;
+      nameInput.value = '';
+      renderAll();
+      refreshSavedListsUI();
+    };
+
+    window.loadSavedList = async function (id) {
+      const lists = await getSavedLists();
+      const entry = lists.find(l => l.id === id);
+      if (!entry) return;
+      currentListId = entry.id;
+      currentListName = entry.name;
+      loadState(entry.state);
+    };
+
+    window.deleteSavedList = async function (id) {
+      let lists = await getSavedLists();
+      lists = lists.filter(l => l.id !== id);
+      await setSavedLists(lists);
+      if (currentListId === id) { currentListId = null; currentListName = 'Untitled'; renderAll(); }
+      refreshSavedListsUI();
+    };
+
+    window.exportCurrentList = function () {
+      const payload = { name: currentListName, state: currentState() };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentListName.replace(/[^a-z0-9]/gi, '_')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    window.importFromFile = function (event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const payload = JSON.parse(e.target.result);
+          if (payload.state) {
+            currentListId = null;
+            currentListName = payload.name || 'Imported Tier List';
+            loadState(payload.state);
+          }
+        } catch (err) {
+          alert('Invalid tier list file.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    };
+
+    function genCode(len) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let out = '';
+      for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+      return out;
+    }
+
+    window.generateShareCode = async function () {
+      const code = genCode(6);
+      const payload = { name: currentListName, state: currentState() };
+      await supabaseClient.from('site_content').upsert({ key: 'tierlist_share_' + code, data: payload });
+      const display = document.getElementById('share-code-display');
+      display.style.display = 'block';
+      display.textContent = code;
+    };
+
+    window.loadFromShareCode = async function () {
+      const code = document.getElementById('share-code-input').value.trim().toUpperCase();
+      if (!code) return;
+      const { data, error } = await supabaseClient.from('site_content').select('data').eq('key', 'tierlist_share_' + code).single();
+      if (error || !data) { alert('Share code not found.'); return; }
+      currentListId = null;
+      currentListName = data.data.name || 'Shared Tier List';
+      loadState(data.data.state);
+    };
+
+    async function init() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      userId = session?.user?.id || window.parent?.currentUser?.id || null;
+      renderAll();
+      refreshSavedListsUI();
+    }
+
+    init();
   </script>
   </body>
 </html>

@@ -66,7 +66,7 @@ function loadSettingsLocally() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
     const theme = localStorage.getItem('theme') || 'primary';
     const customCss = localStorage.getItem('custom-css') || '';
-    
+
     document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
     document.getElementById('custom-css-block').textContent = customCss;
     document.getElementById('custom-css-input').value = customCss;
@@ -85,7 +85,7 @@ document.getElementById('toggle-dark-mode').onclick = () => {
 
 document.getElementById('theme-selector').onchange = (e) => {
     localStorage.setItem('theme', e.target.value);
-    if(document.documentElement.getAttribute('data-theme') !== 'light') {
+    if (document.documentElement.getAttribute('data-theme') !== 'light') {
         document.documentElement.setAttribute('data-theme', e.target.value);
     }
     syncSettingsToServer();
@@ -103,14 +103,14 @@ function syncIframeTheme() {
     const iframe = document.getElementById('iframe-workspace');
     if (iframe && iframe.contentWindow) {
         const theme = document.documentElement.getAttribute('data-theme');
-        try { iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme); } catch(e) {}
+        try { iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme); } catch (e) {}
     }
 }
 
 async function syncSettingsToServer() {
     if (currentUser) {
-        const payload = { 
-            theme: localStorage.getItem('theme'), 
+        const payload = {
+            theme: localStorage.getItem('theme'),
             custom_css: localStorage.getItem('custom-css'),
             dark_mode: localStorage.getItem('dark-mode')
         };
@@ -131,12 +131,12 @@ async function initAuth() {
 async function handleSession(session) {
     currentUser = session?.user || null;
     currentProfile = null;
-    
+
     if (currentUser) {
         try {
             const { data: profData } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
             currentProfile = profData;
-            
+
             const { data: setObj } = await supabaseClient.from('site_content').select('data').eq('key', 'settings_' + currentUser.id).single();
             if (setObj && setObj.data) {
                 if (setObj.data.theme) localStorage.setItem('theme', setObj.data.theme);
@@ -144,16 +144,16 @@ async function handleSession(session) {
                 if (setObj.data.dark_mode) localStorage.setItem('dark-mode', setObj.data.dark_mode);
                 loadSettingsLocally();
             }
-            if(currentProfile?.is_admin) {
+            if (currentProfile?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
                 document.body.classList.add('is-admin');
             } else {
                 document.body.classList.remove('is-admin');
             }
-        } catch(e) {}
+        } catch (e) {}
     } else {
         document.body.classList.remove('is-admin');
     }
-    
+
     renderAuthModal();
 }
 
@@ -189,21 +189,21 @@ window.authAction = async (action) => {
         } else {
             await supabaseClient.auth.signInWithPassword({ email, password });
         }
-    } catch(e) {
+    } catch (e) {
         guiAlert(e.message, "Auth Error");
     }
 };
 
 window.updateProfile = async () => {
     const username = document.getElementById('prof-name').value;
-    if(!username || !currentUser) return;
+    if (!username || !currentUser) return;
     try {
         await supabaseClient.from('profiles').upsert({ id: currentUser.id, username });
         const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
         currentProfile = data;
         renderAuthModal();
         guiAlert("Display name updated.", "Success");
-    } catch(e) {
+    } catch (e) {
         guiAlert(e.message, "Error");
     }
 };
@@ -233,13 +233,13 @@ function renderNavigation() {
             const currentPath = [...pathPrefix, node.name];
             const currentPathHash = currentPath.join('/');
             const el = document.createElement('div');
-            
+
             if (node.type === 'folder') {
                 const isExp = expandedFolders.includes(currentPathHash);
                 el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> <span style="font-weight:bold;">${node.name}</span></div>`;
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = `nav-children ${isExp ? 'expanded' : ''}`;
-                
+
                 el.querySelector('.nav-item').addEventListener('click', (e) => {
                     e.stopPropagation();
                     const nowExp = childrenContainer.classList.toggle('expanded');
@@ -250,7 +250,7 @@ function renderNavigation() {
                     }
                     localStorage.setItem('expandedFolders', JSON.stringify(expandedFolders));
                     el.querySelector('.nav-chevron').textContent = nowExp ? 'v' : '>';
-                    window.location.hash = currentPathHash;
+                    setRouteHash(currentPathHash);
                 });
 
                 el.appendChild(childrenContainer);
@@ -262,7 +262,7 @@ function renderNavigation() {
                 el.innerHTML = `<span style="width:14px"></span>${node.name}`;
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    window.location.hash = currentPathHash;
+                    setRouteHash(currentPathHash);
                 });
                 el.setAttribute('data-path', currentPathHash);
                 parentEl.appendChild(el);
@@ -274,8 +274,12 @@ function renderNavigation() {
     highlightNav();
 }
 
+function setRouteHash(rawPath) {
+    window.location.hash = rawPath;
+}
+
 function highlightNav() {
-    const hash = decodeURIComponent(window.location.hash.substring(1)).split('&')[0];
+    const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0];
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
         if (el.getAttribute('data-path') === hash) {
@@ -286,13 +290,13 @@ function highlightNav() {
 
 async function handleRoute() {
     let rawHash = decodeURIComponent(window.location.hash.substring(1));
-    if (!rawHash) { rawHash = "Index/Home"; window.location.hash = rawHash; return; }
-    
-    let parts = rawHash.split('&');
+    if (!rawHash) { window.location.hash = "Index/Home"; return; }
+
+    let parts = rawHash.split('?');
     let hash = parts[0];
-    
+
     highlightNav();
-    
+
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
     const breadcrumbs = document.getElementById('breadcrumbs');
@@ -305,17 +309,17 @@ async function handleRoute() {
         return;
     }
 
-    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="window.location.hash='${arr.slice(0, i+1).join('/')}'">${p}</span>`).join(' > ');
-    
+    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="setRouteHash('${arr.slice(0, i + 1).join('/').replace(/'/g, "\\'")}')">${p}</span>`).join(' > ');
+
     const node = flatNodes.find(n => n.path === hash);
-    
+
     if (node) {
         if (node.type === 'folder') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
-            
+
             let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
-            
+
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
                     const childPath = node.path + '/' + child.name;
@@ -328,7 +332,7 @@ async function handleRoute() {
             } else {
                 html += `<div style="color:var(--fg-muted); font-style:italic;">This folder is empty.</div>`;
             }
-            
+
             html += `</div>`;
             mdContainer.innerHTML = html;
             return;
@@ -349,14 +353,14 @@ async function handleRoute() {
             await renderCommitsPage(mdContainer, true);
             return;
         }
-        
+
         if (node.fileType === 'html') {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
             iframe.src = node.url + (parts[1] ? '?' + parts[1] : '');
             return;
         }
-        
+
         if (node.fileType === 'md') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
@@ -365,13 +369,13 @@ async function handleRoute() {
                 const text = res.ok ? await res.text() : '## Blank Page\nContent not found.';
                 mdContainer.innerHTML = marked.parse(text);
                 updateWordCount(text);
-            } catch(e) {
+            } catch (e) {
                 mdContainer.innerHTML = '<h2>Error loading document</h2>';
             }
             return;
         }
     }
-    
+
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
     mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
@@ -386,9 +390,9 @@ async function renderCommitsPage(container, reset = false) {
         const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=15`);
         if (!res.ok) throw new Error('Failed to fetch');
         const commits = await res.json();
-        
+
         const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        
+
         if (commits.length === 0) {
             document.getElementById('load-more-commits-btn').style.display = 'none';
             return;
@@ -420,22 +424,24 @@ async function renderCommitsPage(container, reset = false) {
                 </div>
             `;
         }).join('');
-        
+
         listEl.innerHTML += rows;
     } catch (e) {
         listEl.innerHTML += '<p style="color:var(--destructive);">Failed to load additional commits.</p>';
     }
 }
 
-window.loadMoreCommits = function() {
+window.loadMoreCommits = function () {
     commitPage++;
     renderCommitsPage(document.getElementById('page-content'), false);
 };
 
 function updateWordCount(text) {
+    const el = document.getElementById('doc-char-count');
+    if (!el) return;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const chars = text.length;
-    document.getElementById('doc-char-count').textContent = `${words} words ${chars} characters`;
+    el.textContent = `${words} words ${chars} characters`;
 }
 
 async function loadAnnouncementsToasts() {
@@ -452,12 +458,27 @@ async function loadAnnouncementsToasts() {
                 toast.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="color:var(--accent); font-weight:bold; font-size:11px; text-transform:uppercase;">NOTICE</span>
-                        <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.parentElement.parentElement.remove()">✕</span>
+                        <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.closest('.announcement-toast').remove()">✕</span>
                     </div>
-                    <div style="font-size:13px; line-height:1.6; color:var(--fg-main);">${marked.parse(annText)}</div>
+                    <div class="announcement-body">${marked.parse(annText)}</div>
+                    <div class="announcement-progress-track"><div class="announcement-progress" id="ann-progress-${idx}"></div></div>
                 `;
                 container.appendChild(toast);
+
+                const bar = toast.querySelector(`#ann-progress-${idx}`);
+                requestAnimationFrame(() => {
+                    bar.style.transition = 'transform 30s linear';
+                    bar.style.transform = 'scaleX(0)';
+                });
+
+                setTimeout(() => {
+                    if (toast.isConnected) {
+                        toast.style.transition = 'opacity 0.4s ease';
+                        toast.style.opacity = '0';
+                        setTimeout(() => toast.remove(), 400);
+                    }
+                }, 30000);
             });
         }
-    } catch(e) {}
+    } catch (e) {}
 }

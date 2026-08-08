@@ -25,12 +25,21 @@
         .games-list-li:last-child {
             border-bottom: none;
         }
+        .game-comment {
+            font-size: 14px;
+            color: var(--fg-main);
+            margin-top: 8px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            display: inline-block;
+        }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 850px; margin: 0; padding-bottom: 80px;" class="markdown-body">
-        <h1 style="margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; text-align: left;">interests & games</h1>
-        
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;" class="markdown-body">
+        <h1 style="margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; text-align: left;">liked games</h1>
+
         <h2 style="text-align: left; margin-bottom: 20px;">favorites</h2>
         <ul id="fav-games-list" class="games-list-ul" style="margin-bottom:50px;"></ul>
 
@@ -48,6 +57,8 @@
 
         let gamesData = { favorites: [], liked: [], wanttoplay: [] };
 
+        function escapeHTML(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
         async function initGamesPage() {
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
             if (data && data.data) {
@@ -60,15 +71,15 @@
             document.getElementById('fav-games-list').innerHTML = (gamesData.favorites || []).map((g) => `
                 <li class="games-list-li">
                     <div>
-                        <strong style="color:var(--accent); font-size:18px; display:block;">${g.title}</strong>
-                        ${g.comment ? `<div style="font-size:14px; color:var(--fg-main); margin-top:8px; line-height:1.6; white-space: pre-wrap;">${g.comment}</div>` : ''}
+                        <strong style="color:var(--accent); font-size:18px; display:block;">${escapeHTML(g.title)}</strong>
+                        ${g.comment ? `<span class="game-comment">${escapeHTML(g.comment)}</span>` : ''}
                     </div>
                 </li>
             `).join('');
 
             const renderSimple = (arr) => (arr || []).map((title) => `
                 <li class="games-list-li">
-                    <span style="font-size:16px; color:var(--fg-main);">${title}</span>
+                    <span style="font-size:16px; color:var(--fg-main);">${escapeHTML(title)}</span>
                 </li>
             `).join('');
 

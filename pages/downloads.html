@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 800px; margin: 0 auto; padding-bottom: 80px;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
             <h1 style="margin:0; font-size:32px;">Downloads</h1>
             <div id="admin-add-download-btn" style="display:none;">
@@ -26,7 +26,7 @@
         let isAdminLocal = false;
 
         async function initDownloadsPage() {
-            isAdminLocal = window.parent.currentProfile?.is_admin || false;
+            isAdminLocal = window.parent.currentProfile?.is_admin || window.parent.currentUser?.email?.toLowerCase() === '3rr0r.d3v@gmail.com' || false;
             if (isAdminLocal) {
                 document.getElementById('admin-add-download-btn').style.display = 'block';
             }
@@ -58,7 +58,7 @@
             if (!name) return;
             const desc = await window.parent.guiPrompt("Description:", "", "Download Details");
             const url = await window.parent.guiPrompt("Download URL:", "https://", "Download Link");
-            
+
             dlList.push({ id: Date.now(), name, description: desc, url });
             await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
             renderDownloads();

@@ -1,18 +1,20 @@
 let spotifyInterval = null;
 let spotifyConfig = null;
+let cachedToken = null;
+let cachedTokenExpiry = 0;
 
-window.renderSpotify = async function() {
+window.renderSpotify = async function () {
     if (spotifyInterval) clearInterval(spotifyInterval);
 
     const container = document.getElementById('spotify-inject');
     container.innerHTML = `
         <h1 style="margin-bottom:30px;">Spotify / Music</h1>
-        <h2 style="margin-bottom:20px;">Currently Playing (Spotify REST API)</h2>
+        <h2 style="margin-bottom:20px;">Currently Playing</h2>
         <div id="spotify-status" style="margin-bottom:40px; min-height: 100px;">
             <span style="color:var(--fg-muted);">Connecting to Spotify API...</span>
         </div>
-        
-        <h2 style="margin-bottom:20px;">Actual Liked Songs</h2>
+
+        <h2 style="margin-bottom:20px;">Liked Songs</h2>
         <div id="liked-songs-section" style="display:flex; flex-direction:column; gap:12px;">
             <span style="color:var(--fg-muted);">Loading liked songs...</span>
         </div>
@@ -21,7 +23,7 @@ window.renderSpotify = async function() {
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'spotify_config').single();
         if (data && data.data) spotifyConfig = data.data;
-    } catch(e) {}
+    } catch (e) {}
 
     await updateSpotifyView();
     spotifyInterval = setInterval(updateSpotifyView, 15000);
@@ -29,6 +31,9 @@ window.renderSpotify = async function() {
 
 async function getAccessToken() {
     if (!spotifyConfig || !spotifyConfig.client_id || !spotifyConfig.refresh_token) return null;
+
+    if (cachedToken && Date.now() < cachedTokenExpiry) return cachedToken;
+
     try {
         const authHeader = btoa(`${spotifyConfig.client_id}:${spotifyConfig.client_secret}`);
         const res = await fetch('https://accounts.spotify.com/api/token', {
@@ -43,8 +48,13 @@ async function getAccessToken() {
             })
         });
         const data = await res.json();
-        return data.access_token || null;
-    } catch(e) {
+        if (data.access_token) {
+            cachedToken = data.access_token;
+            cachedTokenExpiry = Date.now() + ((data.expires_in || 3600) - 60) * 1000;
+            return cachedToken;
+        }
+        return null;
+    } catch (e) {
         return null;
     }
 }
@@ -73,13 +83,13 @@ async function updateSpotifyView() {
                 const track = curData.item;
                 const artists = track.artists.map(a => a.name).join(', ');
                 const cover = track.album?.images?.[1]?.url || track.album?.images?.[0]?.url || '';
-                
+
                 statusBox.innerHTML = `
                     <div style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); display:flex; align-items:center; gap:20px;">
                         ${cover ? `<img src="${cover}" style="width:80px; height:80px; border:1px solid var(--border);">` : ''}
                         <div>
                             <div style="font-size:12px; color:var(--accent); margin-bottom:8px; font-weight:bold; letter-spacing:1px;">NOW PLAYING ON SPOTIFY</div>
-                            <a href="${track.external_urls?.spotify || '#'}" target="_blank" style="font-size:24px; font-weight:bold; color:var(--fg-main); text-decoration:none;">${track.name} ↗</a>
+                            <a href="${track.external_urls?.spotify || '#'}" target="_blank" rel="noopener" style="font-size:24px; font-weight:bold; color:var(--fg-main); text-decoration:none;">${track.name} ↗</a>
                             <div style="color:var(--fg-muted); font-size:16px; margin-top:6px;">by ${artists} &middot; ${track.album?.name || ''}</div>
                         </div>
                     </div>
@@ -87,36 +97,44 @@ async function updateSpotifyView() {
             } else {
                 renderRecentlyPlayed(token, statusBox);
             }
+        } else if (curRes.status === 401) {
+            cachedToken = null;
+            renderRecentlyPlayed(token, statusBox);
         } else {
             renderRecentlyPlayed(token, statusBox);
         }
-    } catch(e) {
+    } catch (e) {
         statusBox.innerHTML = `<span style="color:var(--destructive);">Error connecting to Spotify.</span>`;
     }
 
     try {
-        const tracksRes = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (tracksRes.ok) {
+        let items = [];
+        let url = 'https://api.spotify.com/v1/me/tracks?limit=50';
+        while (url && items.length < 200) {
+            const tracksRes = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!tracksRes.ok) break;
             const tracksData = await tracksRes.json();
-            if (tracksData && tracksData.items) {
-                likedBox.innerHTML = tracksData.items.map(entry => {
-                    const track = entry.track;
-                    const artists = track.artists.map(a => a.name).join(', ');
-                    return `
-                        <a href="${track.external_urls?.spotify || '#'}" target="_blank" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-hover); padding:14px 20px; border:1px solid var(--border); text-decoration:none; color:inherit;">
-                            <div style="display:flex; flex-direction:column; gap:4px;">
-                                <span style="font-size:16px; font-weight:bold; color:var(--accent);">${track.name}</span>
-                                <span style="font-size:13px; color:var(--fg-muted);">${artists} &middot; ${track.album?.name || ''}</span>
-                            </div>
-                            <div style="font-size:18px; color:var(--fg-muted);">↗</div>
-                        </a>
-                    `;
-                }).join('');
-            }
+            items = items.concat(tracksData.items || []);
+            url = tracksData.next;
         }
-    } catch(e) {
+        if (items.length) {
+            likedBox.innerHTML = items.map(entry => {
+                const track = entry.track;
+                const artists = track.artists.map(a => a.name).join(', ');
+                return `
+                    <a href="${track.external_urls?.spotify || '#'}" target="_blank" rel="noopener" style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-hover); padding:14px 20px; border:1px solid var(--border); text-decoration:none; color:inherit;">
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <span style="font-size:16px; font-weight:bold; color:var(--accent);">${track.name}</span>
+                            <span style="font-size:13px; color:var(--fg-muted);">${artists} &middot; ${track.album?.name || ''}</span>
+                        </div>
+                        <div style="font-size:18px; color:var(--fg-muted);">↗</div>
+                    </a>
+                `;
+            }).join('');
+        } else {
+            likedBox.innerHTML = `<span style="color:var(--fg-muted);">No liked songs found.</span>`;
+        }
+    } catch (e) {
         likedBox.innerHTML = `<span style="color:var(--destructive);">Error loading Liked Songs.</span>`;
     }
 }
@@ -137,7 +155,7 @@ async function renderRecentlyPlayed(token, statusBox) {
                         ${cover ? `<img src="${cover}" style="width:80px; height:80px; border:1px solid var(--border);">` : ''}
                         <div>
                             <div style="font-size:12px; color:var(--fg-muted); margin-bottom:8px; font-weight:bold; letter-spacing:1px;">LAST PLAYED</div>
-                            <a href="${track.external_urls?.spotify || '#'}" target="_blank" style="font-size:24px; font-weight:bold; color:var(--fg-main); text-decoration:none;">${track.name} ↗</a>
+                            <a href="${track.external_urls?.spotify || '#'}" target="_blank" rel="noopener" style="font-size:24px; font-weight:bold; color:var(--fg-main); text-decoration:none;">${track.name} ↗</a>
                             <div style="color:var(--fg-muted); font-size:16px; margin-top:6px;">by ${artists} &middot; ${track.album?.name || ''}</div>
                         </div>
                     </div>
@@ -145,6 +163,6 @@ async function renderRecentlyPlayed(token, statusBox) {
                 return;
             }
         }
-    } catch(e) {}
+    } catch (e) {}
     statusBox.innerHTML = `<div style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); color:var(--fg-muted);">Offline / Not playing right now</div>`;
 }
