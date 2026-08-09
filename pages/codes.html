@@ -9,7 +9,7 @@
     <div class="markdown-body" style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <h1 style="margin-bottom:40px;">code translator</h1>
         
-        <h2>custom ciphers - by me :&#125;</h2>
+        <h2>custom ciphers - by me :)</h2>
         
         <div style="margin-bottom: 40px;">
             <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">pointa</h3>
@@ -265,7 +265,7 @@
                 let outText = "";
                 if (dir === 'encode') {
                     if (format === 'base64') outText = btoa(unescape(encodeURIComponent(inText)));
-                    else outText = Array.from(new Textencoder().encode(inText)).map(c => format === 'hex' ? c.toString(16).padStart(2,'0') : (format === 'oct' ? c.toString(8).padStart(3,'0') : c.toString(2).padStart(8,'0'))).join(' ');
+                    else outText = Array.from(new TextEncoder().encode(inText)).map(c => format === 'hex' ? c.toString(16).padStart(2,'0') : (format === 'oct' ? c.toString(8).padStart(3,'0') : c.toString(2).padStart(8,'0'))).join(' ');
                 } else {
                     if (format === 'base64') outText = decodeURIComponent(escape(atob(inText)));
                     else {
@@ -273,7 +273,7 @@
                         let bytes = new Uint8Array(parts.length);
                         let base = format === 'hex' ? 16 : (format === 'oct' ? 8 : 2);
                         for(let i=0; i<parts.length; i++) bytes[i] = parseInt(parts[i], base);
-                        outText = new Textdecoder().decode(bytes);
+                        outText = new TextDecoder().decode(bytes);
                     }
                 }
                 document.getElementById('ascii-out').value = outText;
@@ -296,5 +296,6 @@
             document.getElementById('gen-out').value = format === 'hex' ? Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('') : btoa(String.fromCharCode.apply(null, arr));
         }
     </script>
+    <script src="../js/bg-canvas.js"></script>
 </body>
 </html>

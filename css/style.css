@@ -71,6 +71,7 @@
     margin: 0;
     padding: 0;
     border-radius: 0 !important;
+    text-transform: lowercase !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
 }
@@ -90,6 +91,21 @@ body {
     line-height: 1.8;
 }
 
+body.has-bg-canvas {
+    background: transparent;
+}
+
+#bg-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+    display: block;
+}
+
 .app-layout {
     display: flex;
     height: 100vh;
@@ -97,6 +113,10 @@ body {
     background: var(--bg-main);
     padding: 0;
     gap: 0;
+}
+
+body.has-bg-canvas .app-layout {
+    background: transparent;
 }
 
 .sidebar {
@@ -194,6 +214,10 @@ body {
     overflow: hidden;
 }
 
+body.has-bg-canvas .main-content {
+    background: transparent;
+}
+
 .top-bar {
     padding: 20px;
     display: flex;
@@ -201,6 +225,10 @@ body {
     justify-content: center;
     background: var(--bg-workspace);
     min-height: 60px;
+}
+
+body.has-bg-canvas .top-bar {
+    background: transparent;
 }
 
 .breadcrumbs {
@@ -291,6 +319,20 @@ body {
     border: 1px solid var(--border);
 }
 
+.markdown-body img {
+    max-width: 100%;
+    display: block;
+    margin: 10px 0;
+    border: 1px solid var(--border);
+}
+
+.markdown-body blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+    color: var(--fg-muted);
+    margin-bottom: 1rem;
+}
+
 .announcement-toast {
     width: 340px;
     background: var(--bg-sidebar);
@@ -376,7 +418,7 @@ body {
     margin-bottom: 20px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 10px;
-    text-transform: uppercase;
+    text-transform: lowercase;
     letter-spacing: 1px;
 }
 
@@ -424,7 +466,7 @@ body {
     margin-bottom: 8px;
     color: var(--fg-muted);
     font-size: 11px;
-    text-transform: uppercase;
+    text-transform: lowercase;
     letter-spacing: 1px;
 }
 
@@ -557,7 +599,7 @@ body {
     color: var(--fg-muted);
     font-family: var(--font-ui);
     font-size: 11px;
-    text-transform: uppercase;
+    text-transform: lowercase;
     letter-spacing: 0.5px;
     cursor: pointer;
 }
@@ -611,7 +653,7 @@ body {
 
 .tl-sidebar-block-title {
     font-size: 11px;
-    text-transform: uppercase;
+    text-transform: lowercase;
     letter-spacing: 1px;
     color: var(--accent);
     margin-bottom: 12px;
@@ -700,4 +742,12 @@ h4 { font-size: 1.05rem; }
 .markdown-body > *:first-child,
 body > div > h1:first-child {
     margin-top: 0 !important;
+}
+
+.admin-only-note {
+    font-size: 12px;
+    color: var(--fg-muted);
+    border: 1px dashed var(--border);
+    padding: 14px 16px;
+    margin-bottom: 24px;
 }

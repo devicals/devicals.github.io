@@ -28,8 +28,23 @@
         let currentTabKey = null;
         let isAdminLocal = false;
 
+        async function promptText(msg, def) {
+            if (window.parent && window.parent.guiPrompt) return window.parent.guiPrompt(msg, def || '');
+            return prompt(msg, def || '');
+        }
+        async function confirmAction(msg) {
+            if (window.parent && window.parent.guiConfirm) return window.parent.guiConfirm(msg);
+            return confirm(msg);
+        }
+
         async function initProjectsPage() {
-            isAdminLocal = window.parent.currentProfile?.is_admin || false;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session?.user) {
+                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+                if (prof?.is_admin || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isAdminLocal = true;
+                }
+            }
             if (isAdminLocal) {
                 document.getElementById('admin-add-project-btn').style.display = 'block';
             }
@@ -70,7 +85,10 @@
                 <div class="flat-list-item" style="padding-bottom:30px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <a href="${p.link}" target="_blank" class="flat-title" style="font-size:24px;">${p.name} ↗</a>
-                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteProject(${idx})">Delete</button>` : ''}
+                        ${isAdminLocal ? `<div style="display:flex; gap:8px;">
+                            <button class="ui-btn" style="width:auto; margin:0;" onclick="editProject(${idx})">edit</button>
+                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteProject(${idx})">delete</button>
+                        </div>` : ''}
                     </div>
                     <div class="flat-desc" style="font-size:15px;">${p.description}</div>
                 </div>
@@ -79,10 +97,10 @@
 
         window.addProject = async () => {
             if (!currentTabKey) return;
-            const name = await window.parent.guiPrompt("project name:", "", "add project");
+            const name = await promptText("project name:", "");
             if (!name) return;
-            const desc = await window.parent.guiPrompt("project description:", "", "project description");
-            const link = await window.parent.guiPrompt("project link URL:", "https://", "project URL");
+            const desc = await promptText("project description:", "");
+            const link = await promptText("project link URL:", "https://");
             
             if (!projectsData.tabs[currentTabKey].projects) projectsData.tabs[currentTabKey].projects = [];
             projectsData.tabs[currentTabKey].projects.push({ name, description: desc, link });
@@ -91,8 +109,20 @@
             renderGrid();
         };
 
+        window.editProject = async (idx) => {
+            if (!currentTabKey) return;
+            const proj = projectsData.tabs[currentTabKey].projects[idx];
+            const name = await promptText("project name:", proj.name);
+            if (name === null) return;
+            const desc = await promptText("description:", proj.description);
+            const link = await promptText("link URL:", proj.link);
+            proj.name = name; proj.description = desc; proj.link = link;
+            await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
+            renderGrid();
+        };
+
         window.deleteProject = async (idx) => {
-            const conf = await window.parent.guiConfirm("delete this project?", "confirm deletion");
+            const conf = await confirmAction("delete this project?");
             if (conf) {
                 projectsData.tabs[currentTabKey].projects.splice(idx, 1);
                 await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
@@ -102,5 +132,6 @@
 
         document.addEventListener('DOMContentLoaded', initProjectsPage);
     </script>
+    <script src="../js/bg-canvas.js"></script>
 </body>
 </html>

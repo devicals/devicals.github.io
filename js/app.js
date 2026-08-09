@@ -66,11 +66,13 @@ function loadSettingsLocally() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
     const theme = localStorage.getItem('theme') || 'primary';
     const customCss = localStorage.getItem('custom-css') || '';
+    const bgEffect = localStorage.getItem('bg-effect') || 'blackhole';
 
     document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
     document.getElementById('custom-css-block').textContent = customCss;
     document.getElementById('custom-css-input').value = customCss;
     document.getElementById('theme-selector').value = theme;
+    document.getElementById('bg-effect-selector').value = bgEffect;
 }
 
 document.getElementById('toggle-dark-mode').onclick = () => {
@@ -99,6 +101,12 @@ document.getElementById('save-css').onclick = () => {
     syncSettingsToServer();
 };
 
+document.getElementById('bg-effect-selector').onchange = (e) => {
+    localStorage.setItem('bg-effect', e.target.value);
+    if (window.setBgEffect) window.setBgEffect(e.target.value);
+    syncSettingsToServer();
+};
+
 function syncIframeTheme() {
     const iframe = document.getElementById('iframe-workspace');
     if (iframe && iframe.contentWindow) {
@@ -112,7 +120,8 @@ async function syncSettingsToServer() {
         const payload = {
             theme: localStorage.getItem('theme'),
             custom_css: localStorage.getItem('custom-css'),
-            dark_mode: localStorage.getItem('dark-mode')
+            dark_mode: localStorage.getItem('dark-mode'),
+            bg_effect: localStorage.getItem('bg-effect')
         };
         await supabaseClient.from('site_content').upsert({ key: 'settings_' + currentUser.id, data: payload });
     }
@@ -142,6 +151,7 @@ async function handleSession(session) {
                 if (setObj.data.theme) localStorage.setItem('theme', setObj.data.theme);
                 if (setObj.data.custom_css) localStorage.setItem('custom-css', setObj.data.custom_css);
                 if (setObj.data.dark_mode) localStorage.setItem('dark-mode', setObj.data.dark_mode);
+                if (setObj.data.bg_effect) { localStorage.setItem('bg-effect', setObj.data.bg_effect); if (window.setBgEffect) window.setBgEffect(setObj.data.bg_effect); }
                 loadSettingsLocally();
             }
             if (currentProfile?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
@@ -457,7 +467,7 @@ async function loadAnnouncementsToasts() {
                 toast.id = `ann-toast-${idx}`;
                 toast.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--accent); font-weight:bold; font-size:11px; text-transform:uppercase;">notice</span>
+                        <span style="color:var(--accent); font-weight:bold; font-size:11px; text-transform:lowercase;">notice</span>
                         <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.closest('.announcement-toast').remove()">✕</span>
                     </div>
                     <div class="announcement-body">${marked.parse(annText)}</div>

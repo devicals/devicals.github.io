@@ -10,7 +10,12 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:30px; font-size:32px; border-bottom:1px solid var(--border); padding-bottom:15px;">blogs</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; border-bottom:1px solid var(--border); padding-bottom:15px;">
+            <h1 style="margin:0; font-size:32px;">blogs</h1>
+            <div id="admin-add-blog-btn" style="display:none;">
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="addBlogInline()">+ add blog</button>
+            </div>
+        </div>
         <div id="blogs-container" class="flat-list-container" style="gap:24px;">
             <span style="color:var(--fg-muted);">loading blogs...</span>
         </div>
@@ -24,12 +29,24 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let blogsList = [];
+        let isAdminLocal = false;
         marked.use({ breaks: true, gfm: true });
 
         async function initBlogsPage() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session?.user) {
+                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+                if (prof?.is_admin || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isAdminLocal = true;
+                }
+            }
+            document.getElementById('admin-add-blog-btn').style.display = isAdminLocal ? 'block' : 'none';
+
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
             if (data && data.data) {
                 blogsList = data.data;
+                renderBlogs();
+            } else {
                 renderBlogs();
             }
         }
@@ -42,7 +59,13 @@
             }
             container.innerHTML = blogsList.map((b) => `
                 <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:24px; margin-bottom:0;">
-                    <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted);"><button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyBlogLink(${b.id})">ID: #${b.id}</button> &middot; Date: ${b.date}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted);"><button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyBlogLink(${b.id})">ID: #${b.id}</button> &middot; Date: ${b.date}</div>
+                        ${isAdminLocal ? `<div style="display:flex; gap:8px;">
+                            <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="editBlogInline(${b.id})">edit</button>
+                            <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px; color:var(--destructive);" onclick="deleteBlogInline(${b.id})">delete</button>
+                        </div>` : ''}
+                    </div>
                     <div class="flat-title" style="font-size:22px; margin-bottom:14px;">${b.title}</div>
                     <div class="flat-desc markdown-body" style="font-size:14px; line-height:1.7;">${marked.parse(b.content)}</div>
                 </div>
@@ -70,6 +93,54 @@
             });
         };
 
+        async function promptText(msg, def) {
+            if (window.parent && window.parent.guiPrompt) return window.parent.guiPrompt(msg, def || '');
+            return prompt(msg, def || '');
+        }
+        async function confirmAction(msg) {
+            if (window.parent && window.parent.guiConfirm) return window.parent.guiConfirm(msg);
+            return confirm(msg);
+        }
+
+        window.addBlogInline = async function () {
+            if (!isAdminLocal) return;
+            const title = await promptText('blog title:');
+            if (!title) return;
+            const content = await promptText('content (markdown, single line breaks are real breaks):');
+            if (content === null) return;
+
+            const nextId = blogsList.length > 0 ? Math.max(...blogsList.map(x => x.id || 0)) + 1 : 1;
+            const today = new Date();
+            const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+            blogsList.unshift({ id: nextId, date: dateStr, title, content });
+            await supabaseClient.from('site_content').upsert({ key: 'blogs', data: blogsList });
+            renderBlogs();
+        };
+
+        window.editBlogInline = async function (id) {
+            if (!isAdminLocal) return;
+            const idx = blogsList.findIndex(b => b.id === id);
+            if (idx < 0) return;
+            const b = blogsList[idx];
+            const title = await promptText('blog title:', b.title);
+            if (title === null) return;
+            const content = await promptText('content (markdown):', b.content);
+            if (content === null) return;
+            blogsList[idx].title = title;
+            blogsList[idx].content = content;
+            await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs');
+            renderBlogs();
+        };
+
+        window.deleteBlogInline = async function (id) {
+            if (!isAdminLocal) return;
+            const ok = await confirmAction('delete this blog post?');
+            if (!ok) return;
+            blogsList = blogsList.filter(b => b.id !== id);
+            await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs');
+            renderBlogs();
+        };
+
         function setupScrollObserver() {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -87,5 +158,6 @@
 
         document.addEventListener('DOMContentLoaded', initBlogsPage);
     </script>
+    <script src="../js/bg-canvas.js"></script>
 </body>
 </html>

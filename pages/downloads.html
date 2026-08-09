@@ -25,8 +25,23 @@
         let dlList = [];
         let isAdminLocal = false;
 
+        async function promptText(msg, def) {
+            if (window.parent && window.parent.guiPrompt) return window.parent.guiPrompt(msg, def || '');
+            return prompt(msg, def || '');
+        }
+        async function confirmAction(msg) {
+            if (window.parent && window.parent.guiConfirm) return window.parent.guiConfirm(msg);
+            return confirm(msg);
+        }
+
         async function initDownloadsPage() {
-            isAdminLocal = window.parent.currentProfile?.is_admin || window.parent.currentUser?.email?.toLowerCase() === '3rr0r.d3v@gmail.com' || false;
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session?.user) {
+                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
+                if (prof?.is_admin || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isAdminLocal = true;
+                }
+            }
             if (isAdminLocal) {
                 document.getElementById('admin-add-download-btn').style.display = 'block';
             }
@@ -47,25 +62,39 @@
                     </div>
                     <div style="display:flex; gap:12px; align-items:center;">
                         <a href="${d.url}" target="_blank" class="ui-btn" style="width:auto; margin:0; text-decoration:none; padding:10px 20px;">download</a>
-                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteDownload(${idx})">✕</button>` : ''}
+                        ${isAdminLocal ? `
+                            <button class="ui-btn" style="width:auto; margin:0;" onclick="editDownload(${idx})">edit</button>
+                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteDownload(${idx})">✕</button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
         }
 
         window.addDownload = async () => {
-            const name = await window.parent.guiPrompt("download name:", "", "add download");
+            const name = await promptText("download name:", "");
             if (!name) return;
-            const desc = await window.parent.guiPrompt("description:", "", "download Details");
-            const url = await window.parent.guiPrompt("download URL:", "https://", "download Link");
+            const desc = await promptText("description:", "");
+            const url = await promptText("download URL:", "https://");
 
             dlList.push({ id: Date.now(), name, description: desc, url });
             await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
             renderDownloads();
         };
 
+        window.editDownload = async (idx) => {
+            const d = dlList[idx];
+            const name = await promptText("download name:", d.name);
+            if (name === null) return;
+            const desc = await promptText("description:", d.description);
+            const url = await promptText("URL:", d.url);
+            dlList[idx].name = name; dlList[idx].description = desc; dlList[idx].url = url;
+            await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
+            renderDownloads();
+        };
+
         window.deleteDownload = async (idx) => {
-            const conf = await window.parent.guiConfirm("delete this download link?", "confirm deletion");
+            const conf = await confirmAction("delete this download link?");
             if (conf) {
                 dlList.splice(idx, 1);
                 await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
@@ -75,5 +104,6 @@
 
         document.addEventListener('DOMContentLoaded', initDownloadsPage);
     </script>
+    <script src="../js/bg-canvas.js"></script>
 </body>
 </html>
