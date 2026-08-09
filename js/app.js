@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAnnouncementsToasts();
 });
 
-window.guiAlert = function(msg, title = "Notification") {
+window.guiAlert = function(msg, title = "notification") {
     document.getElementById('gui-title').textContent = title;
     document.getElementById('gui-msg').textContent = msg;
     document.getElementById('gui-modal').style.display = 'flex';
@@ -30,7 +30,7 @@ window.closeGuiModal = function() {
     document.getElementById('gui-modal').style.display = 'none';
 };
 
-window.guiConfirm = function(msg, title = "Confirm Action") {
+window.guiConfirm = function(msg, title = "confirm action") {
     return new Promise((resolve) => {
         document.getElementById('gui-confirm-title').textContent = title;
         document.getElementById('gui-confirm-msg').textContent = msg;
@@ -45,7 +45,7 @@ window.guiConfirm = function(msg, title = "Confirm Action") {
     });
 };
 
-window.guiPrompt = function(msg, defaultValue = "", title = "Input Required") {
+window.guiPrompt = function(msg, defaultValue = "", title = "input required") {
     return new Promise((resolve) => {
         document.getElementById('gui-prompt-title').textContent = title;
         document.getElementById('gui-prompt-msg').textContent = msg;
@@ -162,19 +162,19 @@ function renderAuthModal() {
     if (currentUser) {
         container.innerHTML = `
             <div class="profile-info">
-                <div class="profile-name">${currentProfile?.username || 'Authenticated User'}</div>
+                <div class="profile-name">${currentProfile?.username || 'authenticated user'}</div>
                 <div class="profile-id">ID: ${currentUser.id}</div>
             </div>
-            <input type="text" id="prof-name" class="ui-input" placeholder="Set Display Name">
-            <button class="ui-btn" onclick="updateProfile()">Save Display Name</button>
-            <button class="ui-btn" onclick="supabaseClient.auth.signOut()" style="border-color:var(--destructive); color:var(--destructive);">Logout</button>
+            <input type="text" id="prof-name" class="ui-input" placeholder="set display name">
+            <button class="ui-btn" onclick="updateProfile()">save display name</button>
+            <button class="ui-btn" onclick="supabaseClient.auth.signOut()" style="border-color:var(--destructive); color:var(--destructive);">logout</button>
         `;
     } else {
         container.innerHTML = `
-            <input type="email" id="auth-email" class="ui-input" placeholder="Email">
-            <input type="password" id="auth-pass" class="ui-input" placeholder="Password">
-            <button class="ui-btn" onclick="authAction('login')">Login</button>
-            <button class="ui-btn" onclick="authAction('signup')">Sign Up</button>
+            <input type="email" id="auth-email" class="ui-input" placeholder="email">
+            <input type="password" id="auth-pass" class="ui-input" placeholder="password">
+            <button class="ui-btn" onclick="authAction('login')">login</button>
+            <button class="ui-btn" onclick="authAction('signup')">sign up</button>
         `;
     }
 }
@@ -185,12 +185,12 @@ window.authAction = async (action) => {
     try {
         if (action === 'signup') {
             await supabaseClient.auth.signUp({ email, password });
-            guiAlert("Account created successfully. You may now log in.", "Auth Success");
+            guiAlert("account created successfully. you may now log in.", "auth success");
         } else {
             await supabaseClient.auth.signInWithPassword({ email, password });
         }
     } catch (e) {
-        guiAlert(e.message, "Auth Error");
+        guiAlert(e.message, "auth error");
     }
 };
 
@@ -202,7 +202,7 @@ window.updateProfile = async () => {
         const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
         currentProfile = data;
         renderAuthModal();
-        guiAlert("Display name updated.", "Success");
+        guiAlert("display name updated.", "Success");
     } catch (e) {
         guiAlert(e.message, "Error");
     }
@@ -218,7 +218,7 @@ async function loadNavigation() {
         const parsed = jsyaml.load(yamlText);
         navData = { children: parsed };
     } catch (e) {
-        console.error("Failed to load navigation", e);
+        console.error("failed to load navigation", e);
     }
     renderNavigation();
 }
@@ -290,7 +290,7 @@ function highlightNav() {
 
 async function handleRoute() {
     let rawHash = decodeURIComponent(window.location.hash.substring(1));
-    if (!rawHash) { window.location.hash = "Index/Home"; return; }
+    if (!rawHash) { window.location.hash = "index/home"; return; }
 
     let parts = rawHash.split('?');
     let hash = parts[0];
@@ -304,7 +304,7 @@ async function handleRoute() {
     if (hash === 'admin') {
         iframe.style.display = 'none';
         mdContainer.style.display = 'block';
-        breadcrumbs.innerHTML = 'System > Admin Dashboard';
+        breadcrumbs.innerHTML = 'system > admin dashboard';
         if (window.renderAdminPage) window.renderAdminPage();
         return;
     }
@@ -318,7 +318,7 @@ async function handleRoute() {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
 
-            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">Folder Contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
+            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">folder contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
 
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
@@ -330,7 +330,7 @@ async function handleRoute() {
                     `;
                 });
             } else {
-                html += `<div style="color:var(--fg-muted); font-style:italic;">This folder is empty.</div>`;
+                html += `<div style="color:var(--fg-muted); font-style:italic;">this folder is empty.</div>`;
             }
 
             html += `</div>`;
@@ -366,11 +366,11 @@ async function handleRoute() {
             mdContainer.style.display = 'block';
             try {
                 const res = await fetch(node.file);
-                const text = res.ok ? await res.text() : '## Blank Page\nContent not found.';
+                const text = res.ok ? await res.text() : '## blank page\ncontent not found.';
                 mdContainer.innerHTML = marked.parse(text);
                 updateWordCount(text);
             } catch (e) {
-                mdContainer.innerHTML = '<h2>Error loading document</h2>';
+                mdContainer.innerHTML = '<h2>error loading document</h2>';
             }
             return;
         }
@@ -378,17 +378,17 @@ async function handleRoute() {
 
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
-    mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">Page not found</h2>';
+    mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">page not found</h2>';
 }
 
 async function renderCommitsPage(container, reset = false) {
     if (reset) {
-        container.innerHTML = '<h1>commit history</h1><div id="commits-list" style="margin-top:40px;"></div><button id="load-more-commits-btn" class="ui-btn" style="margin-top:20px;" onclick="loadMoreCommits()">Load More Commits</button>';
+        container.innerHTML = '<h1>commit history</h1><div id="commits-list" style="margin-top:40px;"></div><button id="load-more-commits-btn" class="ui-btn" style="margin-top:20px;" onclick="loadMoreCommits()">load more commits</button>';
     }
     const listEl = document.getElementById('commits-list');
     try {
         const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=15`);
-        if (!res.ok) throw new Error('Failed to fetch');
+        if (!res.ok) throw new Error('failed to fetch');
         const commits = await res.json();
 
         const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -427,7 +427,7 @@ async function renderCommitsPage(container, reset = false) {
 
         listEl.innerHTML += rows;
     } catch (e) {
-        listEl.innerHTML += '<p style="color:var(--destructive);">Failed to load additional commits.</p>';
+        listEl.innerHTML += '<p style="color:var(--destructive);">failed to load additional commits.</p>';
     }
 }
 
@@ -457,7 +457,7 @@ async function loadAnnouncementsToasts() {
                 toast.id = `ann-toast-${idx}`;
                 toast.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--accent); font-weight:bold; font-size:11px; text-transform:uppercase;">NOTICE</span>
+                        <span style="color:var(--accent); font-weight:bold; font-size:11px; text-transform:uppercase;">notice</span>
                         <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.closest('.announcement-toast').remove()">✕</span>
                     </div>
                     <div class="announcement-body">${marked.parse(annText)}</div>

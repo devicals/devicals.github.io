@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gallery Board - Error Dev</title>
+    <title>public art gallery</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -15,8 +15,8 @@
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h1 style="margin:0;">Public Gallery Board</h1>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleUploadBox()">+ Add Art / Image</button>
+            <h1 style="margin:0;">public art gallery</h1>
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleUploadBox()">+ add art / image</button>
         </div>
 
         <div id="gallery-upload-box" style="display:none; border:1px solid var(--border); padding:20px; margin-bottom:40px;">
@@ -25,30 +25,30 @@
                 <input type="text" id="gal-title" class="ui-input" placeholder="Artwork Title" style="margin:0;">
             </div>
 
-            <label style="font-size:11px; color:var(--fg-muted);">Upload Image File</label>
+            <label style="font-size:11px; color:var(--fg-muted);">upload image</label>
             <input type="file" id="gal-file" class="ui-input" accept="image/*" style="margin-bottom:12px;">
 
-            <div style="font-size:11px; color:var(--fg-muted); text-align:center; margin-bottom:12px;">- OR -</div>
+            <div style="font-size:11px; color:var(--fg-muted); text-align:center; margin-bottom:12px;">- or -</div>
 
             <input type="text" id="gal-url" class="ui-input" placeholder="Image URL (Or click Draw below)" style="margin-bottom:12px;">
 
             <div style="display:flex; gap:12px;">
-                <button class="ui-btn" style="flex:1; margin:0;" onclick="toggleCanvas()">Toggle Draw Canvas</button>
-                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="postGallery()">Post to Gallery</button>
+                <button class="ui-btn" style="flex:1; margin:0;" onclick="toggleCanvas()">toggle canvas</button>
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="postGallery()">post to gallery</button>
             </div>
 
             <div id="canvas-container" style="display:none; margin-top:16px;">
                 <div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;">
                     <input type="color" id="brush-color" value="#ffffff" style="background:var(--bg-sidebar); border:1px solid var(--border); height:24px;">
                     <input type="range" id="brush-size" min="1" max="20" value="3">
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="clearCanvas()">Clear Canvas</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="clearCanvas()">clear canvas</button>
                 </div>
                 <canvas id="gal-canvas" style="background:var(--bg-main); border:1px solid var(--border); width:100%; height:300px; cursor:crosshair;"></canvas>
             </div>
         </div>
 
         <div id="gallery-container" class="gallery-list">
-            <span style="color:var(--fg-muted);">Loading public gallery...</span>
+            <span style="color:var(--fg-muted);">loading public gallery...</span>
         </div>
     </div>
 

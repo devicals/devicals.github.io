@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>World Clock Viewer - Error Dev</title>
+    <title>world clock viewer</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <style>
@@ -20,11 +20,11 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:40px; font-size: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">World Clocks</h1>
+        <h1 style="margin-bottom:40px; font-size: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">world clocks</h1>
 
         <div style="display:flex; gap:16px; margin-bottom:40px;">
-            <input type="text" id="new-clock-input" class="ui-input" style="margin:0; flex:1;" placeholder="Enter timezone (e.g. UTC, America/New_York)">
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="addClock()">+ Add Clock</button>
+            <input type="text" id="new-clock-input" class="ui-input" style="margin:0; flex:1;" placeholder="enter timezone (e.g. AEST)">
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="addClock()">+ add clock</button>
         </div>
 
         <div id="clocks-grid" style="display:flex; flex-direction:column; gap:0;"></div>
@@ -37,7 +37,7 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         const DateTime = luxon.DateTime;
-        let zones = ['system', 'UTC', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+        let zones = ['system', 'UTC', 'AEST', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
         let userId = window.parent.currentUser?.id;
 
         async function initClocks() {
@@ -90,8 +90,8 @@
                     return `
                         <div class="clock-item">
                             <div>
-                                <div style="font-size:13px; color:var(--destructive); font-weight:bold; letter-spacing:1px; text-transform:uppercase;">${z}</div>
-                                <div style="font-size:20px; font-weight:bold; margin-top:8px; color:var(--fg-muted);">Invalid Timezone</div>
+                                <div style="font-size:13px; color:var(--destructive); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z}</div>
+                                <div style="font-size:20px; font-weight:bold; margin-top:8px; color:var(--fg-muted);">invalid timezone</div>
                             </div>
                             <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent; border:none; font-size:16px;" onclick="removeClock(${idx})">✕</button>
                         </div>
@@ -101,7 +101,7 @@
                 return `
                     <div class="clock-item">
                         <div>
-                            <div style="font-size:13px; color:var(--accent); font-weight:bold; letter-spacing:1px; text-transform:uppercase;">${z}</div>
+                            <div style="font-size:13px; color:var(--accent); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z}</div>
                             <div style="font-size:32px; font-weight:bold; margin-top:8px; line-height:1;">${now.toFormat('HH:mm:ss')}</div>
                             <div style="font-size:14px; color:var(--fg-muted); margin-top:8px;">${now.toFormat('yyyy-MM-dd')}</div>
                         </div>

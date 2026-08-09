@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>posts</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+    <style>
+        .post-compose {
+            min-height: 90px;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            color: var(--fg-main);
+            padding: 12px 14px;
+            font-family: var(--font-text);
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+            margin-bottom: 10px;
+        }
+        .post-compose:empty:before {
+            content: attr(data-placeholder);
+            color: var(--fg-muted);
+        }
+        .post-compose img {
+            max-width: 100%;
+            display: block;
+            margin: 8px 0;
+            border: 1px solid var(--border);
+        }
+        .post-card {
+            border: 1px solid var(--border);
+            background: var(--bg-hover);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .post-body img {
+            max-width: 100%;
+            display: block;
+            margin: 10px 0;
+            border: 1px solid var(--border);
+        }
+        .post-id-btn {
+            cursor: pointer;
+            color: var(--fg-muted);
+            font-size: 12px;
+            font-family: var(--font-ui);
+            background: none;
+            border: none;
+            padding: 0;
+            width: auto;
+            margin: 0;
+        }
+        .post-id-btn:hover { color: var(--accent); text-decoration: underline; }
+        .post-actions { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
+        .post-like-btn {
+            width: auto; margin: 0; padding: 6px 14px; font-size: 12px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .post-like-btn.liked { border-color: var(--accent); color: var(--accent); }
+        .post-comments-toggle {
+            width: auto; margin: 0; padding: 6px 14px; font-size: 12px; background: transparent;
+        }
+        .post-comments-section { display: none; margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 16px; }
+        .post-comments-section.expanded { display: block; }
+        .comment-row { padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
+        .comment-row:last-child { border-bottom: none; }
+        .copy-toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: var(--accent); color: var(--bg-main); padding: 10px 20px;
+            font-family: var(--font-ui); font-size: 12px; font-weight: bold; z-index: 999;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .copy-toast.show { opacity: 1; }
+    </style>
+</head>
+<body style="padding: 40px; overflow-y: auto;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
+        <h1 style="margin-bottom:24px;">posts</h1>
+
+        <div style="border:1px solid var(--border); background:var(--bg-hover); padding:18px; margin-bottom:32px;">
+            <input type="text" id="post-name" class="ui-input" readonly disabled style="opacity:0.7; cursor:not-allowed;" placeholder="Resolving Name...">
+            <div id="post-compose" class="post-compose" contenteditable="true" data-placeholder="Write a post... paste an image to embed it inline"></div>
+            <button class="ui-btn" onclick="submitPost()">post</button>
+        </div>
+
+        <div id="posts-list"></div>
+    </div>
+
+    <div class="copy-toast" id="copy-toast">Link copied</div>
+
+    <script>
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentUser = null;
+        let currentProfile = null;
+        let isAdminLocal = false;
+        let assignedName = "Anonymous #0000";
+        let posts = [];
+        let likeCounts = {};
+        let likedByMe = {};
+        let expandedComments = {};
+
+        function escapeHTML(str) {
+            return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function sanitizePostHTML(html) {
+            return DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: ['img', 'br', 'b', 'i', 'strong', 'em', 'a', 'p'],
+                ALLOWED_ATTR: ['src', 'alt', 'href', 'target', 'rel']
+            });
+        }
+
+        async function getAnonName() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                let hash = 0;
+                for (let i = 0; i < data.ip.length; i++) hash = ((hash << 5) - hash) + data.ip.charCodeAt(i);
+                return "Anonymous #" + Math.abs(hash).toString().substring(0, 4);
+            } catch (e) {
+                return "Anonymous #" + Math.floor(Math.random() * 9000 + 1000);
+            }
+        }
+
+        async function initPosts() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            currentUser = session?.user || null;
+
+            if (currentUser) {
+                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
+                currentProfile = prof;
+                if (prof?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isAdminLocal = true;
+                }
+            }
+
+            assignedName = currentProfile?.username || await getAnonName();
+            document.getElementById('post-name').value = assignedName;
+
+            await loadPosts();
+
+            supabaseClient.channel('posts-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, loadPosts).subscribe();
+            supabaseClient.channel('post-likes-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, loadPosts).subscribe();
+        }
+
+        async function loadPosts() {
+            const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+            if (error) {
+                document.getElementById('posts-list').innerHTML = `<p style="color:var(--destructive); font-size:13px;">Could not load posts. Make sure the 'posts', 'post_likes', and 'post_comments' tables exist in Supabase.</p>`;
+                return;
+            }
+            posts = data || [];
+
+            const { data: likeRows } = await supabaseClient.from('post_likes').select('post_id, user_id');
+            likeCounts = {};
+            likedByMe = {};
+            (likeRows || []).forEach(r => {
+                likeCounts[r.post_id] = (likeCounts[r.post_id] || 0) + 1;
+                if (currentUser && r.user_id === currentUser.id) likedByMe[r.post_id] = true;
+            });
+
+            renderPosts();
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('posts-list');
+            if (!posts.length) {
+                container.innerHTML = '<p style="color:var(--fg-muted); font-size:13px;">No posts yet. Be the first!</p>';
+                return;
+            }
+
+            container.innerHTML = posts.map(p => `
+                <div class="post-card" id="post-${p.id}">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                        <div>
+                            <strong style="color:var(--accent);">${escapeHTML(p.name || 'Anonymous')}</strong>
+                            ${p.is_creator ? '<span class="user-tag admin" style="margin-left:8px;">ADMIN</span>' : ''}
+                            <div style="font-size:11px; color:var(--fg-muted); margin-top:4px;">${new Date(p.created_at).toLocaleString()}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <button class="post-id-btn" onclick="copyPostLink(${p.id})">ID: #${p.id}</button>
+                            ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost(${p.id})">Delete</button>` : ''}
+                        </div>
+                    </div>
+                    <div class="post-body">${sanitizePostHTML(p.content || '')}</div>
+                    <div class="post-actions">
+                        <button class="ui-btn post-like-btn ${likedByMe[p.id] ? 'liked' : ''}" onclick="toggleLike(${p.id})">♥ <span>${likeCounts[p.id] || 0}</span></button>
+                        <button class="ui-btn post-comments-toggle" onclick="toggleComments(${p.id})">Comments</button>
+                    </div>
+                    <div class="post-comments-section ${expandedComments[p.id] ? 'expanded' : ''}" id="comments-${p.id}">
+                        <div id="comment-list-${p.id}" style="margin-bottom:12px;"><span style="color:var(--fg-muted); font-size:12px;">Loading comments...</span></div>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="comment-input-${p.id}" class="ui-input" style="margin:0;" placeholder="Write a comment...">
+                            <button class="ui-btn" style="width:auto; margin:0;" onclick="submitComment(${p.id})">Send</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            Object.keys(expandedComments).forEach(id => {
+                if (expandedComments[id]) loadComments(id);
+            });
+        }
+
+        window.toggleComments = async function (postId) {
+            expandedComments[postId] = !expandedComments[postId];
+            const section = document.getElementById(`comments-${postId}`);
+            section.classList.toggle('expanded', expandedComments[postId]);
+            if (expandedComments[postId]) await loadComments(postId);
+        };
+
+        async function loadComments(postId) {
+            const listEl = document.getElementById(`comment-list-${postId}`);
+            if (!listEl) return;
+            const { data, error } = await supabaseClient.from('post_comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
+            if (error) {
+                listEl.innerHTML = '<span style="color:var(--destructive); font-size:12px;">could not load comments.</span>';
+                return;
+            }
+            if (!data.length) {
+                listEl.innerHTML = '<span style="color:var(--fg-muted); font-size:12px;">no comments yet.</span>';
+                return;
+            }
+            listEl.innerHTML = data.map(c => `
+                <div class="comment-row">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <strong style="color:var(--accent);">${escapeHTML(c.name || 'Anonymous')}</strong>
+                            ${c.is_creator ? '<span class="user-tag admin" style="margin-left:6px;">ADMIN</span>' : ''}
+                        </div>
+                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 6px; font-size:10px;" onclick="deleteComment(${c.id}, ${postId})">✕</button>` : ''}
+                    </div>
+                    <div style="margin-top:6px;">${escapeHTML(c.content)}</div>
+                </div>
+            `).join('');
+        }
+
+        window.submitComment = async function (postId) {
+            const input = document.getElementById(`comment-input-${postId}`);
+            const content = input.value.trim();
+            if (!content) return;
+            await supabaseClient.from('post_comments').insert({ post_id: postId, name: assignedName, content, is_creator: isAdminLocal });
+            input.value = '';
+            await loadComments(postId);
+        };
+
+        window.deleteComment = async function (commentId, postId) {
+            if (!isAdminLocal) return;
+            const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("delete this comment?") : confirm("delete this comment?");
+            if (!ok) return;
+            await supabaseClient.from('post_comments').delete().eq('id', commentId);
+            await loadComments(postId);
+        };
+
+        window.toggleLike = async function (postId) {
+            if (!currentUser) {
+                if (window.parent && window.parent.document.getElementById('auth-trigger')) {
+                    window.parent.document.getElementById('auth-trigger').click();
+                } else if (window.parent && window.parent.guiAlert) {
+                    window.parent.guiAlert('Please log in to like posts.');
+                }
+                return;
+            }
+            if (likedByMe[postId]) {
+                await supabaseClient.from('post_likes').delete().eq('post_id', postId).eq('user_id', currentUser.id);
+            } else {
+                await supabaseClient.from('post_likes').insert({ post_id: postId, user_id: currentUser.id });
+            }
+            await loadPosts();
+        };
+
+        window.deletePost = async function (postId) {
+            if (!isAdminLocal) return;
+            const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("delete this post?") : confirm("delete this post?");
+            if (!ok) return;
+            await supabaseClient.from('posts').delete().eq('id', postId);
+        };
+
+        window.submitPost = async function () {
+            const box = document.getElementById('post-compose');
+            const raw = box.innerHTML.trim();
+            if (!raw || raw === '<br>') return;
+            const clean = sanitizePostHTML(raw);
+            await supabaseClient.from('posts').insert({ name: assignedName, content: clean, is_creator: isAdminLocal });
+            box.innerHTML = '';
+        };
+
+        window.copyPostLink = function (postId) {
+            const url = `${window.parent.location.origin}${window.parent.location.pathname}#Index/Posts?id=${postId}`;
+            navigator.clipboard.writeText(url).then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 1600);
+            });
+        };
+
+        document.getElementById('post-compose').addEventListener('paste', (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        document.execCommand('insertHTML', false, `<img src="${ev.target.result}">`);
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initPosts();
+            const params = new URLSearchParams(window.location.search);
+            const targetId = params.get('id');
+            if (targetId) {
+                setTimeout(() => {
+                    const el = document.getElementById(`post-${targetId}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 600);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Projects - Error Dev</title>
+    <title>projects</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
-            <h1 style="margin:0; font-size:32px;">Projects</h1>
+            <h1 style="margin:0; font-size:32px;">projects</h1>
             <div id="admin-add-project-btn" style="display:none;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="addProject()">+ Add Project</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="addProject()">+ add project</button>
             </div>
         </div>
         <div id="project-tabs" style="display:flex; gap:20px; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:40px;"></div>
@@ -79,10 +79,10 @@
 
         window.addProject = async () => {
             if (!currentTabKey) return;
-            const name = await window.parent.guiPrompt("Project Name:", "", "Add Project");
+            const name = await window.parent.guiPrompt("project name:", "", "add project");
             if (!name) return;
-            const desc = await window.parent.guiPrompt("Project Description:", "", "Project Description");
-            const link = await window.parent.guiPrompt("Project Link URL:", "https://", "Project URL");
+            const desc = await window.parent.guiPrompt("project description:", "", "project description");
+            const link = await window.parent.guiPrompt("project link URL:", "https://", "project URL");
             
             if (!projectsData.tabs[currentTabKey].projects) projectsData.tabs[currentTabKey].projects = [];
             projectsData.tabs[currentTabKey].projects.push({ name, description: desc, link });
@@ -92,7 +92,7 @@
         };
 
         window.deleteProject = async (idx) => {
-            const conf = await window.parent.guiConfirm("Delete this project?", "Confirm Deletion");
+            const conf = await window.parent.guiConfirm("delete this project?", "confirm deletion");
             if (conf) {
                 projectsData.tabs[currentTabKey].projects.splice(idx, 1);
                 await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });

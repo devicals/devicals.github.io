@@ -7,6 +7,11 @@
       fileType: html
       url: pages/home.html
 
+    - name: Posts
+      type: file
+      fileType: html
+      url: pages/posts.html
+
     - name: Blogs
       type: file
       fileType: html
@@ -215,6 +220,11 @@
     - name: Commit History
       type: file
       fileType: commits
+
+    - name: Graph View
+      type: file
+      fileType: html
+      url: pages/graph.html
 
     - name: Archive
       type: folder

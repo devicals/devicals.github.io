@@ -3,18 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blogs - Error Dev</title>
+    <title>blogs</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:30px; font-size:32px; border-bottom:1px solid var(--border); padding-bottom:15px;">Blogs</h1>
+        <h1 style="margin-bottom:30px; font-size:32px; border-bottom:1px solid var(--border); padding-bottom:15px;">blogs</h1>
         <div id="blogs-container" class="flat-list-container" style="gap:24px;">
-            <span style="color:var(--fg-muted);">Loading blogs...</span>
+            <span style="color:var(--fg-muted);">loading blogs...</span>
         </div>
     </div>
+
+    <div class="copy-toast" id="copy-toast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--accent); color:var(--bg-main); padding:10px 20px; font-family:var(--font-ui); font-size:12px; font-weight:bold; z-index:999; opacity:0; transition:opacity 0.2s;">link copied</div>
 
     <script>
         const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
@@ -40,7 +42,7 @@
             }
             container.innerHTML = blogsList.map((b) => `
                 <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:24px; margin-bottom:0;">
-                    <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted);">ID: #${b.id} &middot; Date: ${b.date}</div>
+                    <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted);"><button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyBlogLink(${b.id})">ID: #${b.id}</button> &middot; Date: ${b.date}</div>
                     <div class="flat-title" style="font-size:22px; margin-bottom:14px;">${b.title}</div>
                     <div class="flat-desc markdown-body" style="font-size:14px; line-height:1.7;">${marked.parse(b.content)}</div>
                 </div>
@@ -57,6 +59,16 @@
                 }, 300);
             }
         }
+
+        window.copyBlogLink = function (id) {
+            const url = `${window.parent.location.origin}${window.parent.location.pathname}#Index/Blogs?id=${id}`;
+            navigator.clipboard.writeText(url).then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.classList.add('show');
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 1600);
+            });
+        };
 
         function setupScrollObserver() {
             const observer = new IntersectionObserver((entries) => {

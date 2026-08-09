@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>graph view</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        html, body { height: 100%; overflow: hidden; }
+        .graph-wrap { position: relative; width: 100%; height: 100%; }
+        .graph-header {
+            position: absolute; top: 24px; left: 24px; z-index: 5;
+            font-family: var(--font-ui); font-size: 12px; color: var(--fg-muted);
+        }
+        .graph-legend {
+            position: absolute; top: 24px; right: 24px; z-index: 5;
+            display: flex; flex-direction: column; gap: 8px;
+            font-family: var(--font-ui); font-size: 11px; color: var(--fg-muted);
+            background: var(--bg-hover); border: 1px solid var(--border); padding: 14px 18px;
+        }
+        .legend-row { display: flex; align-items: center; gap: 8px; }
+        .legend-dot { width: 10px; height: 10px; flex-shrink: 0; }
+        svg { width: 100%; height: 100%; display: block; cursor: grab; }
+        .graph-node-label {
+            font-family: var(--font-ui); font-size: 10px; fill: var(--fg-muted); pointer-events: none;
+        }
+        .graph-link { stroke: var(--border); stroke-width: 1.2px; }
+        .graph-node circle { stroke: var(--bg-workspace); stroke-width: 2px; cursor: pointer; }
+        .graph-node:hover circle { stroke: var(--accent); }
+        .graph-node:hover .graph-node-label { fill: var(--fg-main); }
+    </style>
+</head>
+<body style="background: var(--bg-workspace);">
+    <div class="graph-wrap">
+        <div class="graph-header">graph view &middot; click a node to navigate</div>
+        <div class="graph-legend" id="graph-legend"></div>
+        <svg id="graph-svg"></svg>
+    </div>
+
+    <script>
+        const CATEGORY_COLORS = {
+            'Index': '#e6b450',
+            'Content': '#4f9dd6',
+            'About Me': '#d67ab5',
+            'Other Stuff': '#5bc98a',
+            'System': '#d0705a'
+        };
+
+        function isHidden(node) {
+            return node && node.hidden === true;
+        }
+
+        function buildGraphData(rootNodes) {
+            const nodes = [];
+            const links = [];
+            let idCounter = 0;
+
+            const rootId = 'root';
+            nodes.push({ id: rootId, label: 'devicals.github.io', category: 'root', isRoot: true, path: null });
+
+            function walk(list, parentId, category, pathPrefix) {
+                (list || []).forEach(node => {
+                    if (isHidden(node)) return;
+                    const currentPath = [...pathPrefix, node.name].join('/');
+                    const nodeId = 'n' + (idCounter++);
+                    const cat = category || node.name;
+
+                    nodes.push({
+                        id: nodeId,
+                        label: node.name,
+                        category: cat,
+                        isFolder: node.type === 'folder',
+                        path: node.type === 'file' ? currentPath : null
+                    });
+                    links.push({ source: parentId, target: nodeId });
+
+                    if (node.type === 'folder') {
+                        walk(node.children, nodeId, cat, [...pathPrefix, node.name]);
+                    }
+                });
+            }
+
+            rootNodes.forEach(top => {
+                if (isHidden(top)) return;
+                walk([top], rootId, top.name, []);
+            });
+
+            return { nodes, links };
+        }
+
+        function colorFor(category) {
+            return CATEGORY_COLORS[category] || '#8c877d';
+        }
+
+        async function init() {
+            const res = await fetch('../data/structure.yaml');
+            const text = await res.text();
+            const parsed = jsyaml.load(text);
+
+            const legend = document.getElementById('graph-legend');
+            legend.innerHTML = Object.keys(CATEGORY_COLORS).map(cat => `
+                <div class="legend-row"><div class="legend-dot" style="background:${CATEGORY_COLORS[cat]};"></div>${cat}</div>
+            `).join('');
+
+            const { nodes, links } = buildGraphData(parsed);
+
+            const svg = d3.select('#graph-svg');
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            const g = svg.append('g');
+
+            svg.call(d3.zoom().scaleExtent([0.2, 4]).on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            }));
+
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(60).strength(0.6))
+                .force('charge', d3.forceManyBody().strength(-160))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(28));
+
+            const link = g.append('g').selectAll('line')
+                .data(links).join('line').attr('class', 'graph-link');
+
+            const node = g.append('g').selectAll('g')
+                .data(nodes).join('g')
+                .attr('class', 'graph-node')
+                .call(d3.drag()
+                    .on('start', dragStarted)
+                    .on('drag', dragged)
+                    .on('end', dragEnded));
+
+            node.append('circle')
+                .attr('r', d => d.isRoot ? 14 : d.isFolder ? 9 : 6)
+                .attr('fill', d => d.isRoot ? '#ffffff' : colorFor(d.category));
+
+            node.append('text')
+                .attr('class', 'graph-node-label')
+                .attr('x', 12)
+                .attr('y', 4)
+                .text(d => d.label);
+
+            node.on('click', (event, d) => {
+                if (d.path) {
+                    window.parent.location.hash = d.path;
+                }
+            });
+
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+
+            function dragStarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x; d.fy = d.y;
+            }
+            function dragged(event, d) {
+                d.fx = event.x; d.fy = event.y;
+            }
+            function dragEnded(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null; d.fy = null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

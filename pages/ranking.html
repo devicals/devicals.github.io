@@ -3,7 +3,7 @@
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tier List Maker</title>
+  <title>tier list maker</title>
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -71,17 +71,17 @@
   <div class="tl-layout">
     <div class="tl-main">
       <div class="tl-header">
-        <div class="tl-title" id="active-list-title">Tier List Maker (Untitled)</div>
+        <div class="tl-title" id="active-list-title">tier list maker (untitled)</div>
       </div>
       <div class="top-bar">
-        <label>Preset</label>
+        <label>preset</label>
         <select id="presetSel" onchange="changePreset(this.value)">
-          <option value="full">Full</option>
-          <option value="standard">Standard</option>
-          <option value="simple">Simple</option>
-          <option value="simple2">Simple 2</option>
-          <option value="extended">Extended</option>
-          <option value="complete">Complete</option>
+          <option value="full">full</option>
+          <option value="standard">standard</option>
+          <option value="simple">simple</option>
+          <option value="simple2">simple 2</option>
+          <option value="extended">extended</option>
+          <option value="complete">complete</option>
         </select>
       </div>
       <div class="tier-list" id="tierList"></div>
@@ -89,38 +89,38 @@
 
     <div class="tl-sidebar">
       <div class="sidebar-section">
-        <div class="sidebar-label">Unranked Pool</div>
+        <div class="sidebar-label">unranked pool</div>
         <div class="pool-area" id="pool" data-tier="__pool__"></div>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Add Item</div>
-        <input type="text" id="itemInput" placeholder="Label or Item..." />
-        <button class="btn-primary" onclick="addItem()">+ Add</button>
+        <div class="sidebar-label">add item</div>
+        <input type="text" id="itemInput" placeholder="label or item..." />
+        <button class="btn-primary" onclick="addItem()">+ add</button>
       </div>
 
       <div class="sidebar-section tl-sidebar-block">
-        <div class="tl-sidebar-block-title">My Saved Tier Lists</div>
+        <div class="tl-sidebar-block-title">my saved tier lists</div>
         <div id="saved-lists-container" style="margin-bottom:12px;">
-          <span class="tl-hint">No saved lists yet.</span>
+          <span class="tl-hint">no saved lists yet.</span>
         </div>
-        <input type="text" id="save-name-input" class="ui-input" placeholder="Tier list name..." style="margin-bottom:8px;">
-        <button class="ui-btn" onclick="saveCurrentList()">Save Current As New</button>
+        <input type="text" id="save-name-input" class="ui-input" placeholder="tier list name..." style="margin-bottom:8px;">
+        <button class="ui-btn" onclick="saveCurrentList()">save current as new</button>
       </div>
 
       <div class="sidebar-section tl-sidebar-block">
-        <div class="tl-sidebar-block-title">Import / Export</div>
-        <button class="ui-btn" onclick="exportCurrentList()">Export as JSON</button>
+        <div class="tl-sidebar-block-title">import / export</div>
+        <button class="ui-btn" onclick="exportCurrentList()">export as JSON</button>
         <input type="file" id="import-file-input" accept="application/json" style="display:none;" onchange="importFromFile(event)">
-        <button class="ui-btn" onclick="document.getElementById('import-file-input').click()">Import from JSON</button>
+        <button class="ui-btn" onclick="document.getElementById('import-file-input').click()">import from JSON</button>
       </div>
 
       <div class="sidebar-section tl-sidebar-block">
-        <div class="tl-sidebar-block-title">Share</div>
-        <div class="tl-hint" style="margin-bottom:8px;">Generate a code others can use to load a read-only copy of this exact list.</div>
-        <button class="ui-btn" onclick="generateShareCode()">Generate Share Code</button>
+        <div class="tl-sidebar-block-title">share</div>
+        <div class="tl-hint" style="margin-bottom:8px;">generate a code others can use to load a read-only copy of this exact list.</div>
+        <button class="ui-btn" onclick="generateShareCode()">generate share code</button>
         <div id="share-code-display" style="display:none; font-family:var(--font-ui); font-size:16px; color:var(--accent); text-align:center; padding:10px; border:1px solid var(--accent); margin-top:8px;"></div>
-        <input type="text" id="share-code-input" class="ui-input" placeholder="Enter a share code..." style="margin-top:14px;">
-        <button class="ui-btn" onclick="loadFromShareCode()">Load Share Code</button>
+        <input type="text" id="share-code-input" class="ui-input" placeholder="enter a share code..." style="margin-top:14px;">
+        <button class="ui-btn" onclick="loadFromShareCode()">load share code</button>
       </div>
     </div>
   </div>
@@ -277,21 +277,21 @@
       const lists = await getSavedLists();
       const container = document.getElementById('saved-lists-container');
       if (!lists.length) {
-        container.innerHTML = '<span class="tl-hint">No saved lists yet.</span>';
+        container.innerHTML = '<span class="tl-hint">no saved lists yet.</span>';
         return;
       }
       container.innerHTML = lists.map(l => `
         <div class="tl-saved-item">
           <span class="tl-saved-item-name">${l.name}</span>
-          <button class="ui-btn tl-mini-btn" onclick="loadSavedList('${l.id}')">Load</button>
-          <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteSavedList('${l.id}')">Del</button>
+          <button class="ui-btn tl-mini-btn" onclick="loadSavedList('${l.id}')">load</button>
+          <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteSavedList('${l.id}')">del</button>
         </div>
       `).join('');
     }
 
     window.saveCurrentList = async function () {
       const nameInput = document.getElementById('save-name-input');
-      const name = nameInput.value.trim() || 'Untitled Tier List';
+      const name = nameInput.value.trim() || 'untitled tier list';
       const lists = await getSavedLists();
       const entry = { id: 'tl_' + Date.now(), name, state: currentState() };
       lists.unshift(entry);
@@ -316,7 +316,7 @@
       let lists = await getSavedLists();
       lists = lists.filter(l => l.id !== id);
       await setSavedLists(lists);
-      if (currentListId === id) { currentListId = null; currentListName = 'Untitled'; renderAll(); }
+      if (currentListId === id) { currentListId = null; currentListName = 'untitled'; renderAll(); }
       refreshSavedListsUI();
     };
 
@@ -340,7 +340,7 @@
           const payload = JSON.parse(e.target.result);
           if (payload.state) {
             currentListId = null;
-            currentListName = payload.name || 'Imported Tier List';
+            currentListName = payload.name || 'imported tier list';
             loadState(payload.state);
           }
         } catch (err) {

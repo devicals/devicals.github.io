@@ -2,95 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Code Translator - Error Dev</title>
+    <title>code translator</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div class="markdown-body" style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:40px;">Code Translators & Utilities</h1>
+        <h1 style="margin-bottom:40px;">code translator</h1>
         
-        <h2>1. Custom Ciphers</h2>
+        <h2>custom ciphers - by me :&#125;</h2>
         
         <div style="margin-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">Code 1: Pointer Code</h3>
-            <textarea id="ptr-in" class="ui-input" rows="3" placeholder="Text to encode or pointer sequence..."></textarea>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">pointa</h3>
+            <textarea id="ptr-in" class="ui-input" rows="3" placeholder="text to encode or pointer sequence..."></textarea>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execPointer('encode')">Encode</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execPointer('decode')">Decode</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execPointer('encode')">encode</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execPointer('decode')">decode</button>
             </div>
             <div style="color:var(--destructive); font-size:11px;" id="ptr-warn"></div>
             <textarea id="ptr-out" class="ui-input" rows="3" readonly></textarea>
         </div>
 
         <div style="margin-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">Code 2: Bracket Substitution</h3>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">bracket</h3>
             <textarea id="brk-in" class="ui-input" rows="3" placeholder="Text or bracket pairs..."></textarea>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execBracket('encode')">Encode</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execBracket('decode')">Decode</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execBracket('encode')">encode</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execBracket('decode')">decode</button>
             </div>
             <div style="color:var(--destructive); font-size:11px;" id="brk-warn"></div>
             <textarea id="brk-out" class="ui-input" rows="3" readonly></textarea>
         </div>
 
         <div style="margin-bottom: 40px; border-bottom: 1px dashed var(--border); padding-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">Code 3: Unified Stream</h3>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">river</h3>
             <textarea id="uni-in" class="ui-input" rows="3" placeholder="Words, numbers, and basic math..."></textarea>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execUnified('encode')">Encode Stream</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execUnified('decode')">Decode Stream</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execUnified('encode')">encode Stream</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execUnified('decode')">decode Stream</button>
             </div>
             <div style="color:var(--destructive); font-size:11px;" id="uni-warn"></div>
             <textarea id="uni-out" class="ui-input" rows="3" readonly></textarea>
         </div>
 
-        <h2>2. Bases & ASCII</h2>
+        <h2>ascii and stuff</h2>
 
         <div style="margin-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">Base Converter</h3>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">base converter</h3>
             <textarea id="base-in" class="ui-input" rows="2" placeholder="Value to convert..."></textarea>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
                 <input type="number" id="base-from" class="ui-input" style="width:120px; margin:0;" value="10" min="2" max="62" placeholder="From Base">
                 <input type="number" id="base-to" class="ui-input" style="width:120px; margin:0;" value="16" min="2" max="62" placeholder="To Base">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execBaseConvert()">Convert</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execBaseConvert()">convert</button>
             </div>
             <div style="color:var(--destructive); font-size:11px;" id="base-warn"></div>
             <textarea id="base-out" class="ui-input" rows="2" readonly></textarea>
         </div>
 
         <div style="margin-bottom: 40px; border-bottom: 1px dashed var(--border); padding-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">ASCII Representation</h3>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">ascii</h3>
             <textarea id="ascii-in" class="ui-input" rows="2" placeholder="Input string..."></textarea>
             <div style="display:flex; gap:10px; margin-bottom:10px;">
                 <select id="ascii-format" class="ui-input" style="width:150px; margin:0;">
-                    <option value="hex">Hex</option>
-                    <option value="bin">Bin</option>
-                    <option value="oct">Oct</option>
-                    <option value="base64">Base64</option>
+                    <option value="hex">hex</option>
+                    <option value="bin">bin</option>
+                    <option value="oct">oct</option>
+                    <option value="base64">base64</option>
                 </select>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execAscii('encode')">Encode</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="execAscii('decode')">Decode</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execAscii('encode')">encode</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="execAscii('decode')">decode</button>
             </div>
             <div style="color:var(--destructive); font-size:11px;" id="ascii-warn"></div>
             <textarea id="ascii-out" class="ui-input" rows="2" readonly></textarea>
         </div>
         
-        <h2>3. Generators & Identifiers</h2>
+        <h2>gen & identify</h2>
 
         <div style="margin-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">Identifiers</h3>
-            <button class="ui-btn" style="width:auto; margin-bottom:10px;" onclick="genUUID()">Gen UUID (v4)</button>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">identifiers</h3>
+            <button class="ui-btn" style="width:auto; margin-bottom:10px;" onclick="genUUID()">gen uuid v4</button>
             <input type="text" id="gen-uuid" class="ui-input" readonly>
         </div>
         
         <div style="margin-bottom: 40px;">
-            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">Secret Generator</h3>
-            <div style="font-size:11px; margin-bottom:8px; color:var(--fg-muted);">Length: <span id="len-disp">16</span></div>
+            <h3 style="color:var(--accent); font-size:15px; margin-bottom:10px;">secret maker</h3>
+            <div style="font-size:11px; margin-bottom:8px; color:var(--fg-muted);">length: <span id="len-disp">16</span></div>
             <input type="range" id="gen-len" min="8" max="128" value="16" oninput="document.getElementById('len-disp').textContent=this.value" style="margin-bottom:16px; width:100%; accent-color:var(--accent);">
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="genPassword()">Gen Password</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="genKey('hex')">Gen Hex Key</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="genKey('base64')">Gen B64 Key</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="genPassword()">gen password</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="genKey('hex')">gen hex key</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="genKey('base64')">gen b64 key</button>
             </div>
             <input type="text" id="gen-out" class="ui-input" readonly>
         </div>
@@ -265,7 +265,7 @@
                 let outText = "";
                 if (dir === 'encode') {
                     if (format === 'base64') outText = btoa(unescape(encodeURIComponent(inText)));
-                    else outText = Array.from(new TextEncoder().encode(inText)).map(c => format === 'hex' ? c.toString(16).padStart(2,'0') : (format === 'oct' ? c.toString(8).padStart(3,'0') : c.toString(2).padStart(8,'0'))).join(' ');
+                    else outText = Array.from(new Textencoder().encode(inText)).map(c => format === 'hex' ? c.toString(16).padStart(2,'0') : (format === 'oct' ? c.toString(8).padStart(3,'0') : c.toString(2).padStart(8,'0'))).join(' ');
                 } else {
                     if (format === 'base64') outText = decodeURIComponent(escape(atob(inText)));
                     else {
@@ -273,7 +273,7 @@
                         let bytes = new Uint8Array(parts.length);
                         let base = format === 'hex' ? 16 : (format === 'oct' ? 8 : 2);
                         for(let i=0; i<parts.length; i++) bytes[i] = parseInt(parts[i], base);
-                        outText = new TextDecoder().decode(bytes);
+                        outText = new Textdecoder().decode(bytes);
                     }
                 }
                 document.getElementById('ascii-out').value = outText;

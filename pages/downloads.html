@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Downloads - Error Dev</title>
+    <title>downloads</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
-            <h1 style="margin:0; font-size:32px;">Downloads</h1>
+            <h1 style="margin:0; font-size:32px;">downloads</h1>
             <div id="admin-add-download-btn" style="display:none;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="addDownload()">+ Add Download</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="addDownload()">+ add download</button>
             </div>
         </div>
         <div id="downloads-list" class="flat-list-container" style="gap:40px;"></div>
@@ -46,7 +46,7 @@
                         <div class="flat-meta" style="font-size:14px; color:var(--fg-main);">${d.description}</div>
                     </div>
                     <div style="display:flex; gap:12px; align-items:center;">
-                        <a href="${d.url}" target="_blank" class="ui-btn" style="width:auto; margin:0; text-decoration:none; padding:10px 20px;">Download</a>
+                        <a href="${d.url}" target="_blank" class="ui-btn" style="width:auto; margin:0; text-decoration:none; padding:10px 20px;">download</a>
                         ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteDownload(${idx})">✕</button>` : ''}
                     </div>
                 </div>
@@ -54,10 +54,10 @@
         }
 
         window.addDownload = async () => {
-            const name = await window.parent.guiPrompt("Download Name:", "", "Add Download");
+            const name = await window.parent.guiPrompt("download name:", "", "add download");
             if (!name) return;
-            const desc = await window.parent.guiPrompt("Description:", "", "Download Details");
-            const url = await window.parent.guiPrompt("Download URL:", "https://", "Download Link");
+            const desc = await window.parent.guiPrompt("description:", "", "download Details");
+            const url = await window.parent.guiPrompt("download URL:", "https://", "download Link");
 
             dlList.push({ id: Date.now(), name, description: desc, url });
             await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
@@ -65,7 +65,7 @@
         };
 
         window.deleteDownload = async (idx) => {
-            const conf = await window.parent.guiConfirm("Delete this download link?", "Confirm Deletion");
+            const conf = await window.parent.guiConfirm("delete this download link?", "confirm deletion");
             if (conf) {
                 dlList.splice(idx, 1);
                 await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
