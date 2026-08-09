@@ -5,29 +5,22 @@
     <title>posts</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <style>
         .post-compose {
-            min-height: 90px;
+            min-height: 110px;
             background: var(--bg-main);
             border: 1px solid var(--border);
             color: var(--fg-main);
             padding: 12px 14px;
-            font-family: var(--font-text);
-            font-size: 14px;
+            font-family: var(--font-ui);
+            font-size: 13px;
             line-height: 1.6;
             outline: none;
             margin-bottom: 10px;
-        }
-        .post-compose:empty:before {
-            content: attr(data-placeholder);
-            color: var(--fg-muted);
-        }
-        .post-compose img {
-            max-width: 100%;
-            display: block;
-            margin: 8px 0;
-            border: 1px solid var(--border);
+            width: 100%;
+            resize: vertical;
         }
         .post-card {
             border: 1px solid var(--border);
@@ -77,12 +70,18 @@
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1 style="margin-bottom:24px;">posts</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <h1 style="margin:0;">posts</h1>
+        </div>
 
-        <div style="border:1px solid var(--border); background:var(--bg-hover); padding:18px; margin-bottom:32px;">
-            <input type="text" id="post-name" class="ui-input" readonly disabled style="opacity:0.7; cursor:not-allowed;" placeholder="Resolving Name...">
-            <div id="post-compose" class="post-compose" contenteditable="true" data-placeholder="Write a post... paste an image to embed it inline"></div>
+        <div id="admin-compose-box" style="display:none; border:1px solid var(--border); background:var(--bg-hover); padding:18px; margin-bottom:32px;">
+            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:lowercase;">new post (markdown supported)</div>
+            <textarea id="post-compose" class="post-compose ui-input" rows="6" placeholder="write a post using markdown... a single line break is a real line break here"></textarea>
             <button class="ui-btn" onclick="submitPost()">post</button>
+        </div>
+
+        <div id="non-admin-note" class="admin-only-note" style="display:none;">
+            only the site admin can create new posts. feel free to like and comment on posts below!
         </div>
 
         <div id="posts-list"></div>
@@ -94,6 +93,8 @@
         const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        marked.use({ breaks: true, gfm: true });
 
         let currentUser = null;
         let currentProfile = null;
@@ -110,9 +111,13 @@
 
         function sanitizePostHTML(html) {
             return DOMPurify.sanitize(html, {
-                ALLOWED_TAGS: ['img', 'br', 'b', 'i', 'strong', 'em', 'a', 'p'],
+                ALLOWED_TAGS: ['img', 'br', 'b', 'i', 'strong', 'em', 'a', 'p', 'h1', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'table', 'thead', 'tbody', 'tr', 'td', 'th'],
                 ALLOWED_ATTR: ['src', 'alt', 'href', 'target', 'rel']
             });
+        }
+
+        function renderMarkdown(raw) {
+            return sanitizePostHTML(marked.parse(raw || ''));
         }
 
         async function getAnonName() {
@@ -140,7 +145,9 @@
             }
 
             assignedName = currentProfile?.username || await getAnonName();
-            document.getElementById('post-name').value = assignedName;
+
+            document.getElementById('admin-compose-box').style.display = isAdminLocal ? 'block' : 'none';
+            document.getElementById('non-admin-note').style.display = isAdminLocal ? 'none' : 'block';
 
             await loadPosts();
 
@@ -170,7 +177,7 @@
         function renderPosts() {
             const container = document.getElementById('posts-list');
             if (!posts.length) {
-                container.innerHTML = '<p style="color:var(--fg-muted); font-size:13px;">No posts yet. Be the first!</p>';
+                container.innerHTML = '<p style="color:var(--fg-muted); font-size:13px;">No posts yet.</p>';
                 return;
             }
 
@@ -187,7 +194,7 @@
                             ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost(${p.id})">Delete</button>` : ''}
                         </div>
                     </div>
-                    <div class="post-body">${sanitizePostHTML(p.content || '')}</div>
+                    <div class="post-body markdown-body">${renderMarkdown(p.content || '')}</div>
                     <div class="post-actions">
                         <button class="ui-btn post-like-btn ${likedByMe[p.id] ? 'liked' : ''}" onclick="toggleLike(${p.id})">♥ <span>${likeCounts[p.id] || 0}</span></button>
                         <button class="ui-btn post-comments-toggle" onclick="toggleComments(${p.id})">Comments</button>
@@ -282,12 +289,12 @@
         };
 
         window.submitPost = async function () {
+            if (!isAdminLocal) return;
             const box = document.getElementById('post-compose');
-            const raw = box.innerHTML.trim();
-            if (!raw || raw === '<br>') return;
-            const clean = sanitizePostHTML(raw);
-            await supabaseClient.from('posts').insert({ name: assignedName, content: clean, is_creator: isAdminLocal });
-            box.innerHTML = '';
+            const raw = box.value.trim();
+            if (!raw) return;
+            await supabaseClient.from('posts').insert({ name: assignedName, content: raw, is_creator: true });
+            box.value = '';
         };
 
         window.copyPostLink = function (postId) {
@@ -298,23 +305,6 @@
                 setTimeout(() => toast.classList.remove('show'), 1600);
             });
         };
-
-        document.getElementById('post-compose').addEventListener('paste', (e) => {
-            const items = e.clipboardData?.items;
-            if (!items) return;
-            for (const item of items) {
-                if (item.type.startsWith('image/')) {
-                    e.preventDefault();
-                    const file = item.getAsFile();
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                        document.execCommand('insertHTML', false, `<img src="${ev.target.result}">`);
-                    };
-                    reader.readAsDataURL(file);
-                    return;
-                }
-            }
-        });
 
         document.addEventListener('DOMContentLoaded', () => {
             initPosts();
