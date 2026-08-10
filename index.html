@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Error Dev</title>
+    <title>devicals</title>
     <link rel="icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -49,6 +49,8 @@
             gap: 10px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             pointer-events: auto;
+            position: relative;
+            overflow: hidden;
         }
         .announcement-toast a {
             color: var(--accent) !important;
@@ -64,7 +66,7 @@
             <div id="nav-tree" class="nav-tree"></div>
             
             <div class="admin-dashboard-btn" onclick="window.location.hash='admin'">
-                <span>Admin Dashboard</span>
+                <span>admin dashboard</span>
                 <span>></span>
             </div>
 
@@ -93,67 +95,68 @@
 
     <div id="auth-modal" class="modal">
         <div class="modal-box">
-            <div class="modal-title">Account Center</div>
+            <div class="modal-title">account center</div>
             <div id="auth-content"></div>
-            <button class="modal-close" onclick="document.getElementById('auth-modal').style.display='none'">Close</button>
+            <button class="modal-close" onclick="document.getElementById('auth-modal').style.display='none'">close</button>
         </div>
     </div>
 
     <div id="settings-modal" class="modal">
         <div class="modal-box">
-            <div class="modal-title">Settings</div>
+            <div class="modal-title">settings</div>
             <div class="settings-group">
-                <label>Theme Options</label>
-                <button id="toggle-dark-mode" class="ui-btn">Toggle Dark/Light Mode</button>
+                <label>theme options</label>
+                <button id="toggle-dark-mode" class="ui-btn">toggle dark/light mode</button>
                 <select id="theme-selector" class="ui-input">
-                    <option value="primary">Primary (Default Warm)</option>
-                    <option value="obsidian">Obsidian Dark</option>
+                    <option value="primary">primary (default warm)</option>
+                    <option value="obsidian">obsidian dark</option>
                 </select>
             </div>
             <div class="settings-group">
                 <label>Background Effect</label>
                 <select id="bg-effect-selector" class="ui-input">
-                    <option value="blackhole">Black Hole & Interactive Stars</option>
-                    <option value="stars">Interactive Stars Only</option>
-                    <option value="none">Disabled / Solid</option>
+                    <option value="particles">network</option>
+                    <option value="matrix">matrix</option>
+                    <option value="stars">stars</option>
+                    <option value="none">nothing</option>
                 </select>
             </div>
             <div class="settings-group">
                 <label>Custom CSS</label>
-                <textarea id="custom-css-input" class="ui-input" rows="4" placeholder="Enter custom CSS rules..."></textarea>
-                <button id="save-css" class="ui-btn">Apply Custom CSS</button>
+                <textarea id="custom-css-input" class="ui-input" rows="4" placeholder="enter custom css rules..."></textarea>
+                <button id="save-css" class="ui-btn">apply custom css</button>
             </div>
-            <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">Close</button>
+            <button class="modal-close" onclick="document.getElementById('settings-modal').style.display='none'">close</button>
         </div>
     </div>
 
     <div id="gui-modal" class="modal">
         <div class="modal-box">
-            <div class="modal-title" id="gui-title">Notification</div>
+            <div class="modal-title" id="gui-title">notification</div>
             <div id="gui-msg" style="font-size:12px; margin-bottom:16px;"></div>
-            <button class="ui-btn" onclick="closeGuiModal()">OK</button>
+            <button class="ui-btn" onclick="closeGuiModal()">ok</button>
         </div>
     </div>
 
     <div id="gui-confirm-modal" class="modal">
         <div class="modal-box">
-            <div class="modal-title" id="gui-confirm-title">Confirm Action</div>
+            <div class="modal-title" id="gui-confirm-title">confirm action</div>
             <div id="gui-confirm-msg" style="font-size:12px; margin-bottom:16px;"></div>
             <div style="display:flex; gap:8px;">
-                <button class="ui-btn" id="gui-confirm-yes">Yes</button>
-                <button class="ui-btn" id="gui-confirm-no" onclick="closeGuiConfirmModal()">Cancel</button>
+                <button class="ui-btn" id="gui-confirm-yes">yes</button>
+                <button class="ui-btn" id="gui-confirm-no" onclick="closeGuiConfirmModal()">cancel</button>
             </div>
         </div>
     </div>
 
     <div id="gui-prompt-modal" class="modal">
         <div class="modal-box">
-            <div class="modal-title" id="gui-prompt-title">Input Required</div>
+            <div class="modal-title" id="gui-prompt-title">input required</div>
             <div id="gui-prompt-msg" style="font-size:12px; margin-bottom:10px;"></div>
             <input type="text" id="gui-prompt-input" class="ui-input">
             <div style="display:flex; gap:8px;">
-                <button class="ui-btn" id="gui-prompt-ok">OK</button>
-                <button class="ui-btn" onclick="closeGuiPromptModal()">Cancel</button>
+                <button class="ui-btn" id="gui-prompt-ok">ok</button>
+                <button class="ui-btn" onclick="closeGuiPromptModal()">cancel</button>
             </div>
         </div>
     </div>

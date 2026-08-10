@@ -66,7 +66,7 @@ function loadSettingsLocally() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
     const theme = localStorage.getItem('theme') || 'primary';
     const customCss = localStorage.getItem('custom-css') || '';
-    const bgEffect = localStorage.getItem('bg-effect') || 'blackhole';
+    const bgEffect = localStorage.getItem('bg-effect') || 'particles';
 
     document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
     document.getElementById('custom-css-block').textContent = customCss;
@@ -83,6 +83,7 @@ document.getElementById('toggle-dark-mode').onclick = () => {
     localStorage.setItem('dark-mode', isLight ? 'true' : 'false');
     syncSettingsToServer();
     syncIframeTheme();
+    if (window.refreshBgTheme) window.refreshBgTheme();
 };
 
 document.getElementById('theme-selector').onchange = (e) => {
@@ -92,6 +93,7 @@ document.getElementById('theme-selector').onchange = (e) => {
     }
     syncSettingsToServer();
     syncIframeTheme();
+    if (window.refreshBgTheme) window.refreshBgTheme();
 };
 
 document.getElementById('save-css').onclick = () => {
@@ -112,6 +114,7 @@ function syncIframeTheme() {
     if (iframe && iframe.contentWindow) {
         const theme = document.documentElement.getAttribute('data-theme');
         try { iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme); } catch (e) {}
+        try { if (iframe.contentWindow.refreshBgTheme) iframe.contentWindow.refreshBgTheme(); } catch (e) {}
     }
 }
 

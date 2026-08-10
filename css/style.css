@@ -95,14 +95,11 @@ body.has-bg-canvas {
     background: transparent;
 }
 
+#bg-fx-root {
+    background: transparent;
+}
+
 #bg-canvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: -1;
-    pointer-events: none;
     display: block;
 }
 
@@ -225,10 +222,6 @@ body.has-bg-canvas .main-content {
     justify-content: center;
     background: var(--bg-workspace);
     min-height: 60px;
-}
-
-body.has-bg-canvas .top-bar {
-    background: transparent;
 }
 
 .breadcrumbs {
