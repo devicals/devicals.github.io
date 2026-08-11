@@ -181,33 +181,40 @@
                 return;
             }
 
-            container.innerHTML = posts.map(p => `
-                <div class="post-card" id="post-${p.id}">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-                        <div>
-                            <strong style="color:var(--accent);">${escapeHTML(p.name || 'Anonymous')}</strong>
-                            ${p.is_creator ? '<span class="user-tag admin" style="margin-left:8px;">ADMIN</span>' : ''}
-                            <div style="font-size:11px; color:var(--fg-muted); margin-top:4px;">${new Date(p.created_at).toLocaleString()}</div>
+            container.innerHTML = posts.map(p => {
+                const isOwnerAuthor = p.name && p.name.toLowerCase() === 'error dev';
+                const badgeHTML = isOwnerAuthor
+                    ? '<span class="user-tag admin" style="margin-left:8px; border-color:var(--accent); color:var(--accent);">error dev</span>'
+                    : (p.is_creator ? '<span class="user-tag admin" style="margin-left:8px;">admin</span>' : '');
+
+                return `
+                    <div class="post-card" id="post-${p.id}">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                            <div>
+                                <strong style="color:var(--accent);">${escapeHTML(p.name || 'Anonymous')}</strong>
+                                ${badgeHTML}
+                                <div style="font-size:11px; color:var(--fg-muted); margin-top:4px;">${new Date(p.created_at).toLocaleString()}</div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button class="post-id-btn" onclick="copyPostLink('${p.id}')">ID: #${p.id}</button>
+                                ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost('${p.id}')">Delete</button>` : ''}
+                            </div>
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <button class="post-id-btn" onclick="copyPostLink(${p.id})">ID: #${p.id}</button>
-                            ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost(${p.id})">Delete</button>` : ''}
+                        <div class="post-body markdown-body">${renderMarkdown(p.content || '')}</div>
+                        <div class="post-actions">
+                            <button class="ui-btn post-like-btn ${likedByMe[p.id] ? 'liked' : ''}" onclick="toggleLike('${p.id}')">♥ <span>${likeCounts[p.id] || 0}</span></button>
+                            <button class="ui-btn post-comments-toggle" onclick="toggleComments('${p.id}')">Comments</button>
+                        </div>
+                        <div class="post-comments-section ${expandedComments[p.id] ? 'expanded' : ''}" id="comments-${p.id}">
+                            <div id="comment-list-${p.id}" style="margin-bottom:12px;"><span style="color:var(--fg-muted); font-size:12px;">Loading comments...</span></div>
+                            <div style="display:flex; gap:8px;">
+                                <input type="text" id="comment-input-${p.id}" class="ui-input" style="margin:0;" placeholder="Write a comment...">
+                                <button class="ui-btn" style="width:auto; margin:0;" onclick="submitComment('${p.id}')">Send</button>
+                            </div>
                         </div>
                     </div>
-                    <div class="post-body markdown-body">${renderMarkdown(p.content || '')}</div>
-                    <div class="post-actions">
-                        <button class="ui-btn post-like-btn ${likedByMe[p.id] ? 'liked' : ''}" onclick="toggleLike(${p.id})">♥ <span>${likeCounts[p.id] || 0}</span></button>
-                        <button class="ui-btn post-comments-toggle" onclick="toggleComments(${p.id})">Comments</button>
-                    </div>
-                    <div class="post-comments-section ${expandedComments[p.id] ? 'expanded' : ''}" id="comments-${p.id}">
-                        <div id="comment-list-${p.id}" style="margin-bottom:12px;"><span style="color:var(--fg-muted); font-size:12px;">Loading comments...</span></div>
-                        <div style="display:flex; gap:8px;">
-                            <input type="text" id="comment-input-${p.id}" class="ui-input" style="margin:0;" placeholder="Write a comment...">
-                            <button class="ui-btn" style="width:auto; margin:0;" onclick="submitComment(${p.id})">Send</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             Object.keys(expandedComments).forEach(id => {
                 if (expandedComments[id]) loadComments(id);
@@ -233,18 +240,25 @@
                 listEl.innerHTML = '<span style="color:var(--fg-muted); font-size:12px;">no comments yet.</span>';
                 return;
             }
-            listEl.innerHTML = data.map(c => `
-                <div class="comment-row">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <strong style="color:var(--accent);">${escapeHTML(c.name || 'Anonymous')}</strong>
-                            ${c.is_creator ? '<span class="user-tag admin" style="margin-left:6px;">ADMIN</span>' : ''}
+            listEl.innerHTML = data.map(c => {
+                const isOwnerAuthor = c.name && c.name.toLowerCase() === 'error dev';
+                const badgeHTML = isOwnerAuthor
+                    ? '<span class="user-tag admin" style="margin-left:6px; border-color:var(--accent); color:var(--accent);">error dev</span>'
+                    : (c.is_creator ? '<span class="user-tag admin" style="margin-left:6px;">admin</span>' : '');
+
+                return `
+                    <div class="comment-row">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <strong style="color:var(--accent);">${escapeHTML(c.name || 'Anonymous')}</strong>
+                                ${badgeHTML}
+                            </div>
+                            ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 6px; font-size:10px;" onclick="deleteComment('${c.id}', '${postId}')">✕</button>` : ''}
                         </div>
-                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 6px; font-size:10px;" onclick="deleteComment(${c.id}, ${postId})">✕</button>` : ''}
+                        <div style="margin-top:6px;">${escapeHTML(c.content)}</div>
                     </div>
-                    <div style="margin-top:6px;">${escapeHTML(c.content)}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         window.submitComment = async function (postId) {
@@ -260,7 +274,13 @@
             if (!isAdminLocal) return;
             const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("delete this comment?") : confirm("delete this comment?");
             if (!ok) return;
-            await supabaseClient.from('post_comments').delete().eq('id', commentId);
+            
+            const { error } = await supabaseClient.from('post_comments').delete().eq('id', commentId);
+            if (error) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to delete comment: " + error.message + " Ensure you have run the RLS SQL to allow comment deletion.", "Error");
+                else alert("Failed to delete: " + error.message);
+                return;
+            }
             await loadComments(postId);
         };
 
@@ -285,7 +305,13 @@
             if (!isAdminLocal) return;
             const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("delete this post?") : confirm("delete this post?");
             if (!ok) return;
-            await supabaseClient.from('posts').delete().eq('id', postId);
+            const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
+            if (error) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to delete post: " + error.message + " Please check that your Supabase Row-Level Security allows admins to delete posts.", "Error");
+                else alert("Failed to delete: " + error.message);
+                return;
+            }
+            await loadPosts();
         };
 
         window.submitPost = async function () {
@@ -295,6 +321,7 @@
             if (!raw) return;
             await supabaseClient.from('posts').insert({ name: assignedName, content: raw, is_creator: true });
             box.value = '';
+            await loadPosts();
         };
 
         window.copyPostLink = function (postId) {

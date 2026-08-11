@@ -33,7 +33,7 @@ window.escapeAttr = function (str) {
 
 window.guiAlert = function(msg, title = "notification") {
     document.getElementById('gui-title').textContent = title;
-    document.getElementById('gui-msg').textContent = msg;
+    document.getElementById('gui-msg').innerHTML = msg;
     document.getElementById('gui-modal').style.display = 'flex';
 };
 
@@ -231,7 +231,7 @@ async function handleSession(session) {
                 document.body.classList.remove('is-admin');
             }
 
-            loadPendingWarnings();
+            loadPersistentWarnings();
         } catch (e) {}
     } else {
         document.body.classList.remove('is-admin');
@@ -244,15 +244,32 @@ function renderAuthModal() {
     const container = document.getElementById('auth-content');
     if (currentUser) {
         const ownerBadge = window.isOwner ? '<div style="color:var(--accent); font-size:11px; margin-top:4px; letter-spacing:1px;">error dev</div>' : '';
+        let warningsHtml = '';
+        if (window._myWarnings && window._myWarnings.length > 0) {
+            warningsHtml = `
+                <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px; width:100%;">
+                    <div style="font-size:11px; color:var(--destructive); font-weight:bold; margin-bottom:8px;">your warning record (${window._myWarnings.length})</div>
+                    <div style="max-height:150px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
+                        ${window._myWarnings.map(w => `
+                            <div style="background:var(--bg-main); border:1px solid var(--border); padding:8px; font-size:11px;">
+                                <div style="color:var(--fg-muted); margin-bottom:4px;">${new Date(w.created_at).toLocaleString()} — by ${window.escapeAttr(w.issued_by_name || 'admin')}</div>
+                                <div>${window.escapeAttr(w.message)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
         container.innerHTML = `
             <div class="profile-info">
                 <div class="profile-name">${currentProfile?.username || 'authenticated user'}</div>
                 <div class="profile-id">ID: ${currentUser.id}</div>
-                ${ownerBadge}
+                ${window.isOwner ? '<div style="color:var(--accent); font-size:11px; margin-top:4px; letter-spacing:1px;">error dev</div>' : ''}
             </div>
             <input type="text" id="prof-name" class="ui-input" placeholder="set display name">
             <button class="ui-btn" onclick="updateProfile()">save display name</button>
-            <button class="ui-btn" onclick="supabaseClient.auth.signOut()" style="border-color:var(--destructive); color:var(--destructive);">logout</button>
+            ${warningsHtml}
+            <button class="ui-btn" onclick="supabaseClient.auth.signOut()" style="border-color:var(--destructive); color:var(--destructive); margin-top:12px;">logout</button>
         `;
     } else {
         container.innerHTML = `
@@ -375,7 +392,7 @@ function highlightNav() {
 
 async function handleRoute() {
     let rawHash = decodeURIComponent(window.location.hash.substring(1));
-    if (!rawHash) { window.location.hash = "index/home"; return; }
+    if (!rawHash) { window.location.hash = "Index/Home"; return; }
 
     let parts = rawHash.split('?');
     let hash = parts[0];
@@ -534,9 +551,8 @@ async function loadAnnouncementsToasts() {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         if (data && data.data && data.data.length > 0) {
             const container = document.getElementById('announcement-container');
-            container.innerHTML = '';
-
             data.data.forEach((annText, idx) => {
+                if (document.getElementById(`ann-toast-${idx}`)) return;
                 const toast = document.createElement('div');
                 toast.className = 'announcement-toast';
                 toast.id = `ann-toast-${idx}`;
@@ -552,8 +568,10 @@ async function loadAnnouncementsToasts() {
 
                 const bar = toast.querySelector(`#ann-progress-${idx}`);
                 requestAnimationFrame(() => {
-                    bar.style.transition = 'transform 30s linear';
-                    bar.style.transform = 'scaleX(0)';
+                    requestAnimationFrame(() => {
+                        bar.style.transition = 'transform 30s linear';
+                        bar.style.transform = 'scaleX(0)';
+                    });
                 });
 
                 setTimeout(() => {
@@ -568,48 +586,51 @@ async function loadAnnouncementsToasts() {
     } catch (e) {}
 }
 
-async function loadPendingWarnings() {
+window.dismissWarning = async function(id, el) {
+    el.closest('.announcement-toast').remove();
+    let dismissed = JSON.parse(localStorage.getItem('dismissed_warnings') || '[]');
+    if (!dismissed.includes(id)) dismissed.push(id);
+    localStorage.setItem('dismissed_warnings', JSON.stringify(dismissed));
+    await supabaseClient.from('warnings').update({ seen: true }).eq('id', id);
+};
+
+async function loadPersistentWarnings() {
     if (!currentUser) return;
     try {
+        const { data: allWarnings } = await supabaseClient
+            .from('warnings')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+        if (allWarnings) window._myWarnings = allWarnings;
+        
+        renderAuthModal();
+
         const { data, error } = await supabaseClient
             .from('warnings')
             .select('*')
             .eq('user_id', currentUser.id)
             .eq('seen', false)
-            .order('created_at', { ascending: true });
-        if (error || !data || !data.length) return;
+            .order('created_at', { ascending: false });
+        if (error || !data) return;
 
         const container = document.getElementById('announcement-container');
-        data.forEach((w, idx) => {
+        let dismissed = JSON.parse(localStorage.getItem('dismissed_warnings') || '[]');
+
+        data.forEach((w) => {
+            if (dismissed.includes(w.id) || document.getElementById(`warn-toast-${w.id}`)) return;
             const toast = document.createElement('div');
             toast.className = 'announcement-toast warning-toast';
             toast.id = `warn-toast-${w.id}`;
             toast.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span style="color:var(--destructive); font-weight:bold; font-size:11px; text-transform:lowercase;">warning issued</span>
-                    <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.closest('.announcement-toast').remove()">✕</span>
+                    <span style="cursor:pointer; color:var(--fg-muted);" onclick="dismissWarning('${w.id}', this)">✕</span>
                 </div>
                 <div class="announcement-body">${window.escapeAttr(w.message)}</div>
                 ${w.issued_by_name ? `<div style="font-size:10px; color:var(--fg-muted);">— ${window.escapeAttr(w.issued_by_name)}</div>` : ''}
-                <div class="announcement-progress-track"><div class="announcement-progress" id="warn-progress-${w.id}" style="background:var(--destructive);"></div></div>
             `;
             container.appendChild(toast);
-
-            const bar = toast.querySelector(`#warn-progress-${w.id}`);
-            requestAnimationFrame(() => {
-                bar.style.transition = 'transform 45s linear';
-                bar.style.transform = 'scaleX(0)';
-            });
-
-            setTimeout(() => {
-                if (toast.isConnected) {
-                    toast.style.transition = 'opacity 0.4s ease';
-                    toast.style.opacity = '0';
-                    setTimeout(() => toast.remove(), 400);
-                }
-            }, 45000);
-
-            supabaseClient.from('warnings').update({ seen: true }).eq('id', w.id).then(() => {});
         });
     } catch (e) {}
 }

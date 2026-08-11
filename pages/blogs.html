@@ -55,8 +55,10 @@
         function authorTag(profile) {
             if (window.parent && window.parent.authorTagHTML) return window.parent.authorTagHTML(profile);
             if (!profile) return '';
-            const label = profile.is_owner ? 'error dev' : (profile.username || 'unnamed');
-            return `<span style="font-size:10px; color:var(--fg-muted); border:1px solid var(--border); padding:2px 6px; margin-left:6px;">${label}</span>`;
+            const isOwnerAuthor = profile.is_owner === true || (profile.email && profile.email.toLowerCase() === '3rr0r.d3v@gmail.com');
+            const label = isOwnerAuthor ? 'error dev' : (profile.username || 'unnamed');
+            const color = isOwnerAuthor ? 'var(--accent)' : 'var(--fg-muted)';
+            return `<span style="font-size:10px; color:${color}; border:1px solid var(--border); padding:2px 6px; margin-left:6px;">${label}</span>`;
         }
 
         async function resolveAuthors(ids) {
@@ -97,22 +99,25 @@
                 container.innerHTML = '<p style="color:var(--fg-muted)">No blog posts available.</p>';
                 return;
             }
-            container.innerHTML = blogsList.map((b) => `
-                <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:24px; margin-bottom:0;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted); display:flex; align-items:center; flex-wrap:wrap;">
-                            <button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyBlogLink(${b.id})">ID: #${b.id}</button>
-                            &nbsp;&middot; Date: ${b.date} ${authorTag(authorMap[b.author_id])}
+            container.innerHTML = blogsList.map((b) => {
+                const canModify = isAdminLocal && (isOwnerLocal || b.author_id === currentUserId);
+                return `
+                    <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:24px; margin-bottom:0;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                            <div class="flat-meta" style="font-size:12px; margin-bottom:6px; color:var(--fg-muted); display:flex; align-items:center; flex-wrap:wrap;">
+                                <button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyBlogLink('${b.id}')">ID: #${b.id}</button>
+                                &nbsp;&middot; Date: ${b.date} ${authorTag(authorMap[b.author_id])}
+                            </div>
+                            ${canModify ? `<div style="display:flex; gap:8px;">
+                                <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="editBlogInline('${b.id}')">edit</button>
+                                <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px; color:var(--destructive);" onclick="deleteBlogInline('${b.id}')">delete</button>
+                            </div>` : ''}
                         </div>
-                        ${isAdminLocal ? `<div style="display:flex; gap:8px;">
-                            <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="editBlogInline(${b.id})">edit</button>
-                            <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px; color:var(--destructive);" onclick="deleteBlogInline(${b.id})">delete</button>
-                        </div>` : ''}
+                        <div class="flat-title" style="font-size:22px; margin-bottom:14px;">${b.title}</div>
+                        <div class="flat-desc markdown-body" style="font-size:14px; line-height:1.7;">${marked.parse(b.content)}</div>
                     </div>
-                    <div class="flat-title" style="font-size:22px; margin-bottom:14px;">${b.title}</div>
-                    <div class="flat-desc markdown-body" style="font-size:14px; line-height:1.7;">${marked.parse(b.content)}</div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             setupScrollObserver();
 
@@ -148,16 +153,35 @@
             const today = new Date();
             const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
             blogsList.unshift({ id: nextId, date: dateStr, title: result.title, content: result.content, author_id: currentUserId });
-            await supabaseClient.from('site_content').upsert({ key: 'blogs', data: blogsList });
+            
+            const { data: updateData, error } = await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs').select();
+            if (error) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Error: " + error.message);
+                else alert("Error: " + error.message);
+                return;
+            }
+            if (!updateData || updateData.length === 0) {
+                if (window.parent && window.parent.guiAlert) {
+                    window.parent.guiAlert("Save failed! Your admin account does not have permission to update 'site_content'. Please ask the owner to update the database RLS policies.", "Permission Denied");
+                } else {
+                    alert("Save failed! Permission Denied.");
+                }
+                return;
+            }
+            
             authorMap = await resolveAuthors(blogsList.map(b => b.author_id));
             renderBlogs();
         };
 
         window.editBlogInline = async function (id) {
             if (!isAdminLocal) return;
-            const idx = blogsList.findIndex(b => b.id === id);
+            const idx = blogsList.findIndex(b => String(b.id) === String(id));
             if (idx < 0) return;
             const b = blogsList[idx];
+            if (!isOwnerLocal && b.author_id !== currentUserId) {
+                alert("You can only edit blogs that you posted.");
+                return;
+            }
             const result = await formPrompt([
                 { key: 'title', label: 'blog title', value: b.title },
                 { key: 'content', label: 'content (markdown, multi-line supported)', type: 'textarea', rows: 10, value: b.content }
@@ -165,16 +189,33 @@
             if (!result) return;
             blogsList[idx].title = result.title;
             blogsList[idx].content = result.content;
-            await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs');
+            
+            const { data: updateData, error } = await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs').select();
+            if (error || !updateData || updateData.length === 0) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Save failed! Permission Denied.", "Error");
+                else alert("Save failed!");
+                return;
+            }
             renderBlogs();
         };
 
         window.deleteBlogInline = async function (id) {
             if (!isAdminLocal) return;
+            const b = blogsList.find(x => String(x.id) === String(id));
+            if (!isOwnerLocal && b?.author_id !== currentUserId) {
+                alert("You can only delete blogs that you posted.");
+                return;
+            }
             const ok = await confirmAction('delete this blog post?');
             if (!ok) return;
-            blogsList = blogsList.filter(b => b.id !== id);
-            await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs');
+            blogsList = blogsList.filter(x => String(x.id) !== String(id));
+            
+            const { data: updateData, error } = await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs').select();
+            if (error || !updateData || updateData.length === 0) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Save failed! Permission Denied.", "Error");
+                else alert("Save failed!");
+                return;
+            }
             renderBlogs();
         };
 

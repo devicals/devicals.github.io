@@ -28,9 +28,7 @@
 
         let projectsData = { tabs: {} };
         let currentTabKey = null;
-        let isAdminLocal = false;
-        let currentUserId = null;
-        let authorMap = {};
+        let isOwnerLocal = false;
 
         async function formPrompt(fields, title) {
             if (window.parent && window.parent.guiForm) return window.parent.guiForm(fields, title);
@@ -46,32 +44,16 @@
             if (window.parent && window.parent.guiConfirm) return window.parent.guiConfirm(msg);
             return confirm(msg);
         }
-        function authorTag(profile) {
-            if (window.parent && window.parent.authorTagHTML) return window.parent.authorTagHTML(profile);
-            if (!profile) return '';
-            const label = profile.is_owner ? 'error dev' : (profile.username || 'unnamed');
-            return `<span style="font-size:10px; color:var(--fg-muted); border:1px solid var(--border); padding:2px 6px; margin-left:6px;">${label}</span>`;
-        }
-        async function resolveAuthors(ids) {
-            if (window.parent && window.parent.resolveAuthorsMap) return window.parent.resolveAuthorsMap(ids);
-            const uniqueIds = [...new Set((ids || []).filter(Boolean))];
-            if (!uniqueIds.length) return {};
-            const { data } = await supabaseClient.from('profiles').select('id, username, is_owner, is_admin').in('id', uniqueIds);
-            const map = {};
-            (data || []).forEach(p => { map[p.id] = p; });
-            return map;
-        }
 
         async function initProjectsPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session?.user) {
-                currentUserId = session.user.id;
                 const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-                if (prof?.is_admin || prof?.is_owner || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isAdminLocal = true;
+                if (prof?.is_owner || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                    isOwnerLocal = true;
                 }
             }
-            if (isAdminLocal) {
+            if (isOwnerLocal) {
                 document.getElementById('admin-add-project-btn').style.display = 'block';
             }
 
@@ -79,19 +61,51 @@
             if (data && data.data) {
                 projectsData = data.data;
 
-                const params = new URLSearchParams(window.location.search);
-                const urlTab = params.get('tab');
-                if (urlTab && projectsData.tabs && projectsData.tabs[urlTab]) {
-                    currentTabKey = urlTab;
+                let needsUpdate = false;
+                let maxId = 0;
+                Object.values(projectsData.tabs || {}).forEach(t => {
+                    (t.projects || []).forEach(p => {
+                        if (p.id && p.id < 1000000000000 && p.id > maxId) maxId = p.id;
+                    });
+                });
+
+                Object.keys(projectsData.tabs || {}).forEach(k => {
+                    (projectsData.tabs[k].projects || []).forEach(p => {
+                        if (!p.id || p.id > 1000000000000) {
+                            p.id = ++maxId;
+                            needsUpdate = true;
+                        }
+                    });
+                });
+                
+                if (needsUpdate && isOwnerLocal) {
+                    await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
                 }
 
-                const allAuthorIds = [];
-                Object.values(projectsData.tabs || {}).forEach(t => (t.projects || []).forEach(p => allAuthorIds.push(p.author_id)));
-                authorMap = await resolveAuthors(allAuthorIds);
+                const params = new URLSearchParams(window.location.search);
+                const targetId = params.get('id');
+                let targetFoundInTab = null;
+
+                if (targetId) {
+                    for (const k of Object.keys(projectsData.tabs || {})) {
+                        if ((projectsData.tabs[k].projects || []).some(p => String(p.id) === targetId)) {
+                            targetFoundInTab = k;
+                            break;
+                        }
+                    }
+                }
+
+                if (targetFoundInTab) {
+                    currentTabKey = targetFoundInTab;
+                } else {
+                    const urlTab = params.get('tab');
+                    if (urlTab && projectsData.tabs && projectsData.tabs[urlTab]) {
+                        currentTabKey = urlTab;
+                    }
+                }
 
                 renderTabs();
 
-                const targetId = params.get('id');
                 if (targetId) {
                     setTimeout(() => {
                         const el = document.getElementById(`project-${targetId}`);
@@ -138,21 +152,20 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <a href="${p.link}" target="_blank" class="flat-title" style="font-size:24px;">${p.name} ↗</a>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            ${p.id ? `<button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyProjectLink(${p.id})">ID: #${p.id}</button>` : ''}
-                            ${isAdminLocal ? `<div style="display:flex; gap:8px;">
+                            ${p.id ? `<button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyProjectLink('${p.id}')">ID: #${p.id}</button>` : ''}
+                            ${isOwnerLocal ? `<div style="display:flex; gap:8px;">
                                 <button class="ui-btn" style="width:auto; margin:0;" onclick="editProject(${idx})">edit</button>
                                 <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteProject(${idx})">delete</button>
                             </div>` : ''}
                         </div>
                     </div>
                     <div class="flat-desc" style="font-size:15px; margin-bottom:8px;">${p.description}</div>
-                    <div>${authorTag(authorMap[p.author_id])}</div>
                 </div>
             `).join('');
         }
 
         window.copyProjectLink = function (id) {
-            const url = `${window.parent.location.origin}${window.parent.location.pathname}#Content/Projects?tab=${encodeURIComponent(currentTabKey)}&id=${id}`;
+            const url = `${window.parent.location.origin}${window.parent.location.pathname}#Content/Projects?id=${id}`;
             navigator.clipboard.writeText(url).then(() => {
                 const toast = document.getElementById('copy-toast');
                 toast.classList.add('show');
@@ -162,7 +175,7 @@
         };
 
         window.addProject = async () => {
-            if (!currentTabKey) return;
+            if (!isOwnerLocal || !currentTabKey) return;
             const result = await formPrompt([
                 { key: 'name', label: 'project name' },
                 { key: 'description', label: 'description', type: 'textarea', rows: 4 },
@@ -171,16 +184,21 @@
             if (!result || !result.name) return;
 
             if (!projectsData.tabs[currentTabKey].projects) projectsData.tabs[currentTabKey].projects = [];
-            const nextId = Date.now();
-            projectsData.tabs[currentTabKey].projects.push({ id: nextId, name: result.name, description: result.description, link: result.link, author_id: currentUserId });
+            
+            let maxId = 0;
+            Object.values(projectsData.tabs || {}).forEach(t => {
+                (t.projects || []).forEach(p => { if (p.id > maxId) maxId = p.id; });
+            });
+            const nextId = maxId + 1;
+            
+            projectsData.tabs[currentTabKey].projects.push({ id: nextId, name: result.name, description: result.description, link: result.link });
 
-            await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
-            authorMap[currentUserId] = authorMap[currentUserId] || (await resolveAuthors([currentUserId]))[currentUserId];
+            await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
             renderGrid();
         };
 
         window.editProject = async (idx) => {
-            if (!currentTabKey) return;
+            if (!isOwnerLocal || !currentTabKey) return;
             const proj = projectsData.tabs[currentTabKey].projects[idx];
             const result = await formPrompt([
                 { key: 'name', label: 'project name', value: proj.name },
@@ -191,16 +209,23 @@
             proj.name = result.name;
             proj.description = result.description;
             proj.link = result.link;
-            if (!proj.id) proj.id = Date.now();
-            await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
+            if (!proj.id) {
+                let maxId = 0;
+                Object.values(projectsData.tabs || {}).forEach(t => {
+                    (t.projects || []).forEach(p => { if (p.id > maxId) maxId = p.id; });
+                });
+                proj.id = maxId + 1;
+            }
+            await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
             renderGrid();
         };
 
         window.deleteProject = async (idx) => {
+            if (!isOwnerLocal) return;
             const conf = await confirmAction("delete this project?");
             if (conf) {
                 projectsData.tabs[currentTabKey].projects.splice(idx, 1);
-                await supabaseClient.from('site_content').upsert({ key: 'projects', data: projectsData });
+                await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
                 renderGrid();
             }
         };
