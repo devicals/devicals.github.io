@@ -572,6 +572,7 @@ body.has-bg-canvas .main-content {
 .flat-meta {
     font-size: 12px;
     color: var(--fg-muted);
+    font-family: var(--font-ui);
 }
 
 .admin-tab-bar {
