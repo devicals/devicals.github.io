@@ -1,11 +1,14 @@
-const ADMIN_TABS = [
-    { key: 'blogs', label: 'blogs' },
-    { key: 'projects', label: 'projects' },
-    { key: 'downloads', label: 'downloads' },
-    { key: 'games', label: 'liked games' },
-    { key: 'users', label: 'users' },
-    { key: 'anns', label: 'announcements' }
-];
+function getAdminTabs() {
+    const tabs = [
+        { key: 'blogs', label: 'blogs' },
+        { key: 'projects', label: 'projects' },
+        { key: 'downloads', label: 'downloads' }
+    ];
+    if (window.isOwner) tabs.push({ key: 'games', label: 'liked games' });
+    tabs.push({ key: 'users', label: 'users' });
+    tabs.push({ key: 'anns', label: 'announcements' });
+    return tabs;
+}
 
 window.renderAdminPage = async function () {
     const container = document.getElementById('page-content');
@@ -20,7 +23,7 @@ window.renderAdminPage = async function () {
 
 function renderAdminTabBar(active) {
     const bar = document.getElementById('admin-tab-bar');
-    bar.innerHTML = ADMIN_TABS.map(t => `
+    bar.innerHTML = getAdminTabs().map(t => `
         <button class="admin-tab-btn ${t.key === active ? 'active' : ''}" onclick="renderAdminTabBar('${t.key}'); renderAdminSection('${t.key}')">${t.label}</button>
     `).join('');
 }
@@ -28,6 +31,11 @@ function renderAdminTabBar(active) {
 window.renderAdminSection = async function (section) {
     const view = document.getElementById('admin-section-content');
     view.innerHTML = '<span style="color:var(--fg-muted);">loading...</span>';
+
+    if (section === 'games' && !window.isOwner) {
+        view.innerHTML = `<div class="admin-only-note">liked games is only editable by error dev.</div>`;
+        return;
+    }
 
     if (section === 'users') {
         try {
@@ -41,6 +49,11 @@ window.renderAdminSection = async function (section) {
                 users = fallback.data;
             }
 
+            const { data: warningsData } = await supabaseClient.from('warnings').select('user_id');
+            const warnCounts = {};
+            (warningsData || []).forEach(w => { warnCounts[w.user_id] = (warnCounts[w.user_id] || 0) + 1; });
+            users = users.map(u => ({ ...u, warning_count: warnCounts[u.id] || 0 }));
+
             const active = users.filter(u => !u.is_banned);
             const banned = users.filter(u => u.is_banned);
 
@@ -50,21 +63,27 @@ window.renderAdminSection = async function (section) {
                         <div>
                             <strong style="color:var(--accent); font-size:16px;">${u.username || 'unnamed'}</strong>
                             <span style="color:var(--fg-muted); margin-left:8px;">(ID: ${u.id})</span>
-                            ${u.is_admin ? '<span class="user-tag admin">admin</span>' : ''}
+                            ${u.is_owner ? '<span class="user-tag admin" style="border-color:var(--accent); color:var(--accent);">error dev</span>' : (u.is_admin ? '<span class="user-tag admin">admin</span>' : '')}
                             ${u.is_banned ? '<span class="user-tag banned">banned</span>' : ''}
+                            ${u.warning_count ? `<span class="user-tag" style="border-color:var(--destructive); color:var(--destructive);">${u.warning_count} warning${u.warning_count > 1 ? 's' : ''}</span>` : ''}
                         </div>
                     </div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
-                        <button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', '${u.is_admin ? 'demote' : 'promote'}')">${u.is_admin ? 'demote' : 'make admin'}</button>
-                        ${u.is_banned
-                            ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">unban</button>`
-                            : `<button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'ban')">ban</button>`
-                        }
+                        <button class="ui-btn" style="width:auto; margin:0;" onclick="adminWarnUser('${u.id}', '${(u.username || 'unnamed').replace(/'/g, "\\'")}')">warn</button>
+                        ${u.warning_count ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminViewWarnings('${u.id}')">view record</button>` : ''}
+                        ${window.isOwner ? `
+                            <button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', '${u.is_admin ? 'demote' : 'promote'}')">${u.is_admin ? 'demote' : 'make admin'}</button>
+                            ${u.is_banned
+                                ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', 'unban')">unban</button>`
+                                : `<button class="ui-btn" style="width:auto; margin:0; border-color:var(--destructive); color:var(--destructive);" onclick="adminUserAction('${u.id}', 'ban')">ban</button>`
+                            }
+                        ` : ''}
                     </div>
                 </div>
             `;
 
             view.innerHTML = `
+                ${!window.isOwner ? '<div class="admin-only-note">promoting, demoting, and banning users is restricted to error dev. you can still issue warnings.</div>' : ''}
                 <div class="admin-section-title">active users (${active.length})</div>
                 ${active.map(renderRow).join('') || '<p style="color:var(--fg-muted); font-size:13px;">no active users.</p>'}
                 <div class="admin-section-title" style="margin-top:40px;">Banned Users (${banned.length})</div>
@@ -86,6 +105,7 @@ window.renderAdminSection = async function (section) {
     } else if (section === 'blogs') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
         let list = data?.data || [];
+        const authorMap = await window.resolveAuthorsMap(list.map(b => b.author_id));
 
         view.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -97,7 +117,7 @@ window.renderAdminSection = async function (section) {
                     <div class="admin-card admin-card-row">
                         <div>
                             <div style="font-weight:bold; color:var(--accent); font-size:16px;">${b.title}</div>
-                            <div style="color:var(--fg-muted); font-size:12px;">id: #${b.id} | date: ${b.date}</div>
+                            <div style="color:var(--fg-muted); font-size:12px; display:flex; align-items:center; flex-wrap:wrap;">id: #${b.id} | date: ${b.date} ${window.authorTagHTML(authorMap[b.author_id])}</div>
                         </div>
                         <div style="display:flex; gap:10px;">
                             <button class="ui-btn" style="width:auto; margin:0;" onclick="adminEditBlog(${i})">edit</button>
@@ -110,6 +130,10 @@ window.renderAdminSection = async function (section) {
     } else if (section === 'projects') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
         let tabs = data?.data?.tabs || {};
+
+        const allAuthorIds = [];
+        Object.values(tabs).forEach(t => (t.projects || []).forEach(p => allAuthorIds.push(p.author_id)));
+        const authorMap = await window.resolveAuthorsMap(allAuthorIds);
 
         let html = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -132,7 +156,7 @@ window.renderAdminSection = async function (section) {
                     <div style="display:flex; flex-direction:column; gap:12px;">
                         ${projs.map((p, i) => `
                             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border); padding-bottom:12px;">
-                                <span>${p.name}</span>
+                                <span>${p.name} <span style="color:var(--fg-muted); font-size:11px;">#${p.id || ''}</span> ${window.authorTagHTML(authorMap[p.author_id])}</span>
                                 <div style="display:flex; gap:10px;">
                                     <button class="ui-btn" style="width:auto; margin:0; padding:4px 8px; font-size:11px;" onclick="adminEditProject('${tabKey}', ${i})">edit</button>
                                     <button class="ui-btn" style="width:auto; margin:0; padding:4px 8px; font-size:11px; color:var(--destructive);" onclick="adminDeleteProject('${tabKey}', ${i})">delete</button>
@@ -147,6 +171,7 @@ window.renderAdminSection = async function (section) {
     } else if (section === 'downloads') {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
         let list = data?.data || [];
+        const authorMap = await window.resolveAuthorsMap(list.map(d => d.author_id));
 
         view.innerHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
@@ -157,7 +182,7 @@ window.renderAdminSection = async function (section) {
                 ${list.map((d, i) => `
                     <div class="admin-card admin-card-row">
                         <div>
-                            <div style="font-weight:bold; color:var(--accent); font-size:16px;">${d.name}</div>
+                            <div style="font-weight:bold; color:var(--accent); font-size:16px;">${d.name} <span style="color:var(--fg-muted); font-size:11px;">#${d.id || ''}</span> ${window.authorTagHTML(authorMap[d.author_id])}</div>
                             <div style="color:var(--fg-muted); font-size:12px;">URL: ${d.url}</div>
                         </div>
                         <div style="display:flex; gap:10px;">
@@ -222,19 +247,20 @@ window.adminEditBlog = async function (idx) {
     let list = data?.data || [];
     let b = idx >= 0 ? list[idx] : { title: '', content: '' };
 
-    const title = await window.guiPrompt("blog title:", b.title, "edit blog post");
-    if (title === null) return;
-    const content = await window.guiPrompt("content (markdown):", b.content, "edit blog content");
-    if (content === null) return;
+    const result = await window.guiForm([
+        { key: 'title', label: 'blog title', value: b.title },
+        { key: 'content', label: 'content (markdown, multi-line supported)', type: 'textarea', rows: 10, value: b.content }
+    ], idx >= 0 ? 'edit blog post' : 'new blog post');
+    if (!result || !result.title) return;
 
     if (idx >= 0) {
-        list[idx].title = title;
-        list[idx].content = content;
+        list[idx].title = result.title;
+        list[idx].content = result.content;
     } else {
         const nextId = list.length > 0 ? Math.max(...list.map(x => x.id || 0)) + 1 : 1;
         const today = new Date();
         const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-        list.unshift({ id: nextId, date: dateStr, title, content });
+        list.unshift({ id: nextId, date: dateStr, title: result.title, content: result.content, author_id: currentUser?.id || null });
     }
     await supabaseClient.from('site_content').update({ data: list }).eq('key', 'blogs');
     renderAdminSection('blogs');
@@ -271,14 +297,18 @@ window.adminDeleteProjectTab = async function (tabKey) {
 };
 
 window.adminAddProject = async function (tabKey) {
-    const name = await window.guiPrompt("project Name:");
-    if (!name) return;
-    const desc = await window.guiPrompt("description:");
-    const link = await window.guiPrompt("link URL:", "https://");
+    const result = await window.guiForm([
+        { key: 'name', label: 'project name' },
+        { key: 'description', label: 'description', type: 'textarea', rows: 4 },
+        { key: 'link', label: 'link URL', value: 'https://' }
+    ], 'new project');
+    if (!result || !result.name) return;
+
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
     let pData = data?.data || { tabs: {} };
     if (!pData.tabs[tabKey].projects) pData.tabs[tabKey].projects = [];
-    pData.tabs[tabKey].projects.push({ name, description: desc, link });
+    const nextId = Date.now();
+    pData.tabs[tabKey].projects.push({ id: nextId, name: result.name, description: result.description, link: result.link, author_id: currentUser?.id || null });
     await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
     renderAdminSection('projects');
 };
@@ -288,14 +318,17 @@ window.adminEditProject = async function (tabKey, idx) {
     let pData = data?.data || { tabs: {} };
     let proj = pData.tabs[tabKey].projects[idx];
 
-    const name = await window.guiPrompt("project name:", proj.name);
-    if (name === null) return;
-    const desc = await window.guiPrompt("description:", proj.description);
-    const link = await window.guiPrompt("link URL:", proj.link);
+    const result = await window.guiForm([
+        { key: 'name', label: 'project name', value: proj.name },
+        { key: 'description', label: 'description', type: 'textarea', rows: 4, value: proj.description },
+        { key: 'link', label: 'link URL', value: proj.link }
+    ], 'edit project');
+    if (!result) return;
 
-    proj.name = name;
-    proj.description = desc;
-    proj.link = link;
+    proj.name = result.name;
+    proj.description = result.description;
+    proj.link = result.link;
+    if (!proj.id) proj.id = Date.now();
     await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
     renderAdminSection('projects');
 };
@@ -314,22 +347,25 @@ window.adminEditDownload = async function (idx) {
     let list = data?.data || [];
     let d = idx >= 0 ? list[idx] : { name: '', description: '', url: 'https://' };
 
-    const name = await window.guiPrompt("download name:", d.name);
-    if (name === null) return;
-    const desc = await window.guiPrompt("description:", d.description);
-    const url = await window.guiPrompt("URL:", d.url);
+    const result = await window.guiForm([
+        { key: 'name', label: 'download name', value: d.name },
+        { key: 'description', label: 'description', type: 'textarea', rows: 4, value: d.description },
+        { key: 'url', label: 'URL', value: d.url }
+    ], idx >= 0 ? 'edit download' : 'new download');
+    if (!result || !result.name) return;
 
     if (idx >= 0) {
-        list[idx].name = name; list[idx].description = desc; list[idx].url = url;
+        list[idx].name = result.name; list[idx].description = result.description; list[idx].url = result.url;
     } else {
         const nextId = list.length > 0 ? Math.max(...list.map(x => x.id || 0)) + 1 : 1;
-        list.push({ id: nextId, name, description: desc, url });
+        list.push({ id: nextId, name: result.name, description: result.description, url: result.url, author_id: currentUser?.id || null });
     }
     await supabaseClient.from('site_content').update({ data: list }).eq('key', 'downloads');
     renderAdminSection('downloads');
 };
 
 window.adminAddFavGame = async function () {
+    if (!window.isOwner) return;
     const title = await window.guiPrompt("favorite game title:");
     if (!title) return;
     const comment = await window.guiPrompt("comment (optional):");
@@ -342,6 +378,7 @@ window.adminAddFavGame = async function () {
 };
 
 window.adminDeleteFavGame = async function (idx) {
+    if (!window.isOwner) return;
     if (!await window.guiConfirm("delete this favorite?", "confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
     let gData = data?.data;
@@ -351,6 +388,7 @@ window.adminDeleteFavGame = async function (idx) {
 };
 
 window.adminAddSimpleGame = async function (listKey) {
+    if (!window.isOwner) return;
     const title = await window.guiPrompt("game title:");
     if (!title) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
@@ -362,6 +400,7 @@ window.adminAddSimpleGame = async function (listKey) {
 };
 
 window.adminDeleteSimpleGame = async function (listKey, idx) {
+    if (!window.isOwner) return;
     if (!await window.guiConfirm("delete this item?", "confirm")) return;
     const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
     let gData = data?.data;
@@ -371,6 +410,7 @@ window.adminDeleteSimpleGame = async function (listKey, idx) {
 };
 
 window.adminUserAction = async (id, action) => {
+    if (!window.isOwner) return;
     let do_ban = null, do_delete = false, promote = null;
     if (action === 'ban') do_ban = true;
     if (action === 'unban') do_ban = false;
@@ -386,6 +426,31 @@ window.adminUserAction = async (id, action) => {
         await supabaseClient.from('profiles').delete().eq('id', id);
     }
     renderAdminSection('users');
+};
+
+window.adminWarnUser = async function (userId, username) {
+    const result = await window.guiForm([
+        { key: 'message', label: `warning message for ${username || 'this user'}`, type: 'textarea', rows: 4, placeholder: 'explain why this user is being warned...' }
+    ], 'issue warning');
+    if (!result || !result.message || !result.message.trim()) return;
+
+    const issuerName = window.isOwner ? 'error dev' : (currentProfile?.username || 'admin');
+    await supabaseClient.from('warnings').insert({
+        user_id: userId,
+        message: result.message.trim(),
+        issued_by: currentUser?.id || null,
+        issued_by_name: issuerName,
+        seen: false
+    });
+    guiAlert('warning issued. it will appear as a notice next time this user visits the site, and is saved to their record.', 'done');
+    renderAdminSection('users');
+};
+
+window.adminViewWarnings = async function (userId) {
+    const { data } = await supabaseClient.from('warnings').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    if (!data || !data.length) { guiAlert('no warnings on record.', 'warning record'); return; }
+    const text = data.map(w => `${new Date(w.created_at).toLocaleString()} — issued by ${w.issued_by_name || 'admin'}\n${w.message}`).join('\n\n');
+    guiAlert(text, 'warning record');
 };
 
 async function loadAdminAnnouncements() {

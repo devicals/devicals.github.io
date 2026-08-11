@@ -9,6 +9,9 @@ let flatNodes = [];
 let commitPage = 1;
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
 
+window.isOwner = false;
+window.OWNER_EMAIL = '3rr0r.d3v@gmail.com';
+
 marked.use({ breaks: true, gfm: true });
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -19,6 +22,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAuth();
     loadAnnouncementsToasts();
 });
+
+window.escapeAttr = function (str) {
+    return (str || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
 
 window.guiAlert = function(msg, title = "notification") {
     document.getElementById('gui-title').textContent = title;
@@ -60,6 +71,58 @@ window.guiPrompt = function(msg, defaultValue = "", title = "input required") {
         okBtn.onclick = () => { const val = input.value; cleanup(); resolve(val); };
         window.closeGuiPromptModal = () => { cleanup(); resolve(null); };
     });
+};
+
+window.guiForm = function (fields, title = "input required") {
+    return new Promise((resolve) => {
+        document.getElementById('gui-form-title').textContent = title.toLowerCase();
+        const container = document.getElementById('gui-form-fields');
+        container.innerHTML = fields.map(f => `
+            <div class="settings-group">
+                <label>${window.escapeAttr((f.label || f.key).toLowerCase())}</label>
+                ${f.type === 'textarea'
+                    ? `<textarea id="gf-${f.key}" class="ui-input" rows="${f.rows || 6}" placeholder="${window.escapeAttr(f.placeholder || '')}">${window.escapeAttr(f.value || '')}</textarea>`
+                    : `<input type="text" id="gf-${f.key}" class="ui-input" placeholder="${window.escapeAttr(f.placeholder || '')}" value="${window.escapeAttr(f.value || '')}">`
+                }
+            </div>
+        `).join('');
+
+        const modal = document.getElementById('gui-form-modal');
+        modal.style.display = 'flex';
+
+        const okBtn = document.getElementById('gui-form-ok');
+        const cleanup = () => { modal.style.display = 'none'; okBtn.onclick = null; };
+
+        okBtn.onclick = () => {
+            const result = {};
+            fields.forEach(f => { result[f.key] = document.getElementById(`gf-${f.key}`).value; });
+            cleanup();
+            resolve(result);
+        };
+        window.closeGuiFormModal = () => { cleanup(); resolve(null); };
+    });
+};
+
+window.resolveAuthorsMap = async function (ids) {
+    const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+    if (!uniqueIds.length) return {};
+    try {
+        const { data, error } = await supabaseClient.from('profiles').select('id, username, is_owner, is_admin').in('id', uniqueIds);
+        if (error) throw error;
+        const map = {};
+        (data || []).forEach(p => { map[p.id] = p; });
+        return map;
+    } catch (e) {
+        return {};
+    }
+};
+
+window.authorTagHTML = function (authorProfile) {
+    if (!authorProfile) return '';
+    const isOwnerAuthor = authorProfile.is_owner === true;
+    const label = isOwnerAuthor ? 'error dev' : (authorProfile.username || 'unnamed admin').toLowerCase();
+    const color = isOwnerAuthor ? 'var(--accent)' : 'var(--fg-muted)';
+    return `<span style="font-size:10px; color:${color}; border:1px solid var(--border); padding:2px 6px; margin-left:6px; white-space:nowrap;">${window.escapeAttr(label)}</span>`;
 };
 
 function loadSettingsLocally() {
@@ -143,6 +206,7 @@ async function initAuth() {
 async function handleSession(session) {
     currentUser = session?.user || null;
     currentProfile = null;
+    window.isOwner = false;
 
     if (currentUser) {
         try {
@@ -157,11 +221,17 @@ async function handleSession(session) {
                 if (setObj.data.bg_effect) { localStorage.setItem('bg-effect', setObj.data.bg_effect); if (window.setBgEffect) window.setBgEffect(setObj.data.bg_effect); }
                 loadSettingsLocally();
             }
-            if (currentProfile?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+
+            const emailIsOwner = currentUser.email?.toLowerCase() === window.OWNER_EMAIL;
+            window.isOwner = currentProfile?.is_owner === true || emailIsOwner;
+
+            if (currentProfile?.is_admin || window.isOwner) {
                 document.body.classList.add('is-admin');
             } else {
                 document.body.classList.remove('is-admin');
             }
+
+            loadPendingWarnings();
         } catch (e) {}
     } else {
         document.body.classList.remove('is-admin');
@@ -173,10 +243,12 @@ async function handleSession(session) {
 function renderAuthModal() {
     const container = document.getElementById('auth-content');
     if (currentUser) {
+        const ownerBadge = window.isOwner ? '<div style="color:var(--accent); font-size:11px; margin-top:4px; letter-spacing:1px;">error dev</div>' : '';
         container.innerHTML = `
             <div class="profile-info">
                 <div class="profile-name">${currentProfile?.username || 'authenticated user'}</div>
-                <div class="profile-id">ID: ${currentUser.id}</div>
+                <div class="profile-id">id: ${currentUser.id}</div>
+                ${ownerBadge}
             </div>
             <input type="text" id="prof-name" class="ui-input" placeholder="set display name">
             <button class="ui-btn" onclick="updateProfile()">save display name</button>
@@ -215,9 +287,9 @@ window.updateProfile = async () => {
         const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
         currentProfile = data;
         renderAuthModal();
-        guiAlert("display name updated.", "Success");
+        guiAlert("display name updated.", "success");
     } catch (e) {
-        guiAlert(e.message, "Error");
+        guiAlert(e.message, "error");
     }
 };
 
@@ -416,7 +488,7 @@ async function renderCommitsPage(container, reset = false) {
             const lines = (c.commit?.message || '').split('\n');
             const summary = escapeHTML(lines[0]);
             const body = escapeHTML(lines.slice(1).join('\n').trim());
-            const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
+            const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'unknown');
             const dateStr = c.commit?.author?.date;
             const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
 
@@ -493,5 +565,51 @@ async function loadAnnouncementsToasts() {
                 }, 30000);
             });
         }
+    } catch (e) {}
+}
+
+async function loadPendingWarnings() {
+    if (!currentUser) return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('warnings')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('seen', false)
+            .order('created_at', { ascending: true });
+        if (error || !data || !data.length) return;
+
+        const container = document.getElementById('announcement-container');
+        data.forEach((w) => {
+            const toast = document.createElement('div');
+            toast.className = 'announcement-toast warning-toast';
+            toast.id = `warn-toast-${w.id}`;
+            toast.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:var(--destructive); font-weight:bold; font-size:11px; text-transform:lowercase;">warning issued</span>
+                    <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.closest('.announcement-toast').remove()">✕</span>
+                </div>
+                <div class="announcement-body">${window.escapeAttr(w.message)}</div>
+                ${w.issued_by_name ? `<div style="font-size:10px; color:var(--fg-muted);">— ${window.escapeAttr(w.issued_by_name.toLowerCase())}</div>` : ''}
+                <div class="announcement-progress-track"><div class="announcement-progress" id="warn-progress-${w.id}" style="background:var(--destructive);"></div></div>
+            `;
+            container.appendChild(toast);
+
+            const bar = toast.querySelector(`#warn-progress-${w.id}`);
+            requestAnimationFrame(() => {
+                bar.style.transition = 'transform 45s linear';
+                bar.style.transform = 'scaleX(0)';
+            });
+
+            setTimeout(() => {
+                if (toast.isConnected) {
+                    toast.style.transition = 'opacity 0.4s ease';
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 400);
+                }
+            }, 45000);
+
+            supabaseClient.from('warnings').update({ seen: true }).eq('id', w.id).then(() => {});
+        });
     } catch (e) {}
 }

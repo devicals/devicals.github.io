@@ -17,6 +17,8 @@
         <div id="downloads-list" class="flat-list-container" style="gap:40px;"></div>
     </div>
 
+    <div class="copy-toast" id="copy-toast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--accent); color:var(--bg-main); padding:10px 20px; font-family:var(--font-ui); font-size:12px; font-weight:bold; z-index:999; opacity:0; transition:opacity 0.2s;">link copied</div>
+
     <script>
         const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
@@ -24,21 +26,45 @@
 
         let dlList = [];
         let isAdminLocal = false;
+        let currentUserId = null;
+        let authorMap = {};
 
-        async function promptText(msg, def) {
-            if (window.parent && window.parent.guiPrompt) return window.parent.guiPrompt(msg, def || '');
-            return prompt(msg, def || '');
+        async function formPrompt(fields, title) {
+            if (window.parent && window.parent.guiForm) return window.parent.guiForm(fields, title);
+            const result = {};
+            for (const f of fields) {
+                const val = prompt(f.label, f.value || '');
+                if (val === null) return null;
+                result[f.key] = val;
+            }
+            return result;
         }
         async function confirmAction(msg) {
             if (window.parent && window.parent.guiConfirm) return window.parent.guiConfirm(msg);
             return confirm(msg);
         }
+        function authorTag(profile) {
+            if (window.parent && window.parent.authorTagHTML) return window.parent.authorTagHTML(profile);
+            if (!profile) return '';
+            const label = profile.is_owner ? 'error dev' : (profile.username || 'unnamed');
+            return `<span style="font-size:10px; color:var(--fg-muted); border:1px solid var(--border); padding:2px 6px; margin-left:6px;">${label}</span>`;
+        }
+        async function resolveAuthors(ids) {
+            if (window.parent && window.parent.resolveAuthorsMap) return window.parent.resolveAuthorsMap(ids);
+            const uniqueIds = [...new Set((ids || []).filter(Boolean))];
+            if (!uniqueIds.length) return {};
+            const { data } = await supabaseClient.from('profiles').select('id, username, is_owner, is_admin').in('id', uniqueIds);
+            const map = {};
+            (data || []).forEach(p => { map[p.id] = p; });
+            return map;
+        }
 
         async function initDownloadsPage() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session?.user) {
+                currentUserId = session.user.id;
                 const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-                if (prof?.is_admin || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+                if (prof?.is_admin || prof?.is_owner || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
                     isAdminLocal = true;
                 }
             }
@@ -49,16 +75,30 @@
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
             if (data && data.data) {
                 dlList = data.data;
-                renderDownloads();
+            }
+            authorMap = await resolveAuthors(dlList.map(d => d.author_id));
+            renderDownloads();
+
+            const params = new URLSearchParams(window.location.search);
+            const targetId = params.get('id');
+            if (targetId) {
+                setTimeout(() => {
+                    const el = document.getElementById(`download-${targetId}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
             }
         }
 
         function renderDownloads() {
             document.getElementById('downloads-list').innerHTML = dlList.map((d, idx) => `
-                <div class="flat-list-item" style="flex-direction: row; justify-content: space-between; align-items: center; padding-bottom:30px;">
+                <div class="flat-list-item" id="download-${d.id}" style="flex-direction: row; justify-content: space-between; align-items: center; padding-bottom:30px;">
                     <div style="flex:1;">
                         <div class="flat-title" style="font-size:22px; margin-bottom:8px;">${d.name}</div>
-                        <div class="flat-meta" style="font-size:14px; color:var(--fg-main);">${d.description}</div>
+                        <div class="flat-meta" style="font-size:14px; color:var(--fg-main); margin-bottom:6px;">${d.description}</div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyDownloadLink(${d.id})">ID: #${d.id}</button>
+                            ${authorTag(authorMap[d.author_id])}
+                        </div>
                     </div>
                     <div style="display:flex; gap:12px; align-items:center;">
                         <a href="${d.url}" target="_blank" class="ui-btn" style="width:auto; margin:0; text-decoration:none; padding:10px 20px;">download</a>
@@ -71,24 +111,40 @@
             `).join('');
         }
 
-        window.addDownload = async () => {
-            const name = await promptText("download name:", "");
-            if (!name) return;
-            const desc = await promptText("description:", "");
-            const url = await promptText("download URL:", "https://");
+        window.copyDownloadLink = function (id) {
+            const url = `${window.parent.location.origin}${window.parent.location.pathname}#Content/Downloads?id=${id}`;
+            navigator.clipboard.writeText(url).then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.classList.add('show');
+                toast.style.opacity = '1';
+                setTimeout(() => { toast.style.opacity = '0'; }, 1600);
+            });
+        };
 
-            dlList.push({ id: Date.now(), name, description: desc, url });
+        window.addDownload = async () => {
+            const result = await formPrompt([
+                { key: 'name', label: 'download name' },
+                { key: 'description', label: 'description', type: 'textarea', rows: 4 },
+                { key: 'url', label: 'download URL', value: 'https://' }
+            ], 'new download');
+            if (!result || !result.name) return;
+
+            const nextId = dlList.length > 0 ? Math.max(...dlList.map(x => x.id || 0)) + 1 : 1;
+            dlList.push({ id: nextId, name: result.name, description: result.description, url: result.url, author_id: currentUserId });
             await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
+            authorMap = await resolveAuthors(dlList.map(d => d.author_id));
             renderDownloads();
         };
 
         window.editDownload = async (idx) => {
             const d = dlList[idx];
-            const name = await promptText("download name:", d.name);
-            if (name === null) return;
-            const desc = await promptText("description:", d.description);
-            const url = await promptText("URL:", d.url);
-            dlList[idx].name = name; dlList[idx].description = desc; dlList[idx].url = url;
+            const result = await formPrompt([
+                { key: 'name', label: 'download name', value: d.name },
+                { key: 'description', label: 'description', type: 'textarea', rows: 4, value: d.description },
+                { key: 'url', label: 'URL', value: d.url }
+            ], 'edit download');
+            if (!result) return;
+            dlList[idx].name = result.name; dlList[idx].description = result.description; dlList[idx].url = result.url;
             await supabaseClient.from('site_content').upsert({ key: 'downloads', data: dlList });
             renderDownloads();
         };

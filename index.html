@@ -27,7 +27,7 @@
         }
         .admin-dashboard-btn:hover { background: var(--bg-workspace); }
         body.is-admin .admin-dashboard-btn { display: flex; }
-        
+
         #announcement-container {
             position: fixed;
             bottom: 24px;
@@ -38,7 +38,7 @@
             z-index: 1500;
             pointer-events: none;
         }
-        
+
         .announcement-toast {
             width: 320px;
             background: var(--bg-sidebar);
@@ -56,15 +56,18 @@
             color: var(--accent) !important;
             text-decoration: underline;
         }
+        .announcement-toast.warning-toast {
+            border-color: var(--destructive);
+        }
     </style>
 </head>
 <body>
     <style id="custom-css-block"></style>
-    
+
     <div class="app-layout">
         <div class="sidebar left-sidebar">
             <div id="nav-tree" class="nav-tree"></div>
-            
+
             <div class="admin-dashboard-btn" onclick="window.location.hash='admin'">
                 <span>admin dashboard</span>
                 <span>></span>
@@ -113,7 +116,7 @@
                 </select>
             </div>
             <div class="settings-group">
-                <label>Background Effect</label>
+                <label>background effect</label>
                 <select id="bg-effect-selector" class="ui-input">
                     <option value="particles">network</option>
                     <option value="matrix">matrix</option>
@@ -122,7 +125,7 @@
                 </select>
             </div>
             <div class="settings-group">
-                <label>Custom CSS</label>
+                <label>custom css</label>
                 <textarea id="custom-css-input" class="ui-input" rows="4" placeholder="enter custom css rules..."></textarea>
                 <button id="save-css" class="ui-btn">apply custom css</button>
             </div>
@@ -133,7 +136,7 @@
     <div id="gui-modal" class="modal">
         <div class="modal-box">
             <div class="modal-title" id="gui-title">notification</div>
-            <div id="gui-msg" style="font-size:12px; margin-bottom:16px;"></div>
+            <div id="gui-msg" style="font-size:12px; margin-bottom:16px; white-space:pre-wrap;"></div>
             <button class="ui-btn" onclick="closeGuiModal()">ok</button>
         </div>
     </div>
@@ -157,6 +160,17 @@
             <div style="display:flex; gap:8px;">
                 <button class="ui-btn" id="gui-prompt-ok">ok</button>
                 <button class="ui-btn" onclick="closeGuiPromptModal()">cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gui-form-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-title" id="gui-form-title">input required</div>
+            <div id="gui-form-fields"></div>
+            <div style="display:flex; gap:8px;">
+                <button class="ui-btn" id="gui-form-ok">save</button>
+                <button class="ui-btn" onclick="closeGuiFormModal()">cancel</button>
             </div>
         </div>
     </div>
