@@ -75,11 +75,11 @@ window.guiPrompt = function(msg, defaultValue = "", title = "input required") {
 
 window.guiForm = function (fields, title = "input required") {
     return new Promise((resolve) => {
-        document.getElementById('gui-form-title').textContent = title.toLowerCase();
+        document.getElementById('gui-form-title').textContent = title;
         const container = document.getElementById('gui-form-fields');
         container.innerHTML = fields.map(f => `
             <div class="settings-group">
-                <label>${window.escapeAttr((f.label || f.key).toLowerCase())}</label>
+                <label>${window.escapeAttr(f.label || f.key)}</label>
                 ${f.type === 'textarea'
                     ? `<textarea id="gf-${f.key}" class="ui-input" rows="${f.rows || 6}" placeholder="${window.escapeAttr(f.placeholder || '')}">${window.escapeAttr(f.value || '')}</textarea>`
                     : `<input type="text" id="gf-${f.key}" class="ui-input" placeholder="${window.escapeAttr(f.placeholder || '')}" value="${window.escapeAttr(f.value || '')}">`
@@ -120,7 +120,7 @@ window.resolveAuthorsMap = async function (ids) {
 window.authorTagHTML = function (authorProfile) {
     if (!authorProfile) return '';
     const isOwnerAuthor = authorProfile.is_owner === true;
-    const label = isOwnerAuthor ? 'error dev' : (authorProfile.username || 'unnamed admin').toLowerCase();
+    const label = isOwnerAuthor ? 'error dev' : (authorProfile.username || 'unnamed admin');
     const color = isOwnerAuthor ? 'var(--accent)' : 'var(--fg-muted)';
     return `<span style="font-size:10px; color:${color}; border:1px solid var(--border); padding:2px 6px; margin-left:6px; white-space:nowrap;">${window.escapeAttr(label)}</span>`;
 };
@@ -247,7 +247,7 @@ function renderAuthModal() {
         container.innerHTML = `
             <div class="profile-info">
                 <div class="profile-name">${currentProfile?.username || 'authenticated user'}</div>
-                <div class="profile-id">id: ${currentUser.id}</div>
+                <div class="profile-id">ID: ${currentUser.id}</div>
                 ${ownerBadge}
             </div>
             <input type="text" id="prof-name" class="ui-input" placeholder="set display name">
@@ -287,9 +287,9 @@ window.updateProfile = async () => {
         const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
         currentProfile = data;
         renderAuthModal();
-        guiAlert("display name updated.", "success");
+        guiAlert("display name updated.", "Success");
     } catch (e) {
-        guiAlert(e.message, "error");
+        guiAlert(e.message, "Error");
     }
 };
 
@@ -488,7 +488,7 @@ async function renderCommitsPage(container, reset = false) {
             const lines = (c.commit?.message || '').split('\n');
             const summary = escapeHTML(lines[0]);
             const body = escapeHTML(lines.slice(1).join('\n').trim());
-            const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'unknown');
+            const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
             const dateStr = c.commit?.author?.date;
             const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
 
@@ -580,7 +580,7 @@ async function loadPendingWarnings() {
         if (error || !data || !data.length) return;
 
         const container = document.getElementById('announcement-container');
-        data.forEach((w) => {
+        data.forEach((w, idx) => {
             const toast = document.createElement('div');
             toast.className = 'announcement-toast warning-toast';
             toast.id = `warn-toast-${w.id}`;
@@ -590,7 +590,7 @@ async function loadPendingWarnings() {
                     <span style="cursor:pointer; color:var(--fg-muted);" onclick="this.closest('.announcement-toast').remove()">✕</span>
                 </div>
                 <div class="announcement-body">${window.escapeAttr(w.message)}</div>
-                ${w.issued_by_name ? `<div style="font-size:10px; color:var(--fg-muted);">— ${window.escapeAttr(w.issued_by_name.toLowerCase())}</div>` : ''}
+                ${w.issued_by_name ? `<div style="font-size:10px; color:var(--fg-muted);">— ${window.escapeAttr(w.issued_by_name)}</div>` : ''}
                 <div class="announcement-progress-track"><div class="announcement-progress" id="warn-progress-${w.id}" style="background:var(--destructive);"></div></div>
             `;
             container.appendChild(toast);
