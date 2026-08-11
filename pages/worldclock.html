@@ -23,7 +23,7 @@
         <h1 style="margin-bottom:40px; font-size: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">world clocks</h1>
 
         <div style="display:flex; gap:16px; margin-bottom:40px;">
-            <input type="text" id="new-clock-input" class="ui-input" style="margin:0; flex:1;" placeholder="enter timezone (e.g. AEST, UTC, China/Shenzhen, America/New_York)">
+            <input type="text" id="new-clock-input" class="ui-input" style="margin:0; flex:1;" placeholder="enter timezone (e.g. AEST, UTC, China/Shenzhen, ET, PT, CT, California)">
             <button class="ui-btn" style="width:auto; margin:0;" onclick="addClock()">+ add clock</button>
         </div>
 
@@ -37,48 +37,164 @@
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         const DateTime = luxon.DateTime;
-        let zones = ['system', 'UTC', 'AEST', 'America/New_York', 'Europe/London', 'Asia/Tokyo'];
+        let zones = ['system', 'UTC', 'AEST', 'ET', 'CT', 'PT'];
 
-        const TZ_ALIASES = {
+        const resolvedCache = JSON.parse(localStorage.getItem('tz_resolved_cache') || '{}');
+        const pendingFetches = new Set();
+        const failedResolutions = new Set();
+
+        const KNOWN_MAP = {
+            'et': 'America/New_York',
+            'est': 'America/New_York',
+            'edt': 'America/New_York',
+            'pt': 'America/Los_Angeles',
+            'pst': 'America/Los_Angeles',
+            'pdt': 'America/Los_Angeles',
+            'ct': 'America/Chicago',
+            'cst': 'America/Chicago',
+            'cdt': 'America/Chicago',
+            'mt': 'America/Denver',
+            'mst': 'America/Denver',
+            'mdt': 'America/Denver',
             'aest': 'Australia/Sydney',
             'aedt': 'Australia/Sydney',
             'acst': 'Australia/Adelaide',
             'acdt': 'Australia/Adelaide',
             'awst': 'Australia/Perth',
-            'china/shenzhen': 'Asia/Shanghai',
+            'jst': 'Asia/Tokyo',
+            'kst': 'Asia/Seoul',
+            'sgt': 'Asia/Singapore',
+            'ist': 'Asia/Kolkata',
+            'hkt': 'Asia/Hong_Kong',
+            'hkst': 'Asia/Hong_Kong',
+            'cet': 'Europe/Paris',
+            'cest': 'Europe/Paris',
+            'eet': 'Europe/Athens',
+            'eest': 'Europe/Athens',
+            'wet': 'Europe/Lisbon',
+            'west': 'Europe/Lisbon',
+            'bst': 'Europe/London',
+            'gmt': 'UTC',
+            'utc': 'UTC',
+            'hst': 'Pacific/Honolulu',
+            'akst': 'America/Anchorage',
+            'akdt': 'America/Anchorage',
+            'nzst': 'Pacific/Auckland',
+            'nzdt': 'Pacific/Auckland',
+            'california': 'America/Los_Angeles',
+            'washington': 'America/Los_Angeles',
+            'oregon': 'America/Los_Angeles',
+            'new york': 'America/New_York',
+            'florida': 'America/New_York',
+            'texas': 'America/Chicago',
+            'illinois': 'America/Chicago',
+            'colorado': 'America/Denver',
+            'china': 'Asia/Shanghai',
             'shenzhen': 'Asia/Shanghai',
             'beijing': 'Asia/Shanghai',
             'shanghai': 'Asia/Shanghai',
+            'japan': 'Asia/Tokyo',
             'tokyo': 'Asia/Tokyo',
+            'korea': 'Asia/Seoul',
+            'seoul': 'Asia/Seoul',
+            'uk': 'Europe/London',
             'london': 'Europe/London',
-            'new_york': 'America/New_York',
-            'nyc': 'America/New_York',
-            'est': 'America/New_York',
-            'pst': 'America/Los_Angeles',
-            'cst': 'America/Chicago',
-            'mst': 'America/Denver',
-            'utc': 'UTC',
-            'gmt': 'UTC'
+            'france': 'Europe/Paris',
+            'paris': 'Europe/Paris',
+            'germany': 'Europe/Berlin',
+            'berlin': 'Europe/Berlin',
+            'australia': 'Australia/Sydney',
+            'sydney': 'Australia/Sydney',
+            'melbourne': 'Australia/Sydney',
+            'india': 'Asia/Kolkata',
+            'singapore': 'Asia/Singapore'
         };
 
-        function resolveDateTime(z) {
+        function purgeStaleCache() {
+            Object.keys(resolvedCache).forEach(k => {
+                if (KNOWN_MAP[k]) {
+                    delete resolvedCache[k];
+                }
+            });
+            saveCache();
+        }
+        purgeStaleCache();
+
+        function saveCache() {
+            localStorage.setItem('tz_resolved_cache', JSON.stringify(resolvedCache));
+        }
+
+        function getIanaTimezones() {
+            try {
+                return Intl.supportedValuesOf('timeZone');
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function tryLocalResolution(z) {
             if (!z) return null;
-            if (z === 'system') return DateTime.now();
+            const clean = z.trim();
+            if (clean.toLowerCase() === 'system') return 'system';
 
-            let norm = z.trim().toLowerCase();
-            let resolvedZone = TZ_ALIASES[norm] || z.trim();
+            const lower = clean.toLowerCase();
 
-            let dt = DateTime.now().setZone(resolvedZone);
-            if (dt.isValid) return dt;
+            if (KNOWN_MAP[lower]) {
+                return KNOWN_MAP[lower];
+            }
 
-            let match = norm.match(/^(utc|gmt)?([+-]\d{1,2})(?::?(\d{2}))?$/);
+            let dt = DateTime.now().setZone(clean);
+            if (dt.isValid) return clean;
+
+            if (resolvedCache[lower]) {
+                dt = DateTime.now().setZone(resolvedCache[lower]);
+                if (dt.isValid) return resolvedCache[lower];
+            }
+
+            const allZones = getIanaTimezones();
+            const exactIana = allZones.find(iana => iana.toLowerCase() === lower);
+            if (exactIana) return exactIana;
+
+            const formattedName = lower.replace(/\s+/g, '_');
+            const endMatch = allZones.find(iana => iana.toLowerCase().endsWith('/' + formattedName));
+            if (endMatch) return endMatch;
+
+            let match = lower.match(/^(utc|gmt)?([+-]\d{1,2})(?::?(\d{2}))?$/);
             if (match) {
                 let offsetHours = parseInt(match[2]);
-                dt = DateTime.now().setZone(`UTC${offsetHours >= 0 ? '+' : ''}${offsetHours}`);
-                if (dt.isValid) return dt;
+                let offsetZone = `UTC${offsetHours >= 0 ? '+' : ''}${offsetHours}`;
+                dt = DateTime.now().setZone(offsetZone);
+                if (dt.isValid) return offsetZone;
             }
 
             return null;
+        }
+
+        async function fetchTimezoneFromApi(z) {
+            const lower = z.trim().toLowerCase();
+            if (resolvedCache[lower] || pendingFetches.has(lower) || failedResolutions.has(lower)) return;
+            pendingFetches.add(lower);
+
+            try {
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(z)}&count=1`);
+                if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData.results && geoData.results[0] && geoData.results[0].timezone) {
+                        const foundZone = geoData.results[0].timezone;
+                        if (DateTime.now().setZone(foundZone).isValid) {
+                            resolvedCache[lower] = foundZone;
+                            saveCache();
+                            pendingFetches.delete(lower);
+                            renderClocks();
+                            return;
+                        }
+                    }
+                }
+            } catch(e) {}
+
+            pendingFetches.delete(lower);
+            failedResolutions.add(lower);
+            renderClocks();
         }
 
         async function initClocks() {
@@ -118,24 +234,41 @@
         function renderClocks() {
             const grid = document.getElementById('clocks-grid');
             grid.innerHTML = zones.map((z, idx) => {
-                const now = resolveDateTime(z);
+                const resolvedZoneName = tryLocalResolution(z);
+                const lower = z.trim().toLowerCase();
 
-                if (!now) {
+                if (!resolvedZoneName) {
+                    if (failedResolutions.has(lower)) {
+                        return `
+                            <div class="clock-item">
+                                <div>
+                                    <div style="font-size:13px; color:var(--destructive); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z}</div>
+                                    <div style="font-size:20px; font-weight:bold; margin-top:8px; color:var(--fg-muted);">invalid timezone</div>
+                                </div>
+                                <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent; border:none; font-size:16px;" onclick="removeClock(${idx})">✕</button>
+                            </div>
+                        `;
+                    }
+
+                    fetchTimezoneFromApi(z);
+
                     return `
                         <div class="clock-item">
                             <div>
-                                <div style="font-size:13px; color:var(--destructive); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z}</div>
-                                <div style="font-size:20px; font-weight:bold; margin-top:8px; color:var(--fg-muted);">invalid timezone</div>
+                                <div style="font-size:13px; color:var(--accent); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z}</div>
+                                <div style="font-size:20px; font-weight:bold; margin-top:8px; color:var(--fg-muted);">resolving timezone...</div>
                             </div>
                             <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent; border:none; font-size:16px;" onclick="removeClock(${idx})">✕</button>
                         </div>
                     `;
                 }
 
+                const now = DateTime.now().setZone(resolvedZoneName);
+
                 return `
                     <div class="clock-item">
                         <div>
-                            <div style="font-size:13px; color:var(--accent); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z}</div>
+                            <div style="font-size:13px; color:var(--accent); font-weight:bold; letter-spacing:1px; text-transform:lowercase;">${z} ${resolvedCache[lower] ? `<span style="font-size:10px; color:var(--fg-muted); font-weight:normal;">(${resolvedCache[lower]})</span>` : ''}</div>
                             <div style="font-size:32px; font-weight:bold; margin-top:8px; line-height:1;">${now.toFormat('HH:mm:ss')}</div>
                             <div style="font-size:14px; color:var(--fg-muted); margin-top:8px;">${now.toFormat('yyyy-MM-dd')}</div>
                         </div>
