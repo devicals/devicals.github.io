@@ -119,12 +119,31 @@
     let idCounter = 0;
     let dragItem = null, dragSrc = null;
 
-    async function initDatabase() {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
+    function checkIsOwner() {
+        if (window.parent) {
+            if (window.parent.isOwner) return true;
+            const user = window.parent.currentUser;
+            if (user && (user.is_owner === true || user.username?.toLowerCase() === 'error dev' || user.email?.toLowerCase() === '3rr0r.d3v@gmail.com')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function updateAdminPermissions() {
+        const isOwner = checkIsOwner();
+        if (isOwner) {
             isAdmin = true;
             document.body.classList.add('is-admin');
+        } else {
+            isAdmin = false;
+            document.body.classList.remove('is-admin');
         }
+    }
+
+    async function initDatabase() {
+        updateAdminPermissions();
+        setInterval(updateAdminPermissions, 1000);
 
         try {
             const { data, error } = await supabaseClient.from('zato_tierlist').select('state').eq('id', 1).single();
@@ -133,11 +152,9 @@
                 applyState(data.state);
             } else {
                 applyState({ allTiers: DEFAULT_TIERS, activeTierIds: DEFAULT_ACTIVE, tierItems: {}, poolItems: [], idCounter: 0 });
-                showError("No saved tier list data was found in the database, showing the default structure. If items are missing, check the zato_tierlist table in Supabase directly.");
             }
         } catch (e) {
             applyState({ allTiers: DEFAULT_TIERS, activeTierIds: DEFAULT_ACTIVE, tierItems: {}, poolItems: [], idCounter: 0 });
-            showError("Could not load the tier list from Supabase, showing the default structure.");
         }
 
         supabaseClient.channel('zato-realtime').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'zato_tierlist', filter: 'id=eq.1' }, (payload) => {
@@ -145,12 +162,6 @@
                 applyState(payload.new.state);
             }
         }).subscribe();
-    }
-
-    function showError(msg) {
-        const el = document.getElementById('tl-error');
-        el.textContent = msg;
-        el.style.display = 'block';
     }
 
     function applyState(state) {
@@ -163,12 +174,14 @@
     }
 
     async function syncToSupabase() {
+        updateAdminPermissions();
         if (!isAdmin) return;
         const state = { allTiers, activeTierIds, tierItems, poolItems, idCounter };
         await supabaseClient.from('zato_tierlist').update({ state }).eq('id', 1);
     }
 
     window.resetToDefaultStructure = async function () {
+        updateAdminPermissions();
         if (!isAdmin) return;
         const missingIds = DEFAULT_TIERS.map(t => t.id).filter(id => !allTiers.find(t => t.id === id));
         missingIds.forEach(id => {
@@ -210,6 +223,7 @@
     }
 
     function makeItemWrapper(item, tier) {
+      updateAdminPermissions();
       const wrap = document.createElement('div'); wrap.className = 'tilt-wrapper';
       if (isAdmin) wrap.draggable = true;
       const card = document.createElement('div'); card.className = 'tl-item';
@@ -228,8 +242,9 @@
     }
 
     function setupDrop(el) {
-      el.addEventListener('dragover', e => { if (isAdmin) e.preventDefault(); });
+      el.addEventListener('dragover', e => { updateAdminPermissions(); if (isAdmin) e.preventDefault(); });
       el.addEventListener('drop', e => {
+        updateAdminPermissions();
         if (!isAdmin) return;
         e.preventDefault(); if (!dragItem) return;
         const dest = el.dataset.tier;
@@ -242,6 +257,7 @@
     }
 
     function removeItem(id, tier) {
+      updateAdminPermissions();
       if (!isAdmin) return;
       if (tier === '__pool__') poolItems = poolItems.filter(i => i.id !== id);
       else tierItems[tier] = (tierItems[tier] || []).filter(i => i.id !== id);
@@ -254,6 +270,7 @@
     }
 
     function addItem() {
+      updateAdminPermissions();
       if (!isAdmin) return;
       const input = document.getElementById('itemInput').value.trim();
       if (!input) return;

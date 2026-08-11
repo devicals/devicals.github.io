@@ -8,12 +8,6 @@ window.renderSpotify = async function () {
     const container = document.getElementById('spotify-inject');
     container.innerHTML = `
         <h1 style="margin-bottom:30px;">spotify / music</h1>
-        <h2 style="margin-bottom:20px;">currently playing</h2>
-        <div id="spotify-status" style="margin-bottom:40px; min-height: 100px;">
-            <span style="color:var(--fg-muted);">checking discord status...</span>
-        </div>
-
-        <h2 style="margin-bottom:20px;">liked songs</h2>
         <div id="liked-songs-embed-wrap"></div>
     `;
 

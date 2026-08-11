@@ -33,6 +33,7 @@
         let isAdminLocal = false;
         let isOwnerLocal = false;
         let currentUserId = null;
+        let currentUsername = "";
         marked.use({ breaks: true, gfm: true });
 
         function escapeAttr(str) { return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -55,7 +56,7 @@
         function authorTag(profile) {
             if (window.parent && window.parent.authorTagHTML) return window.parent.authorTagHTML(profile);
             if (!profile) return '';
-            const isOwnerAuthor = profile.is_owner === true || (profile.email && profile.email.toLowerCase() === '3rr0r.d3v@gmail.com');
+            const isOwnerAuthor = profile.is_owner === true || profile.username?.toLowerCase() === 'error dev';
             const label = isOwnerAuthor ? 'error dev' : (profile.username || 'unnamed');
             const color = isOwnerAuthor ? 'var(--accent)' : 'var(--fg-muted)';
             return `<span style="font-size:10px; color:${color}; border:1px solid var(--border); padding:2px 6px; margin-left:6px;">${label}</span>`;
@@ -72,18 +73,14 @@
         }
 
         async function initBlogsPage() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session?.user) {
-                currentUserId = session.user.id;
-                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-                if (prof?.is_admin || prof?.is_owner || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isAdminLocal = true;
-                }
-                if (prof?.is_owner || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isOwnerLocal = true;
-                }
-            }
-            document.getElementById('admin-add-blog-btn').style.display = isAdminLocal ? 'block' : 'none';
+            const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
+            currentUserId = ident.user ? ident.user.id : null;
+            currentUsername = ident.username ? ident.username.toLowerCase() : '';
+            isAdminLocal = ident.isAdmin;
+            isOwnerLocal = ident.isOwner;
+
+            const addBtn = document.getElementById('admin-add-blog-btn');
+            if (addBtn) addBtn.style.display = isAdminLocal ? 'block' : 'none';
 
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
             if (data && data.data) {
@@ -93,6 +90,8 @@
             renderBlogs();
         }
 
+        window.onParentAuthChanged = initBlogsPage;
+
         function renderBlogs() {
             const container = document.getElementById('blogs-container');
             if (!blogsList.length) {
@@ -100,7 +99,7 @@
                 return;
             }
             container.innerHTML = blogsList.map((b) => {
-                const canModify = isAdminLocal && (isOwnerLocal || b.author_id === currentUserId);
+                const canModify = isAdminLocal && (isOwnerLocal || String(b.author_id) === String(currentUserId) || (b.author_name && b.author_name.toLowerCase() === currentUsername));
                 return `
                     <div class="flat-list-item" id="blog-${b.id}" data-id="${b.id}" style="padding-bottom:24px; margin-bottom:0;">
                         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -118,8 +117,6 @@
                     </div>
                 `;
             }).join('');
-
-            setupScrollObserver();
 
             const params = new URLSearchParams(window.location.search);
             const targetId = params.get('id');
@@ -152,20 +149,12 @@
             const nextId = blogsList.length > 0 ? Math.max(...blogsList.map(x => x.id || 0)) + 1 : 1;
             const today = new Date();
             const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-            blogsList.unshift({ id: nextId, date: dateStr, title: result.title, content: result.content, author_id: currentUserId });
+            blogsList.unshift({ id: nextId, date: dateStr, title: result.title, content: result.content, author_id: currentUserId, author_name: currentUsername });
             
             const { data: updateData, error } = await supabaseClient.from('site_content').update({ data: blogsList }).eq('key', 'blogs').select();
-            if (error) {
-                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Error: " + error.message);
-                else alert("Error: " + error.message);
-                return;
-            }
-            if (!updateData || updateData.length === 0) {
-                if (window.parent && window.parent.guiAlert) {
-                    window.parent.guiAlert("Save failed! Your admin account does not have permission to update 'site_content'. Please ask the owner to update the database RLS policies.", "Permission Denied");
-                } else {
-                    alert("Save failed! Permission Denied.");
-                }
+            if (error || !updateData || updateData.length === 0) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Save failed! Please check database permissions.");
+                else alert("Save failed!");
                 return;
             }
             
@@ -218,21 +207,6 @@
             }
             renderBlogs();
         };
-
-        function setupScrollObserver() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const id = entry.target.dataset.id;
-                        if (id) {
-                            window.parent.history.replaceState(null, null, `#Index/Blogs?id=${id}`);
-                        }
-                    }
-                });
-            }, { threshold: 0.5 });
-
-            document.querySelectorAll('.flat-list-item').forEach(el => observer.observe(el));
-        }
 
         document.addEventListener('DOMContentLoaded', initBlogsPage);
     </script>

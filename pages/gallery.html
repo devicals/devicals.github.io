@@ -109,18 +109,12 @@
         }
 
         async function initGallery() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            currentUser = session?.user || null;
+            const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
+            currentUser = ident.user;
+            currentProfile = ident.profile;
+            isAdminLocal = ident.isAdmin;
 
-            if (currentUser) {
-                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                currentProfile = prof;
-                if (prof?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isAdminLocal = true;
-                }
-            }
-
-            setupNameField();
+            await setupNameField();
 
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: false });
             if (data) {
@@ -136,6 +130,8 @@
                 }
             }).subscribe();
         }
+
+        window.onParentAuthChanged = initGallery;
 
         async function setupNameField() {
             const nameInput = document.getElementById('gal-name');

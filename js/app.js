@@ -8,11 +8,66 @@ let navData = { children: [] };
 let flatNodes = [];
 let commitPage = 1;
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
+let authModalState = 'login'; 
 
 window.isOwner = false;
 window.OWNER_EMAIL = '3rr0r.d3v@gmail.com';
 
 marked.use({ breaks: true, gfm: true });
+
+function initSynchronousUser() {
+    try {
+        const sessionStr = localStorage.getItem('custom_auth_session');
+        if (sessionStr) {
+            const parsed = JSON.parse(sessionStr);
+            const name = (parsed.username || '').trim().toLowerCase();
+            const email = (parsed.email || '').trim().toLowerCase();
+            if (name === 'error dev' || email === window.OWNER_EMAIL.toLowerCase()) {
+                parsed.is_owner = true;
+                parsed.is_admin = true;
+            }
+            currentUser = parsed;
+            currentProfile = parsed;
+            window.isOwner = parsed.is_owner === true;
+            if (parsed.is_admin || window.isOwner) {
+                document.body.classList.add('is-admin');
+            }
+        }
+    } catch(e) {}
+}
+initSynchronousUser();
+
+window.getUserIdentity = function() {
+    let user = currentUser;
+    if (!user) {
+        try {
+            const sessionStr = localStorage.getItem('custom_auth_session');
+            if (sessionStr) user = JSON.parse(sessionStr);
+        } catch(e) {}
+    }
+    const name = (user?.username || '').trim().toLowerCase();
+    const email = (user?.email || '').trim().toLowerCase();
+    const isOwner = user ? (user.is_owner === true || name === 'error dev' || email === window.OWNER_EMAIL.toLowerCase()) : false;
+    const isAdmin = user ? (user.is_admin === true || isOwner) : false;
+    return {
+        user: user,
+        profile: user,
+        isOwner: isOwner,
+        isAdmin: isAdmin,
+        username: user ? user.username : null
+    };
+};
+
+function notifyIframeAuth() {
+    const iframe = document.getElementById('iframe-workspace');
+    if (iframe && iframe.contentWindow) {
+        try {
+            if (iframe.contentWindow.onParentAuthChanged) {
+                iframe.contentWindow.onParentAuthChanged();
+            }
+        } catch (e) {}
+    }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     loadSettingsLocally();
@@ -22,6 +77,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     initAuth();
     loadAnnouncementsToasts();
 });
+
+window.getDeviceId = function() {
+    let devId = localStorage.getItem('device_id');
+    if (!devId) {
+        devId = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        localStorage.setItem('device_id', devId);
+    }
+    return devId;
+};
 
 window.escapeAttr = function (str) {
     return (str || '').toString()
@@ -82,7 +146,7 @@ window.guiForm = function (fields, title = "input required") {
                 <label>${window.escapeAttr(f.label || f.key)}</label>
                 ${f.type === 'textarea'
                     ? `<textarea id="gf-${f.key}" class="ui-input" rows="${f.rows || 6}" placeholder="${window.escapeAttr(f.placeholder || '')}">${window.escapeAttr(f.value || '')}</textarea>`
-                    : `<input type="text" id="gf-${f.key}" class="ui-input" placeholder="${window.escapeAttr(f.placeholder || '')}" value="${window.escapeAttr(f.value || '')}">`
+                    : `<input type="${f.type === 'password' ? 'password' : 'text'}" id="gf-${f.key}" class="ui-input" placeholder="${window.escapeAttr(f.placeholder || '')}" value="${window.escapeAttr(f.value || '')}">`
                 }
             </div>
         `).join('');
@@ -119,7 +183,7 @@ window.resolveAuthorsMap = async function (ids) {
 
 window.authorTagHTML = function (authorProfile) {
     if (!authorProfile) return '';
-    const isOwnerAuthor = authorProfile.is_owner === true;
+    const isOwnerAuthor = authorProfile.is_owner === true || authorProfile.username?.toLowerCase() === 'error dev';
     const label = isOwnerAuthor ? 'error dev' : (authorProfile.username || 'unnamed admin');
     const color = isOwnerAuthor ? 'var(--accent)' : 'var(--fg-muted)';
     return `<span style="font-size:10px; color:${color}; border:1px solid var(--border); padding:2px 6px; margin-left:6px; white-space:nowrap;">${window.escapeAttr(label)}</span>`;
@@ -181,64 +245,104 @@ function syncIframeTheme() {
     }
 }
 
-async function syncSettingsToServer() {
-    if (currentUser) {
-        const payload = {
+window.syncSettingsToServer = async function() {
+    if (currentUser && currentProfile) {
+        const currentSettings = currentProfile.settings || {};
+        const newSettings = {
+            ...currentSettings,
             theme: localStorage.getItem('theme'),
             custom_css: localStorage.getItem('custom-css'),
             dark_mode: localStorage.getItem('dark-mode'),
-            bg_effect: localStorage.getItem('bg-effect')
+            bg_effect: localStorage.getItem('bg-effect'),
+            tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
+            worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]')
         };
-        await supabaseClient.from('site_content').upsert({ key: 'settings_' + currentUser.id, data: payload });
+        await supabaseClient.from('profiles').update({ settings: newSettings }).eq('id', currentUser.id);
+        currentProfile.settings = newSettings;
+        currentUser.settings = newSettings;
+        saveCustomSession(currentUser);
     }
+};
+
+function saveCustomSession(userObj) {
+    if (userObj) {
+        const name = (userObj.username || '').trim().toLowerCase();
+        const email = (userObj.email || '').trim().toLowerCase();
+        if (name === 'error dev' || email === window.OWNER_EMAIL.toLowerCase()) {
+            userObj.is_owner = true;
+            userObj.is_admin = true;
+        }
+    }
+    localStorage.setItem('custom_auth_session', JSON.stringify(userObj));
+    currentUser = userObj;
+    currentProfile = userObj;
+    notifyIframeAuth();
+}
+
+function clearCustomSession() {
+    localStorage.removeItem('custom_auth_session');
+    currentUser = null;
+    currentProfile = null;
+    window.isOwner = false;
+    document.body.classList.remove('is-admin');
+    renderAuthModal();
+    notifyIframeAuth();
 }
 
 async function initAuth() {
-    try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        await handleSession(session);
-        supabaseClient.auth.onAuthStateChange((_event, session) => handleSession(session));
-    } catch (e) {
-        renderAuthModal();
+    const sessionStr = localStorage.getItem('custom_auth_session');
+    if (sessionStr) {
+        try {
+            const parsed = JSON.parse(sessionStr);
+            const { data } = await supabaseClient.from('profiles').select('*').eq('id', parsed.id).single();
+            if (data) {
+                saveCustomSession(data);
+                await handleSession();
+            } else {
+                clearCustomSession();
+            }
+        } catch (e) {
+            clearCustomSession();
+        }
+    } else {
+        await handleSession();
     }
 }
 
-async function handleSession(session) {
-    currentUser = session?.user || null;
-    currentProfile = null;
-    window.isOwner = false;
-
+async function handleSession() {
     if (currentUser) {
-        try {
-            const { data: profData } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-            currentProfile = profData;
+        const s = currentUser.settings || {};
+        if (s.theme) localStorage.setItem('theme', s.theme);
+        if (s.custom_css) localStorage.setItem('custom-css', s.custom_css);
+        if (s.dark_mode) localStorage.setItem('dark-mode', s.dark_mode);
+        if (s.bg_effect) { localStorage.setItem('bg-effect', s.bg_effect); if (window.setBgEffect) window.setBgEffect(s.bg_effect); }
+        if (s.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(s.tierlists));
+        if (s.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(s.worldclocks));
+        loadSettingsLocally();
 
-            const { data: setObj } = await supabaseClient.from('site_content').select('data').eq('key', 'settings_' + currentUser.id).single();
-            if (setObj && setObj.data) {
-                if (setObj.data.theme) localStorage.setItem('theme', setObj.data.theme);
-                if (setObj.data.custom_css) localStorage.setItem('custom-css', setObj.data.custom_css);
-                if (setObj.data.dark_mode) localStorage.setItem('dark-mode', setObj.data.dark_mode);
-                if (setObj.data.bg_effect) { localStorage.setItem('bg-effect', setObj.data.bg_effect); if (window.setBgEffect) window.setBgEffect(setObj.data.bg_effect); }
-                loadSettingsLocally();
-            }
+        const emailIsOwner = currentUser.email?.toLowerCase() === window.OWNER_EMAIL;
+        const nameIsOwner = currentUser.username?.toLowerCase() === 'error dev';
+        window.isOwner = currentUser.is_owner === true || emailIsOwner || nameIsOwner;
 
-            const emailIsOwner = currentUser.email?.toLowerCase() === window.OWNER_EMAIL;
-            window.isOwner = currentProfile?.is_owner === true || emailIsOwner;
+        if (currentUser.is_admin || window.isOwner) {
+            document.body.classList.add('is-admin');
+        } else {
+            document.body.classList.remove('is-admin');
+        }
 
-            if (currentProfile?.is_admin || window.isOwner) {
-                document.body.classList.add('is-admin');
-            } else {
-                document.body.classList.remove('is-admin');
-            }
-
-            loadPersistentWarnings();
-        } catch (e) {}
+        loadPersistentWarnings();
     } else {
         document.body.classList.remove('is-admin');
     }
 
     renderAuthModal();
+    notifyIframeAuth();
 }
+
+window.setAuthModalState = function(state) {
+    authModalState = state;
+    renderAuthModal();
+};
 
 function renderAuthModal() {
     const container = document.getElementById('auth-content');
@@ -260,36 +364,155 @@ function renderAuthModal() {
                 </div>
             `;
         }
-        container.innerHTML = `
-            <div class="profile-info">
-                <div class="profile-name">${currentProfile?.username || 'authenticated user'}</div>
-                <div class="profile-id">ID: ${currentUser.id}</div>
-                ${window.isOwner ? '<div style="color:var(--accent); font-size:11px; margin-top:4px; letter-spacing:1px;">error dev</div>' : ''}
+        
+        let emailSection = `
+            <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px; width:100%;">
+                <div style="font-size:11px; color:var(--accent); font-weight:bold; margin-bottom:8px; text-transform:lowercase;">account recovery / email</div>
+                ${currentUser.email ? `<div style="font-size:12px; color:var(--fg-muted); margin-bottom:12px;">linked: ${window.escapeAttr(currentUser.email)}</div>` : `<div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; line-height:1.4;">link an email to recover your account if you forget your password.</div>`}
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <input type="email" id="link-email-input" class="ui-input" placeholder="${currentUser.email ? 'new email address' : 'your email address'}" style="margin:0;">
+                    <button class="ui-btn" style="width:auto; margin:0; padding:10px 14px;" onclick="linkEmail()">${currentUser.email ? 'update' : 'link'}</button>
+                </div>
             </div>
-            <input type="text" id="prof-name" class="ui-input" placeholder="set display name">
+        `;
+
+        container.innerHTML = `
+            <div class="profile-info" style="width:100%;">
+                <div class="profile-name">${currentUser.username || 'authenticated user'}</div>
+                <div class="profile-id">ID: ${currentUser.id}</div>
+                ${ownerBadge}
+            </div>
+            <input type="text" id="prof-name" class="ui-input" placeholder="set display name" value="${window.escapeAttr(currentUser.username)}">
             <button class="ui-btn" onclick="updateProfile()">save display name</button>
+            ${emailSection}
             ${warningsHtml}
-            <button class="ui-btn" onclick="supabaseClient.auth.signOut()" style="border-color:var(--destructive); color:var(--destructive); margin-top:12px;">logout</button>
+            <button class="ui-btn" onclick="clearCustomSession()" style="border-color:var(--destructive); color:var(--destructive); margin-top:12px;">logout</button>
         `;
     } else {
-        container.innerHTML = `
-            <input type="email" id="auth-email" class="ui-input" placeholder="email">
-            <input type="password" id="auth-pass" class="ui-input" placeholder="password">
-            <button class="ui-btn" onclick="authAction('login')">login</button>
-            <button class="ui-btn" onclick="authAction('signup')">sign up</button>
-        `;
+        if (authModalState === 'login') {
+            container.innerHTML = `
+                <input type="text" id="auth-identifier" class="ui-input" placeholder="username or email">
+                <input type="password" id="auth-pass" class="ui-input" placeholder="password" onkeydown="if(event.key==='Enter') authAction('login')">
+                <button class="ui-btn" onclick="authAction('login')">login</button>
+                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                    <span style="font-size:11px; color:var(--fg-muted); cursor:pointer;" onclick="setAuthModalState('signup')">create account</span>
+                    <span style="font-size:11px; color:var(--fg-muted); cursor:pointer;" onclick="setAuthModalState('forgot')">forgot password?</span>
+                </div>
+            `;
+        } else if (authModalState === 'signup') {
+            container.innerHTML = `
+                <input type="text" id="auth-username" class="ui-input" placeholder="username (required)">
+                <input type="email" id="auth-email-signup" class="ui-input" placeholder="email (optional, for recovery)">
+                <input type="password" id="auth-pass" class="ui-input" placeholder="create password" onkeydown="if(event.key==='Enter') authAction('signup')">
+                <button class="ui-btn" onclick="authAction('signup')">sign up</button>
+                <div style="display:flex; justify-content:center; margin-top:10px;">
+                    <span style="font-size:11px; color:var(--fg-muted); cursor:pointer;" onclick="setAuthModalState('login')">already have an account? log in</span>
+                </div>
+            `;
+        } else if (authModalState === 'forgot') {
+            container.innerHTML = `
+                <div style="font-size:12px; color:var(--fg-muted); margin-bottom:12px; line-height:1.4;">verify your identity by entering your exact username and linked email address to set a new password.</div>
+                <input type="text" id="auth-recovery-username" class="ui-input" placeholder="your username">
+                <input type="email" id="auth-recovery-email" class="ui-input" placeholder="your linked email address">
+                <input type="password" id="auth-recovery-newpass" class="ui-input" placeholder="enter new password" onkeydown="if(event.key==='Enter') authAction('reset')">
+                <button class="ui-btn" onclick="authAction('reset')">reset password</button>
+                <div style="display:flex; justify-content:center; margin-top:10px;">
+                    <span style="font-size:11px; color:var(--fg-muted); cursor:pointer;" onclick="setAuthModalState('login')">back to login</span>
+                </div>
+            `;
+        }
     }
 }
 
+window.linkEmail = async () => {
+    const email = document.getElementById('link-email-input').value.trim();
+    if (!email || !email.includes('@')) return guiAlert('please enter a valid email address.', 'invalid input');
+    
+    await supabaseClient.from('profiles').update({ email }).eq('id', currentUser.id);
+    currentUser.email = email;
+    saveCustomSession(currentUser);
+    
+    guiAlert("email updated! you can now use this email to recover your password.", "success");
+    renderAuthModal();
+};
+
 window.authAction = async (action) => {
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-pass').value;
     try {
-        if (action === 'signup') {
-            await supabaseClient.auth.signUp({ email, password });
-            guiAlert("account created successfully. you may now log in.", "auth success");
-        } else {
-            await supabaseClient.auth.signInWithPassword({ email, password });
+        if (action === 'login') {
+            const identifier = document.getElementById('auth-identifier').value.trim();
+            const password = document.getElementById('auth-pass').value;
+            if (!identifier || !password) throw new Error("please fill all fields.");
+
+            let { data, error } = await supabaseClient.from('profiles')
+                .select('*')
+                .ilike('username', identifier)
+                .eq('password', password)
+                .maybeSingle();
+
+            if (!data) {
+                const res = await supabaseClient.from('profiles')
+                    .select('*')
+                    .ilike('email', identifier)
+                    .eq('password', password)
+                    .maybeSingle();
+                data = res.data;
+                error = res.error;
+            }
+
+            if (error || !data) throw new Error("invalid username/email or password.");
+            
+            saveCustomSession(data);
+            await handleSession();
+            document.getElementById('auth-modal').style.display = 'none';
+
+        } else if (action === 'signup') {
+            const username = document.getElementById('auth-username').value.trim();
+            const emailInput = document.getElementById('auth-email-signup').value.trim();
+            const password = document.getElementById('auth-pass').value;
+            
+            if (!username || !password) throw new Error("username and password are required.");
+            
+            const { data: existing } = await supabaseClient.from('profiles').select('id').ilike('username', username);
+            if (existing && existing.length > 0) throw new Error("username is already taken.");
+
+            const isOwnerAcc = username.toLowerCase() === 'error dev';
+            const generatedUuid = crypto.randomUUID();
+
+            const { data, error } = await supabaseClient.from('profiles').insert({ 
+                id: generatedUuid,
+                username: username, 
+                password: password, 
+                email: emailInput || null,
+                is_owner: isOwnerAcc,
+                is_admin: isOwnerAcc,
+                settings: {}
+            }).select().single();
+
+            if (error) throw error;
+
+            saveCustomSession(data);
+            await handleSession();
+            document.getElementById('auth-modal').style.display = 'none';
+            guiAlert("account created and logged in!", "welcome");
+
+        } else if (action === 'reset') {
+            const username = document.getElementById('auth-recovery-username').value.trim();
+            const email = document.getElementById('auth-recovery-email').value.trim();
+            const newPass = document.getElementById('auth-recovery-newpass').value;
+            
+            if (!username || !email || !newPass) throw new Error("please fill all fields.");
+
+            const { data, error } = await supabaseClient.from('profiles')
+                .select('id')
+                .ilike('username', username)
+                .ilike('email', email)
+                .single();
+
+            if (error || !data) throw new Error("no account found matching that username and email.");
+
+            await supabaseClient.from('profiles').update({ password: newPass }).eq('id', data.id);
+            guiAlert("password reset successfully. you may now log in.", "success");
+            setAuthModalState('login');
         }
     } catch (e) {
         guiAlert(e.message, "auth error");
@@ -297,12 +520,12 @@ window.authAction = async (action) => {
 };
 
 window.updateProfile = async () => {
-    const username = document.getElementById('prof-name').value;
+    const username = document.getElementById('prof-name').value.trim();
     if (!username || !currentUser) return;
     try {
-        await supabaseClient.from('profiles').upsert({ id: currentUser.id, username });
-        const { data } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-        currentProfile = data;
+        await supabaseClient.from('profiles').update({ username }).eq('id', currentUser.id);
+        currentUser.username = username;
+        saveCustomSession(currentUser);
         renderAuthModal();
         guiAlert("display name updated.", "Success");
     } catch (e) {
@@ -489,7 +712,7 @@ async function renderCommitsPage(container, reset = false) {
     }
     const listEl = document.getElementById('commits-list');
     try {
-        const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=15`);
+        const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=10`);
         if (!res.ok) throw new Error('failed to fetch');
         const commits = await res.json();
 
@@ -500,7 +723,15 @@ async function renderCommitsPage(container, reset = false) {
             return;
         }
 
-        const rows = commits.map((c) => {
+        const commitDetails = await Promise.all(commits.map(async (c) => {
+            try {
+                const detailRes = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits/${c.sha}`);
+                if (detailRes.ok) return await detailRes.json();
+            } catch (e) {}
+            return c;
+        }));
+
+        const rows = commitDetails.map((c) => {
             const sha = (c.sha || '').substring(0, 7);
             const lines = (c.commit?.message || '').split('\n');
             const summary = escapeHTML(lines[0]);
@@ -508,6 +739,28 @@ async function renderCommitsPage(container, reset = false) {
             const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
             const dateStr = c.commit?.author?.date;
             const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
+
+            let filesCreated = 0, filesModified = 0, filesDeleted = 0;
+            if (c.files) {
+                c.files.forEach(f => {
+                    if (f.status === 'added') filesCreated++;
+                    else if (f.status === 'removed') filesDeleted++;
+                    else filesModified++;
+                });
+            }
+
+            const additions = c.stats?.additions || 0;
+            const deletions = c.stats?.deletions || 0;
+
+            const statsHtml = `
+                <div style="display:flex; gap:12px; font-size:11px; font-family:var(--font-ui); margin-top:8px; flex-wrap:wrap; align-items:center;">
+                    ${filesCreated > 0 ? `<span style="color:#5bc98a; font-weight:bold;">+${filesCreated} created</span>` : ''}
+                    ${filesModified > 0 ? `<span style="color:#e6b450; font-weight:bold;">~${filesModified} modified</span>` : ''}
+                    ${filesDeleted > 0 ? `<span style="color:#cc5555; font-weight:bold;">-${filesDeleted} deleted</span>` : ''}
+                    ${additions > 0 ? `<span style="color:#5bc98a; font-weight:bold;">+${additions} lines</span>` : ''}
+                    ${deletions > 0 ? `<span style="color:#cc5555; font-weight:bold;">-${deletions} lines</span>` : ''}
+                </div>
+            `;
 
             return `
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -519,6 +772,7 @@ async function renderCommitsPage(container, reset = false) {
                     <div style="flex: 1; min-width: 0; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
                         <div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-main); font-size: 16px; font-weight: bold;">${summary}</div>
                         ${body ? `<div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-muted); font-size: 13px; margin-top: 8px;">${body}</div>` : ''}
+                        ${statsHtml}
                         <div style="color: var(--fg-muted); font-size: 12px; margin-top: 10px;">
                             <span style="color:var(--accent);">${sha}</span> &middot; ${author} &middot; ${dateDisplay}
                         </div>

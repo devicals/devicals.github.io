@@ -115,9 +115,11 @@
       </div>
 
       <div class="sidebar-section tl-sidebar-block">
-        <div class="tl-sidebar-block-title">share</div>
-        <div class="tl-hint" style="margin-bottom:8px;">generate a code others can use to load a read-only copy of this exact list.</div>
-        <button class="ui-btn" onclick="generateShareCode()">generate share code</button>
+        <div class="tl-sidebar-block-title">my share codes</div>
+        <div id="my-share-codes-container" style="margin-bottom:12px;">
+          <span class="tl-hint">loading share codes...</span>
+        </div>
+        <button class="ui-btn" onclick="generateShareCode()">generate new share code</button>
         <div id="share-code-display" style="display:none; font-family:var(--font-ui); font-size:16px; color:var(--accent); text-align:center; padding:10px; border:1px solid var(--accent); margin-top:8px;"></div>
         <input type="text" id="share-code-input" class="ui-input" placeholder="enter a share code..." style="margin-top:14px;">
         <button class="ui-btn" onclick="loadFromShareCode()">load share code</button>
@@ -162,6 +164,28 @@
     let currentListId = null;
     let currentListName = "Untitled";
     let userId = null;
+
+    function getDeviceId() {
+      if (window.parent && window.parent.getDeviceId) return window.parent.getDeviceId();
+      let devId = localStorage.getItem('device_id');
+      if (!devId) {
+        devId = 'dev_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        localStorage.setItem('device_id', devId);
+      }
+      return devId;
+    }
+
+    async function getAnonName() {
+      try {
+        const res = await fetch('https://api.ipify.org?format=json');
+        const data = await res.json();
+        let hash = 0;
+        for (let i = 0; i < data.ip.length; i++) hash = ((hash << 5) - hash) + data.ip.charCodeAt(i);
+        return "Anon #" + Math.abs(hash).toString().substring(0, 4);
+      } catch (e) {
+        return "Anon #" + Math.floor(Math.random() * 9000 + 1000);
+      }
+    }
 
     function currentState() {
       return { preset: document.getElementById('presetSel').value, activeTierIds, tierItems, poolItems };
@@ -259,18 +283,20 @@
 
     async function getSavedLists() {
       if (userId) {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'tierlists_' + userId).single();
-        return data?.data || [];
+        const { data } = await supabaseClient.from('profiles').select('settings').eq('id', userId).single();
+        return data?.settings?.tierlists || [];
       }
       return JSON.parse(localStorage.getItem('local_tierlists') || '[]');
     }
 
     async function setSavedLists(lists) {
       if (userId) {
-        await supabaseClient.from('site_content').upsert({ key: 'tierlists_' + userId, data: lists });
-      } else {
-        localStorage.setItem('local_tierlists', JSON.stringify(lists));
+        const { data } = await supabaseClient.from('profiles').select('settings').eq('id', userId).single();
+        const settings = data?.settings || {};
+        settings.tierlists = lists;
+        await supabaseClient.from('profiles').update({ settings }).eq('id', userId);
       }
+      localStorage.setItem('local_tierlists', JSON.stringify(lists));
     }
 
     async function refreshSavedListsUI() {
@@ -358,13 +384,88 @@
       return out;
     }
 
+    async function refreshMyShareCodesUI() {
+      const container = document.getElementById('my-share-codes-container');
+      if (!container) return;
+      
+      const myLocalCodes = JSON.parse(localStorage.getItem('my_share_codes') || '[]');
+      const devId = getDeviceId();
+
+      try {
+          const { data } = await supabaseClient.from('site_content').select('*').like('key', 'tierlist_share_%');
+          const myCodesList = (data || []).filter(item => {
+              const code = item.key.replace('tierlist_share_', '');
+              const info = item.data || {};
+              const isMyId = userId && info.creator_id === userId;
+              const isMyDevice = info.creator_device_id === devId;
+              const isMyLocal = myLocalCodes.includes(code);
+              return isMyId || isMyDevice || isMyLocal;
+          });
+
+          if (!myCodesList.length) {
+              container.innerHTML = '<span class="tl-hint">no generated codes yet.</span>';
+              return;
+          }
+
+          container.innerHTML = myCodesList.map(item => {
+              const code = item.key.replace('tierlist_share_', '');
+              const info = item.data || {};
+              return `
+                  <div class="tl-saved-item">
+                      <span class="tl-saved-item-name" style="color:var(--accent); font-weight:bold;">${code} (${info.name || 'untitled'})</span>
+                      <button class="ui-btn tl-mini-btn" onclick="copyCodeStr('${code}')">copy</button>
+                      <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteMyShareCode('${item.key}', '${code}')">del</button>
+                  </div>
+              `;
+          }).join('');
+      } catch (e) {
+          container.innerHTML = '<span class="tl-hint">could not load codes.</span>';
+      }
+    }
+
+    window.copyCodeStr = function(code) {
+        navigator.clipboard.writeText(code);
+        alert("Share code copied: " + code);
+    };
+
+    window.deleteMyShareCode = async function(key, code) {
+        if (!confirm("Delete this share code?")) return;
+        await supabaseClient.from('site_content').delete().eq('key', key);
+        
+        let myCodes = JSON.parse(localStorage.getItem('my_share_codes') || '[]');
+        myCodes = myCodes.filter(c => c !== code);
+        localStorage.setItem('my_share_codes', JSON.stringify(myCodes));
+
+        refreshMyShareCodesUI();
+    };
+
     window.generateShareCode = async function () {
       const code = genCode(6);
-      const payload = { name: currentListName, state: currentState() };
-      await supabaseClient.from('site_content').upsert({ key: 'tierlist_share_' + code, data: payload });
+      const payload = { 
+        name: currentListName, 
+        state: currentState(),
+        creator_id: userId,
+        creator_name: window.parent?.currentUser?.username || await getAnonName(),
+        creator_device_id: getDeviceId(),
+        created_at: new Date().toISOString()
+      };
+      
+      const { error } = await supabaseClient.from('site_content').insert({ key: 'tierlist_share_' + code, data: payload });
+      
+      if (error) {
+          alert("Failed to create share code! " + error.message);
+          return;
+      }
+      
+      let myCodes = JSON.parse(localStorage.getItem('my_share_codes') || '[]');
+      if (!myCodes.includes(code)) myCodes.push(code);
+      localStorage.setItem('my_share_codes', JSON.stringify(myCodes));
+
       const display = document.getElementById('share-code-display');
       display.style.display = 'block';
       display.textContent = code;
+
+      refreshMyShareCodesUI();
     };
 
     window.loadFromShareCode = async function () {
@@ -378,10 +479,10 @@
     };
 
     async function init() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      userId = session?.user?.id || window.parent?.currentUser?.id || null;
+      userId = window.parent?.currentUser?.id || null;
       renderAll();
       refreshSavedListsUI();
+      refreshMyShareCodesUI();
     }
 
     init();

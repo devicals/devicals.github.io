@@ -11,12 +11,28 @@
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
             <h1 style="margin:0; font-size:32px;">projects</h1>
-            <div id="admin-add-project-btn" style="display:none;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="addProject()">+ add project</button>
+            <div id="admin-add-project-btn" style="display:none; gap:10px;">
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="manageTabsModal()">manage tabs</button>
+                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="addProject()">+ add project</button>
             </div>
         </div>
         <div id="project-tabs" style="display:flex; gap:20px; border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:40px;"></div>
         <div id="projects-grid" class="flat-list-container"></div>
+    </div>
+
+    <div id="tabs-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+        <div class="modal-box" style="background:var(--bg-sidebar); border:1px solid var(--border); padding:24px; width:480px; max-width:90vw; max-height:85vh; overflow-y:auto; font-family:var(--font-ui);">
+            <div class="modal-title" style="font-size:16px; font-weight:bold; color:var(--accent); margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:8px;">manage project tabs</div>
+            <div id="tabs-manage-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"></div>
+            <div style="border-top:1px dashed var(--border); padding-top:16px; margin-top:16px;">
+                <label style="font-size:11px; color:var(--fg-muted); display:block; margin-bottom:6px;">+ create new tab</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="new-tab-name-input" class="ui-input" placeholder="tab name..." style="margin:0; flex:1;">
+                    <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="addNewTabFromModal()">add tab</button>
+                </div>
+            </div>
+            <button class="ui-btn" style="margin-top:20px; border-color:var(--border);" onclick="closeTabsModal()">close</button>
+        </div>
     </div>
 
     <div class="copy-toast" id="copy-toast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--accent); color:var(--bg-main); padding:10px 20px; font-family:var(--font-ui); font-size:12px; font-weight:bold; z-index:999; opacity:0; transition:opacity 0.2s;">link copied</div>
@@ -46,15 +62,14 @@
         }
 
         async function initProjectsPage() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session?.user) {
-                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', session.user.id).single();
-                if (prof?.is_owner || session.user.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isOwnerLocal = true;
-                }
-            }
+            const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
+            isOwnerLocal = ident.isOwner;
+
+            const btnContainer = document.getElementById('admin-add-project-btn');
             if (isOwnerLocal) {
-                document.getElementById('admin-add-project-btn').style.display = 'block';
+                btnContainer.style.display = 'flex';
+            } else {
+                btnContainer.style.display = 'none';
             }
 
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
@@ -114,6 +129,8 @@
                 }
             }
         }
+
+        window.onParentAuthChanged = initProjectsPage;
 
         function updateTabUrl() {
             if (!window.parent) return;
@@ -228,6 +245,99 @@
                 await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
                 renderGrid();
             }
+        };
+
+        window.manageTabsModal = function() {
+            if (!isOwnerLocal) return;
+            renderTabsManageList();
+            document.getElementById('tabs-modal').style.display = 'flex';
+        };
+
+        window.closeTabsModal = function() {
+            document.getElementById('tabs-modal').style.display = 'none';
+        };
+
+        function renderTabsManageList() {
+            const container = document.getElementById('tabs-manage-list');
+            const keys = Object.keys(projectsData.tabs || {});
+            if (!keys.length) {
+                container.innerHTML = '<span style="color:var(--fg-muted); font-size:12px;">no tabs available.</span>';
+                return;
+            }
+
+            container.innerHTML = keys.map((k, idx) => {
+                const tab = projectsData.tabs[k];
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-main); border:1px solid var(--border); padding:10px 12px; gap:8px;">
+                        <span style="font-weight:bold; color:var(--fg-main); flex:1;">${window.escapeAttr(tab.display)}</span>
+                        <div style="display:flex; gap:6px;">
+                            ${idx > 0 ? `<button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px;" onclick="moveTab('${k}', -1)">▲</button>` : ''}
+                            ${idx < keys.length - 1 ? `<button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px;" onclick="moveTab('${k}', 1)">▼</button>` : ''}
+                            <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px;" onclick="renameTabModal('${k}')">rename</button>
+                            <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px; color:var(--destructive);" onclick="deleteTabModal('${k}')">delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.addNewTabFromModal = async function() {
+            const input = document.getElementById('new-tab-name-input');
+            const name = input.value.trim();
+            if (!name) return;
+            const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            if (!projectsData.tabs) projectsData.tabs = {};
+            if (projectsData.tabs[key]) {
+                alert("A tab with this name already exists.");
+                return;
+            }
+            projectsData.tabs[key] = { display: name, projects: [] };
+            currentTabKey = key;
+            input.value = '';
+            await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
+            renderTabsManageList();
+            renderTabs();
+        };
+
+        window.renameTabModal = async function(key) {
+            const tab = projectsData.tabs[key];
+            const newName = await formPrompt([{ key: 'name', label: 'new tab name', value: tab.display }], 'rename tab');
+            if (!newName || !newName.name || !newName.name.trim()) return;
+            tab.display = newName.name.trim();
+            await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
+            renderTabsManageList();
+            renderTabs();
+        };
+
+        window.deleteTabModal = async function(key) {
+            const ok = await confirmAction(`delete tab '${projectsData.tabs[key].display}' and all its projects?`);
+            if (!ok) return;
+            delete projectsData.tabs[key];
+            const keys = Object.keys(projectsData.tabs);
+            currentTabKey = keys.length ? keys[0] : null;
+            await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
+            renderTabsManageList();
+            renderTabs();
+        };
+
+        window.moveTab = async function(key, dir) {
+            const entries = Object.entries(projectsData.tabs || {});
+            const idx = entries.findIndex(([k]) => k === key);
+            if (idx < 0) return;
+            const targetIdx = idx + dir;
+            if (targetIdx < 0 || targetIdx >= entries.length) return;
+
+            const temp = entries[idx];
+            entries[idx] = entries[targetIdx];
+            entries[targetIdx] = temp;
+
+            const newTabs = {};
+            entries.forEach(([k, v]) => { newTabs[k] = v; });
+            projectsData.tabs = newTabs;
+
+            await supabaseClient.from('site_content').update({ data: projectsData }).eq('key', 'projects');
+            renderTabsManageList();
+            renderTabs();
         };
 
         document.addEventListener('DOMContentLoaded', initProjectsPage);

@@ -34,11 +34,20 @@
             overflow-wrap: break-word;
             display: inline-block;
         }
+        .admin-card {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            padding: 18px 20px;
+            margin-bottom: 14px;
+        }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;" class="markdown-body">
-        <h1 style="margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px; text-align: left;">liked games</h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:40px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+            <h1 style="margin:0; text-align: left;">liked games</h1>
+            <button id="edit-games-btn" class="ui-btn" style="width:auto; margin:0; display:none;" onclick="openEditGamesModal()">edit games</button>
+        </div>
 
         <h2 style="text-align: left; margin-bottom: 20px;">favorites</h2>
         <ul id="fav-games-list" class="games-list-ul" style="margin-bottom:50px;"></ul>
@@ -50,22 +59,57 @@
         <ul id="wtp-games-grid" class="games-list-ul"></ul>
     </div>
 
+    <div id="games-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+        <div class="modal-box" style="background:var(--bg-sidebar); border:1px solid var(--border); padding:24px; width:700px; max-width:92vw; max-height:85vh; overflow-y:auto; font-family:var(--font-ui);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <h2 style="margin:0; font-size:20px;">manage liked games</h2>
+                <button class="ui-btn" style="width:auto; margin:0; padding:6px 12px;" onclick="closeGamesModal()">close</button>
+            </div>
+            <div id="games-modal-content"></div>
+        </div>
+    </div>
+
     <script>
         const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
         const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         let gamesData = { favorites: [], liked: [], wanttoplay: [] };
+        let isOwnerLocal = false;
 
         function escapeHTML(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+        async function formPrompt(fields, title) {
+            if (window.parent && window.parent.guiForm) return window.parent.guiForm(fields, title);
+            const result = {};
+            for (const f of fields) {
+                const val = prompt(f.label, f.value || '');
+                if (val === null) return null;
+                result[f.key] = val;
+            }
+            return result;
+        }
+
+        async function confirmAction(msg) {
+            if (window.parent && window.parent.guiConfirm) return window.parent.guiConfirm(msg);
+            return confirm(msg);
+        }
+
         async function initGamesPage() {
+            const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
+            isOwnerLocal = ident.isOwner;
+
+            const editBtn = document.getElementById('edit-games-btn');
+            if (editBtn) editBtn.style.display = isOwnerLocal ? 'block' : 'none';
+
             const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
             if (data && data.data) {
                 gamesData = data.data;
                 renderAll();
             }
         }
+
+        window.onParentAuthChanged = initGamesPage;
 
         function renderAll() {
             document.getElementById('fav-games-list').innerHTML = (gamesData.favorites || []).map((g) => `
@@ -86,6 +130,110 @@
             document.getElementById('liked-games-grid').innerHTML = renderSimple(gamesData.liked);
             document.getElementById('wtp-games-grid').innerHTML = renderSimple(gamesData.wanttoplay);
         }
+
+        window.openEditGamesModal = function() {
+            if (!isOwnerLocal) return;
+            renderGamesModalContent();
+            document.getElementById('games-modal').style.display = 'flex';
+        };
+
+        window.closeGamesModal = function() {
+            document.getElementById('games-modal').style.display = 'none';
+        };
+
+        function renderGamesModalContent() {
+            const container = document.getElementById('games-modal-content');
+            if (!container) return;
+
+            const renderSimpleList = (arr, key) => (arr || []).map((item, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border); padding:8px 0;">
+                    <span style="font-size:13px; color:var(--fg-main);">${escapeHTML(item)}</span>
+                    <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:10px; color:var(--destructive);" onclick="adminDeleteSimpleGame('${key}', ${i})">✕</button>
+                </div>
+            `).join('') || '<span style="color:var(--fg-muted); font-size:12px;">empty list.</span>';
+
+            container.innerHTML = `
+                <div class="admin-card" style="margin-bottom:24px; background:var(--bg-main);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="font-weight:400; margin:0;">favorites</h3>
+                        <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="adminAddFavGame()">+ add favorite</button>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        ${(gamesData.favorites || []).map((f, i) => `
+                            <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); padding:12px; background:var(--bg-hover);">
+                                <div>
+                                    <strong style="color:var(--accent); font-size:14px; display:block;">${escapeHTML(f.title)}</strong>
+                                    ${f.comment ? `<span style="font-size:12px; color:var(--fg-muted);">${escapeHTML(f.comment)}</span>` : ''}
+                                </div>
+                                <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:4px 10px; font-size:11px;" onclick="adminDeleteFavGame(${i})">delete</button>
+                            </div>
+                        `).join('') || '<span style="color:var(--fg-muted); font-size:12px;">no favorites.</span>'}
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                    <div class="admin-card" style="flex:1; min-width:260px; margin-bottom:0; background:var(--bg-main);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h4 style="font-weight:400; margin:0;">games i like</h4>
+                            <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="adminAddSimpleGame('liked')">+ add</button>
+                        </div>
+                        ${renderSimpleList(gamesData.liked, 'liked')}
+                    </div>
+                    <div class="admin-card" style="flex:1; min-width:260px; margin-bottom:0; background:var(--bg-main);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h4 style="font-weight:400; margin:0;">want to play</h4>
+                            <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="adminAddSimpleGame('wanttoplay')">+ add</button>
+                        </div>
+                        ${renderSimpleList(gamesData.wanttoplay, 'wanttoplay')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.adminAddFavGame = async function () {
+            if (!isOwnerLocal) return;
+            const res = await formPrompt([
+                { key: 'title', label: 'favorite game title' },
+                { key: 'comment', label: 'comment (optional)', type: 'textarea', rows: 3 }
+            ], 'add favorite game');
+            if (!res || !res.title) return;
+            if (!gamesData.favorites) gamesData.favorites = [];
+            gamesData.favorites.push({ title: res.title.trim(), comment: res.comment ? res.comment.trim() : '' });
+            await supabaseClient.from('site_content').update({ data: gamesData }).eq('key', 'games');
+            renderGamesModalContent();
+            renderAll();
+        };
+
+        window.adminDeleteFavGame = async function (idx) {
+            if (!isOwnerLocal) return;
+            if (!await confirmAction("delete this favorite?")) return;
+            gamesData.favorites.splice(idx, 1);
+            await supabaseClient.from('site_content').update({ data: gamesData }).eq('key', 'games');
+            renderGamesModalContent();
+            renderAll();
+        };
+
+        window.adminAddSimpleGame = async function (listKey) {
+            if (!isOwnerLocal) return;
+            const res = await formPrompt([
+                { key: 'title', label: 'game title' }
+            ], 'add game');
+            if (!res || !res.title) return;
+            if (!gamesData[listKey]) gamesData[listKey] = [];
+            gamesData[listKey].push(res.title.trim());
+            await supabaseClient.from('site_content').update({ data: gamesData }).eq('key', 'games');
+            renderGamesModalContent();
+            renderAll();
+        };
+
+        window.adminDeleteSimpleGame = async function (listKey, idx) {
+            if (!isOwnerLocal) return;
+            if (!await confirmAction("delete this item?")) return;
+            gamesData[listKey].splice(idx, 1);
+            await supabaseClient.from('site_content').update({ data: gamesData }).eq('key', 'games');
+            renderGamesModalContent();
+            renderAll();
+        };
 
         document.addEventListener('DOMContentLoaded', initGamesPage);
     </script>

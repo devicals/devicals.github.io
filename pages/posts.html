@@ -133,18 +133,16 @@
         }
 
         async function initPosts() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            currentUser = session?.user || null;
+            const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
+            currentUser = ident.user;
+            currentProfile = ident.profile;
+            isAdminLocal = ident.isAdmin;
 
-            if (currentUser) {
-                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                currentProfile = prof;
-                if (prof?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isAdminLocal = true;
-                }
+            if (ident.username) {
+                assignedName = ident.username;
+            } else {
+                assignedName = await getAnonName();
             }
-
-            assignedName = currentProfile?.username || await getAnonName();
 
             document.getElementById('admin-compose-box').style.display = isAdminLocal ? 'block' : 'none';
             document.getElementById('non-admin-note').style.display = isAdminLocal ? 'none' : 'block';
@@ -154,6 +152,8 @@
             supabaseClient.channel('posts-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, loadPosts).subscribe();
             supabaseClient.channel('post-likes-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, loadPosts).subscribe();
         }
+
+        window.onParentAuthChanged = initPosts;
 
         async function loadPosts() {
             const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });

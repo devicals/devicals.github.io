@@ -1,16 +1,10 @@
 function getAdminTabs() {
-    const tabs = [
-        { key: 'blogs', label: 'blogs' }
+    return [
+        { key: 'users', label: 'users' },
+        { key: 'anns', label: 'announcements' },
+        { key: 'codes', label: 'share codes' },
+        { key: 'chat', label: 'admin chat', align: 'right' }
     ];
-    if (window.isOwner) {
-        tabs.push({ key: 'projects', label: 'projects' });
-        tabs.push({ key: 'downloads', label: 'downloads' });
-        tabs.push({ key: 'games', label: 'liked games' });
-    }
-    tabs.push({ key: 'users', label: 'users' });
-    tabs.push({ key: 'anns', label: 'announcements' });
-    tabs.push({ key: 'chat', label: 'admin chat', align: 'right' });
-    return tabs;
 }
 
 window.renderAdminPage = async function () {
@@ -20,8 +14,8 @@ window.renderAdminPage = async function () {
         <div class="admin-tab-bar" id="admin-tab-bar"></div>
         <div id="admin-section-content"></div>
     `;
-    renderAdminTabBar('blogs');
-    renderAdminSection('blogs');
+    renderAdminTabBar('users');
+    renderAdminSection('users');
 };
 
 function renderAdminTabBar(active) {
@@ -35,12 +29,13 @@ window.renderAdminSection = async function (section) {
     const view = document.getElementById('admin-section-content');
     view.innerHTML = '<span style="color:var(--fg-muted);">loading...</span>';
 
-    if ((section === 'games' || section === 'projects' || section === 'downloads') && !window.isOwner) {
-        view.innerHTML = `<div class="admin-only-note">this section is restricted to error dev.</div>`;
-        return;
-    }
-
-    if (section === 'chat') {
+    if (section === 'codes') {
+        view.innerHTML = `
+            <div class="admin-section-title">manage tier list share codes</div>
+            <div id="admin-codes-list" class="flat-list-container">loading...</div>
+        `;
+        loadAdminShareCodes();
+    } else if (section === 'chat') {
         view.innerHTML = `
             <div class="admin-section-title">admin chat</div>
             <div class="admin-card" style="display:flex; flex-direction:column; height: 500px; padding:0; overflow:hidden;">
@@ -83,7 +78,7 @@ window.renderAdminSection = async function (section) {
             const banned = users.filter(u => u.is_banned);
 
             const renderRow = (u) => {
-                const isTargetOwner = u.is_owner === true || u.email?.toLowerCase() === window.OWNER_EMAIL;
+                const isTargetOwner = u.is_owner === true || u.username?.toLowerCase() === 'error dev';
                 const canWarnThisUser = window.isOwner || (!isTargetOwner && !u.is_admin);
                 return `
                     <div class="admin-user-card">
@@ -131,158 +126,46 @@ window.renderAdminSection = async function (section) {
             <div id="admin-ann-list" class="flat-list-container">loading...</div>
         `;
         loadAdminAnnouncements();
-    } else if (section === 'blogs') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
-        let list = data?.data || [];
-        const authorMap = await window.resolveAuthorsMap(list.map(b => b.author_id));
+    }
+};
 
-        const visibleBlogs = list.map((b, i) => ({ ...b, originalIndex: i })).filter(b => {
-            if (window.isOwner) return true;
-            return b.author_id === currentUser?.id;
-        });
-
-        view.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div class="admin-section-title" style="margin:0; border:none; padding:0;">manage blogs</div>
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="adminEditBlog(-1)">+ new blog</button>
-            </div>
-            <div class="flat-list-container">
-                ${visibleBlogs.map((b) => `
-                    <div class="admin-card admin-card-row">
-                        <div>
-                            <div style="font-weight:bold; color:var(--accent); font-size:16px;">${b.title}</div>
-                            <div style="color:var(--fg-muted); font-size:12px; display:flex; align-items:center; flex-wrap:wrap;">id: #${b.id} | date: ${b.date} ${window.authorTagHTML(authorMap[b.author_id])}</div>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <button class="ui-btn" style="width:auto; margin:0;" onclick="adminEditBlog(${b.originalIndex})">edit</button>
-                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteEntry('blogs', ${b.originalIndex})">delete</button>
-                        </div>
-                    </div>
-                `).join('') || '<p>no blogs found.</p>'}
-            </div>
-        `;
-    } else if (section === 'projects') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
-        let tabs = data?.data?.tabs || {};
-        
-        let needsUpdate = false;
-        let pCounter = 1;
-        Object.keys(tabs).forEach(k => {
-            (tabs[k].projects || []).forEach(p => {
-                if (!p.id) {
-                    p.id = Date.now() + pCounter++;
-                    needsUpdate = true;
-                }
-            });
-        });
-        if (needsUpdate) {
-            await supabaseClient.from('site_content').update({ data: { tabs } }).eq('key', 'projects');
+async function loadAdminShareCodes() {
+    const listEl = document.getElementById('admin-codes-list');
+    if (!listEl) return;
+    try {
+        const { data, error } = await supabaseClient.from('site_content').select('*').like('key', 'tierlist_share_%');
+        if (error) throw error;
+        if (!data || !data.length) {
+            listEl.innerHTML = '<span style="color:var(--fg-muted);">no share codes found.</span>';
+            return;
         }
+        listEl.innerHTML = data.map(item => {
+            const code = item.key.replace('tierlist_share_', '');
+            const info = item.data || {};
+            const creator = info.creator_name || 'unknown / anon';
+            const title = info.name || 'untitled list';
+            const dateStr = info.created_at ? new Date(info.created_at).toLocaleString() : 'unknown date';
 
-        let html = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div class="admin-section-title" style="margin:0; border:none; padding:0;">manage projects</div>
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="adminAddProjectTab()">+ new tab</button>
-            </div>
-        `;
-
-        Object.keys(tabs).forEach(tabKey => {
-            let projs = tabs[tabKey].projects || [];
-            html += `
-                <div class="admin-card" style="margin-bottom:24px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-                        <h3 style="margin:0; color:var(--fg-main); font-weight:400;">Tab: ${tabs[tabKey].display}</h3>
-                        <div style="display:flex; gap:10px;">
-                            <button class="ui-btn" style="width:auto; margin:0;" onclick="adminAddProject('${tabKey}')">+ add project</button>
-                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteProjectTab('${tabKey}')">delete tab</button>
-                        </div>
+            return `
+                <div class="admin-card admin-card-row">
+                    <div>
+                        <div style="font-weight:bold; color:var(--accent); font-size:16px;">CODE: ${code}</div>
+                        <div style="color:var(--fg-main); font-size:13px; margin-top:4px;">Title: ${window.escapeAttr(title)}</div>
+                        <div style="color:var(--fg-muted); font-size:11px; margin-top:2px;">Creator: ${window.escapeAttr(creator)} &middot; ${dateStr}</div>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:12px;">
-                        ${projs.map((p, i) => `
-                            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border); padding-bottom:12px;">
-                                <span>${p.name} <span style="color:var(--fg-muted); font-size:11px;">#${p.id || ''}</span></span>
-                                <div style="display:flex; gap:10px;">
-                                    <button class="ui-btn" style="width:auto; margin:0; padding:4px 8px; font-size:11px;" onclick="adminEditProject('${tabKey}', ${i})">edit</button>
-                                    <button class="ui-btn" style="width:auto; margin:0; padding:4px 8px; font-size:11px; color:var(--destructive);" onclick="adminDeleteProject('${tabKey}', ${i})">delete</button>
-                                </div>
-                            </div>
-                        `).join('') || '<span style="color:var(--fg-muted);">no projects in this tab.</span>'}
-                    </div>
+                    <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteShareCode('${item.key}')">delete</button>
                 </div>
             `;
-        });
-        view.innerHTML = html;
-    } else if (section === 'downloads') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
-        let list = data?.data || [];
-
-        view.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <div class="admin-section-title" style="margin:0; border:none; padding:0;">manage downloads</div>
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="adminEditDownload(-1)">+ new download</button>
-            </div>
-            <div class="flat-list-container">
-                ${list.map((d, i) => `
-                    <div class="admin-card admin-card-row">
-                        <div>
-                            <div style="font-weight:bold; color:var(--accent); font-size:16px;">${d.name} <span style="color:var(--fg-muted); font-size:11px;">#${d.id || ''}</span></div>
-                            <div style="color:var(--fg-muted); font-size:12px;">URL: ${d.url}</div>
-                        </div>
-                        <div style="display:flex; gap:10px;">
-                            <button class="ui-btn" style="width:auto; margin:0;" onclick="adminEditDownload(${i})">edit</button>
-                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteEntry('downloads', ${i})">delete</button>
-                        </div>
-                    </div>
-                `).join('') || '<p>no downloads found.</p>'}
-            </div>
-        `;
-    } else if (section === 'games') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
-        let gData = data?.data || { favorites: [], liked: [], wanttoplay: [] };
-
-        const renderSimpleList = (arr, key) => arr.map((item, i) => `
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--border); padding:8px 0;">
-                <span>${item}</span>
-                <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:10px; color:var(--destructive);" onclick="adminDeleteSimpleGame('${key}', ${i})">✕</button>
-            </div>
-        `).join('') || '<span style="color:var(--fg-muted);">empty list.</span>';
-
-        view.innerHTML = `
-            <div class="admin-section-title">manage liked games</div>
-
-            <div class="admin-card" style="margin-bottom:24px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="font-weight:400;">favorites</h3>
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="adminAddFavGame()">+ add favorite</button>
-                </div>
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                    ${(gData.favorites || []).map((f, i) => `
-                        <div style="display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border); padding:12px; background:var(--bg-main);">
-                            <span><strong>${f.title}</strong></span>
-                            <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteFavGame(${i})">delete</button>
-                        </div>
-                    `).join('') || '<span style="color:var(--fg-muted);">no favorites.</span>'}
-                </div>
-            </div>
-
-            <div style="display:flex; gap:20px;">
-                <div class="admin-card" style="flex:1; margin-bottom:0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                        <h4 style="font-weight:400;">games i like</h4>
-                        <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="adminAddSimpleGame('liked')">+ add</button>
-                    </div>
-                    ${renderSimpleList(gData.liked, 'liked')}
-                </div>
-                <div class="admin-card" style="flex:1; margin-bottom:0;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                        <h4 style="font-weight:400;">want to play</h4>
-                        <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="adminAddSimpleGame('wanttoplay')">+ add</button>
-                    </div>
-                    ${renderSimpleList(gData.wanttoplay, 'wanttoplay')}
-                </div>
-            </div>
-        `;
+        }).join('');
+    } catch (e) {
+        listEl.innerHTML = `<span style="color:var(--destructive);">failed to load share codes: ${e.message}</span>`;
     }
+}
+
+window.adminDeleteShareCode = async function(key) {
+    if (!await window.guiConfirm("delete this share code?", "confirm deletion")) return;
+    await supabaseClient.from('site_content').delete().eq('key', key);
+    loadAdminShareCodes();
 };
 
 let adminChatList = [];
@@ -352,208 +235,6 @@ window.sendAdminChat = async function() {
     if (error || !updateData || updateData.length === 0) {
         if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Message failed to send. Database row 'admin_chat' does not exist in site_content table.", "Error");
     }
-};
-
-window.adminEditBlog = async function (idx) {
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
-    let list = data?.data || [];
-    let b = idx >= 0 ? list[idx] : { title: '', content: '' };
-
-    if (idx >= 0 && !window.isOwner && b.author_id !== currentUser?.id) {
-        guiAlert("you can only edit blogs that you posted.", "permission denied");
-        return;
-    }
-
-    const result = await window.guiForm([
-        { key: 'title', label: 'blog title', value: b.title },
-        { key: 'content', label: 'content (markdown, multi-line supported)', type: 'textarea', rows: 10, value: b.content }
-    ], idx >= 0 ? 'edit blog post' : 'new blog post');
-    if (!result || !result.title) return;
-
-    if (idx >= 0) {
-        list[idx].title = result.title;
-        list[idx].content = result.content;
-    } else {
-        const nextId = list.length > 0 ? Math.max(...list.map(x => x.id || 0)) + 1 : 1;
-        const today = new Date();
-        const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
-        list.unshift({ id: nextId, date: dateStr, title: result.title, content: result.content, author_id: currentUser?.id || null });
-    }
-    
-    const { data: updateData, error } = await supabaseClient.from('site_content').update({ data: list }).eq('key', 'blogs').select();
-    
-    if (error) {
-        guiAlert("error saving blog: " + error.message, "save failed");
-        return;
-    }
-    if (!updateData || updateData.length === 0) {
-        guiAlert("Save failed! Your account does not have permission to update 'site_content'. Please ask the owner to update the database RLS policies.", "Permission Denied");
-        return;
-    }
-    
-    renderAdminSection('blogs');
-};
-
-window.adminDeleteEntry = async function (key, idx) {
-    if (key === 'blogs') {
-        const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
-        let list = data?.data || [];
-        if (!window.isOwner && list[idx]?.author_id !== currentUser?.id) {
-            guiAlert("you can only delete blogs that you posted.", "permission denied");
-            return;
-        }
-    }
-    if (!await window.guiConfirm("delete this entry?", "confirm")) return;
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', key).single();
-    let list = data?.data || [];
-    list.splice(idx, 1);
-    await supabaseClient.from('site_content').update({ data: list }).eq('key', key);
-    renderAdminSection(key);
-};
-
-window.adminAddProjectTab = async function () {
-    const name = await window.guiPrompt("tab name:");
-    if (!name) return;
-    const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
-    let pData = data?.data || { tabs: {} };
-    if (!pData.tabs) pData.tabs = {};
-    pData.tabs[key] = { display: name, projects: [] };
-    await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
-    renderAdminSection('projects');
-};
-
-window.adminDeleteProjectTab = async function (tabKey) {
-    if (!await window.guiConfirm("delete this entire tab and its projects?", "confirm")) return;
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
-    let pData = data?.data || { tabs: {} };
-    delete pData.tabs[tabKey];
-    await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
-    renderAdminSection('projects');
-};
-
-window.adminAddProject = async function (tabKey) {
-    const result = await window.guiForm([
-        { key: 'name', label: 'project name' },
-        { key: 'description', label: 'description', type: 'textarea', rows: 4 },
-        { key: 'link', label: 'link URL', value: 'https://' }
-    ], 'new project');
-    if (!result || !result.name) return;
-
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
-    let pData = data?.data || { tabs: {} };
-    if (!pData.tabs[tabKey].projects) pData.tabs[tabKey].projects = [];
-    
-    let maxId = 0;
-    Object.values(pData.tabs).forEach(t => {
-        (t.projects || []).forEach(p => { if (p.id > maxId) maxId = p.id; });
-    });
-    
-    pData.tabs[tabKey].projects.push({ id: maxId + 1, name: result.name, description: result.description, link: result.link, author_id: currentUser?.id || null });
-    await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
-    renderAdminSection('projects');
-};
-
-window.adminEditProject = async function (tabKey, idx) {
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
-    let pData = data?.data || { tabs: {} };
-    let proj = pData.tabs[tabKey].projects[idx];
-
-    const result = await window.guiForm([
-        { key: 'name', label: 'project name', value: proj.name },
-        { key: 'description', label: 'description', type: 'textarea', rows: 4, value: proj.description },
-        { key: 'link', label: 'link URL', value: proj.link }
-    ], 'edit project');
-    if (!result) return;
-
-    proj.name = result.name;
-    proj.description = result.description;
-    proj.link = result.link;
-    if (!proj.id) {
-        let maxId = 0;
-        Object.values(pData.tabs).forEach(t => {
-            (t.projects || []).forEach(p => { if (p.id > maxId) maxId = p.id; });
-        });
-        proj.id = maxId + 1;
-    }
-    await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
-    renderAdminSection('projects');
-};
-
-window.adminDeleteProject = async function (tabKey, idx) {
-    if (!await window.guiConfirm("delete this project?", "confirm")) return;
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'projects').single();
-    let pData = data?.data || { tabs: {} };
-    pData.tabs[tabKey].projects.splice(idx, 1);
-    await supabaseClient.from('site_content').update({ data: pData }).eq('key', 'projects');
-    renderAdminSection('projects');
-};
-
-window.adminEditDownload = async function (idx) {
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'downloads').single();
-    let list = data?.data || [];
-    let d = idx >= 0 ? list[idx] : { name: '', description: '', url: 'https://' };
-
-    const result = await window.guiForm([
-        { key: 'name', label: 'download name', value: d.name },
-        { key: 'description', label: 'description', type: 'textarea', rows: 4, value: d.description },
-        { key: 'url', label: 'URL', value: d.url }
-    ], idx >= 0 ? 'edit download' : 'new download');
-    if (!result || !result.name) return;
-
-    if (idx >= 0) {
-        list[idx].name = result.name; list[idx].description = result.description; list[idx].url = result.url;
-    } else {
-        const nextId = list.length > 0 ? Math.max(...list.map(x => x.id || 0)) + 1 : 1;
-        list.push({ id: nextId, name: result.name, description: result.description, url: result.url, author_id: currentUser?.id || null });
-    }
-    await supabaseClient.from('site_content').update({ data: list }).eq('key', 'downloads');
-    renderAdminSection('downloads');
-};
-
-window.adminAddFavGame = async function () {
-    if (!window.isOwner) return;
-    const title = await window.guiPrompt("favorite game title:");
-    if (!title) return;
-    const comment = await window.guiPrompt("comment (optional):");
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
-    let gData = data?.data || { favorites: [], liked: [], wanttoplay: [] };
-    if (!gData.favorites) gData.favorites = [];
-    gData.favorites.push({ title, comment, tags: {} });
-    await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
-    renderAdminSection('games');
-};
-
-window.adminDeleteFavGame = async function (idx) {
-    if (!window.isOwner) return;
-    if (!await window.guiConfirm("delete this favorite?", "confirm")) return;
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
-    let gData = data?.data;
-    gData.favorites.splice(idx, 1);
-    await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
-    renderAdminSection('games');
-};
-
-window.adminAddSimpleGame = async function (listKey) {
-    if (!window.isOwner) return;
-    const title = await window.guiPrompt("game title:");
-    if (!title) return;
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
-    let gData = data?.data || { favorites: [], liked: [], wanttoplay: [] };
-    if (!gData[listKey]) gData[listKey] = [];
-    gData[listKey].push(title);
-    await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
-    renderAdminSection('games');
-};
-
-window.adminDeleteSimpleGame = async function (listKey, idx) {
-    if (!window.isOwner) return;
-    if (!await window.guiConfirm("delete this item?", "confirm")) return;
-    const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'games').single();
-    let gData = data?.data;
-    gData[listKey].splice(idx, 1);
-    await supabaseClient.from('site_content').update({ data: gData }).eq('key', 'games');
-    renderAdminSection('games');
 };
 
 window.adminUserAction = async (id, action) => {

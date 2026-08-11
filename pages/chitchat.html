@@ -31,19 +31,13 @@
         let assignedName = "Anonymous #0000";
 
         async function initChitChat() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            currentUser = session?.user || null;
+            const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
+            currentUser = ident.user;
+            currentProfile = ident.profile;
+            isAdminLocal = ident.isAdmin;
 
-            if (currentUser) {
-                const { data: prof } = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).single();
-                currentProfile = prof;
-                if (prof?.is_admin || currentUser.email?.toLowerCase() === '3rr0r.d3v@gmail.com') {
-                    isAdminLocal = true;
-                }
-            }
-
-            if (currentProfile && currentProfile.username) {
-                assignedName = currentProfile.username;
+            if (ident.username) {
+                assignedName = ident.username;
             } else {
                 assignedName = await getAnonName();
             }
@@ -65,6 +59,8 @@
                 }
             }).subscribe();
         }
+
+        window.onParentAuthChanged = initChitChat;
 
         async function getAnonName() {
             try {
