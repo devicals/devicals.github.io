@@ -9,8 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <style>
         .post-compose {
-            min-height: 120px;
-            max-height: 350px;
+            min-height: 110px;
             background: var(--bg-main);
             border: 1px solid var(--border);
             color: var(--fg-main);
@@ -21,24 +20,7 @@
             outline: none;
             margin-bottom: 10px;
             width: 100%;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        .post-compose:focus {
-            border-color: var(--accent);
-        }
-        .post-compose[placeholder]:empty:before {
-            content: attr(placeholder);
-            color: var(--fg-muted);
-            cursor: text;
-        }
-        .post-compose img {
-            max-width: 100%;
-            max-height: 250px;
-            display: block;
-            margin: 8px 0;
-            border: 1px solid var(--border);
+            resize: vertical;
         }
         .post-card {
             border: 1px solid var(--border);
@@ -93,11 +75,10 @@
         </div>
 
         <div id="admin-compose-box" style="display:none; border:1px solid var(--border); background:var(--bg-hover); padding:18px; margin-bottom:32px;">
-            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:lowercase;">new post</div>
-            
-            <div id="post-compose" class="post-compose" contenteditable="true" placeholder="inert funny moment..."></div>
+            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:lowercase;">new post (markdown &amp; pasted inline images supported)</div>
+            <textarea id="post-compose" class="post-compose ui-input" rows="6" placeholder="write a post using markdown... a single line break is a real line break here"></textarea>
 
-            <div id="post-canvas-container" style="display:none; margin-bottom:12px; border:1px solid var(--border); padding:12px; background:var(--bg-main);">
+            <div id="post-canvas-container" style="display:none; margin-bottom:16px; border:1px solid var(--border); padding:12px; background:var(--bg-main);">
                 <div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;">
                     <input type="color" id="post-brush-color" value="#ffffff" style="background:var(--bg-sidebar); border:1px solid var(--border); height:24px;">
                     <input type="range" id="post-brush-size" min="1" max="20" value="3">
@@ -107,9 +88,9 @@
             </div>
 
             <div style="display:flex; gap:10px; align-items:center;">
-                <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive)" onclick="showGuidelines()">guidelines</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="showGuidelinesModal()">guidelines</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="togglePostCanvas()">toggle drawing canvas</button>
-                <button class="ui-btn" style="flex:1; margin:0; color:var(--accent);" onclick="submitPost()">post</button>
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="submitPost()">post</button>
             </div>
         </div>
 
@@ -138,7 +119,6 @@
         let likeCounts = {};
         let likedByMe = {};
         let expandedComments = {};
-        let pasteHandled = false;
 
         const pCanvas = document.getElementById('post-canvas');
         const pCtx = pCanvas.getContext('2d');
@@ -230,124 +210,57 @@
             return tempCanvas.toDataURL('image/png');
         }
 
-        async function showGuidelines() {
+        async function showGuidelinesModal() {
             try {
                 const res = await fetch('../data/guidelines.md');
-                if (!res.ok) throw new Error('Could not load guidelines file.');
-                const text = await res.text();
-                const html = marked.parse(text);
+                const text = res.ok ? await res.text() : 'no guidelines available.';
                 if (window.parent && window.parent.guiAlert) {
-                    window.parent.guiAlert(html, 'posting guidelines');
+                    window.parent.guiAlert(marked.parse(text), "posting guidelines");
                 } else {
                     alert(text);
                 }
             } catch (e) {
                 if (window.parent && window.parent.guiAlert) {
-                    window.parent.guiAlert('Could not load guidelines file.', 'error');
-                } else {
-                    alert('Could not load guidelines file.');
+                    window.parent.guiAlert("failed to load guidelines.", "error");
                 }
             }
         }
 
-        function setupPasteImageListener() {
-            const box = document.getElementById('post-compose');
-            if (!box || box.dataset.pasteBound) return;
-            box.dataset.pasteBound = "true";
+        function setupSinglePasteListener() {
+            const composeBox = document.getElementById('post-compose');
+            if (!composeBox || composeBox.dataset.pasteAttached) return;
+            composeBox.dataset.pasteAttached = "true";
 
-            box.addEventListener('paste', (e) => {
+            composeBox.addEventListener('paste', function(e) {
                 const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
                 if (!items) return;
 
+                let imageItem = null;
                 for (let item of items) {
-                    if (item.type.indexOf('image') !== -1) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        const file = item.getAsFile();
-                        if (file && !pasteHandled) {
-                            pasteHandled = true;
-                            compressAndInsertImageInline(file);
-                            setTimeout(() => { pasteHandled = false; }, 300);
-                        }
+                    if (item.type && item.type.indexOf('image') === 0) {
+                        imageItem = item;
                         break;
                     }
                 }
-            }, true);
-        }
 
-        function compressAndInsertImageInline(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    const tempCanvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const maxDim = 1200;
-
-                    if (width > maxDim || height > maxDim) {
-                        if (width > height) {
-                            height = Math.round((height * maxDim) / width);
-                            width = maxDim;
-                        } else {
-                            width = Math.round((width * maxDim) / height);
-                            height = maxDim;
-                        }
-                    }
-
-                    tempCanvas.width = width;
-                    tempCanvas.height = height;
-                    const ctx = tempCanvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.85);
-
-                    const imgNode = document.createElement('img');
-                    imgNode.src = dataUrl;
-
-                    const box = document.getElementById('post-compose');
-                    const sel = window.getSelection();
-
-                    if (sel && sel.rangeCount > 0 && box.contains(sel.anchorNode)) {
-                        const range = sel.getRangeAt(0);
-                        range.deleteContents();
-                        range.insertNode(imgNode);
-                        range.setStartAfter(imgNode);
-                        range.setEndAfter(imgNode);
-                        sel.removeAllRanges();
-                        sel.addRange(range);
-                    } else {
-                        box.appendChild(imgNode);
-                    }
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function getEditableContent(container) {
-            let result = '';
-            function walk(node) {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    result += node.nodeValue;
-                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                    const tag = node.tagName.toLowerCase();
-                    if (tag === 'img') {
-                        result += `\n![image](${node.src})\n`;
-                    } else if (tag === 'br') {
-                        result += '\n';
-                    } else if (tag === 'div' || tag === 'p') {
-                        if (result.length && !result.endsWith('\n')) result += '\n';
-                        node.childNodes.forEach(walk);
-                        if (!result.endsWith('\n')) result += '\n';
-                    } else {
-                        node.childNodes.forEach(walk);
-                    }
+                if (imageItem) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const blob = imageItem.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const base64 = event.target.result;
+                        const textarea = e.target;
+                        const start = textarea.selectionStart;
+                        const end = textarea.selectionEnd;
+                        const text = textarea.value;
+                        const markdownImage = `\n![image](${base64})\n`;
+                        textarea.value = text.substring(0, start) + markdownImage + text.substring(end);
+                        textarea.selectionStart = textarea.selectionEnd = start + markdownImage.length;
+                    };
+                    reader.readAsDataURL(blob);
                 }
-            }
-            container.childNodes.forEach(walk);
-            return result.trim();
+            });
         }
 
         function getSenderName() {
@@ -402,7 +315,7 @@
             document.getElementById('admin-compose-box').style.display = isAdminLocal ? 'block' : 'none';
             document.getElementById('non-admin-note').style.display = isAdminLocal ? 'none' : 'block';
 
-            setupPasteImageListener();
+            setupSinglePasteListener();
             await loadPosts();
 
             supabaseClient.channel('posts-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, loadPosts).subscribe();
@@ -624,7 +537,7 @@
         window.submitPost = async function () {
             if (!isAdminLocal) return;
             const box = document.getElementById('post-compose');
-            let raw = getEditableContent(box);
+            let raw = box.value.trim();
             const sender = getSenderName();
 
             if (postCanvasActive) {
@@ -654,7 +567,7 @@
                 return;
             }
 
-            box.innerHTML = '';
+            box.value = '';
             clearPostCanvas();
             if (postCanvasActive) togglePostCanvas();
             await loadPosts();

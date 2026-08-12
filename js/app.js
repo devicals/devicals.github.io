@@ -130,9 +130,7 @@ window.escapeAttr = function (str) {
 
 window.guiAlert = function(msg, title = "notification") {
     document.getElementById('gui-title').textContent = title;
-    const msgBox = document.getElementById('gui-msg');
-    msgBox.innerHTML = msg;
-    msgBox.style.whiteSpace = 'normal';
+    document.getElementById('gui-msg').innerHTML = `<div class="markdown-body" style="white-space:normal;">${msg}</div>`;
     document.getElementById('gui-modal').style.display = 'flex';
 };
 
@@ -463,35 +461,19 @@ function renderAuthModal() {
 window.linkEmail = async () => {
     const email = document.getElementById('link-email-input').value.trim();
     if (!email || !email.includes('@')) return guiAlert('please enter a valid email address.', 'invalid input');
-    
-    const confirmCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const encryptedPending = await encryptEmail(email);
-    
-    await supabaseClient.from('profiles').update({ 
-        pending_email: encryptedPending, 
-        email_code: confirmCode 
-    }).eq('id', currentUser.id);
 
-    const userEnteredCode = await guiPrompt(
-        `A 6-digit confirmation code was generated for ${email}.\n\n(Verification Code: ${confirmCode})\n\nEnter the 6-digit code to confirm:`, 
-        "", 
-        "email confirmation"
-    );
-
-    if (!userEnteredCode || userEnteredCode.trim() !== confirmCode) {
-        return guiAlert("Invalid confirmation code. Email was not linked.", "verification failed");
+    const { error } = await supabaseClient.auth.updateUser({ email });
+    if (error) {
+        return guiAlert(error.message, "error sending confirmation email");
     }
 
-    await supabaseClient.from('profiles').update({ 
-        email: encryptedPending, 
-        pending_email: null, 
-        email_code: null 
-    }).eq('id', currentUser.id);
+    const encryptedPending = await encryptEmail(email);
+    await supabaseClient.from('profiles').update({ email: encryptedPending }).eq('id', currentUser.id);
 
     currentUser.email = email;
     saveCustomSession(currentUser);
     
-    guiAlert("Email confirmed and updated successfully!", "success");
+    guiAlert(`Confirmation email sent to <b>${window.escapeAttr(email)}</b>! Please check your inbox and click the confirmation link to complete verification.`, "check your email");
     renderAuthModal();
 };
 
@@ -657,7 +639,7 @@ function renderNavigation() {
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
             const currentPath = [...pathPrefix, node.name];
-            const currentPathHash = currentPath.join('/');
+            const currentPathHash = currentPath.map(p => p.replace(/\s+/g, '_')).join('/');
             const el = document.createElement('div');
 
             if (node.type === 'folder') {
@@ -701,15 +683,20 @@ function renderNavigation() {
 }
 
 function setRouteHash(rawPath) {
-    window.location.hash = rawPath.replace(/\s+/g, '_');
+    window.location.hash = (rawPath || '').split('/').map(p => p.replace(/\s+/g, '_')).join('/');
+}
+
+function findNodeByHash(hash) {
+    const cleanHash = decodeURIComponent(hash).replace(/\s+/g, '_');
+    return flatNodes.find(n => (n.path || '').replace(/\s+/g, '_') === cleanHash);
 }
 
 function highlightNav() {
-    const rawHash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0];
+    const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0].replace(/\s+/g, '_');
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
-        const path = el.getAttribute('data-path');
-        if (path && (path === rawHash || path.replace(/\s+/g, '_') === rawHash.replace(/\s+/g, '_'))) {
+        const nodePath = (el.getAttribute('data-path') || '').replace(/\s+/g, '_');
+        if (nodePath === hash) {
             el.classList.add('active');
         }
     });
@@ -736,13 +723,9 @@ async function handleRoute() {
         return;
     }
 
-    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => {
-        const cleanPart = p.replace(/_/g, ' ');
-        const subPath = arr.slice(0, i + 1).join('_');
-        return `<span class="crumb-link" onclick="setRouteHash('${subPath.replace(/'/g, "\\'")}')">${cleanPart}</span>`;
-    }).join(' > ');
+    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="setRouteHash('${arr.slice(0, i + 1).join('/')}')">${p.replace(/_/g, ' ')}</span>`).join(' > ');
 
-    const node = flatNodes.find(n => n.path.replace(/\s+/g, '_') === hash.replace(/\s+/g, '_') || n.path === hash);
+    const node = findNodeByHash(hash);
 
     if (node) {
         if (node.type === 'folder') {
@@ -753,7 +736,7 @@ async function handleRoute() {
 
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
-                    const childPath = (node.path + '/' + child.name).replace(/\s+/g, '_');
+                    const childPath = (node.path + '/' + child.name).split('/').map(s => s.replace(/\s+/g, '_')).join('/');
                     html += `
                         <a href="#${childPath}" style="padding: 16px 20px; background:var(--bg-hover); border:1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: border-color 0.2s; font-size: 15px; font-weight: bold;">
                             ${child.name}

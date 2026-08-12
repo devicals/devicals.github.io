@@ -91,6 +91,15 @@ body {
     line-height: 1.8;
 }
 
+a {
+    color: var(--accent) !important;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
 body.has-bg-canvas {
     background: transparent;
 }
@@ -101,16 +110,6 @@ body.has-bg-canvas {
 
 #bg-canvas {
     display: block;
-}
-
-a, a:visited {
-    color: var(--accent) !important;
-    text-decoration: none;
-}
-
-a:hover, a:focus {
-    color: var(--accent) !important;
-    text-decoration: underline !important;
 }
 
 .app-layout {
@@ -247,11 +246,10 @@ body.has-bg-canvas .main-content {
 .crumb-link {
     cursor: pointer;
     transition: color 0.15s;
-    color: var(--fg-muted) !important;
 }
 
 .crumb-link:hover {
-    color: var(--accent) !important;
+    color: var(--accent);
 }
 
 .workspace-frame {
@@ -298,17 +296,30 @@ body.has-bg-canvas .main-content {
 
 .markdown-body a {
     color: var(--accent) !important;
+    text-decoration: none;
+}
+
+.markdown-body a:hover {
     text-decoration: underline;
 }
 
-.markdown-body ul, .markdown-body ol {
-    margin-bottom: 1.5rem;
-    padding-left: 24px;
+.markdown-body ul {
+    list-style-type: disc !important;
+    margin-left: 20px !important;
+    margin-bottom: 1.5rem !important;
+    line-height: 1.8;
+}
+
+.markdown-body ol {
+    list-style-type: decimal !important;
+    margin-left: 20px !important;
+    margin-bottom: 1.5rem !important;
     line-height: 1.8;
 }
 
 .markdown-body li {
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.5rem !important;
+    display: list-item !important;
 }
 
 .markdown-body code {
@@ -411,11 +422,6 @@ body.has-bg-canvas .main-content {
     font-family: var(--font-ui);
 }
 
-.modal-box a {
-    color: var(--accent) !important;
-    text-decoration: underline;
-}
-
 .modal-title {
     font-size: 14px;
     font-weight: bold;
@@ -425,36 +431,6 @@ body.has-bg-canvas .main-content {
     padding-bottom: 10px;
     text-transform: lowercase;
     letter-spacing: 1px;
-}
-
-.gui-msg-box {
-    font-size: 12px;
-    margin-bottom: 16px;
-    white-space: normal !important;
-    line-height: 1.6;
-    word-break: break-word;
-}
-
-.gui-msg-box p {
-    margin-bottom: 10px;
-}
-
-.gui-msg-box p:last-child {
-    margin-bottom: 0;
-}
-
-.gui-msg-box ul, .gui-msg-box ol {
-    margin: 10px 0 14px 20px;
-    padding-left: 8px;
-}
-
-.gui-msg-box li {
-    margin-bottom: 6px;
-}
-
-.gui-msg-box a {
-    color: var(--accent) !important;
-    text-decoration: underline;
 }
 
 .ui-input {
@@ -592,7 +568,7 @@ body.has-bg-canvas .main-content {
 .flat-title {
     font-size: 18px;
     font-weight: bold;
-    color: var(--accent) !important;
+    color: var(--accent);
     text-decoration: none;
     line-height: 1.4;
 }
@@ -672,57 +648,6 @@ body.has-bg-canvas .main-content {
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-}
-
-.tier-item-cell {
-    font-size: clamp(10px, 1.05vw, 13px);
-    line-height: 1.25;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
-
-.tl-sidebar-block {
-    border: 1px solid var(--border);
-    background: var(--bg-hover);
-    padding: 16px;
-}
-
-.tl-sidebar-block-title {
-    font-size: 11px;
-    text-transform: lowercase;
-    letter-spacing: 1px;
-    color: var(--accent);
-    margin-bottom: 12px;
-    font-weight: bold;
-}
-
-.tl-saved-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--border);
-    font-size: 12px;
-}
-
-.tl-saved-item:last-child {
-    border-bottom: none;
-}
-
-.tl-saved-item-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.tl-mini-btn {
-    width: auto;
-    margin: 0;
-    padding: 4px 8px;
-    font-size: 10px;
 }
 
 .post-id-btn {
