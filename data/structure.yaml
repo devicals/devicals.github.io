@@ -203,6 +203,11 @@
   type: folder
   children:
 
+    - name: Tier List Maker
+      type: file
+      fileType: html
+      url: pages/ranking.html
+
     - name: World Clock Viewer
       type: file
       fileType: html
@@ -229,11 +234,6 @@
     - name: Archive
       type: folder
       children:
-
-      - name: Tier List Maker
-        type: file
-        fileType: html
-        url: pages/ranking.html
 
       - name: ZATO Live Tierlist
         type: file
