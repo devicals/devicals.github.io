@@ -109,29 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleRoute();
     initAuth();
     loadAnnouncementsToasts();
-    checkEmailConfirmationRedirect();
 });
-
-async function checkEmailConfirmationRedirect() {
-    const hash = window.location.hash;
-    if (hash.includes('email-confirmed') || hash.includes('type=recovery') || hash.includes('access_token')) {
-        if (currentUser && currentProfile && currentProfile.pending_email) {
-            const newEncEmail = currentProfile.pending_email;
-            await supabaseClient.from('profiles').update({ 
-                email: newEncEmail, 
-                pending_email: null 
-            }).eq('id', currentUser.id);
-
-            currentUser.email = await decryptEmail(newEncEmail);
-            currentProfile.email = currentUser.email;
-            currentProfile.pending_email = null;
-            saveCustomSession(currentUser);
-
-            guiAlert("Your email address has been verified and linked to your account!", "email confirmed");
-            window.location.hash = "Index/Home";
-        }
-    }
-}
 
 window.getDeviceId = function() {
     let devId = localStorage.getItem('device_id');
@@ -421,16 +399,15 @@ function renderAuthModal() {
             `;
         }
         
-        let emailSection = `
-            <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px; width:100%;">
-                <div style="font-size:11px; color:var(--accent); font-weight:bold; margin-bottom:8px; text-transform:lowercase;">account recovery / email</div>
-                ${currentUser.email ? `<div style="font-size:12px; color:var(--fg-muted); margin-bottom:12px;">linked: ${window.escapeAttr(currentUser.email)}</div>` : `<div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; line-height:1.4;">link an email to recover your account if you forget your password.</div>`}
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <input type="email" id="link-email-input" class="ui-input" placeholder="${currentUser.email ? 'new email address' : 'your email address'}" style="margin:0;">
-                    <button class="ui-btn" style="width:auto; margin:0; padding:10px 14px;" onclick="linkEmail()">${currentUser.email ? 'update' : 'link'}</button>
+        let emailSection = '';
+        if (currentUser.email) {
+            emailSection = `
+                <div style="margin-top:15px; border-top:1px solid var(--border); padding-top:10px; width:100%;">
+                    <div style="font-size:11px; color:var(--accent); font-weight:bold; margin-bottom:8px; text-transform:lowercase;">linked email</div>
+                    <div style="font-size:12px; color:var(--fg-muted);">${window.escapeAttr(currentUser.email)}</div>
                 </div>
-            </div>
-        `;
+            `;
+        }
 
         container.innerHTML = `
             <div class="profile-info" style="width:100%;">
@@ -458,7 +435,6 @@ function renderAuthModal() {
         } else if (authModalState === 'signup') {
             container.innerHTML = `
                 <input type="text" id="auth-username" class="ui-input" placeholder="username (required)">
-                <input type="email" id="auth-email-signup" class="ui-input" placeholder="email (optional, for recovery)">
                 <input type="password" id="auth-pass" class="ui-input" placeholder="create password" onkeydown="if(event.key==='Enter') authAction('signup')">
                 <button class="ui-btn" onclick="authAction('signup')">sign up</button>
                 <div style="display:flex; justify-content:center; margin-top:10px;">
@@ -479,29 +455,6 @@ function renderAuthModal() {
         }
     }
 }
-
-window.linkEmail = async () => {
-    const email = document.getElementById('link-email-input').value.trim();
-    if (!email || !email.includes('@')) return guiAlert('please enter a valid email address.', 'invalid input');
-
-    const encryptedEmail = await encryptEmail(email);
-    
-    await supabaseClient.from('profiles').update({ pending_email: encryptedEmail }).eq('id', currentUser.id);
-
-    const redirectUrl = window.location.origin + window.location.pathname + '#email-confirmed';
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl });
-
-    if (error) {
-        await supabaseClient.from('profiles').update({ email: encryptedEmail, pending_email: null }).eq('id', currentUser.id);
-        currentUser.email = email;
-        saveCustomSession(currentUser);
-        guiAlert(`Email linked successfully to <b>${window.escapeAttr(email)}</b>!`, "email linked");
-    } else {
-        guiAlert(`Confirmation email sent to <b>${window.escapeAttr(email)}</b> via Gmail SMTP! Please check your inbox and click the verification link.`, "check your inbox");
-    }
-
-    renderAuthModal();
-};
 
 window.authAction = async (action) => {
     try {
@@ -570,24 +523,23 @@ window.authAction = async (action) => {
 
         } else if (action === 'signup') {
             const username = document.getElementById('auth-username').value.trim();
-            const emailInput = document.getElementById('auth-email-signup').value.trim();
             const password = document.getElementById('auth-pass').value;
             
             if (!username || !password) throw new Error("username and password are required.");
-            
+            if (username.includes('@')) throw new Error("username cannot contain '@'.");
+
             const { data: existing } = await supabaseClient.from('profiles').select('id').ilike('username', username);
             if (existing && existing.length > 0) throw new Error("username is already taken.");
 
             const isOwnerAcc = username.toLowerCase() === 'error dev';
             const generatedUuid = crypto.randomUUID();
             const hashedPassword = await hashPassword(password);
-            const encryptedEmail = emailInput ? await encryptEmail(emailInput) : null;
 
             const { data, error } = await supabaseClient.from('profiles').insert({ 
                 id: generatedUuid,
                 username: username, 
                 password: hashedPassword, 
-                email: encryptedEmail,
+                email: null,
                 is_owner: isOwnerAcc,
                 is_admin: isOwnerAcc,
                 settings: {}
@@ -595,7 +547,7 @@ window.authAction = async (action) => {
 
             if (error) throw error;
 
-            data.email = emailInput || null;
+            data.email = null;
             saveCustomSession(data);
             await handleSession();
             document.getElementById('auth-modal').style.display = 'none';

@@ -11,5 +11,6 @@ Features:
 
 If you have something big or significant I'd advise you to post them in [blogs](https://devicals.github.io/#Index/Blogs) instead.
 I mean no one is stopping you from posting it here but still.
+well if i dont trust you enough to make u an admin u cant post there either
 
 (also i can remove your post if its like stupid, even if it doesnt necessarily break the rules. i mean. i make the rules.)

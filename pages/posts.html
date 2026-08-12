@@ -95,7 +95,7 @@
         </div>
 
         <div id="non-admin-note" class="admin-only-note" style="display:none;">
-            only the site admin can create new posts. feel free to like and comment on posts below!
+            you must be logged in to create posts. feel free to like and comment on posts below!
         </div>
 
         <div id="posts-list"></div>
@@ -312,8 +312,16 @@
                 assignedName = await getAnonName();
             }
 
-            document.getElementById('admin-compose-box').style.display = isAdminLocal ? 'block' : 'none';
-            document.getElementById('non-admin-note').style.display = isAdminLocal ? 'none' : 'block';
+            const composeBox = document.getElementById('admin-compose-box');
+            const nonAdminNote = document.getElementById('non-admin-note');
+
+            if (currentUser) {
+                composeBox.style.display = 'block';
+                nonAdminNote.style.display = 'none';
+            } else {
+                composeBox.style.display = 'none';
+                nonAdminNote.style.display = 'block';
+            }
 
             setupSinglePasteListener();
             await loadPosts();
@@ -355,7 +363,7 @@
             container.innerHTML = posts.map(p => {
                 const isOwnerAuthor = p.name && p.name.toLowerCase() === 'error dev';
                 const isMyPost = (p.user_id && currentUser && p.user_id === currentUser.id) || (p.name && p.name.toLowerCase() === sender.toLowerCase());
-                const canDelete = isAdminLocal && (isOwnerLocal || isMyPost);
+                const canDelete = isOwnerLocal || isMyPost;
                 
                 const badgeHTML = isOwnerAuthor
                     ? '<span class="user-tag admin" style="margin-left:8px; border-color:var(--accent); color:var(--accent);">error dev</span>'
@@ -420,7 +428,7 @@
             listEl.innerHTML = data.map(c => {
                 const isOwnerAuthor = c.name && c.name.toLowerCase() === 'error dev';
                 const isMyComment = (c.user_id && currentUser && c.user_id === currentUser.id) || (c.name && c.name.toLowerCase() === sender.toLowerCase());
-                const canDelete = isAdminLocal && (isOwnerLocal || isMyComment);
+                const canDelete = isOwnerLocal || isMyComment;
 
                 const badgeHTML = isOwnerAuthor
                     ? '<span class="user-tag admin" style="margin-left:6px; border-color:var(--accent); color:var(--accent);">error dev</span>'
@@ -470,14 +478,13 @@
         };
 
         window.deleteComment = async function (commentId, postId) {
-            if (!isAdminLocal) return;
             const sender = getSenderName();
             const targetComment = (await supabaseClient.from('post_comments').select('*').eq('id', commentId).single())?.data;
             const isMyComment = targetComment && ((targetComment.user_id && currentUser && targetComment.user_id === currentUser.id) || (targetComment.name && targetComment.name.toLowerCase() === sender.toLowerCase()));
 
             if (!isOwnerLocal && !isMyComment) {
-                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Admins cannot delete other users' comments.", "permission denied");
-                else alert("Admins cannot delete other users' comments.");
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("You can only delete your own comments.", "permission denied");
+                else alert("You can only delete your own comments.");
                 return;
             }
 
@@ -511,14 +518,13 @@
         };
 
         window.deletePost = async function (postId) {
-            if (!isAdminLocal) return;
             const sender = getSenderName();
             const targetPost = posts.find(p => String(p.id) === String(postId));
             const isMyPost = targetPost && ((targetPost.user_id && currentUser && targetPost.user_id === currentUser.id) || (targetPost.name && targetPost.name.toLowerCase() === sender.toLowerCase()));
 
             if (!isOwnerLocal && !isMyPost) {
-                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Admins cannot delete other users' posts.", "permission denied");
-                else alert("Admins cannot delete other users' posts.");
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("You can only delete your own posts.", "permission denied");
+                else alert("You can only delete your own posts.");
                 return;
             }
 
@@ -535,7 +541,12 @@
         };
 
         window.submitPost = async function () {
-            if (!isAdminLocal) return;
+            if (!currentUser) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("You must be logged in to create a post.", "login required");
+                else alert("You must be logged in to create a post.");
+                return;
+            }
+
             const box = document.getElementById('post-compose');
             let raw = box.value.trim();
             const sender = getSenderName();
@@ -549,7 +560,7 @@
 
             if (!raw) return;
 
-            let payload = { name: sender, content: raw, is_creator: true, user_id: currentUser?.id || null };
+            let payload = { name: sender, content: raw, is_creator: isAdminLocal, user_id: currentUser?.id || null };
             let { error } = await supabaseClient.from('posts').insert(payload);
 
             if (error && error.message && error.message.toLowerCase().includes('user_id')) {
