@@ -1,6 +1,6 @@
-const _sbUrl = atob("aHR0cHM6Ly93dGFzZXNtcXdwbmJ3emR5bm5hcy5zdXBhYmFzZS5jbw==");
-const _sbKey = atob("c2JfcHVibGlzaGFibGVfYXkwUHVJZVBqWndyRWdQNVhwRDVpUV9XNXdDLTVnOQ==");
-const supabaseClient = supabase.createClient(_sbUrl, _sbKey);
+const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentUser = null;
 let currentProfile = null;
@@ -152,8 +152,7 @@ window.escapeAttr = function (str) {
 
 window.guiAlert = function(msg, title = "notification") {
     document.getElementById('gui-title').textContent = title;
-    const cleanMsg = (typeof msg === 'string' && !msg.startsWith('<')) ? window.escapeAttr(msg) : msg;
-    document.getElementById('gui-msg').innerHTML = `<div class="markdown-body" style="white-space:normal;">${cleanMsg}</div>`;
+    document.getElementById('gui-msg').innerHTML = `<div class="markdown-body" style="white-space:normal;">${msg}</div>`;
     document.getElementById('gui-modal').style.display = 'flex';
 };
 
@@ -164,7 +163,7 @@ window.closeGuiModal = function() {
 window.guiConfirm = function(msg, title = "confirm action") {
     return new Promise((resolve) => {
         document.getElementById('gui-confirm-title').textContent = title;
-        document.getElementById('gui-confirm-msg').textContent = window.escapeAttr(msg);
+        document.getElementById('gui-confirm-msg').textContent = msg;
         const modal = document.getElementById('gui-confirm-modal');
         modal.style.display = 'flex';
 
@@ -179,7 +178,7 @@ window.guiConfirm = function(msg, title = "confirm action") {
 window.guiPrompt = function(msg, defaultValue = "", title = "input required") {
     return new Promise((resolve) => {
         document.getElementById('gui-prompt-title').textContent = title;
-        document.getElementById('gui-prompt-msg').textContent = window.escapeAttr(msg);
+        document.getElementById('gui-prompt-msg').textContent = msg;
         const input = document.getElementById('gui-prompt-input');
         input.value = defaultValue;
         const modal = document.getElementById('gui-prompt-modal');
@@ -435,8 +434,8 @@ function renderAuthModal() {
 
         container.innerHTML = `
             <div class="profile-info" style="width:100%;">
-                <div class="profile-name">${window.escapeAttr(currentUser.username || 'authenticated user')}</div>
-                <div class="profile-id">ID: ${window.escapeAttr(currentUser.id)}</div>
+                <div class="profile-name">${currentUser.username || 'authenticated user'}</div>
+                <div class="profile-id">ID: ${currentUser.id}</div>
                 ${ownerBadge}
             </div>
             <input type="text" id="prof-name" class="ui-input" placeholder="set display name" value="${window.escapeAttr(currentUser.username)}">
@@ -625,7 +624,7 @@ window.authAction = async (action) => {
             setAuthModalState('login');
         }
     } catch (e) {
-        guiAlert(window.escapeAttr(e.message), "auth error");
+        guiAlert(e.message, "auth error");
     }
 };
 
@@ -639,7 +638,7 @@ window.updateProfile = async () => {
         renderAuthModal();
         guiAlert("display name updated.", "Success");
     } catch (e) {
-        guiAlert(window.escapeAttr(e.message), "Error");
+        guiAlert(e.message, "Error");
     }
 };
 
@@ -666,12 +665,12 @@ function renderNavigation() {
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
             const currentPath = [...pathPrefix, node.name];
-            const currentPathHash = currentPath.join('/');
+            const currentPathHash = currentPath.map(p => p.replace(/\s+/g, '_')).join('/');
             const el = document.createElement('div');
 
             if (node.type === 'folder') {
                 const isExp = expandedFolders.includes(currentPathHash);
-                el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> <span style="font-weight:bold;">${window.escapeAttr(node.name)}</span></div>`;
+                el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> <span style="font-weight:bold;">${node.name}</span></div>`;
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = `nav-children ${isExp ? 'expanded' : ''}`;
 
@@ -694,7 +693,7 @@ function renderNavigation() {
                 buildTree(node.children || [], childrenContainer, currentPath);
             } else {
                 el.className = 'nav-item';
-                el.innerHTML = `<span style="width:14px"></span>${window.escapeAttr(node.name)}`;
+                el.innerHTML = `<span style="width:14px"></span>${node.name}`;
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
                     setRouteHash(currentPathHash);
@@ -710,19 +709,19 @@ function renderNavigation() {
 }
 
 function setRouteHash(rawPath) {
-    window.location.hash = rawPath;
+    window.location.hash = (rawPath || '').split('/').map(p => p.replace(/\s+/g, '_')).join('/');
 }
 
 function findNodeByHash(hash) {
-    const cleanHash = decodeURIComponent(hash);
-    return flatNodes.find(n => n.path === cleanHash);
+    const cleanHash = decodeURIComponent(hash).replace(/\s+/g, '_');
+    return flatNodes.find(n => (n.path || '').replace(/\s+/g, '_') === cleanHash);
 }
 
 function highlightNav() {
-    const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0];
+    const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0].replace(/\s+/g, '_');
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
-        const nodePath = el.getAttribute('data-path');
+        const nodePath = (el.getAttribute('data-path') || '').replace(/\s+/g, '_');
         if (nodePath === hash) {
             el.classList.add('active');
         }
@@ -734,7 +733,11 @@ async function handleRoute() {
     if (!rawHash) { window.location.hash = "Index/Home"; return; }
 
     let parts = rawHash.split('?');
-    let hash = parts[0];
+    let hash = parts[0].replace(/\s+/g, '_');
+
+    if (window.location.hash.includes('%20') || rawHash.includes(' ')) {
+        window.history.replaceState(null, null, '#' + hash + (parts[1] ? '?' + parts[1] : ''));
+    }
 
     highlightNav();
 
@@ -750,7 +753,7 @@ async function handleRoute() {
         return;
     }
 
-    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="setRouteHash('${arr.slice(0, i + 1).join('/')}')">${window.escapeAttr(p)}</span>`).join(' > ');
+    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="setRouteHash('${arr.slice(0, i + 1).join('/')}')">${p.replace(/_/g, ' ')}</span>`).join(' > ');
 
     const node = findNodeByHash(hash);
 
@@ -759,14 +762,14 @@ async function handleRoute() {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
 
-            let html = `<h1>${window.escapeAttr(node.name)}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">folder contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
+            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">folder contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
 
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
-                    const childPath = node.path + '/' + child.name;
+                    const childPath = (node.path + '/' + child.name).split('/').map(s => s.replace(/\s+/g, '_')).join('/');
                     html += `
                         <a href="#${childPath}" style="padding: 16px 20px; background:var(--bg-hover); border:1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: border-color 0.2s; font-size: 15px; font-weight: bold;">
-                            ${window.escapeAttr(child.name)}
+                            ${child.name}
                         </a>
                     `;
                 });
