@@ -15,6 +15,39 @@ window.OWNER_EMAIL = '3rr0r.d3v@gmail.com';
 
 marked.use({ breaks: true, gfm: true });
 
+async function hashPassword(plainText) {
+    if (!plainText) return '';
+    const msgUint8 = new TextEncoder().encode(plainText + "_devicals_salt_2026");
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function encryptEmail(email) {
+    if (!email) return null;
+    const text = email.trim().toLowerCase();
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+        result += String.fromCharCode(text.charCodeAt(i) ^ 42);
+    }
+    return 'enc_' + btoa(result);
+}
+
+async function decryptEmail(enc) {
+    if (!enc) return null;
+    if (!enc.startsWith('enc_')) return enc;
+    try {
+        const raw = atob(enc.replace('enc_', ''));
+        let result = '';
+        for (let i = 0; i < raw.length; i++) {
+            result += String.fromCharCode(raw.charCodeAt(i) ^ 42);
+        }
+        return result;
+    } catch(e) {
+        return enc;
+    }
+}
+
 function initSynchronousUser() {
     try {
         const sessionStr = localStorage.getItem('custom_auth_session');
@@ -296,6 +329,7 @@ async function initAuth() {
             const parsed = JSON.parse(sessionStr);
             const { data } = await supabaseClient.from('profiles').select('*').eq('id', parsed.id).single();
             if (data) {
+                if (data.email) data.email = await decryptEmail(data.email);
                 saveCustomSession(data);
                 await handleSession();
             } else {
@@ -428,11 +462,34 @@ window.linkEmail = async () => {
     const email = document.getElementById('link-email-input').value.trim();
     if (!email || !email.includes('@')) return guiAlert('please enter a valid email address.', 'invalid input');
     
-    await supabaseClient.from('profiles').update({ email }).eq('id', currentUser.id);
+    const confirmCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const encryptedPending = await encryptEmail(email);
+    
+    await supabaseClient.from('profiles').update({ 
+        pending_email: encryptedPending, 
+        email_code: confirmCode 
+    }).eq('id', currentUser.id);
+
+    const userEnteredCode = await guiPrompt(
+        `A 6-digit confirmation code was generated for ${email}.\n\n(Verification Code: ${confirmCode})\n\nEnter the 6-digit code to confirm:`, 
+        "", 
+        "email confirmation"
+    );
+
+    if (!userEnteredCode || userEnteredCode.trim() !== confirmCode) {
+        return guiAlert("Invalid confirmation code. Email was not linked.", "verification failed");
+    }
+
+    await supabaseClient.from('profiles').update({ 
+        email: encryptedPending, 
+        pending_email: null, 
+        email_code: null 
+    }).eq('id', currentUser.id);
+
     currentUser.email = email;
     saveCustomSession(currentUser);
     
-    guiAlert("email updated! you can now use this email to recover your password.", "success");
+    guiAlert("Email confirmed and updated successfully!", "success");
     renderAuthModal();
 };
 
@@ -443,24 +500,60 @@ window.authAction = async (action) => {
             const password = document.getElementById('auth-pass').value;
             if (!identifier || !password) throw new Error("please fill all fields.");
 
+            const hashedPassword = await hashPassword(password);
+            const encIdentifier = await encryptEmail(identifier);
+
             let { data, error } = await supabaseClient.from('profiles')
                 .select('*')
                 .ilike('username', identifier)
-                .eq('password', password)
+                .eq('password', hashedPassword)
                 .maybeSingle();
 
             if (!data) {
                 const res = await supabaseClient.from('profiles')
                     .select('*')
-                    .ilike('email', identifier)
-                    .eq('password', password)
+                    .eq('email', encIdentifier)
+                    .eq('password', hashedPassword)
                     .maybeSingle();
                 data = res.data;
                 error = res.error;
             }
 
+            let isLegacy = false;
+            if (!data) {
+                let legacyRes = await supabaseClient.from('profiles')
+                    .select('*')
+                    .ilike('username', identifier)
+                    .eq('password', password)
+                    .maybeSingle();
+
+                if (!legacyRes.data) {
+                    legacyRes = await supabaseClient.from('profiles')
+                        .select('*')
+                        .ilike('email', identifier)
+                        .eq('password', password)
+                        .maybeSingle();
+                }
+
+                if (legacyRes.data) {
+                    data = legacyRes.data;
+                    isLegacy = true;
+                }
+            }
+
             if (error || !data) throw new Error("invalid username/email or password.");
-            
+
+            if (isLegacy) {
+                const newEncEmail = data.email ? await encryptEmail(data.email) : null;
+                await supabaseClient.from('profiles').update({ 
+                    password: hashedPassword,
+                    email: newEncEmail
+                }).eq('id', data.id);
+                data.password = hashedPassword;
+                data.email = newEncEmail;
+            }
+
+            data.email = await decryptEmail(data.email);
             saveCustomSession(data);
             await handleSession();
             document.getElementById('auth-modal').style.display = 'none';
@@ -477,12 +570,14 @@ window.authAction = async (action) => {
 
             const isOwnerAcc = username.toLowerCase() === 'error dev';
             const generatedUuid = crypto.randomUUID();
+            const hashedPassword = await hashPassword(password);
+            const encryptedEmail = emailInput ? await encryptEmail(emailInput) : null;
 
             const { data, error } = await supabaseClient.from('profiles').insert({ 
                 id: generatedUuid,
                 username: username, 
-                password: password, 
-                email: emailInput || null,
+                password: hashedPassword, 
+                email: encryptedEmail,
                 is_owner: isOwnerAcc,
                 is_admin: isOwnerAcc,
                 settings: {}
@@ -490,6 +585,7 @@ window.authAction = async (action) => {
 
             if (error) throw error;
 
+            data.email = emailInput || null;
             saveCustomSession(data);
             await handleSession();
             document.getElementById('auth-modal').style.display = 'none';
@@ -502,15 +598,18 @@ window.authAction = async (action) => {
             
             if (!username || !email || !newPass) throw new Error("please fill all fields.");
 
+            const encEmail = await encryptEmail(email);
+            const newHashedPass = await hashPassword(newPass);
+
             const { data, error } = await supabaseClient.from('profiles')
                 .select('id')
                 .ilike('username', username)
-                .ilike('email', email)
+                .eq('email', encEmail)
                 .single();
 
             if (error || !data) throw new Error("no account found matching that username and email.");
 
-            await supabaseClient.from('profiles').update({ password: newPass }).eq('id', data.id);
+            await supabaseClient.from('profiles').update({ password: newHashedPass }).eq('id', data.id);
             guiAlert("password reset successfully. you may now log in.", "success");
             setAuthModalState('login');
         }

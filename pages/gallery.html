@@ -59,6 +59,7 @@
 
         let galleryItems = [];
         let isAdminLocal = false;
+        let isOwnerLocal = false;
         let currentUser = null;
         let currentProfile = null;
 
@@ -66,6 +67,15 @@
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
         let canvasActive = false;
+
+        function getSenderName() {
+            if (window.parent && window.parent.getUserIdentity) {
+                const ident = window.parent.getUserIdentity();
+                if (ident && ident.username) return ident.username;
+            }
+            if (currentUser && currentUser.username) return currentUser.username;
+            return 'Anonymous';
+        }
 
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -113,6 +123,7 @@
             currentUser = ident.user;
             currentProfile = ident.profile;
             isAdminLocal = ident.isAdmin;
+            isOwnerLocal = ident.isOwner;
 
             await setupNameField();
 
@@ -135,12 +146,13 @@
 
         async function setupNameField() {
             const nameInput = document.getElementById('gal-name');
+            const sender = getSenderName();
             if (isAdminLocal) {
                 nameInput.removeAttribute('readonly');
-                nameInput.value = currentProfile?.username || 'Error Dev';
-            } else if (currentProfile?.username) {
+                nameInput.value = sender;
+            } else if (sender !== 'Anonymous') {
                 nameInput.setAttribute('readonly', 'readonly');
-                nameInput.value = currentProfile.username;
+                nameInput.value = sender;
             } else {
                 nameInput.setAttribute('readonly', 'readonly');
                 nameInput.value = await getAnonName();
@@ -161,18 +173,35 @@
 
         function renderGallery() {
             const container = document.getElementById('gallery-container');
-            container.innerHTML = galleryItems.map(item => `
-                <div class="gallery-item">
-                    ${isAdminLocal ? `<button class="ui-btn" style="position:absolute; top:0; right:0; width:auto; color:var(--destructive);" onclick="deleteGalleryItem(${item.id})">Delete</button>` : ''}
-                    <img src="${item.drawing || (item.message.startsWith('http') || item.message.startsWith('data:') ? item.message : '')}" alt="Artwork" loading="lazy">
-                    <div style="font-weight:bold; color:var(--accent); font-size:18px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
-                    <div style="font-size:12px; color:var(--fg-muted);">By ${item.name || 'Anonymous'} | ${new Date(item.created_at).toLocaleString()}</div>
-                </div>
-            `).join('');
+            const sender = getSenderName();
+
+            container.innerHTML = galleryItems.map(item => {
+                const isMyArt = (item.user_id && currentUser && item.user_id === currentUser.id) || (item.name && item.name.toLowerCase() === sender.toLowerCase());
+                const canDelete = isAdminLocal && (isOwnerLocal || isMyArt);
+
+                return `
+                    <div class="gallery-item">
+                        ${canDelete ? `<button class="ui-btn" style="position:absolute; top:0; right:0; width:auto; color:var(--destructive);" onclick="deleteGalleryItem(${item.id})">Delete</button>` : ''}
+                        <img src="${item.drawing || (item.message.startsWith('http') || item.message.startsWith('data:') ? item.message : '')}" alt="Artwork" loading="lazy">
+                        <div style="font-weight:bold; color:var(--accent); font-size:18px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
+                        <div style="font-size:12px; color:var(--fg-muted);">By ${item.name || 'Anonymous'} | ${new Date(item.created_at).toLocaleString()}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         window.deleteGalleryItem = async (id) => {
             if (!isAdminLocal) return;
+            const sender = getSenderName();
+            const targetItem = galleryItems.find(i => String(i.id) === String(id));
+            const isMyArt = targetItem && ((targetItem.user_id && currentUser && targetItem.user_id === currentUser.id) || (targetItem.name && targetItem.name.toLowerCase() === sender.toLowerCase()));
+
+            if (!isOwnerLocal && !isMyArt) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Admins cannot delete other users' artwork.", "permission denied");
+                else alert("Admins cannot delete other users' artwork.");
+                return;
+            }
+
             const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("Delete this gallery item?") : confirm("Delete this gallery item?");
             if (ok) {
                 await supabaseClient.from('guestbook').delete().eq('id', id);
@@ -180,7 +209,8 @@
         };
 
         window.postGallery = async () => {
-            const name = document.getElementById('gal-name').value.trim() || 'Anonymous';
+            const sender = getSenderName();
+            const name = document.getElementById('gal-name').value.trim() || sender;
             const title = document.getElementById('gal-title').value.trim() || 'Untitled';
             const url = document.getElementById('gal-url').value.trim();
             const fileInput = document.getElementById('gal-file');
@@ -191,7 +221,7 @@
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     drawingData = e.target.result;
-                    await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
+                    await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData, user_id: currentUser?.id || null });
                     finishPost();
                 };
                 reader.readAsDataURL(fileInput.files[0]);
@@ -205,7 +235,7 @@
                 return;
             }
 
-            await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData });
+            await supabaseClient.from('guestbook').insert({ name, message: title, drawing: drawingData, user_id: currentUser?.id || null });
             finishPost();
         };
 

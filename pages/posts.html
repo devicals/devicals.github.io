@@ -77,6 +77,20 @@
         <div id="admin-compose-box" style="display:none; border:1px solid var(--border); background:var(--bg-hover); padding:18px; margin-bottom:32px;">
             <div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:lowercase;">new post (markdown supported)</div>
             <textarea id="post-compose" class="post-compose ui-input" rows="6" placeholder="write a post using markdown... a single line break is a real line break here"></textarea>
+            
+            <div style="margin-bottom:12px;">
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="togglePostCanvas()">toggle drawing canvas</button>
+            </div>
+
+            <div id="post-canvas-container" style="display:none; margin-bottom:16px; border:1px solid var(--border); padding:12px; background:var(--bg-main);">
+                <div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;">
+                    <input type="color" id="post-brush-color" value="#ffffff" style="background:var(--bg-sidebar); border:1px solid var(--border); height:24px;">
+                    <input type="range" id="post-brush-size" min="1" max="20" value="3">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="clearPostCanvas()">clear drawing</button>
+                </div>
+                <canvas id="post-canvas" style="background:#1c1b18; border:1px solid var(--border); width:100%; height:250px; cursor:crosshair;"></canvas>
+            </div>
+
             <button class="ui-btn" onclick="submitPost()">post</button>
         </div>
 
@@ -99,11 +113,111 @@
         let currentUser = null;
         let currentProfile = null;
         let isAdminLocal = false;
+        let isOwnerLocal = false;
         let assignedName = "Anonymous #0000";
         let posts = [];
         let likeCounts = {};
         let likedByMe = {};
         let expandedComments = {};
+
+        const pCanvas = document.getElementById('post-canvas');
+        const pCtx = pCanvas.getContext('2d');
+        let isDrawing = false;
+        let postCanvasActive = false;
+
+        function resizePostCanvas() {
+            const rect = pCanvas.parentElement.getBoundingClientRect();
+            pCanvas.width = rect.width - 26;
+            pCanvas.height = 250;
+            pCtx.lineCap = 'round';
+            pCtx.lineJoin = 'round';
+            clearPostCanvas();
+        }
+
+        function clearPostCanvas() {
+            pCtx.fillStyle = '#1c1b18';
+            pCtx.fillRect(0, 0, pCanvas.width, pCanvas.height);
+        }
+
+        pCanvas.addEventListener('mousedown', e => { isDrawing = true; pCtx.beginPath(); pCtx.moveTo(e.offsetX, e.offsetY); });
+        pCanvas.addEventListener('mousemove', e => {
+            if (!isDrawing) return;
+            pCtx.lineTo(e.offsetX, e.offsetY);
+            pCtx.strokeStyle = document.getElementById('post-brush-color').value;
+            pCtx.lineWidth = document.getElementById('post-brush-size').value;
+            pCtx.stroke();
+        });
+        window.addEventListener('mouseup', () => isDrawing = false);
+
+        function togglePostCanvas() {
+            const container = document.getElementById('post-canvas-container');
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                postCanvasActive = true;
+                setTimeout(resizePostCanvas, 50);
+            } else {
+                container.style.display = 'none';
+                postCanvasActive = false;
+            }
+        }
+
+        function cropPostCanvas(sourceCanvas, padding = 15) {
+            const ctx = sourceCanvas.getContext('2d');
+            const w = sourceCanvas.width;
+            const h = sourceCanvas.height;
+            const imgData = ctx.getImageData(0, 0, w, h);
+            const data = imgData.data;
+
+            let minX = w, minY = h, maxX = 0, maxY = 0;
+            let hasDrawing = false;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+
+                    if (Math.abs(r - 28) > 10 || Math.abs(g - 27) > 10 || Math.abs(b - 24) > 10) {
+                        hasDrawing = true;
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+
+            if (!hasDrawing) return null;
+
+            minX = Math.max(0, minX - padding);
+            minY = Math.max(0, minY - padding);
+            maxX = Math.min(w, maxX + padding);
+            maxY = Math.min(h, maxY + padding);
+
+            const cropW = maxX - minX;
+            const cropH = maxY - minY;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = cropW;
+            tempCanvas.height = cropH;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.fillStyle = '#1c1b18';
+            tempCtx.fillRect(0, 0, cropW, cropH);
+            tempCtx.drawImage(sourceCanvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+            return tempCanvas.toDataURL('image/png');
+        }
+
+        function getSenderName() {
+            if (window.parent && window.parent.getUserIdentity) {
+                const ident = window.parent.getUserIdentity();
+                if (ident && ident.username) return ident.username;
+            }
+            if (currentUser && currentUser.username) return currentUser.username;
+            return assignedName;
+        }
 
         function escapeHTML(str) {
             return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -137,6 +251,7 @@
             currentUser = ident.user;
             currentProfile = ident.profile;
             isAdminLocal = ident.isAdmin;
+            isOwnerLocal = ident.isOwner;
 
             if (ident.username) {
                 assignedName = ident.username;
@@ -158,7 +273,7 @@
         async function loadPosts() {
             const { data, error } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
             if (error) {
-                document.getElementById('posts-list').innerHTML = `<p style="color:var(--destructive); font-size:13px;">Could not load posts. Make sure the 'posts', 'post_likes', and 'post_comments' tables exist in Supabase.</p>`;
+                document.getElementById('posts-list').innerHTML = `<p style="color:var(--destructive); font-size:13px;">Could not load posts: ${escapeHTML(error.message)}</p>`;
                 return;
             }
             posts = data || [];
@@ -181,8 +296,13 @@
                 return;
             }
 
+            const sender = getSenderName();
+
             container.innerHTML = posts.map(p => {
                 const isOwnerAuthor = p.name && p.name.toLowerCase() === 'error dev';
+                const isMyPost = (p.user_id && currentUser && p.user_id === currentUser.id) || (p.name && p.name.toLowerCase() === sender.toLowerCase());
+                const canDelete = isAdminLocal && (isOwnerLocal || isMyPost);
+                
                 const badgeHTML = isOwnerAuthor
                     ? '<span class="user-tag admin" style="margin-left:8px; border-color:var(--accent); color:var(--accent);">error dev</span>'
                     : (p.is_creator ? '<span class="user-tag admin" style="margin-left:8px;">admin</span>' : '');
@@ -197,7 +317,7 @@
                             </div>
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <button class="post-id-btn" onclick="copyPostLink('${p.id}')">ID: #${p.id}</button>
-                                ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost('${p.id}')">Delete</button>` : ''}
+                                ${canDelete ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost('${p.id}')">Delete</button>` : ''}
                             </div>
                         </div>
                         <div class="post-body markdown-body">${renderMarkdown(p.content || '')}</div>
@@ -240,8 +360,14 @@
                 listEl.innerHTML = '<span style="color:var(--fg-muted); font-size:12px;">no comments yet.</span>';
                 return;
             }
+
+            const sender = getSenderName();
+
             listEl.innerHTML = data.map(c => {
                 const isOwnerAuthor = c.name && c.name.toLowerCase() === 'error dev';
+                const isMyComment = (c.user_id && currentUser && c.user_id === currentUser.id) || (c.name && c.name.toLowerCase() === sender.toLowerCase());
+                const canDelete = isAdminLocal && (isOwnerLocal || isMyComment);
+
                 const badgeHTML = isOwnerAuthor
                     ? '<span class="user-tag admin" style="margin-left:6px; border-color:var(--accent); color:var(--accent);">error dev</span>'
                     : (c.is_creator ? '<span class="user-tag admin" style="margin-left:6px;">admin</span>' : '');
@@ -253,7 +379,7 @@
                                 <strong style="color:var(--accent);">${escapeHTML(c.name || 'Anonymous')}</strong>
                                 ${badgeHTML}
                             </div>
-                            ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 6px; font-size:10px;" onclick="deleteComment('${c.id}', '${postId}')">✕</button>` : ''}
+                            ${canDelete ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 6px; font-size:10px;" onclick="deleteComment('${c.id}', '${postId}')">✕</button>` : ''}
                         </div>
                         <div style="margin-top:6px;">${escapeHTML(c.content)}</div>
                     </div>
@@ -265,19 +391,48 @@
             const input = document.getElementById(`comment-input-${postId}`);
             const content = input.value.trim();
             if (!content) return;
-            await supabaseClient.from('post_comments').insert({ post_id: postId, name: assignedName, content, is_creator: isAdminLocal });
+            const sender = getSenderName();
+
+            let payload = { post_id: postId, name: sender, content, is_creator: isAdminLocal, user_id: currentUser?.id || null };
+            let { error } = await supabaseClient.from('post_comments').insert(payload);
+
+            if (error && error.message && error.message.toLowerCase().includes('user_id')) {
+                delete payload.user_id;
+                const fallback = await supabaseClient.from('post_comments').insert(payload);
+                error = fallback.error;
+            }
+
+            if (error) {
+                if (window.parent && window.parent.guiAlert) {
+                    window.parent.guiAlert("Error commenting: " + error.message, "comment failed");
+                } else {
+                    alert("Error commenting: " + error.message);
+                }
+                return;
+            }
+
             input.value = '';
             await loadComments(postId);
         };
 
         window.deleteComment = async function (commentId, postId) {
             if (!isAdminLocal) return;
+            const sender = getSenderName();
+            const targetComment = (await supabaseClient.from('post_comments').select('*').eq('id', commentId).single())?.data;
+            const isMyComment = targetComment && ((targetComment.user_id && currentUser && targetComment.user_id === currentUser.id) || (targetComment.name && targetComment.name.toLowerCase() === sender.toLowerCase()));
+
+            if (!isOwnerLocal && !isMyComment) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Admins cannot delete other users' comments.", "permission denied");
+                else alert("Admins cannot delete other users' comments.");
+                return;
+            }
+
             const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("delete this comment?") : confirm("delete this comment?");
             if (!ok) return;
             
             const { error } = await supabaseClient.from('post_comments').delete().eq('id', commentId);
             if (error) {
-                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to delete comment: " + error.message + " Ensure you have run the RLS SQL to allow comment deletion.", "Error");
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to delete comment: " + error.message, "Error");
                 else alert("Failed to delete: " + error.message);
                 return;
             }
@@ -303,11 +458,22 @@
 
         window.deletePost = async function (postId) {
             if (!isAdminLocal) return;
+            const sender = getSenderName();
+            const targetPost = posts.find(p => String(p.id) === String(postId));
+            const isMyPost = targetPost && ((targetPost.user_id && currentUser && targetPost.user_id === currentUser.id) || (targetPost.name && targetPost.name.toLowerCase() === sender.toLowerCase()));
+
+            if (!isOwnerLocal && !isMyPost) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Admins cannot delete other users' posts.", "permission denied");
+                else alert("Admins cannot delete other users' posts.");
+                return;
+            }
+
             const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("delete this post?") : confirm("delete this post?");
             if (!ok) return;
+
             const { error } = await supabaseClient.from('posts').delete().eq('id', postId);
             if (error) {
-                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to delete post: " + error.message + " Please check that your Supabase Row-Level Security allows admins to delete posts.", "Error");
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to delete post: " + error.message, "Error");
                 else alert("Failed to delete: " + error.message);
                 return;
             }
@@ -317,10 +483,39 @@
         window.submitPost = async function () {
             if (!isAdminLocal) return;
             const box = document.getElementById('post-compose');
-            const raw = box.value.trim();
+            let raw = box.value.trim();
+            const sender = getSenderName();
+
+            if (postCanvasActive) {
+                const croppedDataUrl = cropPostCanvas(pCanvas);
+                if (croppedDataUrl) {
+                    raw = (raw ? raw + "\n\n" : "") + `![drawing](${croppedDataUrl})`;
+                }
+            }
+
             if (!raw) return;
-            await supabaseClient.from('posts').insert({ name: assignedName, content: raw, is_creator: true });
+
+            let payload = { name: sender, content: raw, is_creator: true, user_id: currentUser?.id || null };
+            let { error } = await supabaseClient.from('posts').insert(payload);
+
+            if (error && error.message && error.message.toLowerCase().includes('user_id')) {
+                delete payload.user_id;
+                const fallback = await supabaseClient.from('posts').insert(payload);
+                error = fallback.error;
+            }
+
+            if (error) {
+                if (window.parent && window.parent.guiAlert) {
+                    window.parent.guiAlert("Error posting: " + error.message, "post failed");
+                } else {
+                    alert("Error posting: " + error.message);
+                }
+                return;
+            }
+
             box.value = '';
+            clearPostCanvas();
+            if (postCanvasActive) togglePostCanvas();
             await loadPosts();
         };
 

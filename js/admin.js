@@ -145,13 +145,15 @@ async function loadAdminShareCodes() {
             const creator = info.creator_name || 'unknown / anon';
             const title = info.name || 'untitled list';
             const dateStr = info.created_at ? new Date(info.created_at).toLocaleString() : 'unknown date';
+            const expStr = info.expires_at ? new Date(info.expires_at).toLocaleDateString() : 'never';
+            const usesStr = info.max_uses ? `${info.current_uses || 0}/${info.max_uses}` : 'unlimited';
 
             return `
                 <div class="admin-card admin-card-row">
                     <div>
                         <div style="font-weight:bold; color:var(--accent); font-size:16px;">CODE: ${code}</div>
                         <div style="color:var(--fg-main); font-size:13px; margin-top:4px;">Title: ${window.escapeAttr(title)}</div>
-                        <div style="color:var(--fg-muted); font-size:11px; margin-top:2px;">Creator: ${window.escapeAttr(creator)} &middot; ${dateStr}</div>
+                        <div style="color:var(--fg-muted); font-size:11px; margin-top:2px;">Creator: ${window.escapeAttr(creator)} &middot; Expires: ${expStr} &middot; Uses: ${usesStr} &middot; ${dateStr}</div>
                     </div>
                     <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteShareCode('${item.key}')">delete</button>
                 </div>

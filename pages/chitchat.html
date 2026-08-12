@@ -26,15 +26,26 @@
 
         let chatMessages = [];
         let isAdminLocal = false;
+        let isOwnerLocal = false;
         let currentUser = null;
         let currentProfile = null;
         let assignedName = "Anonymous #0000";
+
+        function getSenderName() {
+            if (window.parent && window.parent.getUserIdentity) {
+                const ident = window.parent.getUserIdentity();
+                if (ident && ident.username) return ident.username;
+            }
+            if (currentUser && currentUser.username) return currentUser.username;
+            return assignedName;
+        }
 
         async function initChitChat() {
             const ident = window.parent && window.parent.getUserIdentity ? window.parent.getUserIdentity() : { user: null, isOwner: false, isAdmin: false };
             currentUser = ident.user;
             currentProfile = ident.profile;
             isAdminLocal = ident.isAdmin;
+            isOwnerLocal = ident.isOwner;
 
             if (ident.username) {
                 assignedName = ident.username;
@@ -43,7 +54,7 @@
             }
 
             const nameInput = document.getElementById('chat-name');
-            nameInput.value = assignedName;
+            nameInput.value = getSenderName();
 
             const { data } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: true });
             if (data) {
@@ -76,8 +87,13 @@
 
         function renderChat() {
             const container = document.getElementById('messages-container');
+            const sender = getSenderName();
+
             container.innerHTML = chatMessages.filter(m => !m.drawing && m.message).map(m => {
                 const isOwnerAuthor = m.name && m.name.toLowerCase() === 'error dev';
+                const isMyMessage = (m.user_id && currentUser && m.user_id === currentUser.id) || (m.name && m.name.toLowerCase() === sender.toLowerCase());
+                const canDelete = isAdminLocal && (isOwnerLocal || isMyMessage);
+
                 const badgeHTML = isOwnerAuthor
                     ? '<span style="background:var(--accent); color:var(--bg-main); padding:2px 6px; font-size:9px; margin-left:6px; font-weight:bold; letter-spacing: 1px;">ERROR DEV</span>'
                     : (m.is_creator ? '<span style="background:var(--fg-muted); color:var(--bg-main); padding:2px 6px; font-size:9px; margin-left:6px; font-weight:bold; letter-spacing: 1px;">ADMIN</span>' : '');
@@ -94,7 +110,7 @@
                             </div>
                             <div style="font-size:13px; line-height:1.6; color:var(--fg-main);">${escapeHTML(m.message || '')}</div>
                         </div>
-                        ${isAdminLocal ? `<button class="ui-btn" style="width:auto; margin:0 0 0 16px; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deleteMessage('${m.id}')">Delete</button>` : ''}
+                        ${canDelete ? `<button class="ui-btn" style="width:auto; margin:0 0 0 16px; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deleteMessage('${m.id}')">Delete</button>` : ''}
                     </div>
                 `;
             }).join('');
@@ -106,8 +122,9 @@
         window.sendChatMessage = async () => {
             const message = document.getElementById('chat-msg').value.trim();
             if (!message) return;
+            const sender = getSenderName();
 
-            await supabaseClient.from('guestbook').insert({ name: assignedName, message, is_creator: isAdminLocal });
+            await supabaseClient.from('guestbook').insert({ name: sender, message, is_creator: isAdminLocal, user_id: currentUser?.id || null });
             document.getElementById('chat-msg').value = '';
             
             const { data: updated } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: true });
@@ -119,8 +136,19 @@
 
         window.deleteMessage = async (id) => {
             if (!isAdminLocal) return;
+            const sender = getSenderName();
+            const targetMsg = chatMessages.find(m => String(m.id) === String(id));
+            const isMyMessage = targetMsg && ((targetMsg.user_id && currentUser && targetMsg.user_id === currentUser.id) || (targetMsg.name && targetMsg.name.toLowerCase() === sender.toLowerCase()));
+
+            if (!isOwnerLocal && !isMyMessage) {
+                if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Admins cannot delete other users' chat messages.", "permission denied");
+                else alert("Admins cannot delete other users' chat messages.");
+                return;
+            }
+
             const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("Delete this message?") : confirm("Delete this message?");
             if (!ok) return;
+
             await supabaseClient.from('guestbook').delete().eq('id', id);
             
             const { data: updated } = await supabaseClient.from('guestbook').select('*').order('created_at', { ascending: true });

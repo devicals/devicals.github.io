@@ -378,7 +378,7 @@
     };
 
     function genCode(len) {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
       let out = '';
       for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
       return out;
@@ -393,9 +393,16 @@
 
       try {
           const { data } = await supabaseClient.from('site_content').select('*').like('key', 'tierlist_share_%');
+          const now = new Date();
           const myCodesList = (data || []).filter(item => {
               const code = item.key.replace('tierlist_share_', '');
               const info = item.data || {};
+
+              if (info.expires_at && new Date(info.expires_at) < now) {
+                  supabaseClient.from('site_content').delete().eq('key', item.key);
+                  return false;
+              }
+
               const isMyId = userId && info.creator_id === userId;
               const isMyDevice = info.creator_device_id === devId;
               const isMyLocal = myLocalCodes.includes(code);
@@ -410,9 +417,13 @@
           container.innerHTML = myCodesList.map(item => {
               const code = item.key.replace('tierlist_share_', '');
               const info = item.data || {};
+              const maxUses = info.max_uses || 0;
+              const currentUses = info.uses || 0;
+              const usesDisplay = maxUses > 0 ? `${currentUses}/${maxUses}` : 'unlimited';
+
               return `
                   <div class="tl-saved-item">
-                      <span class="tl-saved-item-name" style="color:var(--accent); font-weight:bold;">${code} (${info.name || 'untitled'})</span>
+                      <span class="tl-saved-item-name" style="color:var(--accent); font-weight:bold;">${code} (${info.name || 'untitled'}) <span style="font-weight:normal; color:var(--fg-muted); font-size:10px; margin-left:4px;">${usesDisplay}</span></span>
                       <button class="ui-btn tl-mini-btn" onclick="copyCodeStr('${code}')">copy</button>
                       <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteMyShareCode('${item.key}', '${code}')">del</button>
                   </div>
@@ -423,13 +434,27 @@
       }
     }
 
+    function setupRealtimeShareCodes() {
+      if (window._shareCodeChannel) return;
+      window._shareCodeChannel = supabaseClient.channel('share-codes-realtime')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'site_content' }, (payload) => {
+              if ((payload.new && payload.new.key && payload.new.key.startsWith('tierlist_share_')) ||
+                  (payload.old && payload.old.key && payload.old.key.startsWith('tierlist_share_'))) {
+                  refreshMyShareCodesUI();
+              }
+          })
+          .subscribe();
+    }
+
     window.copyCodeStr = function(code) {
         navigator.clipboard.writeText(code);
-        alert("Share code copied: " + code);
+        if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Share code copied: " + code, "copied");
+        else alert("Share code copied: " + code);
     };
 
     window.deleteMyShareCode = async function(key, code) {
-        if (!confirm("Delete this share code?")) return;
+        const ok = window.parent && window.parent.guiConfirm ? await window.parent.guiConfirm("Delete this share code?", "confirm deletion") : confirm("Delete this share code?");
+        if (!ok) return;
         await supabaseClient.from('site_content').delete().eq('key', key);
         
         let myCodes = JSON.parse(localStorage.getItem('my_share_codes') || '[]');
@@ -440,6 +465,38 @@
     };
 
     window.generateShareCode = async function () {
+      let days = 15;
+      let isNonExpiring = false;
+
+      if (userId) {
+          const daysInput = await (window.parent && window.parent.guiPrompt ? window.parent.guiPrompt("expiration in days (1 to 15, or enter '0' for non-expiring):", "15", "share code expiration") : prompt("expiration in days (1-15, or 0 for non-expiring):", "15"));
+          if (daysInput === null) return;
+          const parsedDays = parseInt(daysInput);
+          if (parsedDays === 0) {
+              isNonExpiring = true;
+          } else if (!isNaN(parsedDays) && parsedDays >= 1 && parsedDays <= 15) {
+              days = parsedDays;
+          }
+      } else {
+          const daysInput = await (window.parent && window.parent.guiPrompt ? window.parent.guiPrompt("expiration in days (1 to 15):", "15", "share code expiration") : prompt("expiration in days (1-15):", "15"));
+          if (daysInput === null) return;
+          const parsedDays = parseInt(daysInput);
+          if (!isNaN(parsedDays) && parsedDays >= 1 && parsedDays <= 15) {
+              days = parsedDays;
+          }
+      }
+
+      const usesInput = await (window.parent && window.parent.guiPrompt ? window.parent.guiPrompt("max uses limit (enter 0 for unlimited, or e.g. 1, 5, 10):", "0", "max uses limit") : prompt("max uses limit (0 for unlimited):", "0"));
+      if (usesInput === null) return;
+      const maxUses = parseInt(usesInput) || 0;
+
+      let expiresAt = null;
+      if (!isNonExpiring) {
+          const expDate = new Date();
+          expDate.setDate(expDate.getDate() + days);
+          expiresAt = expDate.toISOString();
+      }
+
       const code = genCode(6);
       const payload = { 
         name: currentListName, 
@@ -447,13 +504,17 @@
         creator_id: userId,
         creator_name: window.parent?.currentUser?.username || await getAnonName(),
         creator_device_id: getDeviceId(),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        expires_at: expiresAt,
+        max_uses: maxUses,
+        uses: 0
       };
       
       const { error } = await supabaseClient.from('site_content').insert({ key: 'tierlist_share_' + code, data: payload });
       
       if (error) {
-          alert("Failed to create share code! " + error.message);
+          if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to create share code: " + error.message, "error");
+          else alert("Failed to create share code: " + error.message);
           return;
       }
       
@@ -469,13 +530,42 @@
     };
 
     window.loadFromShareCode = async function () {
-      const code = document.getElementById('share-code-input').value.trim().toUpperCase();
+      const code = document.getElementById('share-code-input').value.trim().toLowerCase();
       if (!code) return;
-      const { data, error } = await supabaseClient.from('site_content').select('data').eq('key', 'tierlist_share_' + code).single();
-      if (error || !data) { alert('Share code not found.'); return; }
+      const key = 'tierlist_share_' + code;
+      const { data, error } = await supabaseClient.from('site_content').select('*').eq('key', key).single();
+      
+      if (error || !data) { 
+          if (window.parent && window.parent.guiAlert) window.parent.guiAlert('Share code not found or has expired/reached limit.', 'not found');
+          else alert('Share code not found or expired.'); 
+          return; 
+      }
+
+      const info = data.data || {};
+
+      if (info.expires_at && new Date(info.expires_at) < new Date()) {
+          await supabaseClient.from('site_content').delete().eq('key', key);
+          if (window.parent && window.parent.guiAlert) window.parent.guiAlert('Share code has expired.', 'expired');
+          else alert('Share code has expired.');
+          refreshMyShareCodesUI();
+          return;
+      }
+
+      let currentUses = (info.uses || 0) + 1;
+      let maxUses = info.max_uses || 0;
+
+      if (maxUses > 0 && currentUses >= maxUses) {
+          await supabaseClient.from('site_content').delete().eq('key', key);
+      } else {
+          info.uses = currentUses;
+          await supabaseClient.from('site_content').update({ data: info }).eq('key', key);
+      }
+
       currentListId = null;
-      currentListName = data.data.name || 'Shared Tier List';
-      loadState(data.data.state);
+      currentListName = info.name || 'Shared Tier List';
+      loadState(info.state);
+      document.getElementById('share-code-input').value = '';
+      refreshMyShareCodesUI();
     };
 
     async function init() {
@@ -483,6 +573,7 @@
       renderAll();
       refreshSavedListsUI();
       refreshMyShareCodesUI();
+      setupRealtimeShareCodes();
     }
 
     init();
