@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>homepage</title>
     <link rel="stylesheet" href="../css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js" crossorigin="anonymous"></script>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div class="markdown-body" style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
@@ -42,11 +42,11 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
     <script>
-        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
-        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        const _sbUrl = atob("aHR0cHM6Ly93dGFzZXNtcXdwbmJ3emR5bm5hcy5zdXBhYmFzZS5jbw==");
+        const _sbKey = atob("c2JfcHVibGlzaGFibGVfYXkwUHVJZVBqWndyRWdQNVhwRDVpUV9XNXdDLTVnOQ==");
+        const supabaseClient = supabase.createClient(_sbUrl, _sbKey);
 
         marked.use({ breaks: true, gfm: true });
 

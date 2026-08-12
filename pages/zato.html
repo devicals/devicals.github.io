@@ -93,11 +93,11 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
   <script>
-    const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
-    const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const _sbUrl = atob("aHR0cHM6Ly93dGFzZXNtcXdwbmJ3emR5bm5hcy5zdXBhYmFzZS5jbw==");
+    const _sbKey = atob("c2JfcHVibGlzaGFibGVfYXkwUHVJZVBqWndyRWdQNVhwRDVpUV9XNXdDLTVnOQ==");
+    const supabaseClient = supabase.createClient(_sbUrl, _sbKey);
 
     const DEFAULT_TIERS = [
       { id: 'a', label: 'A', color: '#FFD93B', text: '#2a1a00' },

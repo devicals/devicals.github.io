@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>tier list maker</title>
   <link rel="stylesheet" href="../css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
   <style>
       .tl-layout { display: flex; height: 100vh; background: var(--bg-workspace); }
       .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
@@ -64,7 +64,7 @@
       .sidebar-section { display: flex; flex-direction: column; gap: 10px; }
       .sidebar-label { font-size: 12px; color: var(--accent); font-weight: bold; text-transform: lowercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
       .tl-hint { font-size: 10px; color: var(--fg-muted); }
-    </style>
+  </style>
   </head>
 
   <body>
@@ -128,9 +128,13 @@
   </div>
 
   <script>
-    const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
-    const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const _sbUrl = atob("aHR0cHM6Ly93dGFzZXNtcXdwbmJ3emR5bm5hcy5zdXBhYmFzZS5jbw==");
+    const _sbKey = atob("c2JfcHVibGlzaGFibGVfYXkwUHVJZVBqWndyRWdQNVhwRDVpUV9XNXdDLTVnOQ==");
+    const supabaseClient = supabase.createClient(_sbUrl, _sbKey);
+
+    function escapeHTML(str) {
+        return (str || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
     const TIERS_BASE = [
       { id:'SSS',  label:'SSS', color:'#FF3B3B', text:'#fff',    isExec:false },
@@ -202,7 +206,7 @@
 
     function renderAll() {
       renderTiers(); renderPool();
-      document.getElementById('active-list-title').textContent = `Tier List Maker (${currentListName})`;
+      document.getElementById('active-list-title').textContent = `Tier List Maker (${escapeHTML(currentListName)})`;
     }
 
     function renderTiers() {
@@ -245,7 +249,7 @@
       wrap.draggable = true;
       const card = document.createElement('div');
       card.className = 'tl-item' + (tier === 'EXEC' ? ' revived' : '');
-      card.innerHTML = `<span class="tl-item-label" title="${item.label}">${item.label}</span>`;
+      card.innerHTML = `<span class="tl-item-label" title="${escapeHTML(item.label)}">${escapeHTML(item.label)}</span>`;
       wrap.appendChild(card);
 
       wrap.addEventListener('dragstart', () => { dragItem = item; dragSrc = tier; });
@@ -308,7 +312,7 @@
       }
       container.innerHTML = lists.map(l => `
         <div class="tl-saved-item">
-          <span class="tl-saved-item-name">${l.name}</span>
+          <span class="tl-saved-item-name">${escapeHTML(l.name)}</span>
           <button class="ui-btn tl-mini-btn" onclick="loadSavedList('${l.id}')">load</button>
           <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteSavedList('${l.id}')">del</button>
         </div>
@@ -423,7 +427,7 @@
 
               return `
                   <div class="tl-saved-item">
-                      <span class="tl-saved-item-name" style="color:var(--accent); font-weight:bold;">${code} (${info.name || 'untitled'}) <span style="font-weight:normal; color:var(--fg-muted); font-size:10px; margin-left:4px;">${usesDisplay}</span></span>
+                      <span class="tl-saved-item-name" style="color:var(--accent); font-weight:bold;">${escapeHTML(code)} (${escapeHTML(info.name || 'untitled')}) <span style="font-weight:normal; color:var(--fg-muted); font-size:10px; margin-left:4px;">${escapeHTML(usesDisplay)}</span></span>
                       <button class="ui-btn tl-mini-btn" onclick="copyCodeStr('${code}')">copy</button>
                       <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteMyShareCode('${item.key}', '${code}')">del</button>
                   </div>
@@ -448,7 +452,7 @@
 
     window.copyCodeStr = function(code) {
         navigator.clipboard.writeText(code);
-        if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Share code copied: " + code, "copied");
+        if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Share code copied: " + escapeHTML(code), "copied");
         else alert("Share code copied: " + code);
     };
 
@@ -513,7 +517,7 @@
       const { error } = await supabaseClient.from('site_content').insert({ key: 'tierlist_share_' + code, data: payload });
       
       if (error) {
-          if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to create share code: " + error.message, "error");
+          if (window.parent && window.parent.guiAlert) window.parent.guiAlert("Failed to create share code: " + escapeHTML(error.message), "error");
           else alert("Failed to create share code: " + error.message);
           return;
       }

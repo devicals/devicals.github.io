@@ -84,16 +84,16 @@ window.renderAdminSection = async function (section) {
                     <div class="admin-user-card">
                         <div class="admin-user-card-header">
                             <div>
-                                <strong style="color:var(--accent); font-size:16px;">${u.username || 'unnamed'}</strong>
-                                <span style="color:var(--fg-muted); margin-left:8px;">(ID: ${u.id})</span>
+                                <strong style="color:var(--accent); font-size:16px;">${window.escapeAttr(u.username || 'unnamed')}</strong>
+                                <span style="color:var(--fg-muted); margin-left:8px;">(ID: ${window.escapeAttr(u.id)})</span>
                                 ${isTargetOwner ? '<span class="user-tag admin" style="border-color:var(--accent); color:var(--accent);">error dev</span>' : (u.is_admin ? '<span class="user-tag admin">admin</span>' : '')}
                                 ${u.is_banned ? '<span class="user-tag banned">banned</span>' : ''}
                                 ${u.warning_count ? `<span class="user-tag" style="border-color:var(--destructive); color:var(--destructive);">${u.warning_count} warning${u.warning_count > 1 ? 's' : ''}</span>` : ''}
                             </div>
                         </div>
                         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
-                            ${canWarnThisUser ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminWarnUser('${u.id}', '${(u.username || 'unnamed').replace(/'/g, "\\'")}')">warn</button>` : ''}
-                            ${u.warning_count ? `<button class="ui-btn" style="width:auto; margin:0;" onclick="adminViewWarnings('${u.id}')">view record</button>` : ''}
+                            ${canWarnThisUser ? `<button class="ui-btn warn-user-btn" style="width:auto; margin:0;" data-userid="${window.escapeAttr(u.id)}" data-username="${window.escapeAttr(u.username || 'unnamed')}">warn</button>` : ''}
+                            ${u.warning_count ? `<button class="ui-btn view-warnings-btn" style="width:auto; margin:0;" data-userid="${window.escapeAttr(u.id)}">view record</button>` : ''}
                             ${window.isOwner && !isTargetOwner ? `
                                 <button class="ui-btn" style="width:auto; margin:0;" onclick="adminUserAction('${u.id}', '${u.is_admin ? 'demote' : 'promote'}')">${u.is_admin ? 'demote' : 'make admin'}</button>
                                 ${u.is_banned
@@ -113,8 +113,20 @@ window.renderAdminSection = async function (section) {
                 <div class="admin-section-title" style="margin-top:40px;">banned users (${banned.length})</div>
                 ${banned.map(renderRow).join('') || '<p style="color:var(--fg-muted); font-size:13px;">no banned users.</p>'}
             `;
+
+            document.querySelectorAll('.warn-user-btn').forEach(btn => {
+                btn.onclick = function() {
+                    adminWarnUser(this.dataset.userid, this.dataset.username);
+                };
+            });
+            document.querySelectorAll('.view-warnings-btn').forEach(btn => {
+                btn.onclick = function() {
+                    adminViewWarnings(this.dataset.userid);
+                };
+            });
+
         } catch (e) {
-            view.innerHTML = `<p style="color:var(--destructive)">error fetching users: ${e.message}</p>`;
+            view.innerHTML = `<p style="color:var(--destructive)">error fetching users: ${window.escapeAttr(e.message)}</p>`;
         }
     } else if (section === 'anns') {
         view.innerHTML = `
@@ -151,16 +163,16 @@ async function loadAdminShareCodes() {
             return `
                 <div class="admin-card admin-card-row">
                     <div>
-                        <div style="font-weight:bold; color:var(--accent); font-size:16px;">CODE: ${code}</div>
+                        <div style="font-weight:bold; color:var(--accent); font-size:16px;">CODE: ${window.escapeAttr(code)}</div>
                         <div style="color:var(--fg-main); font-size:13px; margin-top:4px;">Title: ${window.escapeAttr(title)}</div>
-                        <div style="color:var(--fg-muted); font-size:11px; margin-top:2px;">Creator: ${window.escapeAttr(creator)} &middot; Expires: ${expStr} &middot; Uses: ${usesStr} &middot; ${dateStr}</div>
+                        <div style="color:var(--fg-muted); font-size:11px; margin-top:2px;">Creator: ${window.escapeAttr(creator)} &middot; Expires: ${window.escapeAttr(expStr)} &middot; Uses: ${window.escapeAttr(usesStr)} &middot; ${window.escapeAttr(dateStr)}</div>
                     </div>
                     <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteShareCode('${item.key}')">delete</button>
                 </div>
             `;
         }).join('');
     } catch (e) {
-        listEl.innerHTML = `<span style="color:var(--destructive);">failed to load share codes: ${e.message}</span>`;
+        listEl.innerHTML = `<span style="color:var(--destructive);">failed to load share codes: ${window.escapeAttr(e.message)}</span>`;
     }
 }
 
@@ -323,7 +335,7 @@ async function loadAdminAnnouncements() {
         if (data && data.data && data.data.length > 0) {
             list.innerHTML = data.data.map((a, i) => `
                 <div class="admin-card admin-card-row">
-                    <span style="font-size:14px; line-height:1.6;">${a}</span>
+                    <span style="font-size:14px; line-height:1.6;">${window.escapeAttr(a)}</span>
                     <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteAdminAnn(${i})">delete</button>
                 </div>
             `).join('');
