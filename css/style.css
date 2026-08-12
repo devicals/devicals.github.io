@@ -103,6 +103,16 @@ body.has-bg-canvas {
     display: block;
 }
 
+a, a:visited {
+    color: var(--accent) !important;
+    text-decoration: none;
+}
+
+a:hover, a:focus {
+    color: var(--accent) !important;
+    text-decoration: underline !important;
+}
+
 .app-layout {
     display: flex;
     height: 100vh;
@@ -237,10 +247,11 @@ body.has-bg-canvas .main-content {
 .crumb-link {
     cursor: pointer;
     transition: color 0.15s;
+    color: var(--fg-muted) !important;
 }
 
 .crumb-link:hover {
-    color: var(--accent);
+    color: var(--accent) !important;
 }
 
 .workspace-frame {
@@ -286,11 +297,7 @@ body.has-bg-canvas .main-content {
 }
 
 .markdown-body a {
-    color: var(--accent);
-    text-decoration: none;
-}
-
-.markdown-body a:hover {
+    color: var(--accent) !important;
     text-decoration: underline;
 }
 
@@ -404,6 +411,11 @@ body.has-bg-canvas .main-content {
     font-family: var(--font-ui);
 }
 
+.modal-box a {
+    color: var(--accent) !important;
+    text-decoration: underline;
+}
+
 .modal-title {
     font-size: 14px;
     font-weight: bold;
@@ -413,6 +425,36 @@ body.has-bg-canvas .main-content {
     padding-bottom: 10px;
     text-transform: lowercase;
     letter-spacing: 1px;
+}
+
+.gui-msg-box {
+    font-size: 12px;
+    margin-bottom: 16px;
+    white-space: normal !important;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.gui-msg-box p {
+    margin-bottom: 10px;
+}
+
+.gui-msg-box p:last-child {
+    margin-bottom: 0;
+}
+
+.gui-msg-box ul, .gui-msg-box ol {
+    margin: 10px 0 14px 20px;
+    padding-left: 8px;
+}
+
+.gui-msg-box li {
+    margin-bottom: 6px;
+}
+
+.gui-msg-box a {
+    color: var(--accent) !important;
+    text-decoration: underline;
 }
 
 .ui-input {
@@ -550,7 +592,7 @@ body.has-bg-canvas .main-content {
 .flat-title {
     font-size: 18px;
     font-weight: bold;
-    color: var(--accent);
+    color: var(--accent) !important;
     text-decoration: none;
     line-height: 1.4;
 }

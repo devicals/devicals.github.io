@@ -130,7 +130,9 @@ window.escapeAttr = function (str) {
 
 window.guiAlert = function(msg, title = "notification") {
     document.getElementById('gui-title').textContent = title;
-    document.getElementById('gui-msg').innerHTML = msg;
+    const msgBox = document.getElementById('gui-msg');
+    msgBox.innerHTML = msg;
+    msgBox.style.whiteSpace = 'normal';
     document.getElementById('gui-modal').style.display = 'flex';
 };
 
@@ -699,14 +701,15 @@ function renderNavigation() {
 }
 
 function setRouteHash(rawPath) {
-    window.location.hash = rawPath;
+    window.location.hash = rawPath.replace(/\s+/g, '_');
 }
 
 function highlightNav() {
-    const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0];
+    const rawHash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0];
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
-        if (el.getAttribute('data-path') === hash) {
+        const path = el.getAttribute('data-path');
+        if (path && (path === rawHash || path.replace(/\s+/g, '_') === rawHash.replace(/\s+/g, '_'))) {
             el.classList.add('active');
         }
     });
@@ -733,9 +736,13 @@ async function handleRoute() {
         return;
     }
 
-    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="setRouteHash('${arr.slice(0, i + 1).join('/').replace(/'/g, "\\'")}')">${p}</span>`).join(' > ');
+    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => {
+        const cleanPart = p.replace(/_/g, ' ');
+        const subPath = arr.slice(0, i + 1).join('_');
+        return `<span class="crumb-link" onclick="setRouteHash('${subPath.replace(/'/g, "\\'")}')">${cleanPart}</span>`;
+    }).join(' > ');
 
-    const node = flatNodes.find(n => n.path === hash);
+    const node = flatNodes.find(n => n.path.replace(/\s+/g, '_') === hash.replace(/\s+/g, '_') || n.path === hash);
 
     if (node) {
         if (node.type === 'folder') {
@@ -746,7 +753,7 @@ async function handleRoute() {
 
             if (node.children && node.children.length > 0) {
                 node.children.forEach(child => {
-                    const childPath = node.path + '/' + child.name;
+                    const childPath = (node.path + '/' + child.name).replace(/\s+/g, '_');
                     html += `
                         <a href="#${childPath}" style="padding: 16px 20px; background:var(--bg-hover); border:1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: border-color 0.2s; font-size: 15px; font-weight: bold;">
                             ${child.name}
