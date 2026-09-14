@@ -186,6 +186,16 @@
                   fileType: md
                   path: content/poems/short of a world unsaid/the reluctant.md
 
+                - name: Apex Predator
+                  type: file
+                  fileType: md
+                  path: content/poems/short of a world unsaid/Apex Predator.md
+
+                - name: Mother
+                  type: file
+                  fileType: md
+                  path: content/poems/short of a world unsaid/Mother.md
+
 - name: About Me
   type: folder
   children:
