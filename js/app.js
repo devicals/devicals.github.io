@@ -53,6 +53,10 @@ function initSynchronousUser() {
         const sessionStr = localStorage.getItem('custom_auth_session');
         if (sessionStr) {
             const parsed = JSON.parse(sessionStr);
+            if (parsed.is_banned) {
+                localStorage.removeItem('custom_auth_session');
+                return;
+            }
             const name = (parsed.username || '').trim().toLowerCase();
             const email = (parsed.email || '').trim().toLowerCase();
             if (name === 'error dev' || email === window.OWNER_EMAIL.toLowerCase()) {
@@ -75,8 +79,14 @@ window.getUserIdentity = function() {
     if (!user) {
         try {
             const sessionStr = localStorage.getItem('custom_auth_session');
-            if (sessionStr) user = JSON.parse(sessionStr);
+            if (sessionStr) {
+                const parsed = JSON.parse(sessionStr);
+                if (!parsed.is_banned) user = parsed;
+            }
         } catch(e) {}
+    }
+    if (user && user.is_banned) {
+        return { user: null, profile: null, isOwner: false, isAdmin: false, username: null };
     }
     const name = (user?.username || '').trim().toLowerCase();
     const email = (user?.email || '').trim().toLowerCase();
@@ -109,6 +119,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     handleRoute();
     initAuth();
     loadAnnouncementsToasts();
+
+    if (!window._globalBanWatcher) {
+        window._globalBanWatcher = setInterval(async () => {
+            if (currentUser && currentUser.id) {
+                try {
+                    const { data } = await supabaseClient.from('profiles').select('is_banned').eq('id', currentUser.id).maybeSingle();
+                    if (data && data.is_banned) {
+                        clearCustomSession();
+                        guiAlert("your account has been suspended.", "access denied");
+                    }
+                } catch(e) {}
+            }
+        }, 4000);
+    }
 });
 
 window.getDeviceId = function() {
@@ -279,7 +303,7 @@ function syncIframeTheme() {
 }
 
 window.syncSettingsToServer = async function() {
-    if (currentUser && currentProfile) {
+    if (currentUser && currentProfile && !currentUser.is_banned) {
         const currentSettings = currentProfile.settings || {};
         const newSettings = {
             ...currentSettings,
@@ -298,13 +322,15 @@ window.syncSettingsToServer = async function() {
 };
 
 function saveCustomSession(userObj) {
-    if (userObj) {
-        const name = (userObj.username || '').trim().toLowerCase();
-        const email = (userObj.email || '').trim().toLowerCase();
-        if (name === 'error dev' || email === window.OWNER_EMAIL.toLowerCase()) {
-            userObj.is_owner = true;
-            userObj.is_admin = true;
-        }
+    if (!userObj || userObj.is_banned) {
+        clearCustomSession();
+        return;
+    }
+    const name = (userObj.username || '').trim().toLowerCase();
+    const email = (userObj.email || '').trim().toLowerCase();
+    if (name === 'error dev' || email === window.OWNER_EMAIL.toLowerCase()) {
+        userObj.is_owner = true;
+        userObj.is_admin = true;
     }
     localStorage.setItem('custom_auth_session', JSON.stringify(userObj));
     currentUser = userObj;
@@ -313,11 +339,19 @@ function saveCustomSession(userObj) {
 }
 
 function clearCustomSession() {
+    if (window._profileBanSub) {
+        supabaseClient.removeChannel(window._profileBanSub);
+        window._profileBanSub = null;
+    }
     localStorage.removeItem('custom_auth_session');
     currentUser = null;
     currentProfile = null;
     window.isOwner = false;
     document.body.classList.remove('is-admin');
+    const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+    if (rawHash === 'admin') {
+        window.location.hash = "Index/Home";
+    }
     renderAuthModal();
     notifyIframeAuth();
 }
@@ -329,6 +363,11 @@ async function initAuth() {
             const parsed = JSON.parse(sessionStr);
             const { data } = await supabaseClient.from('profiles').select('*').eq('id', parsed.id).single();
             if (data) {
+                if (data.is_banned) {
+                    clearCustomSession();
+                    guiAlert("your account has been suspended.", "access denied");
+                    return;
+                }
                 if (data.email) data.email = await decryptEmail(data.email);
                 saveCustomSession(data);
                 await handleSession();
@@ -345,6 +384,22 @@ async function initAuth() {
 
 async function handleSession() {
     if (currentUser) {
+        if (currentUser.is_banned) {
+            clearCustomSession();
+            guiAlert("your account has been suspended.", "access denied");
+            return;
+        }
+
+        if (!window._profileBanSub) {
+            window._profileBanSub = supabaseClient.channel('ban-sync-' + currentUser.id)
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${currentUser.id}` }, (payload) => {
+                    if (payload.new && payload.new.is_banned) {
+                        clearCustomSession();
+                        guiAlert("your account has been suspended.", "access denied");
+                    }
+                }).subscribe();
+        }
+
         const s = currentUser.settings || {};
         if (s.theme) localStorage.setItem('theme', s.theme);
         if (s.custom_css) localStorage.setItem('custom-css', s.custom_css);
@@ -362,11 +417,19 @@ async function handleSession() {
             document.body.classList.add('is-admin');
         } else {
             document.body.classList.remove('is-admin');
+            const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+            if (rawHash === 'admin') {
+                window.location.hash = "Index/Home";
+            }
         }
 
         loadPersistentWarnings();
     } else {
         document.body.classList.remove('is-admin');
+        const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+        if (rawHash === 'admin') {
+            window.location.hash = "Index/Home";
+        }
     }
 
     renderAuthModal();
@@ -506,6 +569,10 @@ window.authAction = async (action) => {
 
             if (error || !data) throw new Error("invalid username/email or password.");
 
+            if (data.is_banned) {
+                throw new Error("this account has been permanently suspended.");
+            }
+
             if (isLegacy) {
                 const newEncEmail = data.email ? await encryptEmail(data.email) : null;
                 await supabaseClient.from('profiles').update({ 
@@ -542,6 +609,7 @@ window.authAction = async (action) => {
                 email: null,
                 is_owner: isOwnerAcc,
                 is_admin: isOwnerAcc,
+                is_banned: false,
                 settings: {}
             }).select().single();
 
@@ -564,12 +632,16 @@ window.authAction = async (action) => {
             const newHashedPass = await hashPassword(newPass);
 
             const { data, error } = await supabaseClient.from('profiles')
-                .select('id')
+                .select('id, is_banned')
                 .ilike('username', username)
                 .eq('email', encEmail)
                 .single();
 
             if (error || !data) throw new Error("no account found matching that username and email.");
+
+            if (data.is_banned) {
+                throw new Error("this account has been permanently suspended.");
+            }
 
             await supabaseClient.from('profiles').update({ password: newHashedPass }).eq('id', data.id);
             guiAlert("password reset successfully. you may now log in.", "success");
@@ -584,6 +656,8 @@ window.updateProfile = async () => {
     const username = document.getElementById('prof-name').value.trim();
     if (!username || !currentUser) return;
     try {
+        const { data: existing } = await supabaseClient.from('profiles').select('id').ilike('username', username).neq('id', currentUser.id);
+        if (existing && existing.length > 0) throw new Error("username is already taken.");
         await supabaseClient.from('profiles').update({ username }).eq('id', currentUser.id);
         currentUser.username = username;
         saveCustomSession(currentUser);
@@ -698,6 +772,12 @@ async function handleRoute() {
     const breadcrumbs = document.getElementById('breadcrumbs');
 
     if (hash === 'admin') {
+        const ident = window.getUserIdentity();
+        if (!ident || !ident.isAdmin) {
+            window.location.hash = "Index/Home";
+            if (window.guiAlert) window.guiAlert("access denied: admin privileges required.", "restricted");
+            return;
+        }
         iframe.style.display = 'none';
         mdContainer.style.display = 'block';
         breadcrumbs.innerHTML = 'system > admin dashboard';

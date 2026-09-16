@@ -1,3 +1,40 @@
+function checkAdminAccess() {
+    let ident = null;
+    if (window.getUserIdentity) {
+        ident = window.getUserIdentity();
+    } else if (window.parent && window.parent.getUserIdentity) {
+        ident = window.parent.getUserIdentity();
+    }
+    const isAdmin = ident ? ident.isAdmin : (window.isOwner || false);
+    if (!isAdmin) {
+        const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+        if (rawHash === 'admin') {
+            window.location.hash = 'Index/Home';
+        }
+        if (window.parent && window.parent.location) {
+            const parentHash = (window.parent.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+            if (parentHash === 'admin') {
+                window.parent.location.hash = 'Index/Home';
+            }
+        }
+        const container = document.getElementById('page-content');
+        if (container) container.innerHTML = '';
+        const view = document.getElementById('admin-section-content');
+        if (view) view.innerHTML = '';
+        return false;
+    }
+    return true;
+}
+
+if (!window._adminKickInterval) {
+    window._adminKickInterval = setInterval(() => {
+        const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+        if (rawHash === 'admin') {
+            checkAdminAccess();
+        }
+    }, 500);
+}
+
 function getAdminTabs() {
     return [
         { key: 'users', label: 'users' },
@@ -8,6 +45,7 @@ function getAdminTabs() {
 }
 
 window.renderAdminPage = async function () {
+    if (!checkAdminAccess()) return;
     const container = document.getElementById('page-content');
     container.innerHTML = `
         <div class="admin-section-title" style="margin-bottom:8px; border-bottom:none; padding-bottom:0;">admin dashboard</div>
@@ -19,14 +57,18 @@ window.renderAdminPage = async function () {
 };
 
 function renderAdminTabBar(active) {
+    if (!checkAdminAccess()) return;
     const bar = document.getElementById('admin-tab-bar');
+    if (!bar) return;
     bar.innerHTML = getAdminTabs().map(t => `
         <button class="admin-tab-btn ${t.key === active ? 'active' : ''}" style="${t.align === 'right' ? 'margin-left:auto;' : ''}" onclick="renderAdminTabBar('${t.key}'); renderAdminSection('${t.key}')">${t.label}</button>
     `).join('');
 }
 
 window.renderAdminSection = async function (section) {
+    if (!checkAdminAccess()) return;
     const view = document.getElementById('admin-section-content');
+    if (!view) return;
     view.innerHTML = '<span style="color:var(--fg-muted);">loading...</span>';
 
     if (section === 'codes') {
@@ -52,7 +94,7 @@ window.renderAdminSection = async function (section) {
         if (!window._adminChatSub) {
             window._adminChatSub = supabaseClient.channel('admin-chat-realtime')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'site_content', filter: 'key=eq.admin_chat' }, (payload) => {
-                    if (document.getElementById('admin-chat-messages')) {
+                    if (document.getElementById('admin-chat-messages') && checkAdminAccess()) {
                         renderAdminChatMessages(payload.new.data || []);
                     }
                 }).subscribe();
@@ -142,6 +184,7 @@ window.renderAdminSection = async function (section) {
 };
 
 async function loadAdminShareCodes() {
+    if (!checkAdminAccess()) return;
     const listEl = document.getElementById('admin-codes-list');
     if (!listEl) return;
     try {
@@ -177,6 +220,7 @@ async function loadAdminShareCodes() {
 }
 
 window.adminDeleteShareCode = async function(key) {
+    if (!checkAdminAccess()) return;
     if (!await window.guiConfirm("delete this share code?", "confirm deletion")) return;
     await supabaseClient.from('site_content').delete().eq('key', key);
     loadAdminShareCodes();
@@ -185,6 +229,7 @@ window.adminDeleteShareCode = async function(key) {
 let adminChatList = [];
 
 window.loadAdminChat = async function() {
+    if (!checkAdminAccess()) return;
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'admin_chat').single();
         if (data && data.data) {
@@ -194,11 +239,13 @@ window.loadAdminChat = async function() {
         }
         renderAdminChatMessages(adminChatList);
     } catch (e) {
-        document.getElementById('admin-chat-messages').innerHTML = '<span style="color:var(--destructive);">failed to load chat. Ensure admin_chat row exists in site_content table.</span>';
+        const el = document.getElementById('admin-chat-messages');
+        if (el) el.innerHTML = '<span style="color:var(--destructive);">failed to load chat. Ensure admin_chat row exists in site_content table.</span>';
     }
 };
 
 window.renderAdminChatMessages = function(messages) {
+    if (!checkAdminAccess()) return;
     adminChatList = messages;
     const container = document.getElementById('admin-chat-messages');
     if (!container) return;
@@ -222,6 +269,7 @@ window.renderAdminChatMessages = function(messages) {
 };
 
 window.sendAdminChat = async function() {
+    if (!checkAdminAccess()) return;
     const input = document.getElementById('admin-chat-input');
     const text = input.value.trim();
     if (!text) return;
@@ -268,6 +316,7 @@ window.adminUserAction = async (id, action) => {
 };
 
 window.adminWarnUser = async function (userId, username) {
+    if (!checkAdminAccess()) return;
     const result = await window.guiForm([
         { key: 'message', label: `warning message for ${username || 'this user'}`, type: 'textarea', rows: 4, placeholder: 'explain why this user is being warned...' }
     ], 'issue warning');
@@ -285,6 +334,7 @@ window.adminWarnUser = async function (userId, username) {
 };
 
 window.adminViewWarnings = async function (userId) {
+    if (!checkAdminAccess()) return;
     const { data } = await supabaseClient.from('warnings').select('*').eq('user_id', userId).order('created_at', { ascending: false });
     if (!data || !data.length) { guiAlert('no warnings on record.', 'warning record'); return; }
     
@@ -316,18 +366,21 @@ window.adminViewWarnings = async function (userId) {
 };
 
 window.adminDeleteWarning = async function (warningId, userId) {
+    if (!window.isOwner) return;
     await supabaseClient.from('warnings').delete().eq('id', warningId);
     adminViewWarnings(userId);
     renderAdminSection('users');
 };
 
 window.adminClearAllWarnings = async function (userId) {
+    if (!window.isOwner) return;
     await supabaseClient.from('warnings').delete().eq('user_id', userId);
     window.closeGuiModal();
     renderAdminSection('users');
 };
 
 async function loadAdminAnnouncements() {
+    if (!checkAdminAccess()) return;
     const list = document.getElementById('admin-ann-list');
     if (!list) return;
     try {
@@ -348,6 +401,7 @@ async function loadAdminAnnouncements() {
 }
 
 window.postAdminAnnouncement = async () => {
+    if (!checkAdminAccess()) return;
     const text = document.getElementById('admin-ann-text').value.trim();
     if (!text) return;
     try {
@@ -361,6 +415,7 @@ window.postAdminAnnouncement = async () => {
 };
 
 window.deleteAdminAnn = async (idx) => {
+    if (!checkAdminAccess()) return;
     try {
         const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'announcements').single();
         const anns = data?.data || [];

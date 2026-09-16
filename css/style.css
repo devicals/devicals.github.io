@@ -712,3 +712,10 @@ body > div > h1:first-child {
     padding: 14px 16px;
     margin-bottom: 24px;
 }
+
+.gui-msg-box {
+    margin-bottom: 24px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--fg-main);
+}

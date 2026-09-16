@@ -6,51 +6,279 @@
     <title>homepage</title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/11.1.1/marked.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+    <style>
+        .about-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+        .about-columns {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            margin-bottom: 40px;
+        }
+        .about-column {
+            flex: 1;
+            min-width: 260px;
+        }
+        .pronouns-container {
+            margin-bottom: 35px;
+        }
+        .pronouns-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .pronoun-badge {
+            font-family: var(--font-ui);
+            font-size: 13px;
+            color: var(--accent);
+            border: 1px solid var(--border);
+            background: var(--bg-hover);
+            padding: 4px 12px;
+        }
+        .pronouns-note {
+            font-size: 13px;
+            color: var(--fg-muted);
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div class="markdown-body" style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <h1>about me</h1>
-        <p>hallo there! I'm <strong>Error Dev</strong>, an <em>Aussie</em>! I enjoy playing <a href="#About%20Me/Games%20I%20%3C3" onclick="window.parent.location.hash='About Me/Games I <3'">games</a> such as <em>Minecraft</em> and <em>Persona 5 Royal</em>, experimenting in <a href="https://powerpoint.office.com" target="_blank">Powerpoint</a>, and also watching <strong>movies and TV series</strong>! Not to mention, I also <strong>draw</strong>, <strong>write</strong>, and <strong>code</strong>! Hosted on <a href="https://github.com/devicals" target="_blank">Github</a>! Also check out my Minecraft projects at <a href="https://modrinth.com/organization/infiniverse" target="_blank">https://modrinth.com/organization/infiniverse</a>!</p>
-        <p>Contact me at <a href="mailto:3rr0r.d3v@gmail.com">3rr0r.d3v@gmail.com</a>!</p>
+        <div class="about-header">
+            <h1 style="margin:0;">about me</h1>
+            <button id="edit-about-btn" class="ui-btn" style="width:auto; margin:0; display:none;" onclick="openEditAboutModal()">edit about me</button>
+        </div>
 
-        <h2>skills</h2>
-        <ul>
-            <li><a href="https://html.com/" target="_blank">Hypertext Markup Language (HTML)</a></li>
-            <li><a href="https://www.javascript.com/" target="_blank">JavaScript (JS)</a></li>
-            <li><a href="https://yaml.org/" target="_blank">YAML Ain't Markup Language (YAML)</a></li>
-            <li><a href="https://www.json.org/" target="_blank">JS Object Notation (JSON)</a></li>
-            <li><a href="https://marketplace.visualstudio.com/items?itemName=error-dev.flexion-language" target="_blank">Flexion (Flexible Object Notation) (FLON)</a></li>
-            <li><a href="https://www.w3.org/Style/CSS/" target="_blank">Cascading Style Sheets (CSS)</a></li>
-            <li><a href="https://www.python.org/" target="_blank">Python (PY)</a></li>
-            <li><a href="https://mcbeet.dev/" target="_blank">Beet & Bolt (Minecraft Datapacks)</a></li>
-        </ul>
+        <div id="about-bio-container" style="margin-bottom: 30px;">
+            <span style="color:var(--fg-muted);">loading bio...</span>
+        </div>
 
-        <h2>socials</h2>
-        <ul>
-            <li><a href="https://discord.com/users/989414384679927838" target="_blank">Discord</a></li>
-            <li><a href="https://steamcommunity.com/id/error_dev/" target="_blank">Steam</a></li>
-            <li><a href="https://www.reddit.com/user/3RR0R_0FF1C1AL/" target="_blank">Reddit</a></li>
-            <li><a href="https://www.youtube.com/@3rror_dev/" target="_blank">YouTube</a></li>
-            <li><a href="https://www.deviantart.com/3rrordev" target="_blank">DeviantART</a></li>
-            <li><a href="https://x.com/error_dev_xt/" target="_blank">X / Twitter</a></li>
-            <li><a href="https://error-offixial.itch.io/" target="_blank">itch.io</a></li>
-        </ul>
+        <div id="about-pronouns-section" class="pronouns-container">
+            <h2>pronouns</h2>
+            <div id="about-pronouns-list" class="pronouns-list"></div>
+            <div id="about-pronouns-note" class="pronouns-note"></div>
+        </div>
+
+        <div class="about-columns">
+            <div class="about-column">
+                <h2 style="margin-top: 0; margin-bottom: 16px;">skills</h2>
+                <div id="about-skills-container"></div>
+            </div>
+            <div class="about-column">
+                <h2 style="margin-top: 0; margin-bottom: 16px;">socials</h2>
+                <div id="about-socials-container"></div>
+            </div>
+        </div>
 
         <h2>latest blog</h2>
-        <div id="latest-blog-container" style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); margin-top:30px; margin-bottom: 60px; cursor:pointer;">
-            <span style="color:var(--fg-muted);">Loading latest blog post...</span>
+        <div id="latest-blog-container" style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); margin-top:20px; margin-bottom: 60px; cursor:pointer;">
+            <span style="color:var(--fg-muted);">loading latest blog post...</span>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+    <div id="edit-about-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+        <div class="modal-box" style="background:var(--bg-sidebar); border:1px solid var(--border); padding:24px; width:720px; max-width:92vw; max-height:88vh; overflow-y:auto; font-family:var(--font-ui);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
+                <h2 style="margin:0; font-size:18px; color:var(--accent);">edit about me (error dev only)</h2>
+                <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px;" onclick="closeEditAboutModal()">close</button>
+            </div>
+
+            <div class="settings-group">
+                <label>bio (markdown supported)</label>
+                <textarea id="edit-bio-input" class="ui-input" rows="6" placeholder="write your bio here..."></textarea>
+            </div>
+
+            <div class="settings-group">
+                <label>pronouns list (comma-separated)</label>
+                <input type="text" id="edit-pronouns-list-input" class="ui-input" placeholder="e.g. he/him, they/them">
+            </div>
+
+            <div class="settings-group">
+                <label>pronouns note / details</label>
+                <textarea id="edit-pronouns-note-input" class="ui-input" rows="2" placeholder="optional small note or extra details about your pronouns..."></textarea>
+            </div>
+
+            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                <div class="settings-group" style="flex:1; min-width:260px;">
+                    <label>skills (markdown list)</label>
+                    <textarea id="edit-skills-input" class="ui-input" rows="8" placeholder="- [Skill Name](URL)"></textarea>
+                </div>
+                <div class="settings-group" style="flex:1; min-width:260px;">
+                    <label>socials (markdown list)</label>
+                    <textarea id="edit-socials-input" class="ui-input" rows="8" placeholder="- [Social Platform](URL)"></textarea>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveAboutData()">save changes</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="closeEditAboutModal()">cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const _sbUrl = atob("aHR0cHM6Ly93dGFzZXNtcXdwbmJ3emR5bm5hcy5zdXBhYmFzZS5jbw==");
-        const _sbKey = atob("c2JfcHVibGlzaGFibGVfYXkwUHVJZVBqWndyRWdQNVhwRDVpUV9XNXdDLTVnOQ==");
-        const supabaseClient = supabase.createClient(_sbUrl, _sbKey);
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
         marked.use({ breaks: true, gfm: true });
 
-        async function loadHomeData() {
+        const DEFAULT_ABOUT = {
+            bio: "hallo there! I'm **Error Dev**, an *Aussie*! I enjoy playing [games](#About%20Me/Games%20I%20%3C3) such as *Minecraft* and *Persona 5 Royal*, experimenting in [Powerpoint](https://powerpoint.office.com), and also watching **movies and TV series**! Not to mention, I also **draw**, **write**, and **code**! Hosted on [Github](https://github.com/devicals)! Also check out my Minecraft projects at [https://modrinth.com/organization/infiniverse](https://modrinth.com/organization/infiniverse)!\n\nContact me at [3rr0r.d3v@gmail.com](mailto:3rr0r.d3v@gmail.com)!",
+            pronouns: ["he/him"],
+            pronouns_note: "any pronouns are fine, but mostly go by he/him",
+            skills: "- [Hypertext Markup Language (HTML)](https://html.com/)\n- [JavaScript (JS)](https://www.javascript.com/)\n- [YAML Ain't Markup Language (YAML)](https://yaml.org/)\n- [JS Object Notation (JSON)](https://www.json.org/)\n- [Flexion (Flexible Object Notation) (FLON)](https://marketplace.visualstudio.com/items?itemName=error-dev.flexion-language)\n- [Cascading Style Sheets (CSS)](https://www.w3.org/Style/CSS/)\n- [Python (PY)](https://www.python.org/)\n- [Beet & Bolt (Minecraft Datapacks)](https://mcbeet.dev/)",
+            socials: "- [Discord](https://discord.com/users/989414384679927838)\n- [Steam](https://steamcommunity.com/id/error_dev/)\n- [Reddit](https://www.reddit.com/user/3RR0R_0FF1C1AL/)\n- [YouTube](https://www.youtube.com/@3rror_dev/)\n- [DeviantART](https://www.deviantart.com/3rrordev)\n- [X / Twitter](https://x.com/error_dev_xt/)\n- [itch.io](https://error-offixial.itch.io/)"
+        };
+
+        let aboutData = { ...DEFAULT_ABOUT };
+
+        function checkIsOwner() {
+            if (window.parent) {
+                if (window.parent.isOwner) return true;
+                if (window.parent.getUserIdentity) {
+                    const ident = window.parent.getUserIdentity();
+                    if (ident && ident.isOwner) return true;
+                }
+                const user = window.parent.currentUser;
+                if (user && (user.is_owner === true || user.username?.toLowerCase() === 'error dev' || user.email?.toLowerCase() === '3rr0r.d3v@gmail.com')) {
+                    return true;
+                }
+            }
+            try {
+                const sessionStr = localStorage.getItem('custom_auth_session');
+                if (sessionStr) {
+                    const user = JSON.parse(sessionStr);
+                    const name = (user?.username || '').trim().toLowerCase();
+                    const email = (user?.email || '').trim().toLowerCase();
+                    if (user?.is_owner === true || name === 'error dev' || email === '3rr0r.d3v@gmail.com') return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        function updateOwnerUI() {
+            const isOwner = checkIsOwner();
+            const btn = document.getElementById('edit-about-btn');
+            if (btn) btn.style.display = isOwner ? 'block' : 'none';
+        }
+
+        window.onParentAuthChanged = updateOwnerUI;
+
+        async function loadAboutData() {
+            try {
+                const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'about').single();
+                if (data && data.data) {
+                    aboutData = { ...DEFAULT_ABOUT, ...data.data };
+                } else {
+                    const cached = localStorage.getItem('site_about_data');
+                    if (cached) aboutData = { ...DEFAULT_ABOUT, ...JSON.parse(cached) };
+                }
+            } catch (e) {
+                const cached = localStorage.getItem('site_about_data');
+                if (cached) aboutData = { ...DEFAULT_ABOUT, ...JSON.parse(cached) };
+            }
+            renderAbout();
+        }
+
+        function renderAbout() {
+            document.getElementById('about-bio-container').innerHTML = marked.parse(aboutData.bio || '');
+
+            const pListEl = document.getElementById('about-pronouns-list');
+            let list = Array.isArray(aboutData.pronouns) ? aboutData.pronouns : (aboutData.pronouns || '').split(',').map(s => s.trim()).filter(Boolean);
+            if (!list.length) list = ['he/him'];
+
+            pListEl.innerHTML = list.map(p => `<span class="pronoun-badge">${p}</span>`).join('');
+
+            const noteEl = document.getElementById('about-pronouns-note');
+            if (aboutData.pronouns_note && aboutData.pronouns_note.trim()) {
+                noteEl.innerHTML = marked.parse(aboutData.pronouns_note.trim());
+                noteEl.style.display = 'block';
+            } else {
+                noteEl.innerHTML = '';
+                noteEl.style.display = 'none';
+            }
+
+            document.getElementById('about-skills-container').innerHTML = marked.parse(aboutData.skills || '');
+            document.getElementById('about-socials-container').innerHTML = marked.parse(aboutData.socials || '');
+
+            document.querySelectorAll('#about-bio-container a, #about-pronouns-note a, #about-skills-container a, #about-socials-container a').forEach(a => {
+                const href = a.getAttribute('href') || '';
+                if (href.startsWith('http') || href.startsWith('mailto:')) {
+                    a.setAttribute('target', '_blank');
+                    a.setAttribute('rel', 'noopener noreferrer');
+                } else if (href.startsWith('#')) {
+                    a.onclick = (e) => {
+                        e.preventDefault();
+                        window.parent.location.hash = href.substring(1);
+                    };
+                }
+            });
+        }
+
+        window.openEditAboutModal = function () {
+            if (!checkIsOwner()) return;
+            document.getElementById('edit-bio-input').value = aboutData.bio || '';
+            const list = Array.isArray(aboutData.pronouns) ? aboutData.pronouns.join(', ') : (aboutData.pronouns || '');
+            document.getElementById('edit-pronouns-list-input').value = list;
+            document.getElementById('edit-pronouns-note-input').value = aboutData.pronouns_note || '';
+            document.getElementById('edit-skills-input').value = aboutData.skills || '';
+            document.getElementById('edit-socials-input').value = aboutData.socials || '';
+            document.getElementById('edit-about-modal').style.display = 'flex';
+        };
+
+        window.closeEditAboutModal = function () {
+            document.getElementById('edit-about-modal').style.display = 'none';
+        };
+
+        window.saveAboutData = async function () {
+            if (!checkIsOwner()) {
+                alert("Permission denied. Only Error Dev can edit the about me page.");
+                return;
+            }
+
+            const bio = document.getElementById('edit-bio-input').value.trim();
+            const pronounsRaw = document.getElementById('edit-pronouns-list-input').value.trim();
+            const pronouns = pronounsRaw.split(',').map(s => s.trim()).filter(Boolean);
+            const pronouns_note = document.getElementById('edit-pronouns-note-input').value.trim();
+            const skills = document.getElementById('edit-skills-input').value.trim();
+            const socials = document.getElementById('edit-socials-input').value.trim();
+
+            aboutData = { bio, pronouns, pronouns_note, skills, socials };
+            localStorage.setItem('site_about_data', JSON.stringify(aboutData));
+
+            try {
+                const { data: existing } = await supabaseClient.from('site_content').select('key').eq('key', 'about').maybeSingle();
+                let error = null;
+                if (existing) {
+                    const res = await supabaseClient.from('site_content').update({ data: aboutData }).eq('key', 'about');
+                    error = res.error;
+                } else {
+                    const res = await supabaseClient.from('site_content').insert({ key: 'about', data: aboutData });
+                    error = res.error;
+                }
+                if (error) throw error;
+            } catch (err) {
+                if (window.parent && window.parent.guiAlert) {
+                    window.parent.guiAlert("Saved locally, but Supabase table update encountered an error: " + err.message, "Sync Notice");
+                }
+            }
+
+            renderAbout();
+            closeEditAboutModal();
+        };
+
+        async function loadHomeBlog() {
             try {
                 const { data } = await supabaseClient.from('site_content').select('data').eq('key', 'blogs').single();
                 if (data && data.data && data.data.length > 0) {
@@ -72,7 +300,12 @@
             } catch (e) {}
         }
 
-        document.addEventListener('DOMContentLoaded', loadHomeData);
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOwnerUI();
+            loadAboutData();
+            loadHomeBlog();
+            setInterval(updateOwnerUI, 1000);
+        });
     </script>
     <script src="../js/bg-canvas.js"></script>
 </body>

@@ -10,9 +10,9 @@
     <h1>admin dashboard</h1>
     
     <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-        <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('tree')">page structure</button>
         <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('users')">user management</button>
         <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('anns')">announcements</button>
+        <button class="ui-btn" style="width:auto; margin:0;" onclick="renderAdminSection('codes')">share codes</button>
     </div>
 
     <div id="admin-section-content"></div>
@@ -22,11 +22,36 @@
         const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
         const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
+        function verifyAdmin() {
+            let isAdmin = false;
+            if (window.parent && window.parent.getUserIdentity) {
+                isAdmin = window.parent.getUserIdentity().isAdmin;
+            } else {
+                try {
+                    const session = JSON.parse(localStorage.getItem('custom_auth_session') || '{}');
+                    isAdmin = session.is_admin === true || session.is_owner === true || session.username?.toLowerCase() === 'error dev';
+                } catch(e) {}
+            }
+            if (!isAdmin) {
+                document.body.innerHTML = '';
+                if (window.parent && window.parent.location) {
+                    window.parent.location.hash = 'Index/Home';
+                } else {
+                    window.location.href = '../index.html#Index/Home';
+                }
+                return false;
+            }
+            return true;
+        }
+
         async function initAdminPage() {
+            if (!verifyAdmin()) return;
             if (window.parent && window.parent.renderAdminPage) {
                 window.parent.renderAdminPage();
             }
         }
+
+        setInterval(verifyAdmin, 500);
         document.addEventListener('DOMContentLoaded', initAdminPage);
     </script>
     <script src="../js/bg-canvas.js"></script>
