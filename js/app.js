@@ -312,7 +312,8 @@ window.syncSettingsToServer = async function() {
             dark_mode: localStorage.getItem('dark-mode'),
             bg_effect: localStorage.getItem('bg-effect'),
             tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
-            worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]')
+            worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
+            birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]')
         };
         await supabaseClient.from('profiles').update({ settings: newSettings }).eq('id', currentUser.id);
         currentProfile.settings = newSettings;
@@ -407,6 +408,7 @@ async function handleSession() {
         if (s.bg_effect) { localStorage.setItem('bg-effect', s.bg_effect); if (window.setBgEffect) window.setBgEffect(s.bg_effect); }
         if (s.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(s.tierlists));
         if (s.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(s.worldclocks));
+        if (s.birthdays) localStorage.setItem('user_birthdays', JSON.stringify(s.birthdays));
         loadSettingsLocally();
 
         const emailIsOwner = currentUser.email?.toLowerCase() === window.OWNER_EMAIL;

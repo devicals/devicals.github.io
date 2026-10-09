@@ -228,6 +228,11 @@
       fileType: html
       url: pages/codes.html
 
+    - name: Birthdays
+      type: file
+      fileType: html
+      url: pages/birthdays.html
+
 - name: System
   type: folder
   children:

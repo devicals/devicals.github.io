@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>birthdays</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+    <style>
+        .cloud-sync-note {
+            font-size: 12px;
+            font-family: var(--font-ui);
+            color: var(--accent);
+            border: 1px dashed var(--border);
+            background: var(--bg-hover);
+            padding: 10px 14px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bday-section-title {
+            font-size: 14px;
+            color: var(--accent);
+            font-family: var(--font-ui);
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-transform: lowercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 6px;
+        }
+
+        .bday-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px dashed var(--border);
+            font-family: var(--font-ui);
+            font-size: 13px;
+        }
+
+        .bday-row:last-child {
+            border-bottom: none;
+        }
+
+        .bday-row.is-today {
+            background: var(--bg-hover);
+            padding: 14px 12px;
+            border: 1px solid var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .bday-name {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--fg-main);
+        }
+
+        .bday-row.is-today .bday-name {
+            color: var(--accent);
+        }
+
+        .bday-meta {
+            font-size: 12px;
+            color: var(--fg-muted);
+            margin-top: 3px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .bday-tag {
+            color: var(--accent);
+            border: 1px solid var(--border);
+            padding: 1px 6px;
+            font-size: 11px;
+        }
+
+        .bday-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .bday-empty {
+            color: var(--fg-muted);
+            font-size: 13px;
+            font-family: var(--font-ui);
+            padding: 16px 0;
+        }
+
+        .notif-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+    </style>
+</head>
+<body style="padding: 40px; overflow-y: auto;">
+    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+            <h1 style="margin:0; font-size:32px;">birthdays</h1>
+            <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">+ add birthdays</button>
+        </div>
+
+        <div id="anon-sync-warning" class="cloud-sync-note" style="display:none;">
+            <span>saved locally only. remember to log in to sync your birthdays to the cloud.</span>
+            <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="triggerParentLogin()">log in</button>
+        </div>
+
+        <div id="notif-bar" class="notif-bar" style="display:none;">
+            <span id="notif-status-text">enable system notifications for birthdays</span>
+            <button id="notif-btn" class="ui-btn" style="width:auto; margin:0; padding:4px 10px;" onclick="requestNotifPermission()">enable</button>
+        </div>
+
+        <div id="add-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:32px;">
+            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
+                add birthdays (one per line)
+            </div>
+            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
+                format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code><br>
+                examples:<br>
+                <code>john doe/15/04/1998</code><br>
+                <code>jane doe :) / 28/11</code>
+            </div>
+            <textarea id="bulk-input" class="ui-input" rows="5" placeholder="name/dd/mm&#10;name/dd/mm/yyyy"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAdd()">save</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">cancel</button>
+            </div>
+        </div>
+
+        <div class="bday-section-title">upcoming birthdays</div>
+        <div id="upcoming-list" style="margin-bottom:40px;"></div>
+
+        <div class="bday-section-title">all birthdays (<span id="total-count">0</span>)</div>
+        <div id="all-list"></div>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
+        const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        const STORAGE_KEY = 'user_birthdays';
+        let birthdays = [];
+        let currentUserId = null;
+
+        function syncTheme() {
+            try {
+                const parentTheme = window.parent && window.parent.document.documentElement.getAttribute('data-theme');
+                if (parentTheme) {
+                    document.documentElement.setAttribute('data-theme', parentTheme);
+                    return;
+                }
+            } catch (e) {}
+
+            const isDark = localStorage.getItem('dark-mode') !== 'false';
+            const theme = localStorage.getItem('theme') || 'primary';
+            document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
+        }
+
+        function escapeHTML(str) {
+            return (str || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function triggerParentLogin() {
+            if (window.parent && window.parent.document.getElementById('auth-trigger')) {
+                window.parent.document.getElementById('auth-trigger').click();
+            }
+        }
+
+        function getActiveUser() {
+            if (window.parent && window.parent.getUserIdentity) {
+                const ident = window.parent.getUserIdentity();
+                return ident ? ident.user : null;
+            }
+            try {
+                const sessionStr = localStorage.getItem('custom_auth_session');
+                if (sessionStr) {
+                    const parsed = JSON.parse(sessionStr);
+                    if (!parsed.is_banned) return parsed;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        async function initBirthdays() {
+            syncTheme();
+            const user = getActiveUser();
+            currentUserId = user ? user.id : null;
+
+            const warningEl = document.getElementById('anon-sync-warning');
+
+            if (!currentUserId) {
+                warningEl.style.display = 'flex';
+                try {
+                    birthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                } catch (e) {
+                    birthdays = [];
+                }
+            } else {
+                warningEl.style.display = 'none';
+                try {
+                    const { data, error } = await supabaseClient.from('profiles').select('settings').eq('id', currentUserId).single();
+                    if (!error && data && data.settings && Array.isArray(data.settings.birthdays)) {
+                        birthdays = data.settings.birthdays;
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(birthdays));
+                    } else {
+                        birthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    }
+                } catch (e) {
+                    birthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                }
+            }
+
+            renderAll();
+            updateNotifBar();
+        }
+
+        window.onParentAuthChanged = initBirthdays;
+
+        async function saveBirthdays() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(birthdays));
+
+            if (currentUserId) {
+                try {
+                    const { data } = await supabaseClient.from('profiles').select('settings').eq('id', currentUserId).single();
+                    const settings = (data && data.settings) ? data.settings : {};
+                    settings.birthdays = birthdays;
+                    await supabaseClient.from('profiles').update({ settings }).eq('id', currentUserId);
+                } catch (e) {
+                    console.error("cloud sync failed", e);
+                }
+            }
+
+            if (window.parent && window.parent.syncSettingsToServer) {
+                window.parent.syncSettingsToServer();
+            }
+        }
+
+        function toggleAddBox() {
+            const el = document.getElementById('add-box');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+            if (el.style.display === 'block') {
+                document.getElementById('bulk-input').focus();
+            }
+        }
+
+        function parseBirthdayLine(line) {
+            const trimmed = line.trim();
+            if (!trimmed) return null;
+
+            const match = trimmed.match(/^(.*?)\/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
+            if (!match) return null;
+
+            const name = match[1].trim();
+            const day = parseInt(match[2], 10);
+            const month = parseInt(match[3], 10);
+            const year = match[4] ? parseInt(match[4], 10) : null;
+
+            if (!name || isNaN(day) || isNaN(month) || month < 1 || month > 12 || day < 1 || day > 31) {
+                return null;
+            }
+
+            return {
+                id: 'bday_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                name,
+                day,
+                month,
+                year
+            };
+        }
+
+        async function handleBulkAdd() {
+            const raw = document.getElementById('bulk-input').value;
+            const lines = raw.split('\n');
+            let addedCount = 0;
+
+            lines.forEach(line => {
+                const item = parseBirthdayLine(line);
+                if (item) {
+                    birthdays.push(item);
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                await saveBirthdays();
+                renderAll();
+                document.getElementById('bulk-input').value = '';
+                toggleAddBox();
+            } else {
+                alert('No valid birthdays found. Format: <name>/dd/mm or <name>/dd/mm/yyyy');
+            }
+        }
+
+        function getDaysUntil(day, month) {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const today = new Date(currentYear, now.getMonth(), now.getDate());
+            let target = new Date(currentYear, month - 1, day);
+
+            if (target < today) {
+                target = new Date(currentYear + 1, month - 1, day);
+            }
+
+            const diffTime = target - today;
+            return Math.round(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        function getNextBirthdayDate(day, month) {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const today = new Date(currentYear, now.getMonth(), now.getDate());
+            let target = new Date(currentYear, month - 1, day);
+
+            if (target < today) {
+                target = new Date(currentYear + 1, month - 1, day);
+            }
+            return target;
+        }
+
+        function formatDisplayDate(day, month, year) {
+            const d = String(day).padStart(2, '0');
+            const m = String(month).padStart(2, '0');
+            return year ? `${d}/${m}/${year}` : `${d}/${m}`;
+        }
+
+        async function editBirthday(id) {
+            const item = birthdays.find(b => b.id === id);
+            if (!item) return;
+
+            const existingFormatted = `${item.name}/${formatDisplayDate(item.day, item.month, item.year)}`;
+            const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
+            const updated = await promptFn("edit birthday (<name>/dd/mm/yyyy or <name>/dd/mm):", existingFormatted);
+            if (updated === null) return;
+
+            const parsed = parseBirthdayLine(updated);
+            if (parsed) {
+                item.name = parsed.name;
+                item.day = parsed.day;
+                item.month = parsed.month;
+                item.year = parsed.year;
+                await saveBirthdays();
+                renderAll();
+            } else {
+                alert("invalid format. use <name>/dd/mm or <name>/dd/mm/yyyy");
+            }
+        }
+
+        async function deleteBirthday(id) {
+            const confirmFn = (window.parent && window.parent.guiConfirm) ? window.parent.guiConfirm : confirm;
+            if (!await confirmFn("remove this birthday?")) return;
+
+            birthdays = birthdays.filter(b => b.id !== id);
+            await saveBirthdays();
+            renderAll();
+        }
+
+        function renderAll() {
+            document.getElementById('total-count').textContent = birthdays.length;
+
+            const upcomingContainer = document.getElementById('upcoming-list');
+            const allContainer = document.getElementById('all-list');
+
+            if (!birthdays.length) {
+                upcomingContainer.innerHTML = '<div class="bday-empty">no upcoming birthdays.</div>';
+                allContainer.innerHTML = '<div class="bday-empty">no birthdays added yet.</div>';
+                return;
+            }
+
+            const sortedUpcoming = [...birthdays].map(item => {
+                const daysUntil = getDaysUntil(item.day, item.month);
+                const nextDate = getNextBirthdayDate(item.day, item.month);
+                const turningAge = item.year ? (nextDate.getFullYear() - item.year) : null;
+                return { ...item, daysUntil, turningAge };
+            }).sort((a, b) => a.daysUntil - b.daysUntil);
+
+            upcomingContainer.innerHTML = sortedUpcoming.slice(0, 10).map(b => {
+                const isToday = b.daysUntil === 0;
+                let daysLabel = '';
+                if (isToday) {
+                    daysLabel = 'today!';
+                } else if (b.daysUntil === 1) {
+                    daysLabel = 'tomorrow';
+                } else {
+                    daysLabel = `in ${b.daysUntil} days`;
+                }
+
+                let ageLabel = '';
+                if (b.turningAge !== null) {
+                    ageLabel = isToday ? `turns ${b.turningAge} today` : `turning ${b.turningAge}`;
+                }
+
+                return `
+                    <div class="bday-row ${isToday ? 'is-today' : ''}">
+                        <div>
+                            <div class="bday-name">${escapeHTML(b.name)}</div>
+                            <div class="bday-meta">
+                                <span>${formatDisplayDate(b.day, b.month, b.year)}</span>
+                                <span class="bday-tag">${daysLabel}</span>
+                                ${ageLabel ? `<span style="color:var(--fg-muted);">&middot; ${escapeHTML(ageLabel)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="bday-actions">
+                            <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px;" onclick="editBirthday('${b.id}')">edit</button>
+                            <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px; color:var(--destructive);" onclick="deleteBirthday('${b.id}')">del</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const sortedAll = [...birthdays].sort((a, b) => {
+                if (a.month !== b.month) return a.month - b.month;
+                return a.day - b.day;
+            });
+
+            allContainer.innerHTML = sortedAll.map(b => `
+                <div class="bday-row">
+                    <div>
+                        <div class="bday-name" style="font-weight:normal;">${escapeHTML(b.name)}</div>
+                        <div class="bday-meta">
+                            <span>${formatDisplayDate(b.day, b.month, b.year)}</span>
+                        </div>
+                    </div>
+                    <div class="bday-actions">
+                        <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px;" onclick="editBirthday('${b.id}')">edit</button>
+                        <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px; color:var(--destructive);" onclick="deleteBirthday('${b.id}')">del</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateNotifBar() {
+            const bar = document.getElementById('notif-bar');
+            if (!("Notification" in window)) {
+                bar.style.display = 'none';
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                bar.style.display = 'none';
+                checkAndSendNotifications();
+            } else if (Notification.permission === 'denied') {
+                bar.style.display = 'flex';
+                document.getElementById('notif-status-text').textContent = 'system notifications are blocked in your browser settings';
+                document.getElementById('notif-btn').style.display = 'none';
+            } else {
+                bar.style.display = 'flex';
+                document.getElementById('notif-status-text').textContent = 'enable system notifications for birthdays';
+                document.getElementById('notif-btn').style.display = 'block';
+            }
+        }
+
+        async function requestNotifPermission() {
+            if (!("Notification" in window)) return;
+            const res = await Notification.requestPermission();
+            updateNotifBar();
+            if (res === 'granted') {
+                checkAndSendNotifications();
+            }
+        }
+
+        function checkAndSendNotifications() {
+            if (!("Notification" in window) || Notification.permission !== 'granted') return;
+
+            const now = new Date();
+            const todayStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+            const notifiedToday = JSON.parse(localStorage.getItem('bday_notified_' + todayStr) || '[]');
+
+            birthdays.forEach(b => {
+                if (getDaysUntil(b.day, b.month) === 0) {
+                    if (!notifiedToday.includes(b.id)) {
+                        let body = `today is ${b.name}'s birthday!`;
+                        if (b.year) {
+                            const age = now.getFullYear() - b.year;
+                            body = `${b.name} turns ${age} today!`;
+                        }
+
+                        new Notification("birthday reminder", {
+                            body: body,
+                            icon: '../assets/favicon.ico'
+                        });
+
+                        notifiedToday.push(b.id);
+                    }
+                }
+            });
+
+            localStorage.setItem('bday_notified_' + todayStr, JSON.stringify(notifiedToday));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initBirthdays();
+            setInterval(checkAndSendNotifications, 60000);
+        });
+    </script>
+    <script src="../js/bg-canvas.js"></script>
+</body>
+</html>
