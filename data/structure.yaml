@@ -228,10 +228,10 @@
       fileType: html
       url: pages/codes.html
 
-    - name: Birthdays
+    - name: Events
       type: file
       fileType: html
-      url: pages/birthdays.html
+      url: pages/events.html
 
 - name: System
   type: folder
