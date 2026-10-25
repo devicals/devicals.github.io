@@ -32,56 +32,132 @@
             padding-bottom: 6px;
         }
 
-        .bday-row {
+        .bday-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .bday-card {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            padding: 8px 10px 10px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px dashed var(--border);
             font-family: var(--font-ui);
-            font-size: 13px;
+            position: relative;
+            overflow: hidden;
+            gap: 8px;
         }
 
-        .bday-row:last-child {
-            border-bottom: none;
-        }
-
-        .bday-row.is-today {
-            background: var(--bg-hover);
-            padding: 14px 12px;
+        .bday-card.is-today {
             border: 1px solid var(--accent);
-            margin-bottom: 8px;
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+
+        .bday-card-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0.85;
+            transition: width 0.3s ease;
+            pointer-events: none;
+        }
+
+        .bday-card.is-today .bday-card-progress {
+            height: 3px;
+            opacity: 1;
+            box-shadow: 0 0 6px var(--accent);
+        }
+
+        .bday-card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .bday-card-row1 {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
         }
 
         .bday-name {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: bold;
             color: var(--fg-main);
+            word-break: break-word;
+            line-height: 1.2;
         }
 
-        .bday-row.is-today .bday-name {
+        .bday-card.is-today .bday-name {
             color: var(--accent);
-        }
-
-        .bday-meta {
-            font-size: 12px;
-            color: var(--fg-muted);
-            margin-top: 3px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
         }
 
         .bday-tag {
             color: var(--accent);
             border: 1px solid var(--border);
-            padding: 1px 6px;
+            padding: 0 5px;
+            font-size: 10px;
+            line-height: 1.3;
+            white-space: nowrap;
+        }
+
+        .bday-card.is-today .bday-tag {
+            border-color: var(--accent);
+        }
+
+        .bday-card-row2 {
+            display: flex;
+            align-items: center;
+            gap: 5px;
             font-size: 11px;
+            color: var(--fg-muted);
+            line-height: 1.2;
+        }
+
+        .bday-age-tag {
+            font-size: 11px;
+            color: var(--fg-muted);
+            white-space: nowrap;
         }
 
         .bday-actions {
             display: flex;
-            gap: 8px;
+            flex-direction: column;
+            gap: 2px;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .bday-icon-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 2px;
+            color: var(--fg-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            line-height: 1;
+            transition: color 0.15s ease;
+        }
+
+        .bday-icon-btn:hover {
+            color: var(--fg-main);
+        }
+
+        .bday-icon-btn.btn-del:hover {
+            color: var(--destructive);
         }
 
         .bday-empty {
@@ -109,7 +185,10 @@
     <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; border-bottom:1px solid var(--border); padding-bottom:16px;">
             <h1 style="margin:0; font-size:32px;">birthdays</h1>
-            <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">+ add birthdays</button>
+            <div style="display:flex; gap:8px;">
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">+ add birthdays</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">edit birthdays</button>
+            </div>
         </div>
 
         <div id="anon-sync-warning" class="cloud-sync-note" style="display:none;">
@@ -139,11 +218,23 @@
             </div>
         </div>
 
-        <div class="bday-section-title">upcoming birthdays</div>
-        <div id="upcoming-list" style="margin-bottom:40px;"></div>
+        <div id="edit-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:32px;">
+            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
+                edit birthdays
+            </div>
+            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
+                edit any birthday below. birthdays removed from this list will be deleted, and new names will be added.<br>
+                format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code>
+            </div>
+            <textarea id="bulk-edit-input" class="ui-input" rows="8" placeholder="name/dd/mm&#10;name/dd/mm/yyyy"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkEditSave()">save changes</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">cancel</button>
+            </div>
+        </div>
 
-        <div class="bday-section-title">all birthdays (<span id="total-count">0</span>)</div>
-        <div id="all-list"></div>
+        <div class="bday-section-title">upcoming birthdays (<span id="total-count">0</span>)</div>
+        <div id="upcoming-grid" class="bday-grid"></div>
     </div>
 
     <script>
@@ -249,10 +340,29 @@
         }
 
         function toggleAddBox() {
-            const el = document.getElementById('add-box');
-            el.style.display = el.style.display === 'none' ? 'block' : 'none';
-            if (el.style.display === 'block') {
+            const addEl = document.getElementById('add-box');
+            const editEl = document.getElementById('edit-box');
+            editEl.style.display = 'none';
+
+            addEl.style.display = addEl.style.display === 'none' ? 'block' : 'none';
+            if (addEl.style.display === 'block') {
                 document.getElementById('bulk-input').focus();
+            }
+        }
+
+        function toggleEditBox() {
+            const addEl = document.getElementById('add-box');
+            const editEl = document.getElementById('edit-box');
+            addEl.style.display = 'none';
+
+            if (editEl.style.display === 'none') {
+                const sorted = [...birthdays].sort((a, b) => getDaysUntil(a.day, a.month) - getDaysUntil(b.day, b.month));
+                const text = sorted.map(b => `${b.name}/${formatDisplayDate(b.day, b.month, b.year)}`).join('\n');
+                document.getElementById('bulk-edit-input').value = text;
+                editEl.style.display = 'block';
+                document.getElementById('bulk-edit-input').focus();
+            } else {
+                editEl.style.display = 'none';
             }
         }
 
@@ -302,6 +412,40 @@
             } else {
                 alert('No valid birthdays found. Format: <name>/dd/mm or <name>/dd/mm/yyyy');
             }
+        }
+
+        async function handleBulkEditSave() {
+            const raw = document.getElementById('bulk-edit-input').value;
+            const lines = raw.split('\n');
+            const newBirthdays = [];
+            const remainingOld = [...birthdays];
+
+            lines.forEach(line => {
+                const parsed = parseBirthdayLine(line);
+                if (!parsed) return;
+
+                const existingIndex = remainingOld.findIndex(
+                    b => b.name.trim().toLowerCase() === parsed.name.toLowerCase()
+                );
+
+                if (existingIndex !== -1) {
+                    const matched = remainingOld.splice(existingIndex, 1)[0];
+                    newBirthdays.push({
+                        id: matched.id,
+                        name: parsed.name,
+                        day: parsed.day,
+                        month: parsed.month,
+                        year: parsed.year
+                    });
+                } else {
+                    newBirthdays.push(parsed);
+                }
+            });
+
+            birthdays = newBirthdays;
+            await saveBirthdays();
+            renderAll();
+            toggleEditBox();
         }
 
         function getDaysUntil(day, month) {
@@ -369,13 +513,10 @@
 
         function renderAll() {
             document.getElementById('total-count').textContent = birthdays.length;
-
-            const upcomingContainer = document.getElementById('upcoming-list');
-            const allContainer = document.getElementById('all-list');
+            const gridContainer = document.getElementById('upcoming-grid');
 
             if (!birthdays.length) {
-                upcomingContainer.innerHTML = '<div class="bday-empty">no upcoming birthdays.</div>';
-                allContainer.innerHTML = '<div class="bday-empty">no birthdays added yet.</div>';
+                gridContainer.innerHTML = '<div class="bday-empty">no birthdays added yet.</div>';
                 return;
             }
 
@@ -386,7 +527,7 @@
                 return { ...item, daysUntil, turningAge };
             }).sort((a, b) => a.daysUntil - b.daysUntil);
 
-            upcomingContainer.innerHTML = sortedUpcoming.slice(0, 10).map(b => {
+            gridContainer.innerHTML = sortedUpcoming.map(b => {
                 const isToday = b.daysUntil === 0;
                 let daysLabel = '';
                 if (isToday) {
@@ -399,46 +540,43 @@
 
                 let ageLabel = '';
                 if (b.turningAge !== null) {
-                    ageLabel = isToday ? `turns ${b.turningAge} today` : `turning ${b.turningAge}`;
+                    ageLabel = isToday ? `turns ${b.turningAge}` : `turning ${b.turningAge}`;
                 }
 
+                const closeness = Math.max(0, (365 - b.daysUntil) / 365);
+                const progressPct = isToday ? 100 : Math.max(3, Math.min(100, Math.round(closeness * 100)));
+                const gradientMix = (closeness * 18).toFixed(1);
+
                 return `
-                    <div class="bday-row ${isToday ? 'is-today' : ''}">
-                        <div>
-                            <div class="bday-name">${escapeHTML(b.name)}</div>
-                            <div class="bday-meta">
-                                <span>${formatDisplayDate(b.day, b.month, b.year)}</span>
+                    <div class="bday-card ${isToday ? 'is-today' : ''}" style="background: linear-gradient(90deg, color-mix(in srgb, var(--accent) ${gradientMix}%, var(--bg-hover)), var(--bg-hover));">
+                        <div class="bday-card-info">
+                            <div class="bday-card-row1">
+                                <span class="bday-name" title="${escapeHTML(b.name)}">${escapeHTML(b.name)}</span>
                                 <span class="bday-tag">${daysLabel}</span>
-                                ${ageLabel ? `<span style="color:var(--fg-muted);">&middot; ${escapeHTML(ageLabel)}</span>` : ''}
+                            </div>
+                            <div class="bday-card-row2">
+                                <span>${formatDisplayDate(b.day, b.month, b.year)}</span>
+                                ${ageLabel ? `<span class="bday-age-tag">&middot; ${escapeHTML(ageLabel)}</span>` : ''}
                             </div>
                         </div>
                         <div class="bday-actions">
-                            <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px;" onclick="editBirthday('${b.id}')">edit</button>
-                            <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px; color:var(--destructive);" onclick="deleteBirthday('${b.id}')">del</button>
+                            <button class="bday-icon-btn" title="edit" onclick="editBirthday('${b.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </button>
+                            <button class="bday-icon-btn btn-del" title="delete" onclick="deleteBirthday('${b.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
                         </div>
+                        <div class="bday-card-progress" style="width: ${progressPct}%;"></div>
                     </div>
                 `;
             }).join('');
-
-            const sortedAll = [...birthdays].sort((a, b) => {
-                if (a.month !== b.month) return a.month - b.month;
-                return a.day - b.day;
-            });
-
-            allContainer.innerHTML = sortedAll.map(b => `
-                <div class="bday-row">
-                    <div>
-                        <div class="bday-name" style="font-weight:normal;">${escapeHTML(b.name)}</div>
-                        <div class="bday-meta">
-                            <span>${formatDisplayDate(b.day, b.month, b.year)}</span>
-                        </div>
-                    </div>
-                    <div class="bday-actions">
-                        <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px;" onclick="editBirthday('${b.id}')">edit</button>
-                        <button class="ui-btn" style="width:auto; margin:0; padding:3px 8px; font-size:11px; color:var(--destructive);" onclick="deleteBirthday('${b.id}')">del</button>
-                    </div>
-                </div>
-            `).join('');
         }
 
         function updateNotifBar() {
