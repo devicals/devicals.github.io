@@ -218,17 +218,17 @@
       fileType: html
       url: pages/ranking.html
 
-    - name: World Clock Viewer
-      type: file
-      fileType: html
-      url: pages/worldclock.html
-
     - name: Code Translator
       type: file
       fileType: html
       url: pages/codes.html
 
-    - name: Events
+    - name: Timezones Tracker
+      type: file
+      fileType: html
+      url: pages/timezones.html
+
+    - name: Events Tracker
       type: file
       fileType: html
       url: pages/events.html
