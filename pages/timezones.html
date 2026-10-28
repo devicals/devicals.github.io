@@ -314,10 +314,10 @@
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
                 enter any timezone, city, or offset<br>
-                examples: <code>utc-4</code>, <code>utc+9</code>, <code>tokyo</code>, <code>london</code>, <code>+10</code>, <code>aest</code>, <code>et</code>
+                examples: <code>4</code>, <code>-3</code>, <code>utc-4</code>, <code>utc+9</code>, <code>gmt-5</code>, <code>tokyo</code>, <code>london</code>, <code>aest</code>, <code>et</code>
             </div>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="standalone-input" class="ui-input" style="margin:0; flex:1;" placeholder="e.g. utc-4, tokyo, london">
+                <input type="text" id="standalone-input" class="ui-input" style="margin:0; flex:1;" placeholder="e.g. 4, -3, utc-4, tokyo, london">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleSaveStandaloneClock()">save</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddStandaloneBox()">cancel</button>
             </div>
@@ -328,14 +328,15 @@
                 add people (one per line)
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                format: <code>&lt;name&gt;/&lt;timezone, city, or offset&gt;</code><br>
+                format: <code>&lt;name&gt;/&lt;timezone&gt;/&lt;displayed location&gt;</code><br>
+                timezone can be an offset number (e.g. <code>4</code>, <code>-3</code>), <code>utc+4</code>, <code>gmt-3</code>, or abbreviation/zone.<br>
                 examples:<br>
-                <code>user1/utc-4</code><br>
-                <code>user2/utc+9</code><br>
-                <code>user3/london</code><br>
-                <code>user4/+10</code>
+                <code>user1/-4/New York</code><br>
+                <code>user2/9/Tokyo</code><br>
+                <code>user3/utc+1/London</code><br>
+                <code>user4/gmt-3/Buenos Aires</code>
             </div>
-            <textarea id="bulk-people-input" class="ui-input" rows="5" placeholder="user1/utc-4&#10;user2/+9&#10;user3/london"></textarea>
+            <textarea id="bulk-people-input" class="ui-input" rows="5" placeholder="alice/-4/New York&#10;bob/9/Tokyo&#10;charlie/utc+1/London"></textarea>
             <div style="display:flex; gap:10px;">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAddPeople()">save</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddPeopleBox()">cancel</button>
@@ -348,9 +349,9 @@
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
                 edit entries below. clear everything and save to remove all tracked people.<br>
-                format: <code>&lt;name&gt;/&lt;location or offset&gt;</code>
+                format: <code>&lt;name&gt;/&lt;timezone&gt;/&lt;displayed location&gt;</code>
             </div>
-            <textarea id="bulk-edit-input" class="ui-input" rows="8" placeholder="name/location"></textarea>
+            <textarea id="bulk-edit-input" class="ui-input" rows="8" placeholder="name/timezone/displayed location"></textarea>
             <div style="display:flex; gap:10px;">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkEditSave()">save changes</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditPeopleBox()">cancel</button>
@@ -383,11 +384,31 @@
             if (!Array.isArray(list)) return [];
             return list
                 .filter(p => p && !GHOST_NAMES.has(((p.name || '')).trim().toLowerCase()))
-                .map((p, idx) => ({
-                    id: String(p.id || ('p_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substring(2, 6))),
-                    name: String(p.name || 'unnamed'),
-                    rawLocation: String(p.rawLocation || p.timeZone || p.location || 'UTC')
-                }));
+                .map((p, idx) => {
+                    const name = String(p.name || 'unnamed').trim();
+                    let timezone = String(p.timezone || p.tz || '').trim();
+                    let location = String(p.location || p.displayedLocation || p.displayLocation || '').trim();
+
+                    if (!timezone && p.rawLocation) {
+                        const parts = String(p.rawLocation).split('/');
+                        if (parts.length >= 2) {
+                            timezone = parts[0].trim();
+                            location = parts.slice(1).join('/').trim();
+                        } else {
+                            timezone = p.rawLocation.trim();
+                        }
+                    }
+
+                    if (!timezone) timezone = 'UTC';
+
+                    return {
+                        id: String(p.id || ('p_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substring(2, 6))),
+                        name: name,
+                        timezone: timezone,
+                        location: location,
+                        rawLocation: location ? `${timezone}/${location}` : timezone
+                    };
+                });
         }
 
         const KNOWN_MAP = {
@@ -428,47 +449,12 @@
             'akdt': 'America/Anchorage',
             'nzst': 'Pacific/Auckland',
             'nzdt': 'Pacific/Auckland',
-            'california': 'America/Los_Angeles',
-            'washington': 'America/Los_Angeles',
-            'oregon': 'America/Los_Angeles',
-            'new york': 'America/New_York',
-            'florida': 'America/New_York',
-            'texas': 'America/Chicago',
-            'illinois': 'America/Chicago',
-            'colorado': 'America/Denver',
-            'china': 'Asia/Shanghai',
-            'shenzhen': 'Asia/Shanghai',
-            'beijing': 'Asia/Shanghai',
-            'shanghai': 'Asia/Shanghai',
-            'japan': 'Asia/Tokyo',
-            'tokyo': 'Asia/Tokyo',
-            'korea': 'Asia/Seoul',
-            'seoul': 'Asia/Seoul',
-            'uk': 'Europe/London',
             'london': 'Europe/London',
-            'france': 'Europe/Paris',
+            'tokyo': 'Asia/Tokyo',
             'paris': 'Europe/Paris',
-            'germany': 'Europe/Berlin',
             'berlin': 'Europe/Berlin',
-            'australia': 'Australia/Sydney',
             'sydney': 'Australia/Sydney',
-            'melbourne': 'Australia/Sydney',
-            'brisbane': 'Australia/Brisbane',
-            'perth': 'Australia/Perth',
-            'adelaide': 'Australia/Adelaide',
-            'india': 'Asia/Kolkata',
-            'singapore': 'Asia/Singapore',
-            'rome': 'Europe/Rome',
-            'madrid': 'Europe/Madrid',
-            'amsterdam': 'Europe/Amsterdam',
-            'san francisco': 'America/Los_Angeles',
-            'sf': 'America/Los_Angeles',
-            'toronto': 'America/Toronto',
-            'vancouver': 'America/Vancouver',
-            'taipei': 'Asia/Taipei',
-            'dubai': 'Asia/Dubai',
-            'auckland': 'Pacific/Auckland',
-            'sao paulo': 'America/Sao_Paulo'
+            'singapore': 'Asia/Singapore'
         };
 
         const resolvedCache = JSON.parse(localStorage.getItem('tz_resolved_cache') || '{}');
@@ -490,17 +476,45 @@
         }
 
         function parseDirectOffsetMinutes(str) {
-            if (!str) return null;
-            const clean = str.trim().toLowerCase();
+            if (str === null || str === undefined) return null;
+            let clean = String(str).trim().toLowerCase();
+            if (!clean) return null;
+
             if (clean === 'utc' || clean === 'gmt') return 0;
 
-            const match = clean.match(/^(?:utc|gmt)?\s*([+-]?\d{1,2})(?::?(\d{2}))?$/);
-            if (!match) return null;
+            if (clean.startsWith('utc') || clean.startsWith('gmt')) {
+                clean = clean.slice(3).trim();
+                if (!clean) return 0;
+            }
 
-            const h = parseInt(match[1], 10);
-            if (isNaN(h)) return null;
-            const m = match[2] ? parseInt(match[2], 10) : 0;
-            return (h * 60) + (h >= 0 ? m : -m);
+            let isNegative = false;
+            if (clean.startsWith('-')) {
+                isNegative = true;
+                clean = clean.slice(1).trim();
+            } else if (clean.startsWith('+')) {
+                clean = clean.slice(1).trim();
+            }
+
+            const colonMatch = clean.match(/^(\d{1,2}):(\d{2})$/);
+            if (colonMatch) {
+                const h = parseInt(colonMatch[1], 10);
+                const m = parseInt(colonMatch[2], 10);
+                if (h <= 16 && m < 60) {
+                    const total = h * 60 + m;
+                    return isNegative ? -total : total;
+                }
+            }
+
+            const numMatch = clean.match(/^(\d+(?:\.\d+)?)$/);
+            if (numMatch) {
+                const val = parseFloat(numMatch[1]);
+                if (!isNaN(val) && val <= 16) {
+                    const total = Math.round(val * 60);
+                    return isNegative ? -total : total;
+                }
+            }
+
+            return null;
         }
 
         function tryLocalResolution(z) {
@@ -751,7 +765,9 @@
             const shouldOpen = el.style.display === 'none';
             closeAllBoxes();
             if (shouldOpen) {
-                const text = trackedPeople.map(p => `${p.name}/${p.rawLocation}`).join('\n');
+                const text = trackedPeople.map(p => {
+                    return p.location ? `${p.name}/${p.timezone}/${p.location}` : `${p.name}/${p.timezone}`;
+                }).join('\n');
                 document.getElementById('bulk-edit-input').value = text;
                 el.style.display = 'block';
                 document.getElementById('bulk-edit-input').focus();
@@ -788,18 +804,24 @@
             if (!line) return null;
             const trimmed = line.trim();
             if (!trimmed) return null;
+
             let parts = trimmed.split('/');
-            if (parts.length < 2) parts = trimmed.split(',');
+            if (parts.length < 2) parts = trimmed.split('|');
             if (parts.length < 2) parts = trimmed.split(':');
             if (parts.length < 2) return null;
+
             const name = parts[0].trim();
-            const rawLocation = parts.slice(1).join('/').trim();
-            if (!name || !rawLocation) return null;
+            const timezone = parts[1].trim();
+            const location = parts.length > 2 ? parts.slice(2).join('/').trim() : '';
+
+            if (!name || !timezone) return null;
 
             return {
                 id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                name,
-                rawLocation
+                name: name,
+                timezone: timezone,
+                location: location,
+                rawLocation: location ? `${timezone}/${location}` : timezone
             };
         }
 
@@ -823,7 +845,7 @@
                 renderAll();
                 await saveData();
             } else {
-                alert('format: <name>/<timezone or offset>\nexample: user/utc-4');
+                alert('format: <name>/<timezone>/<displayed location>\nexamples:\nalice/-4/New York\nbob/9/Tokyo');
             }
         }
 
@@ -880,30 +902,35 @@
             let raw = null;
             try {
                 const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
-                raw = await promptFn(`add person to ${offsetLabel} (<name>/<location>):`, "");
+                raw = await promptFn(`add person to ${offsetLabel} (<name>/<displayed location>):`, "");
             } catch (e) {
-                raw = prompt(`add person to ${offsetLabel} (<name>/<location>):`, "");
+                raw = prompt(`add person to ${offsetLabel} (<name>/<displayed location>):`, "");
             }
             if (!raw) return;
 
-            const parsed = parsePersonLine(raw);
-            if (parsed) {
-                trackedPeople.push(parsed);
-                renderAll();
-                await saveData();
-            } else {
-                const parts = raw.split('/');
-                const name = parts[0].trim();
-                const loc = parts[1] ? parts[1].trim() : offsetLabel;
-                if (name) {
-                    trackedPeople.push({
-                        id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                        name,
-                        rawLocation: loc
-                    });
+            const parts = raw.split('/');
+            if (parts.length >= 3) {
+                const parsed = parsePersonLine(raw);
+                if (parsed) {
+                    trackedPeople.push(parsed);
                     renderAll();
                     await saveData();
+                    return;
                 }
+            }
+
+            const name = parts[0].trim();
+            const loc = parts.length > 1 ? parts.slice(1).join('/').trim() : '';
+            if (name) {
+                trackedPeople.push({
+                    id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name,
+                    timezone: offsetLabel,
+                    location: loc,
+                    rawLocation: loc ? `${offsetLabel}/${loc}` : offsetLabel
+                });
+                renderAll();
+                await saveData();
             }
         }
 
@@ -1000,19 +1027,14 @@
         }
 
         function getPersonOffsetMinutes(p) {
-            const direct = parseDirectOffsetMinutes(p.rawLocation);
+            const tz = (p.timezone || p.rawLocation || 'UTC').trim();
+            const direct = parseDirectOffsetMinutes(tz);
             if (direct !== null) {
                 return direct;
             }
 
-            const resolved = tryLocalResolution(p.rawLocation);
+            const resolved = tryLocalResolution(tz);
             if (!resolved) {
-                fetchTimezoneFromApi(p.rawLocation);
-                const cached = resolvedCache[p.rawLocation.trim().toLowerCase()];
-                if (cached) {
-                    const dt = DateTime.now().setZone(cached);
-                    if (dt.isValid) return dt.offset;
-                }
                 return 0;
             }
             const dt = resolved === 'system' ? DateTime.now() : DateTime.now().setZone(resolved);
@@ -1113,16 +1135,19 @@
                 const people = groupsMap.get(offset);
                 const metrics = getOffsetGroupMetrics(offset);
 
-                const pillsHtml = people.map(p => `
-                    <span class="tz-person-pill" title="${escapeHTML(p.name)} (${escapeHTML(p.rawLocation)})">${escapeHTML(p.name)}</span>
-                `).join('');
+                const pillsHtml = people.map(p => {
+                    const tooltip = p.location ? `${p.name} (${p.location})` : p.name;
+                    return `
+                        <span class="tz-person-pill" title="${escapeHTML(tooltip)}">${escapeHTML(p.name)}</span>
+                    `;
+                }).join('');
 
                 const popoverRows = people.map(p => `
                     <div class="tz-popover-row">
                         <div class="tz-popover-user">
                             <span class="tz-popover-avatar">${escapeHTML(((p.name || '').trim().charAt(0) || '?'))}</span>
                             <span class="tz-popover-name">${escapeHTML(p.name)}</span>
-                            <span class="tz-popover-loc">&middot; ${escapeHTML(p.rawLocation)}</span>
+                            ${p.location ? `<span class="tz-popover-loc">&middot; ${escapeHTML(p.location)}</span>` : ''}
                         </div>
                         <button class="tz-icon-btn btn-del" title="remove person" onclick="event.stopPropagation(); deletePerson('${escapeHTML(p.id)}')">&#10005;</button>
                     </div>
