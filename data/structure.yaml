@@ -196,19 +196,6 @@
                   fileType: md
                   path: content/poems/short of a world unsaid/Mother.md
 
-- name: About Me
-  type: folder
-  children:
-
-    - name: Games I <3
-      type: file
-      fileType: html
-      url: pages/games.html
-
-    - name: Spotify
-      type: file
-      fileType: spotify
-
 - name: Other Stuff
   type: folder
   children:
