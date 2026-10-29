@@ -220,6 +220,11 @@
       fileType: html
       url: pages/events.html
 
+    - name: fxTwiter
+      type: file
+      fileType: html
+      url: pages/fxtwitter.html
+
 - name: System
   type: folder
   children:

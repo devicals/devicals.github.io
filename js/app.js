@@ -712,7 +712,11 @@ function renderNavigation() {
                     }
                     localStorage.setItem('expandedFolders', JSON.stringify(expandedFolders));
                     el.querySelector('.nav-chevron').textContent = nowExp ? 'v' : '>';
-                    setRouteHash(currentPathHash);
+                    const isChevron = e.target.classList.contains('nav-chevron') || e.target.closest('.nav-chevron');
+                    const isMobile = window.innerWidth <= 768;
+                    if (!isChevron && !isMobile) {
+                        setRouteHash(currentPathHash);
+                    }
                 });
 
                 el.appendChild(childrenContainer);
