@@ -48,6 +48,93 @@ async function decryptEmail(enc) {
     }
 }
 
+function mergeArrayByNameOrId(serverArr, localArr) {
+    const result = Array.isArray(serverArr) ? [...serverArr] : [];
+    if (!Array.isArray(localArr)) return result;
+    localArr.forEach(localItem => {
+        if (!localItem) return;
+        const localName = (localItem.name || '').trim().toLowerCase();
+        const exists = result.some(item => {
+            if (localItem.id && item.id && String(localItem.id) === String(item.id)) return true;
+            if (localName && (item.name || '').trim().toLowerCase() === localName) return true;
+            return false;
+        });
+        if (!exists) {
+            result.push(localItem);
+        }
+    });
+    return result;
+}
+
+function mergeStringArray(serverArr, localArr) {
+    const set = new Set();
+    const result = [];
+    (Array.isArray(serverArr) ? serverArr : []).forEach(x => {
+        const str = String(x || '').trim();
+        if (str && !set.has(str.toLowerCase())) {
+            set.add(str.toLowerCase());
+            result.push(str);
+        }
+    });
+    (Array.isArray(localArr) ? localArr : []).forEach(x => {
+        const str = String(x || '').trim();
+        if (str && !set.has(str.toLowerCase())) {
+            set.add(str.toLowerCase());
+            result.push(str);
+        }
+    });
+    return result;
+}
+
+function getLocalSettingsSnapshot() {
+    return {
+        theme: localStorage.getItem('theme') || 'primary',
+        custom_css: localStorage.getItem('custom-css') || '',
+        dark_mode: localStorage.getItem('dark-mode') || 'true',
+        bg_effect: localStorage.getItem('bg-effect') || 'particles',
+        tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
+        worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
+        birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]'),
+        events: JSON.parse(localStorage.getItem('user_events') || '[]'),
+        timezones: JSON.parse(localStorage.getItem('user_timezones') || '[]')
+    };
+}
+
+function mergeSettingsWithLocal(serverSettings) {
+    const s = serverSettings || {};
+    const local = getLocalSettingsSnapshot();
+
+    let mergedCss = s.custom_css || '';
+    if (local.custom_css && !mergedCss.includes(local.custom_css)) {
+        mergedCss = mergedCss ? (mergedCss + '\n' + local.custom_css) : local.custom_css;
+    }
+
+    return {
+        theme: s.theme || local.theme || 'primary',
+        dark_mode: s.dark_mode !== undefined && s.dark_mode !== null ? s.dark_mode : local.dark_mode,
+        bg_effect: s.bg_effect || local.bg_effect || 'particles',
+        custom_css: mergedCss,
+        tierlists: mergeArrayByNameOrId(s.tierlists, local.tierlists),
+        worldclocks: mergeStringArray(s.worldclocks, local.worldclocks),
+        birthdays: mergeArrayByNameOrId(s.birthdays, local.birthdays),
+        events: mergeArrayByNameOrId(s.events, local.events),
+        timezones: mergeArrayByNameOrId(s.timezones, local.timezones)
+    };
+}
+
+function applySettingsToLocalStorage(settings) {
+    if (!settings) return;
+    if (settings.theme) localStorage.setItem('theme', settings.theme);
+    if (settings.dark_mode !== undefined && settings.dark_mode !== null) localStorage.setItem('dark-mode', String(settings.dark_mode));
+    if (settings.bg_effect) localStorage.setItem('bg-effect', settings.bg_effect);
+    if (settings.custom_css !== undefined) localStorage.setItem('custom-css', settings.custom_css);
+    if (settings.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(settings.tierlists));
+    if (settings.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(settings.worldclocks));
+    if (settings.birthdays) localStorage.setItem('user_birthdays', JSON.stringify(settings.birthdays));
+    if (settings.events) localStorage.setItem('user_events', JSON.stringify(settings.events));
+    if (settings.timezones) localStorage.setItem('user_timezones', JSON.stringify(settings.timezones));
+}
+
 function initSynchronousUser() {
     try {
         const sessionStr = localStorage.getItem('custom_auth_session');
@@ -253,10 +340,14 @@ function loadSettingsLocally() {
     const bgEffect = localStorage.getItem('bg-effect') || 'particles';
 
     document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
-    document.getElementById('custom-css-block').textContent = customCss;
-    document.getElementById('custom-css-input').value = customCss;
-    document.getElementById('theme-selector').value = theme;
-    document.getElementById('bg-effect-selector').value = bgEffect;
+    const cssBlock = document.getElementById('custom-css-block');
+    if (cssBlock) cssBlock.textContent = customCss;
+    const cssInput = document.getElementById('custom-css-input');
+    if (cssInput) cssInput.value = customCss;
+    const themeSel = document.getElementById('theme-selector');
+    if (themeSel) themeSel.value = theme;
+    const bgSel = document.getElementById('bg-effect-selector');
+    if (bgSel) bgSel.value = bgEffect;
 }
 
 document.getElementById('toggle-dark-mode').onclick = () => {
@@ -307,13 +398,15 @@ window.syncSettingsToServer = async function() {
         const currentSettings = currentProfile.settings || {};
         const newSettings = {
             ...currentSettings,
-            theme: localStorage.getItem('theme'),
-            custom_css: localStorage.getItem('custom-css'),
-            dark_mode: localStorage.getItem('dark-mode'),
-            bg_effect: localStorage.getItem('bg-effect'),
+            theme: localStorage.getItem('theme') || 'primary',
+            custom_css: localStorage.getItem('custom-css') || '',
+            dark_mode: localStorage.getItem('dark-mode') !== 'false',
+            bg_effect: localStorage.getItem('bg-effect') || 'particles',
             tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
             worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
-            birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]')
+            birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]'),
+            events: JSON.parse(localStorage.getItem('user_events') || '[]'),
+            timezones: JSON.parse(localStorage.getItem('user_timezones') || '[]')
         };
         await supabaseClient.from('profiles').update({ settings: newSettings }).eq('id', currentUser.id);
         currentProfile.settings = newSettings;
@@ -401,15 +494,20 @@ async function handleSession() {
                 }).subscribe();
         }
 
-        const s = currentUser.settings || {};
-        if (s.theme) localStorage.setItem('theme', s.theme);
-        if (s.custom_css) localStorage.setItem('custom-css', s.custom_css);
-        if (s.dark_mode) localStorage.setItem('dark-mode', s.dark_mode);
-        if (s.bg_effect) { localStorage.setItem('bg-effect', s.bg_effect); if (window.setBgEffect) window.setBgEffect(s.bg_effect); }
-        if (s.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(s.tierlists));
-        if (s.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(s.worldclocks));
-        if (s.birthdays) localStorage.setItem('user_birthdays', JSON.stringify(s.birthdays));
+        const mergedSettings = mergeSettingsWithLocal(currentUser.settings);
+        applySettingsToLocalStorage(mergedSettings);
         loadSettingsLocally();
+
+        if (JSON.stringify(mergedSettings) !== JSON.stringify(currentUser.settings || {})) {
+            await supabaseClient.from('profiles').update({ settings: mergedSettings }).eq('id', currentUser.id);
+            currentUser.settings = mergedSettings;
+            currentProfile.settings = mergedSettings;
+            saveCustomSession(currentUser);
+        }
+
+        if (window.setBgEffect && mergedSettings.bg_effect) {
+            window.setBgEffect(mergedSettings.bg_effect);
+        }
 
         const emailIsOwner = currentUser.email?.toLowerCase() === window.OWNER_EMAIL;
         const nameIsOwner = currentUser.username?.toLowerCase() === 'error dev';
@@ -445,6 +543,7 @@ window.setAuthModalState = function(state) {
 
 function renderAuthModal() {
     const container = document.getElementById('auth-content');
+    if (!container) return;
     if (currentUser) {
         const ownerBadge = window.isOwner ? '<div style="color:var(--accent); font-size:11px; margin-top:4px; letter-spacing:1px;">error dev</div>' : '';
         let warningsHtml = '';
@@ -586,6 +685,12 @@ window.authAction = async (action) => {
             }
 
             data.email = await decryptEmail(data.email);
+
+            const merged = mergeSettingsWithLocal(data.settings);
+            data.settings = merged;
+            applySettingsToLocalStorage(merged);
+            await supabaseClient.from('profiles').update({ settings: merged }).eq('id', data.id);
+
             saveCustomSession(data);
             await handleSession();
             document.getElementById('auth-modal').style.display = 'none';
@@ -603,6 +708,7 @@ window.authAction = async (action) => {
             const isOwnerAcc = username.toLowerCase() === 'error dev';
             const generatedUuid = crypto.randomUUID();
             const hashedPassword = await hashPassword(password);
+            const initialSettings = getLocalSettingsSnapshot();
 
             const { data, error } = await supabaseClient.from('profiles').insert({ 
                 id: generatedUuid,
@@ -612,7 +718,7 @@ window.authAction = async (action) => {
                 is_owner: isOwnerAcc,
                 is_admin: isOwnerAcc,
                 is_banned: false,
-                settings: {}
+                settings: initialSettings
             }).select().single();
 
             if (error) throw error;
@@ -621,7 +727,7 @@ window.authAction = async (action) => {
             saveCustomSession(data);
             await handleSession();
             document.getElementById('auth-modal').style.display = 'none';
-            guiAlert("account created and logged in!", "welcome");
+            guiAlert("account created and logged in! your local settings have been saved to your account.", "welcome");
 
         } else if (action === 'reset') {
             const username = document.getElementById('auth-recovery-username').value.trim();

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>events</title>
+    <title>events & timezones</title>
     <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
     <style>
         .cloud-sync-note {
@@ -20,6 +21,69 @@
             align-items: center;
         }
 
+        .notif-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            color: var(--fg-muted);
+        }
+
+        .top-header-bar {
+            max-width: 1350px;
+            margin: 0 auto 24px auto;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .unified-layout {
+            display: flex;
+            gap: 28px;
+            align-items: flex-start;
+            max-width: 1350px;
+            width: 100%;
+            margin: 0 auto;
+            padding-bottom: 80px;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .unified-left {
+            flex: 1 1 65%;
+            min-width: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .unified-right {
+            flex: 0 0 340px;
+            width: 340px;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        @media (min-width: 901px) {
+            .unified-layout.sidebar-collapsed .unified-right {
+                display: none !important;
+            }
+            .unified-layout.sidebar-collapsed .unified-left {
+                flex: 1 1 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -27,9 +91,10 @@
             border-bottom: 1px dashed var(--border);
             padding-bottom: 8px;
             margin-bottom: 16px;
+            gap: 12px;
         }
 
-        .bday-section-title {
+        .panel-section-title {
             font-size: 14px;
             color: var(--accent);
             font-family: var(--font-ui);
@@ -39,10 +104,12 @@
         }
 
         .bday-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px;
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+            gap: 8px !important;
+            width: 100% !important;
             margin-bottom: 32px;
+            box-sizing: border-box;
         }
 
         .bday-card {
@@ -56,6 +123,8 @@
             position: relative;
             overflow: hidden;
             gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .bday-card.is-today {
@@ -101,6 +170,11 @@
             color: var(--fg-main);
             word-break: break-word;
             line-height: 1.2;
+            cursor: pointer;
+        }
+
+        .bday-name.has-tz {
+            text-decoration: underline dotted var(--accent);
         }
 
         .bday-card.is-today .bday-name {
@@ -153,7 +227,7 @@
             flex-shrink: 0;
         }
 
-        .bday-icon-btn {
+        .icon-btn {
             background: transparent;
             border: none;
             cursor: pointer;
@@ -167,32 +241,248 @@
             transition: color 0.15s ease;
         }
 
-        .bday-icon-btn:hover {
+        .icon-btn:hover {
             color: var(--fg-main);
         }
 
-        .bday-icon-btn.btn-del:hover {
+        .icon-btn.btn-del:hover {
             color: var(--destructive);
         }
 
-        .bday-empty {
-            color: var(--fg-muted);
-            font-size: 13px;
-            font-family: var(--font-ui);
-            padding: 14px 0;
+        .tz-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
         }
 
-        .notif-bar {
+        .tz-card {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-family: var(--font-ui);
+            position: relative;
+            box-sizing: border-box;
+            min-height: 120px;
+            width: 100%;
+        }
+
+        .tz-card.is-local {
+            border: 1px solid var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+
+        .tz-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 14px;
-            background: var(--bg-hover);
+            margin-bottom: 4px;
+        }
+
+        .tz-card-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--fg-main);
+            text-transform: lowercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tz-card.is-local .tz-card-title {
+            color: var(--accent);
+        }
+
+        .tz-actions-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tz-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .tz-badge {
+            color: var(--accent);
             border: 1px solid var(--border);
-            margin-bottom: 24px;
-            font-family: var(--font-ui);
-            font-size: 12px;
+            padding: 1px 5px;
+            font-size: 10px;
+            line-height: 1.2;
+            white-space: nowrap;
+            text-transform: lowercase;
+            font-weight: bold;
+        }
+
+        .tz-card.is-local .tz-badge {
+            border-color: var(--accent);
+        }
+
+        .tz-rel-text {
+            font-size: 11px;
             color: var(--fg-muted);
+            white-space: nowrap;
+        }
+
+        .tz-clock-text {
+            font-size: 19px;
+            font-weight: bold;
+            color: var(--fg-main);
+            letter-spacing: 0.5px;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .tz-date-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--fg-muted);
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .tz-phase-label {
+            text-transform: lowercase;
+        }
+
+        .tz-people-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .tz-person-pill {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--border);
+            color: var(--fg-main);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 2px;
+            white-space: nowrap;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tz-card-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: var(--accent);
+            opacity: 0.85;
+            transition: width 0.3s ease;
+            pointer-events: none;
+        }
+
+        .tz-card.is-local .tz-card-progress {
+            height: 3px;
+            opacity: 1;
+            box-shadow: 0 0 6px var(--accent);
+        }
+
+        .tz-popover {
+            position: absolute;
+            left: -1px;
+            right: -1px;
+            bottom: calc(100% + 6px);
+            background: var(--bg-hover);
+            border: 1px solid var(--accent);
+            padding: 10px 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(4px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        .tz-card:hover .tz-popover {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .tz-popover-header {
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: bold;
+            margin-bottom: 8px;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tz-popover-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .tz-popover-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--fg-main);
+            gap: 6px;
+        }
+
+        .tz-popover-user {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tz-popover-avatar {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            background: var(--accent);
+            color: var(--bg-hover);
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: lowercase;
+            flex-shrink: 0;
+        }
+
+        .tz-popover-name {
+            font-weight: bold;
+            color: var(--fg-main);
+        }
+
+        .tz-popover-loc {
+            color: var(--fg-muted);
+            font-size: 10px;
+        }
+
+        .pane-empty {
+            color: var(--fg-muted);
+            font-size: 12px;
+            font-family: var(--font-ui);
+            padding: 10px 0;
         }
 
         .custom-tooltip {
@@ -200,23 +490,86 @@
             display: none;
             background: var(--bg-hover);
             color: var(--fg-main);
-            border: 1px solid var(--border);
-            padding: 3px 8px;
+            border: 1px solid var(--accent);
+            padding: 4px 10px;
             font-size: 11px;
             font-family: var(--font-ui);
             pointer-events: none;
             z-index: 10000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
             white-space: nowrap;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 20px 14px 80px 14px !important;
+            }
+            .desktop-sidebar-toggle-wrap {
+                display: none !important;
+            }
+            .unified-layout {
+                flex-direction: column !important;
+                gap: 28px !important;
+                align-items: stretch !important;
+                width: 100% !important;
+            }
+            .unified-left {
+                width: 100% !important;
+                flex: none !important;
+            }
+            .unified-right {
+                width: 100% !important;
+                min-width: 0 !important;
+                flex: none !important;
+                gap: 24px !important;
+            }
+            .bday-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+                width: 100% !important;
+            }
+            .tz-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+                width: 100% !important;
+                gap: 8px !important;
+            }
+            .tz-card {
+                padding: 10px 12px !important;
+                min-height: auto !important;
+            }
+            .tz-clock-text {
+                font-size: 17px !important;
+                margin-bottom: 4px !important;
+            }
+            .tz-date-row {
+                margin-bottom: 6px !important;
+                font-size: 10px !important;
+            }
+            .tz-meta-row {
+                margin-bottom: 6px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bday-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .tz-grid {
+                grid-template-columns: 1fr !important;
+            }
         }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
-    <div style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; border-bottom:1px solid var(--border); padding-bottom:16px;">
-            <h1 style="margin:0; font-size:32px;">events</h1>
+    <div class="top-header-bar">
+        <h1 style="margin:0; font-size:32px;">events & timezones</h1>
+        <div class="desktop-sidebar-toggle-wrap">
+            <button id="sidebar-toggle-btn" class="ui-btn" style="width:auto; margin:0; padding:6px 14px;" onclick="toggleDesktopSidebar()">collapse timezones ›</button>
         </div>
+    </div>
 
+    <div style="max-width: 1350px; margin: 0 auto;">
         <div id="anon-sync-warning" class="cloud-sync-note" style="display:none;">
             <span>saved locally only. remember to log in to sync your data to the cloud.</span>
             <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="triggerParentLogin()">log in</button>
@@ -227,99 +580,180 @@
             <button id="notif-btn" class="ui-btn" style="width:auto; margin:0; padding:4px 10px;" onclick="requestNotifPermission()">enable</button>
         </div>
 
-        <div id="add-event-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:32px;">
+        <div id="add-event-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
                 add events (one per line)
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                format: <code>&lt;name&gt;/dd/mm</code> or <code>&lt;name&gt;/dd/mm/dd/mm</code> (range)<br>
-                examples:<br>
-                <code>Halloween/31/10</code><br>
-                <code>Christmas/24/12/25/12</code>
+                format: <code>&lt;name&gt;/dd/mm</code> or <code>&lt;name&gt;/dd/mm/dd/mm</code> (range)
             </div>
-            <textarea id="bulk-event-input" class="ui-input" rows="5" placeholder="Halloween/31/10&#10;Christmas/24/12/25/12"></textarea>
+            <textarea id="bulk-event-input" class="ui-input" rows="4" placeholder="Halloween/31/10&#10;Christmas/24/12/25/12"></textarea>
             <div style="display:flex; gap:10px;">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAddEvents()">save</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddEventBox()">cancel</button>
             </div>
         </div>
 
-        <div id="edit-event-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:32px;">
+        <div id="edit-event-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
                 edit events
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                edit any event below. events removed from this list will be deleted, and new names will be added.<br>
                 format: <code>&lt;name&gt;/dd/mm</code> or <code>&lt;name&gt;/dd/mm/dd/mm</code>
             </div>
-            <textarea id="bulk-edit-event-input" class="ui-input" rows="8" placeholder="name/dd/mm&#10;name/dd/mm/dd/mm"></textarea>
+            <textarea id="bulk-edit-event-input" class="ui-input" rows="6"></textarea>
             <div style="display:flex; gap:10px;">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkEditEventsSave()">save changes</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditEventBox()">cancel</button>
             </div>
         </div>
 
-        <div id="add-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:32px;">
+        <div id="add-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
                 add birthdays (one per line)
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code><br>
-                examples:<br>
-                <code>john doe/15/04/1998</code><br>
-                <code>jane doe :) / 28/11</code>
+                format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code>
             </div>
-            <textarea id="bulk-input" class="ui-input" rows="5" placeholder="name/dd/mm&#10;name/dd/mm/yyyy"></textarea>
+            <textarea id="bulk-input" class="ui-input" rows="4" placeholder="alice/31/10&#10;bob/15/04/1998"></textarea>
             <div style="display:flex; gap:10px;">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAdd()">save</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">cancel</button>
             </div>
         </div>
 
-        <div id="edit-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:32px;">
+        <div id="edit-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
                 edit birthdays
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                edit any birthday below. birthdays removed from this list will be deleted, and new names will be added.<br>
                 format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code>
             </div>
-            <textarea id="bulk-edit-input" class="ui-input" rows="8" placeholder="name/dd/mm&#10;name/dd/mm/yyyy"></textarea>
+            <textarea id="bulk-edit-input" class="ui-input" rows="6"></textarea>
             <div style="display:flex; gap:10px;">
                 <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkEditSave()">save changes</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">cancel</button>
             </div>
         </div>
 
-        <div class="section-header">
-            <div class="bday-section-title">upcoming events (<span id="events-count">0</span>)</div>
-            <div style="display:flex; gap:8px;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddEventBox()">add events</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditEventBox()">edit events</button>
+        <div id="add-standalone-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
+            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
+                add standalone world clock
+            </div>
+            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
+                enter offset or city: <code>4</code>, <code>-3</code>, <code>utc-4</code>, <code>tokyo</code>, <code>london</code>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="standalone-input" class="ui-input" style="margin:0; flex:1;" placeholder="e.g. 4, -3, utc-4, tokyo">
+                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleSaveStandaloneClock()">save</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddStandaloneBox()">cancel</button>
             </div>
         </div>
-        <div id="upcoming-events-grid" class="bday-grid"></div>
 
-        <div class="section-header" style="margin-top:24px;">
-            <div class="bday-section-title">upcoming birthdays (<span id="total-count">0</span>)</div>
-            <div style="display:flex; gap:8px;">
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">add birthdays</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">edit birthdays</button>
+        <div id="add-people-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
+            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
+                add people (one per line)
+            </div>
+            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
+                format: <code>&lt;name&gt;/&lt;timezone&gt;/&lt;displayed location&gt;</code><br>
+                examples: <code>alice/-4/New York</code>, <code>bob/9/Tokyo</code>, <code>charlie/utc+1/London</code>
+            </div>
+            <textarea id="bulk-people-input" class="ui-input" rows="4" placeholder="alice/-4/New York&#10;bob/9/Tokyo"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAddPeople()">save</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddPeopleBox()">cancel</button>
             </div>
         </div>
-        <div id="upcoming-grid" class="bday-grid"></div>
+
+        <div id="edit-people-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
+            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
+                edit tracked people
+            </div>
+            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
+                format: <code>&lt;name&gt;/&lt;timezone&gt;/&lt;displayed location&gt;</code>
+            </div>
+            <textarea id="bulk-edit-people-input" class="ui-input" rows="6"></textarea>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkEditPeopleSave()">save changes</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditPeopleBox()">cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="unified-layout" id="main-layout">
+        <div class="unified-left">
+            <div class="section-header">
+                <div class="panel-section-title">upcoming events (<span id="events-count">0</span>)</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddEventBox()">add events</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditEventBox()">edit events</button>
+                </div>
+            </div>
+            <div id="upcoming-events-grid" class="bday-grid"></div>
+
+            <div class="section-header" style="margin-top:16px;">
+                <div class="panel-section-title">upcoming birthdays (<span id="total-count">0</span>)</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">add birthdays</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">edit birthdays</button>
+                </div>
+            </div>
+            <div id="upcoming-grid" class="bday-grid"></div>
+        </div>
+
+        <div class="unified-right" id="sidebar-panel">
+            <div>
+                <div class="section-header">
+                    <div class="panel-section-title">world clocks (<span id="clocks-count">0</span>)</div>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddStandaloneBox()">+ add</button>
+                </div>
+                <div id="clocks-grid" class="tz-grid"></div>
+            </div>
+
+            <div>
+                <div class="section-header">
+                    <div class="panel-section-title">tracked timezones (<span id="people-groups-count">0</span>)</div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="toggleAddPeopleBox()">add</button>
+                        <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="toggleEditPeopleBox()">edit</button>
+                    </div>
+                </div>
+                <div id="people-grid" class="tz-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-birthday-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
+        <div class="modal-box" style="background:var(--bg-sidebar); border:1px solid var(--border); padding:24px; width:440px; max-width:92vw; max-height:90vh; overflow-y:auto; font-family:var(--font-ui);">
+            <div class="modal-title" style="font-size:14px; font-weight:bold; color:var(--accent); margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:8px;">edit birthday &amp; timezone</div>
+            <input type="hidden" id="edit-bday-id">
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">name</label>
+                <input type="text" id="edit-bday-name" class="ui-input" style="margin-bottom:0;" placeholder="e.g. noelle">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">birthday date (dd/mm or dd/mm/yyyy)</label>
+                <input type="text" id="edit-bday-date" class="ui-input" style="margin-bottom:0;" placeholder="e.g. 31/10/2009">
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">timezone (offset, city, or code)</label>
+                <input type="text" id="edit-bday-tz" class="ui-input" style="margin-bottom:0;" placeholder="e.g. -4, utc-4, tokyo, est">
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">displayed location (optional)</label>
+                <input type="text" id="edit-bday-loc" class="ui-input" style="margin-bottom:0;" placeholder="e.g. New York, Japan">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveEditedBirthdayModal()">save changes</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="closeEditBirthdayModal()">cancel</button>
+            </div>
+        </div>
     </div>
 
     <div id="custom-tooltip" class="custom-tooltip"></div>
 
     <script>
-        const DEFAULT_EVENTS = [
-            "Earth Day/22/04",
-            "Pride Month/01/06/30/06",
-            "Halloween/31/10",
-            "Christmas/24/12/25/12",
-            "New Year's Day/31/12/01/01"
-        ];
+        const DateTime = luxon.DateTime;
 
         const MONTH_NAMES = [
             "January", "February", "March", "April", "May", "June",
@@ -332,15 +766,175 @@
 
         const STORAGE_KEY = 'user_birthdays';
         const EVENTS_STORAGE_KEY = 'user_events';
-        const EVENTS_INIT_KEY = 'events_initialized_v2';
+        const CLOCKS_STORAGE_KEY = 'user_world_clocks';
+        const PEOPLE_STORAGE_KEY = 'user_timezones';
 
         let birthdays = [];
         let events = [];
+        let standaloneClocks = [];
+        let trackedPeople = [];
         let currentUserId = null;
+        let isSaving = false;
+        let activeHoveredBdayName = null;
+        let isSidebarCollapsed = false;
+
+        const KNOWN_MAP = {
+            'et': 'America/New_York', 'est': 'America/New_York', 'edt': 'America/New_York',
+            'pt': 'America/Los_Angeles', 'pst': 'America/Los_Angeles', 'pdt': 'America/Los_Angeles',
+            'ct': 'America/Chicago', 'cst': 'America/Chicago', 'cdt': 'America/Chicago',
+            'mt': 'America/Denver', 'mst': 'America/Denver', 'mdt': 'America/Denver',
+            'aest': 'Australia/Sydney', 'aedt': 'Australia/Sydney', 'acst': 'Australia/Adelaide',
+            'acdt': 'Australia/Adelaide', 'awst': 'Australia/Perth', 'jst': 'Asia/Tokyo',
+            'kst': 'Asia/Seoul', 'sgt': 'Asia/Singapore', 'ist': 'Asia/Kolkata',
+            'hkt': 'Asia/Hong_Kong', 'hkst': 'Asia/Hong_Kong', 'cet': 'Europe/Paris',
+            'cest': 'Europe/Paris', 'eet': 'Europe/Athens', 'eest': 'Europe/Athens',
+            'wet': 'Europe/Lisbon', 'west': 'Europe/Lisbon', 'bst': 'Europe/London',
+            'gmt': 'UTC', 'utc': 'UTC', 'hst': 'Pacific/Honolulu', 'akst': 'America/Anchorage',
+            'akdt': 'America/Anchorage', 'nzst': 'Pacific/Auckland', 'nzdt': 'Pacific/Auckland',
+            'london': 'Europe/London', 'tokyo': 'Asia/Tokyo', 'paris': 'Europe/Paris',
+            'berlin': 'Europe/Berlin', 'sydney': 'Australia/Sydney', 'singapore': 'Asia/Singapore'
+        };
+
+        const resolvedCache = JSON.parse(localStorage.getItem('tz_resolved_cache') || '{}');
+        const pendingFetches = new Set();
+        const failedResolutions = new Set();
+
+        function saveCache() {
+            try { localStorage.setItem('tz_resolved_cache', JSON.stringify(resolvedCache)); } catch (e) {}
+        }
+
+        function getIanaTimezones() {
+            try { return Intl.supportedValuesOf('timeZone'); } catch(e) { return []; }
+        }
+
+        function parseDirectOffsetMinutes(str) {
+            if (str === null || str === undefined) return null;
+            let clean = String(str).trim().toLowerCase();
+            if (!clean) return null;
+            if (clean === 'utc' || clean === 'gmt') return 0;
+            if (clean.startsWith('utc') || clean.startsWith('gmt')) {
+                clean = clean.slice(3).trim();
+                if (!clean) return 0;
+            }
+            let isNegative = false;
+            if (clean.startsWith('-')) {
+                isNegative = true;
+                clean = clean.slice(1).trim();
+            } else if (clean.startsWith('+')) {
+                clean = clean.slice(1).trim();
+            }
+            const colonMatch = clean.match(/^(\d{1,2}):(\d{2})$/);
+            if (colonMatch) {
+                const h = parseInt(colonMatch[1], 10);
+                const m = parseInt(colonMatch[2], 10);
+                if (h <= 16 && m < 60) {
+                    const total = h * 60 + m;
+                    return isNegative ? -total : total;
+                }
+            }
+            const numMatch = clean.match(/^(\d+(?:\.\d+)?)$/);
+            if (numMatch) {
+                const val = parseFloat(numMatch[1]);
+                if (!isNaN(val) && val <= 16) {
+                    const total = Math.round(val * 60);
+                    return isNegative ? -total : total;
+                }
+            }
+            return null;
+        }
+
+        function tryLocalResolution(z) {
+            if (!z) return null;
+            const clean = z.trim();
+            if (clean.toLowerCase() === 'system') return 'system';
+            const lower = clean.toLowerCase();
+            if (KNOWN_MAP[lower]) return KNOWN_MAP[lower];
+            let dt = DateTime.now().setZone(clean);
+            if (dt.isValid) return clean;
+            if (resolvedCache[lower]) {
+                dt = DateTime.now().setZone(resolvedCache[lower]);
+                if (dt.isValid) return resolvedCache[lower];
+            }
+            const allZones = getIanaTimezones();
+            const exactIana = allZones.find(iana => iana.toLowerCase() === lower);
+            if (exactIana) return exactIana;
+            const formattedName = lower.replace(/\s+/g, '_');
+            const endMatch = allZones.find(iana => iana.toLowerCase().endsWith('/' + formattedName));
+            if (endMatch) return endMatch;
+            return null;
+        }
+
+        async function fetchTimezoneFromApi(z) {
+            const lower = z.trim().toLowerCase();
+            if (resolvedCache[lower] || pendingFetches.has(lower) || failedResolutions.has(lower)) return;
+            pendingFetches.add(lower);
+            try {
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(z)}&count=1`);
+                if (geoRes.ok) {
+                    const geoData = await geoRes.json();
+                    if (geoData.results && geoData.results[0] && geoData.results[0].timezone) {
+                        const foundZone = geoData.results[0].timezone;
+                        if (DateTime.now().setZone(foundZone).isValid) {
+                            resolvedCache[lower] = foundZone;
+                            saveCache();
+                            pendingFetches.delete(lower);
+                            renderAll();
+                            return;
+                        }
+                    }
+                }
+            } catch(e) {}
+            pendingFetches.delete(lower);
+            failedResolutions.add(lower);
+            renderAll();
+        }
+
+        function normalizePeople(list) {
+            if (!Array.isArray(list)) return [];
+            return list.map((p, idx) => {
+                const name = String(p.name || 'unnamed').trim();
+                let timezone = String(p.timezone || p.tz || '').trim();
+                let location = String(p.location || p.displayedLocation || p.displayLocation || '').trim();
+
+                if (!timezone && p.rawLocation) {
+                    const parts = String(p.rawLocation).split('/');
+                    if (parts.length >= 2) {
+                        timezone = parts[0].trim();
+                        location = parts.slice(1).join('/').trim();
+                    } else {
+                        timezone = p.rawLocation.trim();
+                    }
+                }
+                if (!timezone) timezone = 'UTC';
+
+                return {
+                    id: String(p.id || ('p_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substring(2, 6))),
+                    name: name,
+                    timezone: timezone,
+                    location: location,
+                    rawLocation: location ? `${timezone}/${location}` : timezone
+                };
+            });
+        }
+
+        function getPersonOffsetMinutes(p) {
+            const tz = (p.timezone || p.rawLocation || 'UTC').trim();
+            const direct = parseDirectOffsetMinutes(tz);
+            if (direct !== null) return direct;
+            const resolved = tryLocalResolution(tz);
+            if (!resolved) return 0;
+            const dt = resolved === 'system' ? DateTime.now() : DateTime.now().setZone(resolved);
+            return dt.isValid ? dt.offset : 0;
+        }
+
+        function findMatchedPerson(name) {
+            if (!name) return null;
+            const clean = name.trim().toLowerCase();
+            return trackedPeople.find(p => p.name && p.name.trim().toLowerCase() === clean);
+        }
 
         function getOrdinalSuffix(day) {
-            const j = day % 10;
-            const k = day % 100;
+            const j = day % 10, k = day % 100;
             if (j === 1 && k !== 11) return day + "st";
             if (j === 2 && k !== 12) return day + "nd";
             if (j === 3 && k !== 13) return day + "rd";
@@ -373,7 +967,6 @@
                     return;
                 }
             } catch (e) {}
-
             const isDark = localStorage.getItem('dark-mode') !== 'false';
             const theme = localStorage.getItem('theme') || 'primary';
             document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
@@ -384,79 +977,102 @@
         }
 
         function triggerParentLogin() {
-            if (window.parent && window.parent.document.getElementById('auth-trigger')) {
-                window.parent.document.getElementById('auth-trigger').click();
-            }
+            try {
+                if (window.parent && window.parent.document.getElementById('auth-trigger')) {
+                    window.parent.document.getElementById('auth-trigger').click();
+                }
+            } catch (e) {}
         }
 
         function getActiveUser() {
-            if (window.parent && window.parent.getUserIdentity) {
-                const ident = window.parent.getUserIdentity();
-                return ident ? ident.user : null;
-            }
+            try {
+                if (window.parent && window.parent.getUserIdentity) {
+                    const ident = window.parent.getUserIdentity();
+                    if (ident && ident.user) return ident.user;
+                }
+            } catch (e) {}
             try {
                 const sessionStr = localStorage.getItem('custom_auth_session');
                 if (sessionStr) {
                     const parsed = JSON.parse(sessionStr);
-                    if (!parsed.is_banned) return parsed;
+                    if (!parsed.is_banned) return parsed.user || parsed;
                 }
             } catch (e) {}
             return null;
         }
 
-        async function initBirthdays() {
+        function toggleDesktopSidebar() {
+            isSidebarCollapsed = !isSidebarCollapsed;
+            localStorage.setItem('events_tz_sidebar_collapsed', isSidebarCollapsed ? 'true' : 'false');
+            updateSidebarCollapseUI();
+        }
+
+        function updateSidebarCollapseUI() {
+            const layout = document.getElementById('main-layout');
+            const btn = document.getElementById('sidebar-toggle-btn');
+            if (isSidebarCollapsed) {
+                layout.classList.add('sidebar-collapsed');
+                if (btn) btn.textContent = '‹ expand timezones';
+            } else {
+                layout.classList.remove('sidebar-collapsed');
+                if (btn) btn.textContent = 'collapse timezones ›';
+            }
+        }
+
+        async function initAllData() {
+            if (isSaving) return;
             syncTheme();
+            isSidebarCollapsed = localStorage.getItem('events_tz_sidebar_collapsed') === 'true';
+            updateSidebarCollapseUI();
+
             const user = getActiveUser();
-            currentUserId = user ? user.id : null;
+            currentUserId = user ? (user.id || user.uid || null) : null;
 
             const warningEl = document.getElementById('anon-sync-warning');
 
+            let localBirthdays = [];
+            let localEvents = [];
+            let localClocks = [];
+            let localPeople = [];
+
+            try { localBirthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) {}
+            try { localEvents = JSON.parse(localStorage.getItem(EVENTS_STORAGE_KEY) || '[]'); } catch (e) {}
+            try { localClocks = JSON.parse(localStorage.getItem(CLOCKS_STORAGE_KEY) || '[]'); } catch (e) {}
+            try { localPeople = normalizePeople(JSON.parse(localStorage.getItem(PEOPLE_STORAGE_KEY) || '[]')); } catch (e) {}
+
             if (!currentUserId) {
                 warningEl.style.display = 'flex';
-                try {
-                    birthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                } catch (e) {
-                    birthdays = [];
-                }
-
-                if (!localStorage.getItem(EVENTS_INIT_KEY)) {
-                    events = DEFAULT_EVENTS.map(parseEventLine).filter(Boolean);
-                    localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
-                    localStorage.setItem(EVENTS_INIT_KEY, 'true');
-                } else {
-                    try {
-                        events = JSON.parse(localStorage.getItem(EVENTS_STORAGE_KEY) || '[]');
-                    } catch (e) {
-                        events = [];
-                    }
-                }
+                birthdays = localBirthdays;
+                events = localEvents;
+                standaloneClocks = localClocks;
+                trackedPeople = localPeople;
             } else {
                 warningEl.style.display = 'none';
                 try {
-                    const { data, error } = await supabaseClient.from('profiles').select('settings').eq('id', currentUserId).single();
+                    const sb = (window.parent && window.parent.supabase) ? window.parent.supabase : supabaseClient;
+                    const { data, error } = await sb.from('profiles').select('settings').eq('id', currentUserId).single();
                     if (!error && data && data.settings) {
-                        birthdays = Array.isArray(data.settings.birthdays) ? data.settings.birthdays : JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(birthdays));
+                        const s = data.settings;
+                        birthdays = Array.isArray(s.birthdays) ? s.birthdays : localBirthdays;
+                        events = Array.isArray(s.events) ? s.events : localEvents;
+                        standaloneClocks = Array.isArray(s.worldclocks) ? s.worldclocks : localClocks;
+                        trackedPeople = Array.isArray(s.timezones) ? normalizePeople(s.timezones) : localPeople;
 
-                        if (Array.isArray(data.settings.events)) {
-                            events = data.settings.events;
-                            localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
-                            localStorage.setItem(EVENTS_INIT_KEY, 'true');
-                        } else if (!localStorage.getItem(EVENTS_INIT_KEY)) {
-                            events = DEFAULT_EVENTS.map(parseEventLine).filter(Boolean);
-                            localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
-                            localStorage.setItem(EVENTS_INIT_KEY, 'true');
-                            saveEvents();
-                        } else {
-                            events = JSON.parse(localStorage.getItem(EVENTS_STORAGE_KEY) || '[]');
-                        }
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(birthdays));
+                        localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
+                        localStorage.setItem(CLOCKS_STORAGE_KEY, JSON.stringify(standaloneClocks));
+                        localStorage.setItem(PEOPLE_STORAGE_KEY, JSON.stringify(trackedPeople));
                     } else {
-                        birthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                        events = JSON.parse(localStorage.getItem(EVENTS_STORAGE_KEY) || '[]');
+                        birthdays = localBirthdays;
+                        events = localEvents;
+                        standaloneClocks = localClocks;
+                        trackedPeople = localPeople;
                     }
                 } catch (e) {
-                    birthdays = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                    events = JSON.parse(localStorage.getItem(EVENTS_STORAGE_KEY) || '[]');
+                    birthdays = localBirthdays;
+                    events = localEvents;
+                    standaloneClocks = localClocks;
+                    trackedPeople = localPeople;
                 }
             }
 
@@ -464,47 +1080,38 @@
             updateNotifBar();
         }
 
-        window.onParentAuthChanged = initBirthdays;
+        window.onParentAuthChanged = initAllData;
 
-        async function saveBirthdays() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(birthdays));
+        async function syncAllToServer() {
+            isSaving = true;
+            try {
+                trackedPeople = normalizePeople(trackedPeople);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(birthdays));
+                localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
+                localStorage.setItem(CLOCKS_STORAGE_KEY, JSON.stringify(standaloneClocks));
+                localStorage.setItem(PEOPLE_STORAGE_KEY, JSON.stringify(trackedPeople));
+            } catch (e) {}
 
-            if (currentUserId) {
+            const uid = currentUserId || (getActiveUser() ? (getActiveUser().id || getActiveUser().uid) : null);
+            if (uid) {
+                const sb = (window.parent && window.parent.supabase) ? window.parent.supabase : supabaseClient;
                 try {
-                    const { data } = await supabaseClient.from('profiles').select('settings').eq('id', currentUserId).single();
+                    const { data } = await sb.from('profiles').select('settings').eq('id', uid).single();
                     const settings = (data && data.settings) ? data.settings : {};
                     settings.birthdays = birthdays;
                     settings.events = events;
-                    await supabaseClient.from('profiles').update({ settings }).eq('id', currentUserId);
-                } catch (e) {
-                    console.error("cloud sync failed", e);
+                    settings.worldclocks = standaloneClocks;
+                    settings.timezones = trackedPeople;
+                    await sb.from('profiles').update({ settings }).eq('id', uid);
+                } catch (e) {}
+            }
+
+            try {
+                if (window.parent && typeof window.parent.syncSettingsToServer === 'function') {
+                    await window.parent.syncSettingsToServer();
                 }
-            }
-
-            if (window.parent && window.parent.syncSettingsToServer) {
-                window.parent.syncSettingsToServer();
-            }
-        }
-
-        async function saveEvents() {
-            localStorage.setItem(EVENTS_STORAGE_KEY, JSON.stringify(events));
-            localStorage.setItem(EVENTS_INIT_KEY, 'true');
-
-            if (currentUserId) {
-                try {
-                    const { data } = await supabaseClient.from('profiles').select('settings').eq('id', currentUserId).single();
-                    const settings = (data && data.settings) ? data.settings : {};
-                    settings.birthdays = birthdays;
-                    settings.events = events;
-                    await supabaseClient.from('profiles').update({ settings }).eq('id', currentUserId);
-                } catch (e) {
-                    console.error("cloud sync failed", e);
-                }
-            }
-
-            if (window.parent && window.parent.syncSettingsToServer) {
-                window.parent.syncSettingsToServer();
-            }
+            } catch (e) {}
+            setTimeout(() => { isSaving = false; }, 300);
         }
 
         function closeAllBoxes() {
@@ -512,113 +1119,150 @@
             document.getElementById('edit-box').style.display = 'none';
             document.getElementById('add-event-box').style.display = 'none';
             document.getElementById('edit-event-box').style.display = 'none';
+            document.getElementById('add-standalone-box').style.display = 'none';
+            document.getElementById('add-people-box').style.display = 'none';
+            document.getElementById('edit-people-box').style.display = 'none';
         }
 
         function toggleAddBox() {
-            const addEl = document.getElementById('add-box');
-            const shouldOpen = addEl.style.display === 'none';
+            const el = document.getElementById('add-box');
+            const shouldOpen = el.style.display === 'none';
             closeAllBoxes();
             if (shouldOpen) {
-                addEl.style.display = 'block';
+                el.style.display = 'block';
                 document.getElementById('bulk-input').focus();
             }
         }
 
         function toggleEditBox() {
-            const editEl = document.getElementById('edit-box');
-            const shouldOpen = editEl.style.display === 'none';
+            const el = document.getElementById('edit-box');
+            const shouldOpen = el.style.display === 'none';
             closeAllBoxes();
             if (shouldOpen) {
-                const sorted = [...birthdays].sort((a, b) => getDaysUntil(a.day, a.month) - getDaysUntil(b.day, b.month));
+                const sorted = [...birthdays].sort((a, b) => {
+                    const aP = findMatchedPerson(a.name);
+                    const bP = findMatchedPerson(b.name);
+                    return getBirthdayTiming(a, aP).daysUntil - getBirthdayTiming(b, bP).daysUntil;
+                });
                 const text = sorted.map(b => `${b.name}/${formatDisplayDate(b.day, b.month, b.year)}`).join('\n');
                 document.getElementById('bulk-edit-input').value = text;
-                editEl.style.display = 'block';
+                el.style.display = 'block';
                 document.getElementById('bulk-edit-input').focus();
             }
         }
 
         function toggleAddEventBox() {
-            const addEl = document.getElementById('add-event-box');
-            const shouldOpen = addEl.style.display === 'none';
+            const el = document.getElementById('add-event-box');
+            const shouldOpen = el.style.display === 'none';
             closeAllBoxes();
             if (shouldOpen) {
-                addEl.style.display = 'block';
+                el.style.display = 'block';
                 document.getElementById('bulk-event-input').focus();
             }
         }
 
         function toggleEditEventBox() {
-            const editEl = document.getElementById('edit-event-box');
-            const shouldOpen = editEl.style.display === 'none';
+            const el = document.getElementById('edit-event-box');
+            const shouldOpen = el.style.display === 'none';
             closeAllBoxes();
             if (shouldOpen) {
                 const sorted = [...events].sort((a, b) => {
-                    const aD = getEventTiming(a.startDay, a.startMonth, a.endDay, a.endMonth).daysUntil;
-                    const bD = getEventTiming(b.startDay, b.startMonth, b.endDay, b.endMonth).daysUntil;
-                    return aD - bD;
+                    return getEventTiming(a.startDay, a.startMonth, a.endDay, a.endMonth).daysUntil -
+                           getEventTiming(b.startDay, b.startMonth, b.endDay, b.endMonth).daysUntil;
                 });
                 const text = sorted.map(formatEventExport).join('\n');
                 document.getElementById('bulk-edit-event-input').value = text;
-                editEl.style.display = 'block';
+                el.style.display = 'block';
                 document.getElementById('bulk-edit-event-input').focus();
+            }
+        }
+
+        function toggleAddStandaloneBox() {
+            const el = document.getElementById('add-standalone-box');
+            const shouldOpen = el.style.display === 'none';
+            closeAllBoxes();
+            if (shouldOpen) {
+                el.style.display = 'block';
+                document.getElementById('standalone-input').focus();
+            }
+        }
+
+        function toggleAddPeopleBox() {
+            const el = document.getElementById('add-people-box');
+            const shouldOpen = el.style.display === 'none';
+            closeAllBoxes();
+            if (shouldOpen) {
+                el.style.display = 'block';
+                document.getElementById('bulk-people-input').focus();
+            }
+        }
+
+        function toggleEditPeopleBox() {
+            const el = document.getElementById('edit-people-box');
+            const shouldOpen = el.style.display === 'none';
+            closeAllBoxes();
+            if (shouldOpen) {
+                const text = trackedPeople.map(p => p.location ? `${p.name}/${p.timezone}/${p.location}` : `${p.name}/${p.timezone}`).join('\n');
+                document.getElementById('bulk-edit-people-input').value = text;
+                el.style.display = 'block';
+                document.getElementById('bulk-edit-people-input').focus();
             }
         }
 
         function parseBirthdayLine(line) {
             const trimmed = line.trim();
             if (!trimmed) return null;
-
             const match = trimmed.match(/^(.*?)\/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
             if (!match) return null;
-
             const name = match[1].trim();
             const day = parseInt(match[2], 10);
             const month = parseInt(match[3], 10);
             const year = match[4] ? parseInt(match[4], 10) : null;
-
-            if (!name || isNaN(day) || isNaN(month) || month < 1 || month > 12 || day < 1 || day > 31) {
-                return null;
-            }
-
+            if (!name || isNaN(day) || isNaN(month) || month < 1 || month > 12 || day < 1 || day > 31) return null;
             return {
                 id: 'bday_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                name,
-                day,
-                month,
-                year
+                name, day, month, year
             };
         }
 
         function parseEventLine(line) {
             const trimmed = line.trim();
             if (!trimmed) return null;
-
             const match = trimmed.match(/^(.*?)\/(\d{1,2})\/(\d{1,2})(?:\/(\d{1,2})\/(\d{1,2}))?$/);
             if (!match) return null;
-
             const name = match[1].trim();
             const startDay = parseInt(match[2], 10);
             const startMonth = parseInt(match[3], 10);
             const endDay = match[4] ? parseInt(match[4], 10) : null;
             const endMonth = match[5] ? parseInt(match[5], 10) : null;
-
-            if (!name || isNaN(startDay) || isNaN(startMonth) || startMonth < 1 || startMonth > 12 || startDay < 1 || startDay > 31) {
-                return null;
-            }
-
+            if (!name || isNaN(startDay) || isNaN(startMonth) || startMonth < 1 || startMonth > 12 || startDay < 1 || startDay > 31) return null;
             if (endDay !== null && endMonth !== null) {
-                if (isNaN(endDay) || isNaN(endMonth) || endMonth < 1 || endMonth > 12 || endDay < 1 || endDay > 31) {
-                    return null;
-                }
+                if (isNaN(endDay) || isNaN(endMonth) || endMonth < 1 || endMonth > 12 || endDay < 1 || endDay > 31) return null;
             }
-
             return {
                 id: 'event_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                name,
-                startDay,
-                startMonth,
-                endDay,
-                endMonth
+                name, startDay, startMonth, endDay, endMonth
+            };
+        }
+
+        function parsePersonLine(line) {
+            if (!line) return null;
+            const trimmed = line.trim();
+            if (!trimmed) return null;
+            let parts = trimmed.split('/');
+            if (parts.length < 2) parts = trimmed.split('|');
+            if (parts.length < 2) parts = trimmed.split(':');
+            if (parts.length < 2) return null;
+
+            const name = parts[0].trim();
+            const timezone = parts[1].trim();
+            const location = parts.length > 2 ? parts.slice(2).join('/').trim() : '';
+            if (!name || !timezone) return null;
+
+            return {
+                id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                name, timezone, location,
+                rawLocation: location ? `${timezone}/${location}` : timezone
             };
         }
 
@@ -631,133 +1275,130 @@
             return `${e.name}/${s}`;
         }
 
-        async function handleBulkAdd() {
-            const raw = document.getElementById('bulk-input').value;
-            const lines = raw.split('\n');
-            let addedCount = 0;
+        function formatDisplayDate(day, month, year) {
+            const d = String(day).padStart(2, '0');
+            const m = String(month).padStart(2, '0');
+            return year ? `${d}/${m}/${year}` : `${d}/${m}`;
+        }
 
-            lines.forEach(line => {
-                const item = parseBirthdayLine(line);
-                if (item) {
-                    birthdays.push(item);
-                    addedCount++;
-                }
-            });
+        function formatEventDisplayDate(e) {
+            const s = `${String(e.startDay).padStart(2, '0')}/${String(e.startMonth).padStart(2, '0')}`;
+            if (e.endDay && e.endMonth) {
+                const en = `${String(e.endDay).padStart(2, '0')}/${String(e.endMonth).padStart(2, '0')}`;
+                return `${s} – ${en}`;
+            }
+            return s;
+        }
 
-            if (addedCount > 0) {
-                await saveBirthdays();
-                renderAll();
-                document.getElementById('bulk-input').value = '';
-                toggleAddBox();
+        function formatOffsetLabel(offsetMinutes) {
+            const sign = offsetMinutes >= 0 ? '+' : '-';
+            const absM = Math.abs(offsetMinutes);
+            const h = Math.floor(absM / 60);
+            const rem = absM % 60;
+            return `utc${sign}${h}${rem ? ':' + String(rem).padStart(2, '0') : ''}`;
+        }
+
+        function formatRelativeDiff(offsetMinutes) {
+            const localOffset = DateTime.now().offset;
+            const diffM = offsetMinutes - localOffset;
+            const diffH = Math.abs(diffM / 60);
+            const formatted = diffH % 1 === 0 ? diffH : diffH.toFixed(1);
+            if (diffM === 0) return 'same time';
+            return diffM > 0 ? `${formatted}h ahead` : `${formatted}h behind`;
+        }
+
+        function getTimePhase(hour) {
+            if (hour === 0) return 'midnight';
+            if (hour >= 1 && hour < 5) return 'night';
+            if (hour === 5) return 'dawn';
+            if (hour === 6) return 'twilight';
+            if (hour >= 7 && hour < 12) return 'day';
+            if (hour === 12) return 'noon';
+            if (hour >= 13 && hour < 18) return 'afternoon';
+            if (hour === 18) return 'dusk';
+            if (hour >= 19 && hour < 22) return 'evening';
+            return 'night';
+        }
+
+        function getBirthdayTiming(b, matchedPerson) {
+            let pNow;
+            let offsetMinutes;
+            let offsetLabel = '';
+            let matchedTzStr = '';
+
+            if (matchedPerson) {
+                offsetMinutes = getPersonOffsetMinutes(matchedPerson);
+                pNow = DateTime.utc().plus({ minutes: offsetMinutes });
+                offsetLabel = formatOffsetLabel(offsetMinutes);
+                matchedTzStr = `${offsetLabel} · ${pNow.toFormat('h:mm:ss a').toLowerCase()}, ${pNow.toFormat('ccc, d LLL').toLowerCase()}`;
             } else {
-                alert('No valid birthdays found. Format: <name>/dd/mm or <name>/dd/mm/yyyy');
+                pNow = DateTime.now();
+                offsetMinutes = pNow.offset;
+                offsetLabel = formatOffsetLabel(offsetMinutes);
             }
-        }
 
-        async function handleBulkAddEvents() {
-            const raw = document.getElementById('bulk-event-input').value;
-            const lines = raw.split('\n');
-            let addedCount = 0;
+            const curYear = pNow.year;
+            let targetStart = pNow.set({ year: curYear, month: b.month, day: b.day, hour: 0, minute: 0, second: 0, millisecond: 0 });
+            if (!targetStart.isValid) {
+                targetStart = pNow.set({ year: curYear, month: b.month, day: 28, hour: 0, minute: 0, second: 0, millisecond: 0 });
+            }
 
-            lines.forEach(line => {
-                const item = parseEventLine(line);
-                if (item) {
-                    events.push(item);
-                    addedCount++;
+            const targetEnd = targetStart.plus({ days: 1 });
+            let isToday = false;
+            let nextStart = targetStart;
+
+            if (pNow >= targetStart && pNow < targetEnd) {
+                isToday = true;
+            } else if (pNow >= targetEnd) {
+                nextStart = targetStart.plus({ years: 1 });
+                if (!nextStart.isValid) {
+                    nextStart = pNow.set({ year: curYear + 1, month: b.month, day: 28, hour: 0, minute: 0, second: 0, millisecond: 0 });
                 }
-            });
+            }
 
-            if (addedCount > 0) {
-                await saveEvents();
-                renderAll();
-                document.getElementById('bulk-event-input').value = '';
-                toggleAddEventBox();
+            let label = '';
+            let totalHours = 0;
+            let totalMins = 0;
+            let daysUntil = 0;
+
+            if (isToday) {
+                label = 'today!';
+                daysUntil = 0;
             } else {
-                alert('No valid events found. Format: <name>/dd/mm or <name>/dd/mm/dd/mm');
-            }
-        }
+                const diffMs = nextStart.toMillis() - pNow.toMillis();
+                totalHours = diffMs / (1000 * 60 * 60);
+                totalMins = diffMs / (1000 * 60);
 
-        async function handleBulkEditSave() {
-            const raw = document.getElementById('bulk-edit-input').value;
-            const lines = raw.split('\n');
-            const newBirthdays = [];
-            const remainingOld = [...birthdays];
-
-            lines.forEach(line => {
-                const parsed = parseBirthdayLine(line);
-                if (!parsed) return;
-
-                const existingIndex = remainingOld.findIndex(
-                    b => b.name.trim().toLowerCase() === parsed.name.toLowerCase()
-                );
-
-                if (existingIndex !== -1) {
-                    const matched = remainingOld.splice(existingIndex, 1)[0];
-                    newBirthdays.push({
-                        id: matched.id,
-                        name: parsed.name,
-                        day: parsed.day,
-                        month: parsed.month,
-                        year: parsed.year
-                    });
+                if (totalHours <= 1) {
+                    const mins = Math.max(1, Math.ceil(totalMins));
+                    label = mins === 1 ? 'in 1 minute' : `in ${mins} minutes`;
+                    daysUntil = 0.05;
+                } else if (totalHours <= 5) {
+                    const hrs = Math.ceil(totalHours);
+                    label = hrs === 1 ? 'in 1 hour' : `in ${hrs} hours`;
+                    daysUntil = 0.1;
                 } else {
-                    newBirthdays.push(parsed);
+                    const midToday = pNow.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+                    const dayDiff = Math.round((nextStart.set({ hour: 0, minute: 0, second: 0, millisecond: 0 }).toMillis() - midToday.toMillis()) / (1000 * 60 * 60 * 24));
+                    daysUntil = dayDiff;
+                    if (dayDiff === 1) {
+                        label = 'tomorrow';
+                    } else {
+                        label = `in ${dayDiff} days`;
+                    }
                 }
-            });
-
-            birthdays = newBirthdays;
-            await saveBirthdays();
-            renderAll();
-            toggleEditBox();
-        }
-
-        async function handleBulkEditEventsSave() {
-            const raw = document.getElementById('bulk-edit-event-input').value;
-            const lines = raw.split('\n');
-            const newEvents = [];
-            const remainingOld = [...events];
-
-            lines.forEach(line => {
-                const parsed = parseEventLine(line);
-                if (!parsed) return;
-
-                const existingIndex = remainingOld.findIndex(
-                    e => e.name.trim().toLowerCase() === parsed.name.toLowerCase()
-                );
-
-                if (existingIndex !== -1) {
-                    const matched = remainingOld.splice(existingIndex, 1)[0];
-                    newEvents.push({
-                        id: matched.id,
-                        name: parsed.name,
-                        startDay: parsed.startDay,
-                        startMonth: parsed.startMonth,
-                        endDay: parsed.endDay,
-                        endMonth: parsed.endMonth
-                    });
-                } else {
-                    newEvents.push(parsed);
-                }
-            });
-
-            events = newEvents;
-            await saveEvents();
-            renderAll();
-            toggleEditEventBox();
-        }
-
-        function getDaysUntil(day, month) {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const today = new Date(currentYear, now.getMonth(), now.getDate());
-            let target = new Date(currentYear, month - 1, day);
-
-            if (target < today) {
-                target = new Date(currentYear + 1, month - 1, day);
             }
 
-            const diffTime = target - today;
-            return Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const turningAge = b.year ? ((isToday ? pNow.year : nextStart.year) - b.year) : null;
+
+            return {
+                isToday,
+                label,
+                daysUntil,
+                turningAge,
+                matchedTzStr,
+                offsetLabel
+            };
         }
 
         function getEventTiming(startDay, startMonth, endDay, endMonth) {
@@ -796,73 +1437,363 @@
             return { daysUntil: diff, isOngoing: false };
         }
 
-        function getNextBirthdayDate(day, month) {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            const today = new Date(currentYear, now.getMonth(), now.getDate());
-            let target = new Date(currentYear, month - 1, day);
-
-            if (target < today) {
-                target = new Date(currentYear + 1, month - 1, day);
+        function getClockMetricsForZone(zoneStr) {
+            const direct = parseDirectOffsetMinutes(zoneStr);
+            if (direct !== null) {
+                return getOffsetGroupMetrics(direct);
             }
-            return target;
-        }
 
-        function formatDisplayDate(day, month, year) {
-            const d = String(day).padStart(2, '0');
-            const m = String(month).padStart(2, '0');
-            return year ? `${d}/${m}/${year}` : `${d}/${m}`;
-        }
-
-        function formatEventDisplayDate(e) {
-            const s = `${String(e.startDay).padStart(2, '0')}/${String(e.startMonth).padStart(2, '0')}`;
-            if (e.endDay && e.endMonth) {
-                const en = `${String(e.endDay).padStart(2, '0')}/${String(e.endMonth).padStart(2, '0')}`;
-                return `${s} – ${en}`;
+            const resolved = tryLocalResolution(zoneStr);
+            if (!resolved) {
+                fetchTimezoneFromApi(zoneStr);
+                return {
+                    isValid: false,
+                    isResolving: !failedResolutions.has(zoneStr.toLowerCase()),
+                    timeStr: '--:--:--',
+                    dateStr: 'resolving...',
+                    phase: 'day',
+                    offsetLabel: 'utc',
+                    relLabel: '',
+                    progressPct: 0,
+                    isLocal: false
+                };
             }
-            return s;
+
+            const dt = resolved === 'system' ? DateTime.now() : DateTime.now().setZone(resolved);
+            if (!dt.isValid) {
+                return {
+                    isValid: false,
+                    isResolving: false,
+                    timeStr: '--:--:--',
+                    dateStr: 'invalid',
+                    phase: 'day',
+                    offsetLabel: 'utc',
+                    relLabel: '',
+                    progressPct: 0,
+                    isLocal: false
+                };
+            }
+
+            const timeStr = dt.toFormat('hh:mm:ss a').toLowerCase();
+            const dateStr = dt.toFormat('ccc, LLL d').toLowerCase();
+            const hour24 = dt.hour;
+            const minutes = dt.minute;
+            const phase = getTimePhase(hour24);
+
+            const offMins = dt.offset;
+            const offsetLabel = formatOffsetLabel(offMins);
+            const relLabel = formatRelativeDiff(offMins);
+            const progressPct = Math.round(((hour24 * 60 + minutes) / 1440) * 100);
+            const isLocal = resolved === 'system' || resolved === DateTime.now().zoneName;
+
+            return {
+                isValid: true,
+                isResolving: false,
+                timeStr, dateStr, phase, offsetLabel, relLabel, progressPct, isLocal
+            };
         }
 
-        async function editBirthday(id) {
+        function getOffsetGroupMetrics(offsetMinutes) {
+            const dt = DateTime.utc().plus({ minutes: offsetMinutes });
+            const timeStr = dt.toFormat('hh:mm:ss a').toLowerCase();
+            const dateStr = dt.toFormat('ccc, LLL d').toLowerCase();
+            const hour24 = dt.hour;
+            const minutes = dt.minute;
+            const phase = getTimePhase(hour24);
+
+            const offsetLabel = formatOffsetLabel(offsetMinutes);
+            const relLabel = formatRelativeDiff(offsetMinutes);
+            const progressPct = Math.round(((hour24 * 60 + minutes) / 1440) * 100);
+            const isLocal = offsetMinutes === DateTime.now().offset;
+
+            return {
+                timeStr, dateStr, phase, offsetLabel, relLabel, progressPct, isLocal
+            };
+        }
+
+        async function handleBulkAdd() {
+            const raw = document.getElementById('bulk-input').value;
+            const lines = raw.split('\n');
+            let count = 0;
+            lines.forEach(line => {
+                const item = parseBirthdayLine(line);
+                if (item) { birthdays.push(item); count++; }
+            });
+            if (count > 0) {
+                await syncAllToServer();
+                renderBirthdays();
+                document.getElementById('bulk-input').value = '';
+                toggleAddBox();
+            } else {
+                alert('No valid birthdays found. Format: <name>/dd/mm or <name>/dd/mm/yyyy');
+            }
+        }
+
+        async function handleBulkEditSave() {
+            const raw = document.getElementById('bulk-edit-input').value;
+            const lines = raw.split('\n');
+            const newBirthdays = [];
+            const remainingOld = [...birthdays];
+
+            lines.forEach(line => {
+                const parsed = parseBirthdayLine(line);
+                if (!parsed) return;
+                const existingIndex = remainingOld.findIndex(b => b.name.trim().toLowerCase() === parsed.name.toLowerCase());
+                if (existingIndex !== -1) {
+                    const matched = remainingOld.splice(existingIndex, 1)[0];
+                    newBirthdays.push({ id: matched.id, name: parsed.name, day: parsed.day, month: parsed.month, year: parsed.year });
+                } else {
+                    newBirthdays.push(parsed);
+                }
+            });
+
+            birthdays = newBirthdays;
+            await syncAllToServer();
+            renderBirthdays();
+            toggleEditBox();
+        }
+
+        async function handleBulkAddEvents() {
+            const raw = document.getElementById('bulk-event-input').value;
+            const lines = raw.split('\n');
+            let count = 0;
+            lines.forEach(line => {
+                const item = parseEventLine(line);
+                if (item) { events.push(item); count++; }
+            });
+            if (count > 0) {
+                await syncAllToServer();
+                renderEvents();
+                document.getElementById('bulk-event-input').value = '';
+                toggleAddEventBox();
+            } else {
+                alert('No valid events found. Format: <name>/dd/mm or <name>/dd/mm/dd/mm');
+            }
+        }
+
+        async function handleBulkEditEventsSave() {
+            const raw = document.getElementById('bulk-edit-event-input').value;
+            const lines = raw.split('\n');
+            const newEvents = [];
+            const remainingOld = [...events];
+
+            lines.forEach(line => {
+                const parsed = parseEventLine(line);
+                if (!parsed) return;
+                const existingIndex = remainingOld.findIndex(e => e.name.trim().toLowerCase() === parsed.name.toLowerCase());
+                if (existingIndex !== -1) {
+                    const matched = remainingOld.splice(existingIndex, 1)[0];
+                    newEvents.push({ id: matched.id, name: parsed.name, startDay: parsed.startDay, startMonth: parsed.startMonth, endDay: parsed.endDay, endMonth: parsed.endMonth });
+                } else {
+                    newEvents.push(parsed);
+                }
+            });
+
+            events = newEvents;
+            await syncAllToServer();
+            renderEvents();
+            toggleEditEventBox();
+        }
+
+        async function handleSaveStandaloneClock() {
+            const inputEl = document.getElementById('standalone-input');
+            const val = inputEl.value.trim();
+            if (!val) return;
+            standaloneClocks.push(val);
+            inputEl.value = '';
+            toggleAddStandaloneBox();
+            renderClocks();
+            await syncAllToServer();
+        }
+
+        async function deleteStandaloneClock(idx) {
+            const confirmFn = (window.parent && window.parent.guiConfirm) ? window.parent.guiConfirm : confirm;
+            if (!await confirmFn("remove this world clock?")) return;
+            standaloneClocks.splice(idx, 1);
+            renderClocks();
+            await syncAllToServer();
+        }
+
+        async function handleBulkAddPeople() {
+            const inputEl = document.getElementById('bulk-people-input');
+            const raw = inputEl.value;
+            const lines = raw.split('\n');
+            let addedCount = 0;
+            lines.forEach(l => {
+                const item = parsePersonLine(l);
+                if (item) { trackedPeople.push(item); addedCount++; }
+            });
+            if (addedCount > 0) {
+                inputEl.value = '';
+                toggleAddPeopleBox();
+                renderTrackedPeople();
+                renderBirthdays();
+                await syncAllToServer();
+            } else {
+                alert('format: <name>/<timezone>/<displayed location>');
+            }
+        }
+
+        async function handleBulkEditPeopleSave() {
+            const raw = document.getElementById('bulk-edit-people-input').value;
+            const lines = raw.split('\n');
+            const newPeople = [];
+            lines.forEach(l => {
+                const parsed = parsePersonLine(l);
+                if (parsed) newPeople.push(parsed);
+            });
+            trackedPeople = normalizePeople(newPeople);
+            toggleEditPeopleBox();
+            renderTrackedPeople();
+            renderBirthdays();
+            await syncAllToServer();
+        }
+
+        async function deletePerson(targetId) {
+            const item = trackedPeople.find(p => p.id === targetId || p.name === targetId);
+            if (!item) return;
+            const confirmFn = (window.parent && window.parent.guiConfirm) ? window.parent.guiConfirm : confirm;
+            if (!await confirmFn(`remove ${item.name}?`)) return;
+            trackedPeople = trackedPeople.filter(p => p.id !== item.id && p !== item);
+            renderTrackedPeople();
+            renderBirthdays();
+            await syncAllToServer();
+        }
+
+        async function deleteOffsetGroup(offset) {
+            const confirmFn = (window.parent && window.parent.guiConfirm) ? window.parent.guiConfirm : confirm;
+            if (!await confirmFn("remove all people in this timezone?")) return;
+            trackedPeople = trackedPeople.filter(p => getPersonOffsetMinutes(p) !== offset);
+            renderTrackedPeople();
+            renderBirthdays();
+            await syncAllToServer();
+        }
+
+        async function addPersonToOffset(offsetMinutes, offsetLabel) {
+            const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
+            const raw = await promptFn(`add person to ${offsetLabel} (<name>/<displayed location>):`, "");
+            if (!raw) return;
+
+            const parts = raw.split('/');
+            if (parts.length >= 3) {
+                const parsed = parsePersonLine(raw);
+                if (parsed) {
+                    trackedPeople.push(parsed);
+                    renderTrackedPeople();
+                    renderBirthdays();
+                    await syncAllToServer();
+                    return;
+                }
+            }
+
+            const name = parts[0].trim();
+            const loc = parts.length > 1 ? parts.slice(1).join('/').trim() : '';
+            if (name) {
+                trackedPeople.push({
+                    id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name,
+                    timezone: offsetLabel,
+                    location: loc,
+                    rawLocation: loc ? `${offsetLabel}/${loc}` : offsetLabel
+                });
+                renderTrackedPeople();
+                renderBirthdays();
+                await syncAllToServer();
+            }
+        }
+
+        function editBirthday(id) {
             const item = birthdays.find(b => b.id === id);
             if (!item) return;
 
-            const existingFormatted = `${item.name}/${formatDisplayDate(item.day, item.month, item.year)}`;
-            const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
-            const updated = await promptFn("edit birthday (<name>/dd/mm/yyyy or <name>/dd/mm):", existingFormatted);
-            if (updated === null) return;
+            document.getElementById('edit-bday-id').value = item.id;
+            document.getElementById('edit-bday-name').value = item.name;
+            document.getElementById('edit-bday-date').value = formatDisplayDate(item.day, item.month, item.year);
 
-            const parsed = parseBirthdayLine(updated);
-            if (parsed) {
-                item.name = parsed.name;
-                item.day = parsed.day;
-                item.month = parsed.month;
-                item.year = parsed.year;
-                await saveBirthdays();
-                renderAll();
+            const matched = findMatchedPerson(item.name);
+            if (matched) {
+                document.getElementById('edit-bday-tz').value = matched.timezone || '';
+                document.getElementById('edit-bday-loc').value = matched.location || '';
             } else {
-                alert("invalid format. use <name>/dd/mm or <name>/dd/mm/yyyy");
+                document.getElementById('edit-bday-tz').value = '';
+                document.getElementById('edit-bday-loc').value = '';
             }
+
+            document.getElementById('edit-birthday-modal').style.display = 'flex';
+        }
+
+        function closeEditBirthdayModal() {
+            document.getElementById('edit-birthday-modal').style.display = 'none';
+        }
+
+        async function saveEditedBirthdayModal() {
+            const id = document.getElementById('edit-bday-id').value;
+            const item = birthdays.find(b => b.id === id);
+            if (!item) return;
+
+            const name = document.getElementById('edit-bday-name').value.trim();
+            const dateStr = document.getElementById('edit-bday-date').value.trim();
+            const tz = document.getElementById('edit-bday-tz').value.trim();
+            const loc = document.getElementById('edit-bday-loc').value.trim();
+
+            if (!name || !dateStr) {
+                alert('name and date are required.');
+                return;
+            }
+
+            const parsed = parseBirthdayLine(`${name}/${dateStr}`);
+            if (!parsed) {
+                alert('invalid date format. use dd/mm or dd/mm/yyyy.');
+                return;
+            }
+
+            const oldName = item.name;
+            item.name = parsed.name;
+            item.day = parsed.day;
+            item.month = parsed.month;
+            item.year = parsed.year;
+
+            const matchedOld = findMatchedPerson(oldName);
+            const matchedNew = findMatchedPerson(item.name);
+            const matched = matchedOld || matchedNew;
+
+            if (tz) {
+                if (matched) {
+                    matched.name = item.name;
+                    matched.timezone = tz;
+                    matched.location = loc;
+                    matched.rawLocation = loc ? `${tz}/${loc}` : tz;
+                } else {
+                    trackedPeople.push({
+                        id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                        name: item.name,
+                        timezone: tz,
+                        location: loc,
+                        rawLocation: loc ? `${tz}/${loc}` : tz
+                    });
+                }
+            } else if (matched) {
+                trackedPeople = trackedPeople.filter(p => p.id !== matched.id && p !== matched);
+            }
+
+            closeEditBirthdayModal();
+            await syncAllToServer();
+            renderAll();
         }
 
         async function editEvent(id) {
             const item = events.find(e => e.id === id);
             if (!item) return;
-
             const existingFormatted = formatEventExport(item);
             const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
             const updated = await promptFn("edit event (<name>/dd/mm or <name>/dd/mm/dd/mm):", existingFormatted);
             if (updated === null) return;
-
             const parsed = parseEventLine(updated);
             if (parsed) {
-                item.name = parsed.name;
-                item.startDay = parsed.startDay;
-                item.startMonth = parsed.startMonth;
-                item.endDay = parsed.endDay;
-                item.endMonth = parsed.endMonth;
-                await saveEvents();
-                renderAll();
+                item.name = parsed.name; item.startDay = parsed.startDay; item.startMonth = parsed.startMonth;
+                item.endDay = parsed.endDay; item.endMonth = parsed.endMonth;
+                await syncAllToServer();
+                renderEvents();
             } else {
                 alert("invalid format. use <name>/dd/mm or <name>/dd/mm/dd/mm");
             }
@@ -871,152 +1802,303 @@
         async function deleteBirthday(id) {
             const confirmFn = (window.parent && window.parent.guiConfirm) ? window.parent.guiConfirm : confirm;
             if (!await confirmFn("remove this birthday?")) return;
-
             birthdays = birthdays.filter(b => b.id !== id);
-            await saveBirthdays();
-            renderAll();
+            await syncAllToServer();
+            renderBirthdays();
         }
 
         async function deleteEvent(id) {
             const confirmFn = (window.parent && window.parent.guiConfirm) ? window.parent.guiConfirm : confirm;
             if (!await confirmFn("remove this event?")) return;
-
             events = events.filter(e => e.id !== id);
-            await saveEvents();
-            renderAll();
+            await syncAllToServer();
+            renderEvents();
         }
 
         function renderAll() {
-            document.getElementById('total-count').textContent = birthdays.length;
+            renderEvents();
+            renderBirthdays();
+            renderClocks();
+            renderTrackedPeople();
+        }
+
+        function renderEvents() {
             document.getElementById('events-count').textContent = events.length;
-
-            const eventsContainer = document.getElementById('upcoming-events-grid');
-            const bdaysContainer = document.getElementById('upcoming-grid');
-
+            const container = document.getElementById('upcoming-events-grid');
             if (!events.length) {
-                eventsContainer.innerHTML = '<div class="bday-empty">no events added yet.</div>';
-            } else {
-                const sortedEvents = [...events].map(item => {
-                    const timing = getEventTiming(item.startDay, item.startMonth, item.endDay, item.endMonth);
-                    return { ...item, daysUntil: timing.daysUntil, isOngoing: timing.isOngoing };
-                }).sort((a, b) => a.daysUntil - b.daysUntil);
-
-                eventsContainer.innerHTML = sortedEvents.map(e => {
-                    const isToday = e.daysUntil === 0;
-                    let daysLabel = '';
-                    if (isToday) {
-                        daysLabel = e.isOngoing && e.endDay ? 'ongoing!' : 'today!';
-                    } else if (e.daysUntil === 1) {
-                        daysLabel = 'tomorrow';
-                    } else {
-                        daysLabel = `in ${e.daysUntil} days`;
-                    }
-
-                    const closeness = Math.max(0, (365 - e.daysUntil) / 365);
-                    const progressPct = isToday ? 100 : Math.max(3, Math.min(100, Math.round(closeness * 100)));
-                    const gradientMix = (closeness * 18).toFixed(1);
-
-                    return `
-                        <div class="bday-card ${isToday ? 'is-today' : ''}" style="background: linear-gradient(90deg, color-mix(in srgb, var(--accent) ${gradientMix}%, var(--bg-hover)), var(--bg-hover));">
-                            <div class="bday-card-info">
-                                <div class="bday-card-row1">
-                                    <span class="bday-name" title="${escapeHTML(e.name)}">${escapeHTML(e.name)}</span>
-                                    <span class="bday-tag">${daysLabel}</span>
-                                </div>
-                                <div class="bday-card-row2">
-                                    <span class="bday-date-label" data-tooltip="${escapeHTML(getEventTooltip(e))}">${formatEventDisplayDate(e)}</span>
-                                </div>
-                            </div>
-                            <div class="bday-actions">
-                                <button class="bday-icon-btn" title="edit" onclick="editEvent('${e.id}')">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 20h9"/>
-                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                    </svg>
-                                </button>
-                                <button class="bday-icon-btn btn-del" title="delete" onclick="deleteEvent('${e.id}')">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"/>
-                                        <line x1="6" y1="6" x2="18" y2="18"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="bday-card-progress" style="width: ${progressPct}%;"></div>
-                        </div>
-                    `;
-                }).join('');
+                container.innerHTML = '<div class="pane-empty">no events added yet.</div>';
+                return;
             }
 
+            const sorted = [...events].map(item => {
+                const timing = getEventTiming(item.startDay, item.startMonth, item.endDay, item.endMonth);
+                return { ...item, daysUntil: timing.daysUntil, isOngoing: timing.isOngoing };
+            }).sort((a, b) => a.daysUntil - b.daysUntil);
+
+            container.innerHTML = sorted.map(e => {
+                const isToday = e.daysUntil === 0;
+                let daysLabel = '';
+                if (isToday) daysLabel = e.isOngoing && e.endDay ? 'ongoing!' : 'today!';
+                else if (e.daysUntil === 1) daysLabel = 'tomorrow';
+                else daysLabel = `in ${e.daysUntil} days`;
+
+                const closeness = Math.max(0, (365 - e.daysUntil) / 365);
+                const progressPct = isToday ? 100 : Math.max(3, Math.min(100, Math.round(closeness * 100)));
+                const gradientMix = (closeness * 18).toFixed(1);
+
+                return `
+                    <div class="bday-card ${isToday ? 'is-today' : ''}" style="background: linear-gradient(90deg, color-mix(in srgb, var(--accent) ${gradientMix}%, var(--bg-hover)), var(--bg-hover));">
+                        <div class="bday-card-info">
+                            <div class="bday-card-row1">
+                                <span class="bday-name" title="${escapeHTML(e.name)}">${escapeHTML(e.name)}</span>
+                                <span class="bday-tag">${daysLabel}</span>
+                            </div>
+                            <div class="bday-card-row2">
+                                <span class="bday-date-label" data-tooltip="${escapeHTML(getEventTooltip(e))}">${formatEventDisplayDate(e)}</span>
+                            </div>
+                        </div>
+                        <div class="bday-actions">
+                            <button class="icon-btn" title="edit" onclick="editEvent('${e.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </button>
+                            <button class="icon-btn btn-del" title="delete" onclick="deleteEvent('${e.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="bday-card-progress" style="width: ${progressPct}%;"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderBirthdays() {
+            document.getElementById('total-count').textContent = birthdays.length;
+            const container = document.getElementById('upcoming-grid');
             if (!birthdays.length) {
-                bdaysContainer.innerHTML = '<div class="bday-empty">no birthdays added yet.</div>';
-            } else {
-                const sortedUpcoming = [...birthdays].map(item => {
-                    const daysUntil = getDaysUntil(item.day, item.month);
-                    const nextDate = getNextBirthdayDate(item.day, item.month);
-                    const turningAge = item.year ? (nextDate.getFullYear() - item.year) : null;
-                    return { ...item, daysUntil, turningAge };
-                }).sort((a, b) => a.daysUntil - b.daysUntil);
-
-                bdaysContainer.innerHTML = sortedUpcoming.map(b => {
-                    const isToday = b.daysUntil === 0;
-                    let daysLabel = '';
-                    if (isToday) {
-                        daysLabel = 'today!';
-                    } else if (b.daysUntil === 1) {
-                        daysLabel = 'tomorrow';
-                    } else {
-                        daysLabel = `in ${b.daysUntil} days`;
-                    }
-
-                    let ageLabel = '';
-                    if (b.turningAge !== null) {
-                        ageLabel = isToday ? `turns ${b.turningAge}` : `turning ${b.turningAge}`;
-                    }
-
-                    const closeness = Math.max(0, (365 - b.daysUntil) / 365);
-                    const progressPct = isToday ? 100 : Math.max(3, Math.min(100, Math.round(closeness * 100)));
-                    const gradientMix = (closeness * 18).toFixed(1);
-
-                    return `
-                        <div class="bday-card ${isToday ? 'is-today' : ''}" style="background: linear-gradient(90deg, color-mix(in srgb, var(--accent) ${gradientMix}%, var(--bg-hover)), var(--bg-hover));">
-                            <div class="bday-card-info">
-                                <div class="bday-card-row1">
-                                    <span class="bday-name" title="${escapeHTML(b.name)}">${escapeHTML(b.name)}</span>
-                                    <span class="bday-tag">${daysLabel}</span>
-                                </div>
-                                <div class="bday-card-row2">
-                                    <span class="bday-date-label" data-tooltip="${escapeHTML(getBirthdayTooltip(b))}">${formatDisplayDate(b.day, b.month, b.year)}</span>
-                                    ${ageLabel ? `<span class="bday-age-tag">&middot; ${escapeHTML(ageLabel)}</span>` : ''}
-                                </div>
-                            </div>
-                            <div class="bday-actions">
-                                <button class="bday-icon-btn" title="edit" onclick="editBirthday('${b.id}')">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 20h9"/>
-                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                                    </svg>
-                                </button>
-                                <button class="bday-icon-btn btn-del" title="delete" onclick="deleteBirthday('${b.id}')">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"/>
-                                        <line x1="6" y1="6" x2="18" y2="18"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div class="bday-card-progress" style="width: ${progressPct}%;"></div>
-                        </div>
-                    `;
-                }).join('');
+                container.innerHTML = '<div class="pane-empty">no birthdays added yet.</div>';
+                return;
             }
+
+            const sorted = [...birthdays].map(item => {
+                const matched = findMatchedPerson(item.name);
+                const timing = getBirthdayTiming(item, matched);
+                return { ...item, timing, hasTz: !!matched };
+            }).sort((a, b) => a.timing.daysUntil - b.timing.daysUntil);
+
+            container.innerHTML = sorted.map(b => {
+                const t = b.timing;
+                const isToday = t.isToday;
+                let ageLabel = '';
+                if (t.turningAge !== null) {
+                    ageLabel = isToday ? `turns ${t.turningAge}` : `turning ${t.turningAge}`;
+                }
+
+                const closeness = Math.max(0, (365 - t.daysUntil) / 365);
+                const progressPct = isToday ? 100 : Math.max(3, Math.min(100, Math.round(closeness * 100)));
+                const gradientMix = (closeness * 18).toFixed(1);
+
+                return `
+                    <div class="bday-card ${isToday ? 'is-today' : ''}" style="background: linear-gradient(90deg, color-mix(in srgb, var(--accent) ${gradientMix}%, var(--bg-hover)), var(--bg-hover));">
+                        <div class="bday-card-info">
+                            <div class="bday-card-row1">
+                                <span class="bday-name ${b.hasTz ? 'has-tz' : ''}" data-bday-name="${escapeHTML(b.name)}">${escapeHTML(b.name)}</span>
+                                <span class="bday-tag">${t.label}</span>
+                            </div>
+                            <div class="bday-card-row2">
+                                <span class="bday-date-label" data-tooltip="${escapeHTML(getBirthdayTooltip(b))}">${formatDisplayDate(b.day, b.month, b.year)}</span>
+                                ${ageLabel ? `<span class="bday-age-tag">&middot; ${escapeHTML(ageLabel)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="bday-actions">
+                            <button class="icon-btn" title="edit" onclick="editBirthday('${b.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </button>
+                            <button class="icon-btn btn-del" title="delete" onclick="deleteBirthday('${b.id}')">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="bday-card-progress" style="width: ${progressPct}%;"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderClocks() {
+            const container = document.getElementById('clocks-grid');
+            document.getElementById('clocks-count').textContent = standaloneClocks.length;
+            if (!standaloneClocks.length) {
+                container.innerHTML = '<div class="pane-empty">no world clocks.</div>';
+                return;
+            }
+
+            container.innerHTML = standaloneClocks.map((loc, idx) => {
+                const metrics = getClockMetricsForZone(loc);
+                return `
+                    <div class="tz-card ${metrics.isLocal ? 'is-local' : ''}" data-zone="${escapeHTML(loc)}">
+                        <div>
+                            <div class="tz-card-header">
+                                <span class="tz-card-title">${escapeHTML(loc)}</span>
+                                <div class="tz-actions-row">
+                                    <button class="icon-btn btn-del" title="remove" onclick="deleteStandaloneClock(${idx})">&#10005;</button>
+                                </div>
+                            </div>
+                            <div class="tz-meta-row">
+                                <span class="tz-badge js-offset">${escapeHTML(metrics.offsetLabel)}</span>
+                                <span class="tz-rel-text js-rel">${escapeHTML(metrics.relLabel)}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="tz-clock-text js-clock">${metrics.timeStr}</div>
+                            <div class="tz-date-row">
+                                <span class="js-date">${metrics.dateStr}</span>
+                                <span class="tz-phase-label js-phase">${metrics.phase}</span>
+                            </div>
+                        </div>
+                        <div class="tz-card-progress js-progress" style="width: ${metrics.progressPct}%;"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTrackedPeople() {
+            const container = document.getElementById('people-grid');
+            const groupsMap = new Map();
+            trackedPeople.forEach(p => {
+                const off = getPersonOffsetMinutes(p);
+                if (!groupsMap.has(off)) groupsMap.set(off, []);
+                groupsMap.get(off).push(p);
+            });
+
+            const sortedOffsets = Array.from(groupsMap.keys()).sort((a, b) => a - b);
+            document.getElementById('people-groups-count').textContent = sortedOffsets.length;
+
+            if (!sortedOffsets.length) {
+                container.innerHTML = '<div class="pane-empty">no tracked people.</div>';
+                return;
+            }
+
+            container.innerHTML = sortedOffsets.map(offset => {
+                const people = groupsMap.get(offset);
+                const metrics = getOffsetGroupMetrics(offset);
+
+                const pillsHtml = people.map(p => {
+                    const tooltip = p.location ? `${p.name} (${p.location})` : p.name;
+                    return `<span class="tz-person-pill" title="${escapeHTML(tooltip)}">${escapeHTML(p.name)}</span>`;
+                }).join('');
+
+                const popoverRows = people.map(p => `
+                    <div class="tz-popover-row">
+                        <div class="tz-popover-user">
+                            <span class="tz-popover-avatar">${escapeHTML(((p.name || '').trim().charAt(0) || '?'))}</span>
+                            <span class="tz-popover-name">${escapeHTML(p.name)}</span>
+                            ${p.location ? `<span class="tz-popover-loc">&middot; ${escapeHTML(p.location)}</span>` : ''}
+                        </div>
+                        <button class="icon-btn btn-del" title="remove" onclick="event.stopPropagation(); deletePerson('${escapeHTML(p.id)}')">&#10005;</button>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="tz-card ${metrics.isLocal ? 'is-local' : ''}" data-offset="${offset}">
+                        <div class="tz-popover">
+                            <div class="tz-popover-header">
+                                <span>${escapeHTML(metrics.offsetLabel)} &middot; ${escapeHTML(metrics.relLabel)}</span>
+                                <span class="tz-phase-label">${escapeHTML(metrics.phase)}</span>
+                            </div>
+                            <div class="tz-popover-list">${popoverRows}</div>
+                        </div>
+                        <div>
+                            <div class="tz-card-header">
+                                <span class="tz-card-title">${escapeHTML(metrics.offsetLabel)}</span>
+                                <div class="tz-actions-row">
+                                    <button class="icon-btn" title="add person" onclick="addPersonToOffset(${offset}, '${escapeHTML(metrics.offsetLabel)}')">+</button>
+                                    <button class="icon-btn btn-del" title="remove timezone" onclick="deleteOffsetGroup(${offset})">&#10005;</button>
+                                </div>
+                            </div>
+                            <div class="tz-meta-row">
+                                <span class="tz-rel-text js-rel">${escapeHTML(metrics.relLabel)}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="tz-clock-text js-clock">${metrics.timeStr}</div>
+                            <div class="tz-date-row">
+                                <span class="js-date">${metrics.dateStr}</span>
+                                <span class="tz-phase-label js-phase">${metrics.phase}</span>
+                            </div>
+                        </div>
+                        <div class="tz-people-box">${pillsHtml}</div>
+                        <div class="tz-card-progress js-progress" style="width: ${metrics.progressPct}%;"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateHoveredTooltip() {
+            const tooltipEl = document.getElementById('custom-tooltip');
+            if (!activeHoveredBdayName || tooltipEl.style.display !== 'block') return;
+            const matched = findMatchedPerson(activeHoveredBdayName);
+            if (matched) {
+                const off = getPersonOffsetMinutes(matched);
+                const pNow = DateTime.utc().plus({ minutes: off });
+                const offLabel = formatOffsetLabel(off);
+                tooltipEl.textContent = `${offLabel} · ${pNow.toFormat('h:mm:ss a, cccc, d LLL').toLowerCase()}`;
+            }
+        }
+
+        function updateTicks() {
+            updateHoveredTooltip();
+
+            document.querySelectorAll('.tz-card[data-zone]').forEach(card => {
+                const zone = card.getAttribute('data-zone');
+                const metrics = getClockMetricsForZone(zone);
+                const clockEl = card.querySelector('.js-clock'); if (clockEl) clockEl.textContent = metrics.timeStr;
+                const dateEl = card.querySelector('.js-date'); if (dateEl) dateEl.textContent = metrics.dateStr;
+                const phaseEl = card.querySelector('.js-phase'); if (phaseEl) phaseEl.textContent = metrics.phase;
+                const offsetEl = card.querySelector('.js-offset'); if (offsetEl) offsetEl.textContent = metrics.offsetLabel;
+                const relEl = card.querySelector('.js-rel'); if (relEl) relEl.textContent = metrics.relLabel;
+                const progressEl = card.querySelector('.js-progress'); if (progressEl) progressEl.style.width = metrics.progressPct + '%';
+            });
+
+            document.querySelectorAll('.tz-card[data-offset]').forEach(card => {
+                const offset = parseInt(card.getAttribute('data-offset'), 10);
+                const metrics = getOffsetGroupMetrics(offset);
+                const clockEl = card.querySelector('.js-clock'); if (clockEl) clockEl.textContent = metrics.timeStr;
+                const dateEl = card.querySelector('.js-date'); if (dateEl) dateEl.textContent = metrics.dateStr;
+                const phaseEl = card.querySelector('.js-phase'); if (phaseEl) phaseEl.textContent = metrics.phase;
+                const relEl = card.querySelector('.js-rel'); if (relEl) relEl.textContent = metrics.relLabel;
+                const progressEl = card.querySelector('.js-progress'); if (progressEl) progressEl.style.width = metrics.progressPct + '%';
+            });
+
+            document.querySelectorAll('.bday-card').forEach(card => {
+                const nameEl = card.querySelector('.bday-name');
+                const tagEl = card.querySelector('.bday-tag');
+                if (nameEl && tagEl) {
+                    const name = nameEl.getAttribute('data-bday-name');
+                    const b = birthdays.find(item => item.name === name);
+                    if (b) {
+                        const matched = findMatchedPerson(b.name);
+                        const timing = getBirthdayTiming(b, matched);
+                        tagEl.textContent = timing.label;
+                        if (timing.isToday) {
+                            card.classList.add('is-today');
+                        } else {
+                            card.classList.remove('is-today');
+                        }
+                    }
+                }
+            });
         }
 
         function updateNotifBar() {
             const bar = document.getElementById('notif-bar');
-            if (!("Notification" in window)) {
-                bar.style.display = 'none';
-                return;
-            }
-
+            if (!("Notification" in window)) { bar.style.display = 'none'; return; }
             if (Notification.permission === 'granted') {
                 bar.style.display = 'none';
                 checkAndSendNotifications();
@@ -1035,47 +2117,34 @@
             if (!("Notification" in window)) return;
             const res = await Notification.requestPermission();
             updateNotifBar();
-            if (res === 'granted') {
-                checkAndSendNotifications();
-            }
+            if (res === 'granted') checkAndSendNotifications();
         }
 
         function checkAndSendNotifications() {
             if (!("Notification" in window) || Notification.permission !== 'granted') return;
-
             const now = new Date();
             const todayStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
             const notifiedToday = JSON.parse(localStorage.getItem('bday_notified_' + todayStr) || '[]');
 
             birthdays.forEach(b => {
-                if (getDaysUntil(b.day, b.month) === 0) {
-                    if (!notifiedToday.includes(b.id)) {
-                        let body = `today is ${b.name}'s birthday!`;
-                        if (b.year) {
-                            const age = now.getFullYear() - b.year;
-                            body = `${b.name} turns ${age} today!`;
-                        }
-
-                        new Notification("birthday reminder", {
-                            body: body,
-                            icon: '../assets/favicon.ico'
-                        });
-
-                        notifiedToday.push(b.id);
+                const matched = findMatchedPerson(b.name);
+                const timing = getBirthdayTiming(b, matched);
+                if (timing.isToday && !notifiedToday.includes(b.id)) {
+                    let body = `today is ${b.name}'s birthday!`;
+                    if (b.year) {
+                        const age = now.getFullYear() - b.year;
+                        body = `${b.name} turns ${age} today!`;
                     }
+                    new Notification("birthday reminder", { body, icon: '../assets/favicon.ico' });
+                    notifiedToday.push(b.id);
                 }
             });
 
             events.forEach(e => {
                 const timing = getEventTiming(e.startDay, e.startMonth, e.endDay, e.endMonth);
-                if (timing.daysUntil === 0) {
-                    if (!notifiedToday.includes(e.id)) {
-                        new Notification("event reminder", {
-                            body: `today is ${e.name}!`,
-                            icon: '../assets/favicon.ico'
-                        });
-                        notifiedToday.push(e.id);
-                    }
+                if (timing.daysUntil === 0 && !notifiedToday.includes(e.id)) {
+                    new Notification("event reminder", { body: `today is ${e.name}!`, icon: '../assets/favicon.ico' });
+                    notifiedToday.push(e.id);
                 }
             });
 
@@ -1086,8 +2155,21 @@
             const tooltipEl = document.getElementById('custom-tooltip');
 
             document.addEventListener('mouseover', e => {
+                const bdayNameTarget = e.target.closest('[data-bday-name]');
+                if (bdayNameTarget) {
+                    const name = bdayNameTarget.getAttribute('data-bday-name');
+                    const matched = findMatchedPerson(name);
+                    if (matched) {
+                        activeHoveredBdayName = name;
+                        updateHoveredTooltip();
+                        tooltipEl.style.display = 'block';
+                        return;
+                    }
+                }
+
                 const target = e.target.closest('[data-tooltip]');
                 if (target) {
+                    activeHoveredBdayName = null;
                     tooltipEl.textContent = target.getAttribute('data-tooltip');
                     tooltipEl.style.display = 'block';
                 }
@@ -1097,30 +2179,33 @@
                 if (tooltipEl.style.display === 'block') {
                     let x = e.clientX + 10;
                     let y = e.clientY + 14;
-
                     if (x + tooltipEl.offsetWidth > window.innerWidth - 8) {
                         x = e.clientX - tooltipEl.offsetWidth - 10;
                     }
                     if (y + tooltipEl.offsetHeight > window.innerHeight - 8) {
                         y = e.clientY - tooltipEl.offsetHeight - 10;
                     }
-
                     tooltipEl.style.left = x + 'px';
                     tooltipEl.style.top = y + 'px';
                 }
             });
 
             document.addEventListener('mouseout', e => {
-                const target = e.target.closest('[data-tooltip]');
-                if (target) {
+                const toBday = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-bday-name]');
+                const toTip = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-tooltip]');
+                if (!toBday && !toTip) {
+                    activeHoveredBdayName = null;
                     tooltipEl.style.display = 'none';
+                } else if (!toBday) {
+                    activeHoveredBdayName = null;
                 }
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            initBirthdays();
+            initAllData();
             setupTooltip();
+            setInterval(updateTicks, 1000);
             setInterval(checkAndSendNotifications, 60000);
         });
     </script>

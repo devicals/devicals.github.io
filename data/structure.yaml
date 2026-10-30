@@ -210,12 +210,7 @@
       fileType: html
       url: pages/codes.html
 
-    - name: Timezones Tracker
-      type: file
-      fileType: html
-      url: pages/timezones.html
-
-    - name: Events Tracker
+    - name: Events/Timezones Tracker
       type: file
       fileType: html
       url: pages/events.html
