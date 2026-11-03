@@ -237,11 +237,6 @@
       type: file
       fileType: commits
 
-    - name: Graph View
-      type: file
-      fileType: html
-      url: pages/graph.html
-
     - name: Archive
       type: folder
       children:
