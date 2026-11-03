@@ -220,6 +220,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }, 4000);
     }
+
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('javascript:')) return;
+        if (href.startsWith('mailto:') || link.hasAttribute('download')) return;
+
+        const isHashOnly = href.startsWith('#');
+        const isSiteDomain = href.includes('devicals.github.io') || 
+                            (window.location.hostname && href.includes(window.location.hostname));
+
+        if (isHashOnly || isSiteDomain) {
+            e.preventDefault();
+            let targetHash = 'Index/Home';
+            if (href.includes('#')) {
+                targetHash = href.substring(href.indexOf('#') + 1);
+            }
+            if (targetHash.startsWith('/')) targetHash = targetHash.substring(1);
+
+            if (window.location.hash === '#' + targetHash) {
+                if (window.handleRoute) window.handleRoute();
+            } else {
+                window.location.hash = targetHash;
+            }
+            return;
+        }
+
+        e.preventDefault();
+        window.open(link.href, '_blank', 'noopener,noreferrer');
+    });
 });
 
 window.getDeviceId = function() {
@@ -838,7 +870,7 @@ function renderNavigation() {
                 });
                 el.setAttribute('data-path', currentPathHash);
                 parentEl.appendChild(el);
-                flatNodes.push({ name: node.name, type: 'file', path: currentPathHash, fileType: node.fileType, url: node.url, file: node.path });
+                flatNodes.push({ name: node.name, type: 'file', path: currentPathHash, fileType: node.fileType, url: node.url || node.path, file: node.path || node.url });
             }
         });
     }
@@ -867,6 +899,7 @@ function highlightNav() {
 }
 
 async function handleRoute() {
+    window.handleRoute = handleRoute;
     let rawHash = decodeURIComponent(window.location.hash.substring(1));
     if (!rawHash) { window.location.hash = "Index/Home"; return; }
 
@@ -939,6 +972,25 @@ async function handleRoute() {
             mdContainer.style.display = 'block';
             commitPage = 1;
             await renderCommitsPage(mdContainer, true);
+            return;
+        }
+
+        if (node.fileType === 'pdf') {
+            const pdfSrc = encodeURI(node.url || node.file || '');
+            iframe.style.display = 'none';
+            mdContainer.style.display = 'block';
+            mdContainer.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border);">
+                    <span style="font-family:var(--font-ui); font-size:13px; color:var(--fg-muted);">${node.name}</span>
+                    <a href="${pdfSrc}" target="_blank" download class="ui-btn" style="width:auto; margin:0; padding:6px 14px; text-decoration:none;">open / download pdf ↗</a>
+                </div>
+                <object data="${pdfSrc}" type="application/pdf" width="100%" height="800px" style="border:1px solid var(--border); background:var(--bg-hover);">
+                    <p style="padding:20px; color:var(--fg-muted); font-size:13px;">
+                        your device cannot preview this pdf inline. 
+                        <a href="${pdfSrc}" target="_blank" style="color:var(--accent);">click here to open/download</a>.
+                    </p>
+                </object>
+            `;
             return;
         }
 

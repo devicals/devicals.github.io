@@ -196,6 +196,15 @@
                   fileType: md
                   path: content/poems/short of a world unsaid/Mother.md
 
+        - name: Other Bull
+          type: folder
+          children:
+
+            - name: Minecraft's "The Mace"
+              type: file
+              fileType: pdf
+              path: content/TheMace.pdf
+
 - name: Other Stuff
   type: folder
   children:

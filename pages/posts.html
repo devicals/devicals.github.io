@@ -604,6 +604,41 @@
                 }, 600);
             }
         });
+
+        document.addEventListener('click', (e) => {
+            const link = e.target.closest('a');
+            if (!link) return;
+
+            const href = link.getAttribute('href');
+            if (!href || href.startsWith('javascript:')) return;
+            if (href.startsWith('mailto:') || link.hasAttribute('download')) return;
+
+            const isHashOnly = href.startsWith('#');
+            const isSiteDomain = href.includes('devicals.github.io') || 
+                                (window.location.hostname && href.includes(window.location.hostname));
+
+            if (isHashOnly || isSiteDomain) {
+                e.preventDefault();
+
+                let targetHash = 'Index/Home';
+                if (href.includes('#')) {
+                    targetHash = href.substring(href.indexOf('#') + 1);
+                }
+                if (targetHash.startsWith('/')) targetHash = targetHash.substring(1);
+
+                const parentWin = (window.parent && window.parent !== window) ? window.parent : window;
+
+                if (parentWin.location.hash === '#' + targetHash) {
+                    if (parentWin.handleRoute) parentWin.handleRoute();
+                } else {
+                    parentWin.location.hash = targetHash;
+                }
+                return;
+            }
+
+            e.preventDefault();
+            window.open(link.href, '_blank', 'noopener,noreferrer');
+        });
     </script>
     <script src="../js/bg-canvas.js"></script>
 </body>
