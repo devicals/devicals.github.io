@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Z.A.T.O Live Tier List</title>
   <link rel="stylesheet" href="../css/style.css">
-    <style>
+      <style>
       .tl-layout { display: flex; height: 100vh; background: var(--bg-workspace); }
       .tl-main { flex: 1; padding: 22px 18px 60px 18px; min-width: 0; overflow-y: auto; }
 
@@ -15,12 +15,12 @@
       .tl-header { margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 10px; }
       .tl-title { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 3px; display: flex; align-items: center; gap: 12px; }
 
-      select, input[type=text], button {
-        font-family: var(--font-ui); font-size: 12px; padding: 5px 9px;
-        background: var(--bg-main); border: 1px solid var(--border);
-        color: var(--fg-main); cursor: pointer; outline: none; transition: border-color 0.2s, color 0.2s;
+      select, input[type=text], button:not(.ui-btn):not(.tl-item-remove) {
+        font-family: var(--font-ui); font-size: 12px; padding: 8px 12px; line-height: 1.25;
+        background: var(--bg-elevated); border: 1px solid var(--border-bright);
+        color: var(--fg-main); cursor: pointer; outline: none; transition: border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
       }
-      select:hover, input[type=text]:hover, button:hover { border-color: var(--accent); }
+      select:hover, input[type=text]:hover, button:not(.ui-btn):not(.tl-item-remove):hover { border-color: var(--accent); }
 
       .btn-primary { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); font-weight: 700; }
 
@@ -54,7 +54,7 @@
       .tl-item-text-block { flex: 1; min-width: 0; overflow: hidden; }
       .tl-item-label { font-size: clamp(10px, 1.05vw, 13px); line-height: 1.25; overflow-wrap: anywhere; display: block; }
 
-      .tl-item-remove { background: transparent; border: none; color: var(--destructive); font-size: 10px; padding: 0 0 0 6px; width: auto; margin: 0; }
+      .tl-item-remove { background: transparent; border: none; color: var(--destructive); font-size: 10px; padding: 0 0 0 6px; width: auto; margin: 0; cursor: pointer; }
 
       .pool-area { min-height: 60px; display: flex; flex-wrap: wrap; gap: 4px; padding: 7px; background: var(--bg-hover); border: 1px solid var(--border); }
       .pool-empty { font-size: 11px; color: var(--fg-muted); font-style: italic; width: 100%; text-align: center; padding: 12px 0; }

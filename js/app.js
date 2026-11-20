@@ -8,12 +8,105 @@ let navData = { children: [] };
 let flatNodes = [];
 let commitPage = 1;
 let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
-let authModalState = 'login'; 
+let authModalState = 'login';
+let prevIndicatorLeft = null;
+let indicatorSwapTimer = null;
 
 window.isOwner = false;
 window.OWNER_EMAIL = '3rr0r.d3v@gmail.com';
 
 marked.use({ breaks: true, gfm: true });
+
+function updateReadingProgressBar(el) {
+    const fill = document.getElementById('reading-progress-fill');
+    if (!fill) return;
+    if (!el) {
+        fill.style.width = '0%';
+        return;
+    }
+    const max = el.scrollHeight - el.clientHeight;
+    const pct = max > 0 ? Math.min(100, Math.max(0, (el.scrollTop / max) * 100)) : 0;
+    fill.style.width = pct + '%';
+}
+
+function triggerRouteEnterAnimation(el) {
+    if (!el) return;
+    el.classList.remove('route-entering');
+    void el.offsetWidth;
+    el.classList.add('route-entering');
+}
+
+function updateNavIndicator() {
+    const tree = document.getElementById('nav-tree');
+    const indicator = document.getElementById('nav-indicator');
+    if (!tree || !indicator) return;
+
+    const active = tree.querySelector('.nav-item.active');
+    if (!active || active.offsetParent === null) {
+        if (indicatorSwapTimer) {
+            clearTimeout(indicatorSwapTimer);
+            indicatorSwapTimer = null;
+        }
+        indicator.style.opacity = '0';
+        indicator.style.transform = 'translateX(-8px)';
+        prevIndicatorLeft = null;
+        return;
+    }
+
+    const treeRect = tree.getBoundingClientRect();
+    const activeRect = active.getBoundingClientRect();
+    const newTop = (activeRect.top - treeRect.top) + tree.scrollTop;
+    const newHeight = activeRect.height;
+    const newLeft = activeRect.left - treeRect.left;
+
+    if (indicatorSwapTimer) {
+        clearTimeout(indicatorSwapTimer);
+        indicatorSwapTimer = null;
+    }
+
+    if (prevIndicatorLeft === null) {
+        indicator.style.transition = 'none';
+        indicator.style.top = newTop + 'px';
+        indicator.style.height = newHeight + 'px';
+        indicator.style.left = newLeft + 'px';
+        indicator.style.opacity = '0';
+        indicator.style.transform = 'translateX(-8px)';
+        void indicator.offsetWidth;
+        indicator.style.transition = '';
+        indicator.style.opacity = '1';
+        indicator.style.transform = 'translateX(0)';
+        prevIndicatorLeft = newLeft;
+        return;
+    }
+
+    if (Math.abs(newLeft - prevIndicatorLeft) < 2) {
+        indicator.style.transition = '';
+        indicator.style.top = newTop + 'px';
+        indicator.style.height = newHeight + 'px';
+        indicator.style.left = newLeft + 'px';
+        indicator.style.opacity = '1';
+        indicator.style.transform = 'translateX(0)';
+        prevIndicatorLeft = newLeft;
+    } else {
+        indicator.style.transition = '';
+        indicator.style.opacity = '0';
+        indicator.style.transform = 'translateX(-8px)';
+        indicatorSwapTimer = setTimeout(() => {
+            indicatorSwapTimer = null;
+            indicator.style.transition = 'none';
+            indicator.style.top = newTop + 'px';
+            indicator.style.height = newHeight + 'px';
+            indicator.style.left = newLeft + 'px';
+            indicator.style.opacity = '0';
+            indicator.style.transform = 'translateX(-8px)';
+            void indicator.offsetWidth;
+            indicator.style.transition = '';
+            indicator.style.opacity = '1';
+            indicator.style.transform = 'translateX(0)';
+            prevIndicatorLeft = newLeft;
+        }, 150);
+    }
+}
 
 async function hashPassword(plainText) {
     if (!plainText) return '';
@@ -91,7 +184,7 @@ function getLocalSettingsSnapshot() {
         theme: localStorage.getItem('theme') || 'primary',
         custom_css: localStorage.getItem('custom-css') || '',
         dark_mode: localStorage.getItem('dark-mode') || 'true',
-        bg_effect: localStorage.getItem('bg-effect') || 'particles',
+        bg_effect: localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles',
         tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
         worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
         birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]'),
@@ -109,10 +202,11 @@ function mergeSettingsWithLocal(serverSettings) {
         mergedCss = mergedCss ? (mergedCss + '\n' + local.custom_css) : local.custom_css;
     }
 
+    const rawBg = s.bg_effect || local.bg_effect || 'particles';
     return {
         theme: s.theme || local.theme || 'primary',
         dark_mode: s.dark_mode !== undefined && s.dark_mode !== null ? s.dark_mode : local.dark_mode,
-        bg_effect: s.bg_effect || local.bg_effect || 'particles',
+        bg_effect: rawBg === 'none' ? 'none' : 'particles',
         custom_css: mergedCss,
         tierlists: mergeArrayByNameOrId(s.tierlists, local.tierlists),
         worldclocks: mergeStringArray(s.worldclocks, local.worldclocks),
@@ -126,7 +220,7 @@ function applySettingsToLocalStorage(settings) {
     if (!settings) return;
     if (settings.theme) localStorage.setItem('theme', settings.theme);
     if (settings.dark_mode !== undefined && settings.dark_mode !== null) localStorage.setItem('dark-mode', String(settings.dark_mode));
-    if (settings.bg_effect) localStorage.setItem('bg-effect', settings.bg_effect);
+    if (settings.bg_effect) localStorage.setItem('bg-effect', settings.bg_effect === 'none' ? 'none' : 'particles');
     if (settings.custom_css !== undefined) localStorage.setItem('custom-css', settings.custom_css);
     if (settings.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(settings.tierlists));
     if (settings.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(settings.worldclocks));
@@ -203,9 +297,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSettingsLocally();
     await loadNavigation();
     window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('resize', () => requestAnimationFrame(updateNavIndicator));
     handleRoute();
     initAuth();
     loadAnnouncementsToasts();
+
+    const pageEl = document.getElementById('page-content');
+    if (pageEl) {
+        pageEl.addEventListener('scroll', () => updateReadingProgressBar(pageEl));
+    }
 
     if (!window._globalBanWatcher) {
         window._globalBanWatcher = setInterval(async () => {
@@ -369,7 +469,7 @@ function loadSettingsLocally() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
     const theme = localStorage.getItem('theme') || 'primary';
     const customCss = localStorage.getItem('custom-css') || '';
-    const bgEffect = localStorage.getItem('bg-effect') || 'particles';
+    const bgEffect = localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles';
 
     document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
     const cssBlock = document.getElementById('custom-css-block');
@@ -411,8 +511,9 @@ document.getElementById('save-css').onclick = () => {
 };
 
 document.getElementById('bg-effect-selector').onchange = (e) => {
-    localStorage.setItem('bg-effect', e.target.value);
-    if (window.setBgEffect) window.setBgEffect(e.target.value);
+    const val = e.target.value === 'none' ? 'none' : 'particles';
+    localStorage.setItem('bg-effect', val);
+    if (window.setBgEffect) window.setBgEffect(val);
     syncSettingsToServer();
 };
 
@@ -433,7 +534,7 @@ window.syncSettingsToServer = async function() {
             theme: localStorage.getItem('theme') || 'primary',
             custom_css: localStorage.getItem('custom-css') || '',
             dark_mode: localStorage.getItem('dark-mode') !== 'false',
-            bg_effect: localStorage.getItem('bg-effect') || 'particles',
+            bg_effect: localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles',
             tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
             worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
             birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]'),
@@ -825,23 +926,34 @@ async function loadNavigation() {
 
 function renderNavigation() {
     const container = document.getElementById('nav-tree');
-    container.innerHTML = '';
+    container.innerHTML = '<div class="nav-indicator" id="nav-indicator"></div>';
     flatNodes = [];
+    prevIndicatorLeft = null;
 
     function buildTree(nodes, parentEl, pathPrefix = []) {
         nodes.forEach(node => {
             const currentPath = [...pathPrefix, node.name];
             const currentPathHash = currentPath.map(p => p.replace(/\s+/g, '_')).join('/');
             const el = document.createElement('div');
+            const safeLabel = window.escapeAttr(node.name);
 
             if (node.type === 'folder') {
                 const isExp = expandedFolders.includes(currentPathHash);
-                el.innerHTML = `<div class="nav-item"><span class="nav-chevron">${isExp ? 'v' : '>'}</span> <span style="font-weight:bold;">${node.name}</span></div>`;
+                el.innerHTML = `<div class="nav-item" data-folder-path="${currentPathHash}" title="${safeLabel}"><span class="nav-chevron">${isExp ? 'v' : '>'}</span><span class="nav-label">${safeLabel}</span><button type="button" class="nav-folder-open" title="open folder page">↗</button></div>`;
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = `nav-children ${isExp ? 'expanded' : ''}`;
 
-                el.querySelector('.nav-item').addEventListener('click', (e) => {
+                const itemRow = el.querySelector('.nav-item');
+                const openBtn = el.querySelector('.nav-folder-open');
+
+                openBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    setRouteHash(currentPathHash);
+                });
+
+                itemRow.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (e.target.closest('.nav-folder-open')) return;
                     const nowExp = childrenContainer.classList.toggle('expanded');
                     if (nowExp && !expandedFolders.includes(currentPathHash)) {
                         expandedFolders.push(currentPathHash);
@@ -849,12 +961,8 @@ function renderNavigation() {
                         expandedFolders = expandedFolders.filter(p => p !== currentPathHash);
                     }
                     localStorage.setItem('expandedFolders', JSON.stringify(expandedFolders));
-                    el.querySelector('.nav-chevron').textContent = nowExp ? 'v' : '>';
-                    const isChevron = e.target.classList.contains('nav-chevron') || e.target.closest('.nav-chevron');
-                    const isMobile = window.innerWidth <= 768;
-                    if (!isChevron && !isMobile) {
-                        setRouteHash(currentPathHash);
-                    }
+                    itemRow.querySelector('.nav-chevron').textContent = nowExp ? 'v' : '>';
+                    requestAnimationFrame(updateNavIndicator);
                 });
 
                 el.appendChild(childrenContainer);
@@ -863,7 +971,8 @@ function renderNavigation() {
                 buildTree(node.children || [], childrenContainer, currentPath);
             } else {
                 el.className = 'nav-item';
-                el.innerHTML = `<span style="width:14px"></span>${node.name}`;
+                el.title = node.name;
+                el.innerHTML = `<span style="width:11px; flex-shrink:0;"></span><span class="nav-label">${safeLabel}</span>`;
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
                     setRouteHash(currentPathHash);
@@ -891,11 +1000,12 @@ function highlightNav() {
     const hash = decodeURIComponent(window.location.hash.substring(1)).split('?')[0].replace(/\s+/g, '_');
     document.querySelectorAll('.nav-item').forEach(el => {
         el.classList.remove('active');
-        const nodePath = (el.getAttribute('data-path') || '').replace(/\s+/g, '_');
+        const nodePath = (el.getAttribute('data-path') || el.getAttribute('data-folder-path') || '').replace(/\s+/g, '_');
         if (nodePath === hash) {
             el.classList.add('active');
         }
     });
+    requestAnimationFrame(updateNavIndicator);
 }
 
 async function handleRoute() {
@@ -911,10 +1021,10 @@ async function handleRoute() {
     }
 
     highlightNav();
+    updateReadingProgressBar(null);
 
     const iframe = document.getElementById('iframe-workspace');
     const mdContainer = document.getElementById('page-content');
-    const breadcrumbs = document.getElementById('breadcrumbs');
 
     if (hash === 'admin') {
         const ident = window.getUserIdentity();
@@ -925,12 +1035,11 @@ async function handleRoute() {
         }
         iframe.style.display = 'none';
         mdContainer.style.display = 'block';
-        breadcrumbs.innerHTML = 'system > admin dashboard';
+        mdContainer.scrollTop = 0;
+        triggerRouteEnterAnimation(mdContainer);
         if (window.renderAdminPage) window.renderAdminPage();
         return;
     }
-
-    breadcrumbs.innerHTML = hash.split('/').map((p, i, arr) => `<span class="crumb-link" onclick="setRouteHash('${arr.slice(0, i + 1).join('/')}')">${p.replace(/_/g, ' ')}</span>`).join(' > ');
 
     const node = findNodeByHash(hash);
 
@@ -938,15 +1047,21 @@ async function handleRoute() {
         if (node.type === 'folder') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
+            mdContainer.scrollTop = 0;
 
-            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">folder contents:</p><div style="display:flex; flex-direction:column; gap:6px; margin-top:30px;">`;
+            let html = `<h1>${node.name}</h1><p style="color:var(--fg-muted); padding-bottom:12px; border-bottom:1px dashed var(--border);">index directory:</p><div class="folder-toc-list">`;
 
             if (node.children && node.children.length > 0) {
-                node.children.forEach(child => {
+                node.children.forEach((child, idx) => {
                     const childPath = (node.path + '/' + child.name).split('/').map(s => s.replace(/\s+/g, '_')).join('/');
+                    const num = String(idx + 1).padStart(2, '0');
+                    const tag = child.type === 'folder' ? 'dir/' : (child.fileType || 'doc');
                     html += `
-                        <a href="#${childPath}" style="padding: 16px 20px; background:var(--bg-hover); border:1px solid var(--border); color:var(--fg-main); text-decoration:none; transition: border-color 0.2s; font-size: 15px; font-weight: bold;">
-                            ${child.name}
+                        <a href="#${childPath}" class="folder-toc-row">
+                            <span class="folder-toc-idx">${num}</span>
+                            <span class="folder-toc-name">${child.name}</span>
+                            <span class="folder-toc-dots"></span>
+                            <span class="folder-toc-tag">${tag}</span>
                         </a>
                     `;
                 });
@@ -956,13 +1071,16 @@ async function handleRoute() {
 
             html += `</div>`;
             mdContainer.innerHTML = html;
+            triggerRouteEnterAnimation(mdContainer);
             return;
         }
 
         if (node.fileType === 'spotify') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
+            mdContainer.scrollTop = 0;
             mdContainer.innerHTML = '<div id="spotify-inject"></div>';
+            triggerRouteEnterAnimation(mdContainer);
             if (window.renderSpotify) window.renderSpotify();
             return;
         }
@@ -970,8 +1088,10 @@ async function handleRoute() {
         if (node.fileType === 'commits') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
+            mdContainer.scrollTop = 0;
             commitPage = 1;
             await renderCommitsPage(mdContainer, true);
+            triggerRouteEnterAnimation(mdContainer);
             return;
         }
 
@@ -979,10 +1099,11 @@ async function handleRoute() {
             const pdfSrc = encodeURI(node.url || node.file || '');
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
+            mdContainer.scrollTop = 0;
             mdContainer.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border);">
                     <span style="font-family:var(--font-ui); font-size:13px; color:var(--fg-muted);">${node.name}</span>
-                    <a href="${pdfSrc}" target="_blank" download class="ui-btn" style="width:auto; margin:0; padding:6px 14px; text-decoration:none;">open / download pdf ↗</a>
+                    <a href="${pdfSrc}" target="_blank" download class="ui-btn" style="width:auto; margin:0; padding:8px 14px; text-decoration:none;">open / download pdf ↗</a>
                 </div>
                 <object data="${pdfSrc}" type="application/pdf" width="100%" height="800px" style="border:1px solid var(--border); background:var(--bg-hover);">
                     <p style="padding:20px; color:var(--fg-muted); font-size:13px;">
@@ -991,6 +1112,7 @@ async function handleRoute() {
                     </p>
                 </object>
             `;
+            triggerRouteEnterAnimation(mdContainer);
             return;
         }
 
@@ -998,20 +1120,28 @@ async function handleRoute() {
             mdContainer.style.display = 'none';
             iframe.style.display = 'block';
             iframe.src = node.url + (parts[1] ? '?' + parts[1] : '');
+            triggerRouteEnterAnimation(iframe);
             return;
         }
 
         if (node.fileType === 'md') {
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
+            mdContainer.scrollTop = 0;
             try {
                 const res = await fetch(node.file);
                 const text = res.ok ? await res.text() : '## blank page\ncontent not found.';
-                mdContainer.innerHTML = marked.parse(text);
+                mdContainer.innerHTML = marked.parse(text) + `
+                    <div class="doc-telemetry-footer">
+                        <span>— end of log —</span>
+                        <span id="doc-char-count"></span>
+                    </div>
+                `;
                 updateWordCount(text);
             } catch (e) {
                 mdContainer.innerHTML = '<h2>error loading document</h2>';
             }
+            triggerRouteEnterAnimation(mdContainer);
             return;
         }
     }
@@ -1019,6 +1149,7 @@ async function handleRoute() {
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
     mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">page not found</h2>';
+    triggerRouteEnterAnimation(mdContainer);
 }
 
 async function renderCommitsPage(container, reset = false) {
@@ -1112,7 +1243,7 @@ function updateWordCount(text) {
     if (!el) return;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const chars = text.length;
-    el.textContent = `${words} words ${chars} characters`;
+    el.textContent = `${words} words · ${chars} chars`;
 }
 
 async function loadAnnouncementsToasts() {

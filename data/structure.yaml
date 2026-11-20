@@ -209,11 +209,6 @@
   type: folder
   children:
 
-    - name: Tier List Maker
-      type: file
-      fileType: html
-      url: pages/ranking.html
-
     - name: Code Translator
       type: file
       fileType: html
@@ -224,7 +219,7 @@
       fileType: html
       url: pages/events.html
 
-    - name: fxTwiter
+    - name: fxTwitter
       type: file
       fileType: html
       url: pages/fxtwitter.html
@@ -240,6 +235,11 @@
     - name: Archive
       type: folder
       children:
+
+      - name: Tier List Maker
+        type: file
+        fileType: html
+        url: pages/ranking.html
 
       - name: ZATO Live Tierlist
         type: file

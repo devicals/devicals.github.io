@@ -181,7 +181,7 @@
 
                 return `
                     <div class="gallery-item">
-                        ${canDelete ? `<button class="ui-btn" style="position:absolute; top:0; right:0; width:auto; color:var(--destructive);" onclick="deleteGalleryItem(${item.id})">Delete</button>` : ''}
+                        ${canDelete ? `<button class="ui-btn ui-btn-sm ui-icon-btn ui-icon-del" style="position:absolute; top:0; right:0; width:auto;" title="delete" aria-label="delete" onclick="deleteGalleryItem(${item.id})"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>` : ''}
                         <img src="${item.drawing || (item.message.startsWith('http') || item.message.startsWith('data:') ? item.message : '')}" alt="Artwork" loading="lazy">
                         <div style="font-weight:bold; color:var(--accent); font-size:18px;">${item.message && !item.message.startsWith('http') && !item.message.startsWith('data:') ? item.message : 'Untitled'}</div>
                         <div style="font-size:12px; color:var(--fg-muted);">By ${item.name || 'Anonymous'} | ${new Date(item.created_at).toLocaleString()}</div>

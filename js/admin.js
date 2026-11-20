@@ -210,7 +210,7 @@ async function loadAdminShareCodes() {
                         <div style="color:var(--fg-main); font-size:13px; margin-top:4px;">Title: ${window.escapeAttr(title)}</div>
                         <div style="color:var(--fg-muted); font-size:11px; margin-top:2px;">Creator: ${window.escapeAttr(creator)} &middot; Expires: ${window.escapeAttr(expStr)} &middot; Uses: ${window.escapeAttr(usesStr)} &middot; ${window.escapeAttr(dateStr)}</div>
                     </div>
-                    <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="adminDeleteShareCode('${item.key}')">delete</button>
+                    <button class="ui-btn ui-btn-sm ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="adminDeleteShareCode('${item.key}')"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
                 </div>
             `;
         }).join('');
@@ -346,7 +346,7 @@ window.adminViewWarnings = async function (userId) {
                     <div style="color:var(--fg-muted); margin-bottom:4px;">${new Date(w.created_at).toLocaleString()} — by ${window.escapeAttr(w.issued_by_name || 'admin')}</div>
                     <div>${window.escapeAttr(w.message)}</div>
                 </div>
-                ${window.isOwner ? `<button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; color:var(--destructive);" onclick="adminDeleteWarning('${w.id}', '${userId}')">✕</button>` : ''}
+                ${window.isOwner ? `<button class="ui-btn ui-btn-xs ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="adminDeleteWarning('${w.id}', '${userId}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>` : ''}
             </div>
         `;
     });
@@ -389,7 +389,7 @@ async function loadAdminAnnouncements() {
             list.innerHTML = data.data.map((a, i) => `
                 <div class="admin-card admin-card-row">
                     <span style="font-size:14px; line-height:1.6;">${window.escapeAttr(a)}</span>
-                    <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive);" onclick="deleteAdminAnn(${i})">delete</button>
+                    <button class="ui-btn ui-btn-sm ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="deleteAdminAnn(${i})"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
                 </div>
             `).join('');
         } else {

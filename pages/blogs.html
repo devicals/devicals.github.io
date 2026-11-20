@@ -107,9 +107,9 @@
                                 <button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyBlogLink('${b.id}')">ID: #${b.id}</button>
                                 &nbsp;&middot; Date: ${b.date} ${authorTag(authorMap[b.author_id])}
                             </div>
-                            ${canModify ? `<div style="display:flex; gap:8px;">
-                                <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px;" onclick="editBlogInline('${b.id}')">edit</button>
-                                <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px; font-size:11px; color:var(--destructive);" onclick="deleteBlogInline('${b.id}')">delete</button>
+                            ${canModify ? `<div style="display:flex; gap:6px;">
+                                <button class="ui-btn ui-btn-sm ui-icon-btn" style="width:auto; margin:0;" title="edit" aria-label="edit" onclick="editBlogInline('${b.id}')"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
+                                <button class="ui-btn ui-btn-sm ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="deleteBlogInline('${b.id}')"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
                             </div>` : ''}
                         </div>
                         <div class="flat-title" style="font-size:22px; margin-bottom:14px;">${b.title}</div>

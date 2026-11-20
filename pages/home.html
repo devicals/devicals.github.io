@@ -13,12 +13,18 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-bright);
+            padding-bottom: 14px;
+        }
+        .section-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
         }
         .about-columns {
             display: flex;
-            gap: 40px;
+            gap: 22px;
             flex-wrap: wrap;
             margin-top: 10px;
             margin-bottom: 40px;
@@ -26,6 +32,34 @@
         .about-column {
             flex: 1;
             min-width: 260px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--edge-hi);
+            border-left: 1px solid var(--edge-hi);
+            border-right: 1px solid var(--edge-lo);
+            border-bottom: 1px solid var(--edge-lo);
+            padding: 0 20px 18px 20px;
+            transition: border-color 0.14s ease;
+        }
+        .about-column:hover {
+            border-color: var(--accent);
+        }
+        .about-column ul {
+            margin-bottom: 0 !important;
+        }
+        .win-titlebar {
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.8px;
+            color: var(--accent);
+            background: var(--bg-hover);
+            border-bottom: 1px solid var(--border-bright);
+            margin: 0 -20px 16px -20px;
+            padding: 6px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 34px;
         }
         .pronouns-container {
             margin-bottom: 35px;
@@ -39,24 +73,55 @@
         }
         .pronoun-badge {
             font-family: var(--font-ui);
-            font-size: 13px;
+            font-size: 12px;
             color: var(--accent);
-            border: 1px solid var(--border);
-            background: var(--bg-hover);
-            padding: 4px 12px;
+            border-top: 1px solid var(--edge-hi);
+            border-left: 1px solid var(--edge-hi);
+            border-right: 1px solid var(--edge-lo);
+            border-bottom: 1px solid var(--edge-lo);
+            background: var(--bg-elevated);
+            padding: 4px 10px;
+            transition: border-color 0.14s ease, background 0.14s ease;
+        }
+        .pronoun-badge:hover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
         }
         .pronouns-note {
             font-size: 13px;
             color: var(--fg-muted);
             line-height: 1.6;
         }
+        .latest-blog-window {
+            background: var(--bg-panel);
+            border-top: 1px solid var(--edge-hi);
+            border-left: 1px solid var(--edge-hi);
+            border-right: 1px solid var(--edge-lo);
+            border-bottom: 1px solid var(--edge-lo);
+            padding: 0 22px 22px 22px;
+            margin-top: 14px;
+            margin-bottom: 60px;
+            cursor: pointer;
+            transition: border-color 0.14s ease, background 0.14s ease;
+        }
+        .latest-blog-window .win-titlebar {
+            margin: 0 -22px 18px -22px;
+        }
+        .latest-blog-window:hover {
+            border-color: var(--accent);
+            background: var(--bg-hover);
+        }
+        .owner-edit-btn {
+            display: none;
+            margin: 0 !important;
+        }
     </style>
 </head>
 <body style="padding: 40px; overflow-y: auto;">
     <div class="markdown-body" style="max-width: 900px; margin: 0 auto; padding-bottom: 80px;">
         <div class="about-header">
-            <h1 style="margin:0;">about me</h1>
-            <button id="edit-about-btn" class="ui-btn" style="width:auto; margin:0; display:none;" onclick="openEditAboutModal()">edit about me</button>
+            <h1 style="margin:0; border-bottom:none; padding-bottom:0;">about me</h1>
+            <button id="edit-bio-btn" class="ui-btn ui-btn-sm ui-icon-btn owner-edit-btn" title="edit bio" aria-label="edit bio" onclick="openEditSection('bio')"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
         </div>
 
         <div id="about-bio-container" style="margin-bottom: 30px;">
@@ -64,64 +129,46 @@
         </div>
 
         <div id="about-pronouns-section" class="pronouns-container">
-            <h2>pronouns</h2>
+            <div class="section-title-row">
+                <h2 style="margin:0;">pronouns</h2>
+                <button id="edit-pronouns-btn" class="ui-btn ui-btn-sm ui-icon-btn owner-edit-btn" title="edit pronouns" aria-label="edit pronouns" onclick="openEditSection('pronouns')"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
+            </div>
             <div id="about-pronouns-list" class="pronouns-list"></div>
             <div id="about-pronouns-note" class="pronouns-note"></div>
         </div>
 
         <div class="about-columns">
             <div class="about-column">
-                <h2 style="margin-top: 0; margin-bottom: 16px;">skills</h2>
+                <div class="win-titlebar">
+                    <span>skills</span>
+                    <button id="edit-skills-btn" class="ui-btn ui-btn-xs ui-icon-btn owner-edit-btn" title="edit skills" aria-label="edit skills" onclick="openEditSection('skills')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
+                </div>
                 <div id="about-skills-container"></div>
             </div>
             <div class="about-column">
-                <h2 style="margin-top: 0; margin-bottom: 16px;">socials</h2>
+                <div class="win-titlebar">
+                    <span>socials</span>
+                    <button id="edit-socials-btn" class="ui-btn ui-btn-xs ui-icon-btn owner-edit-btn" title="edit socials" aria-label="edit socials" onclick="openEditSection('socials')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
+                </div>
                 <div id="about-socials-container"></div>
             </div>
         </div>
 
-        <h2>latest blog</h2>
-        <div id="latest-blog-container" style="background:var(--bg-hover); padding:30px; border:1px solid var(--border); margin-top:20px; margin-bottom: 60px; cursor:pointer;">
-            <span style="color:var(--fg-muted);">loading latest blog post...</span>
+        <div class="latest-blog-window" id="latest-blog-card">
+            <div class="win-titlebar"><span>latest blog</span></div>
+            <div id="latest-blog-container">
+                <span style="color:var(--fg-muted);">loading latest blog post...</span>
+            </div>
         </div>
     </div>
 
-    <div id="edit-about-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
-        <div class="modal-box" style="background:var(--bg-sidebar); border:1px solid var(--border); padding:24px; width:720px; max-width:92vw; max-height:88vh; overflow-y:auto; font-family:var(--font-ui);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid var(--border); padding-bottom:10px;">
-                <h2 style="margin:0; font-size:18px; color:var(--accent);">edit about me (error dev only)</h2>
-                <button class="ui-btn" style="width:auto; margin:0; padding:4px 10px;" onclick="closeEditAboutModal()">close</button>
-            </div>
-
-            <div class="settings-group">
-                <label>bio (markdown supported)</label>
-                <textarea id="edit-bio-input" class="ui-input" rows="6" placeholder="write your bio here..."></textarea>
-            </div>
-
-            <div class="settings-group">
-                <label>pronouns list (comma-separated)</label>
-                <input type="text" id="edit-pronouns-list-input" class="ui-input" placeholder="e.g. he/him, they/them">
-            </div>
-
-            <div class="settings-group">
-                <label>pronouns note / details</label>
-                <textarea id="edit-pronouns-note-input" class="ui-input" rows="2" placeholder="optional small note or extra details about your pronouns..."></textarea>
-            </div>
-
-            <div style="display:flex; gap:20px; flex-wrap:wrap;">
-                <div class="settings-group" style="flex:1; min-width:260px;">
-                    <label>skills (markdown list)</label>
-                    <textarea id="edit-skills-input" class="ui-input" rows="8" placeholder="- [Skill Name](URL)"></textarea>
-                </div>
-                <div class="settings-group" style="flex:1; min-width:260px;">
-                    <label>socials (markdown list)</label>
-                    <textarea id="edit-socials-input" class="ui-input" rows="8" placeholder="- [Social Platform](URL)"></textarea>
-                </div>
-            </div>
-
+    <div id="edit-section-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:2000; align-items:center; justify-content:center;">
+        <div class="modal-box" style="width:620px; max-width:92vw; max-height:88vh;">
+            <div class="modal-title" id="edit-section-title">edit section</div>
+            <div id="edit-section-fields"></div>
             <div style="display:flex; gap:10px; margin-top:10px;">
-                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveAboutData()">save changes</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="closeEditAboutModal()">cancel</button>
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveAboutSection()">save changes</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="closeEditSection()">cancel</button>
             </div>
         </div>
     </div>
@@ -142,6 +189,15 @@
         };
 
         let aboutData = { ...DEFAULT_ABOUT };
+        let activeEditSection = null;
+
+        function escapeAttr(str) {
+            return (str || '').toString()
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
 
         function checkIsOwner() {
             if (window.parent) {
@@ -169,8 +225,9 @@
 
         function updateOwnerUI() {
             const isOwner = checkIsOwner();
-            const btn = document.getElementById('edit-about-btn');
-            if (btn) btn.style.display = isOwner ? 'block' : 'none';
+            document.querySelectorAll('.owner-edit-btn').forEach(btn => {
+                btn.style.display = isOwner ? 'inline-flex' : 'none';
+            });
         }
 
         window.onParentAuthChanged = updateOwnerUI;
@@ -226,35 +283,77 @@
             });
         }
 
-        window.openEditAboutModal = function () {
+        window.openEditSection = function (section) {
             if (!checkIsOwner()) return;
-            document.getElementById('edit-bio-input').value = aboutData.bio || '';
-            const list = Array.isArray(aboutData.pronouns) ? aboutData.pronouns.join(', ') : (aboutData.pronouns || '');
-            document.getElementById('edit-pronouns-list-input').value = list;
-            document.getElementById('edit-pronouns-note-input').value = aboutData.pronouns_note || '';
-            document.getElementById('edit-skills-input').value = aboutData.skills || '';
-            document.getElementById('edit-socials-input').value = aboutData.socials || '';
-            document.getElementById('edit-about-modal').style.display = 'flex';
+            activeEditSection = section;
+            const titleEl = document.getElementById('edit-section-title');
+            const fieldsEl = document.getElementById('edit-section-fields');
+
+            if (section === 'bio') {
+                titleEl.textContent = 'edit bio';
+                fieldsEl.innerHTML = `
+                    <div class="settings-group">
+                        <label>bio (markdown supported)</label>
+                        <textarea id="edit-sec-bio" class="ui-input" rows="8" placeholder="write your bio here...">${escapeAttr(aboutData.bio || '')}</textarea>
+                    </div>
+                `;
+            } else if (section === 'pronouns') {
+                titleEl.textContent = 'edit pronouns';
+                const list = Array.isArray(aboutData.pronouns) ? aboutData.pronouns.join(', ') : (aboutData.pronouns || '');
+                fieldsEl.innerHTML = `
+                    <div class="settings-group">
+                        <label>pronouns list (comma-separated)</label>
+                        <input type="text" id="edit-sec-pronouns" class="ui-input" placeholder="e.g. he/him, they/them" value="${escapeAttr(list)}">
+                    </div>
+                    <div class="settings-group">
+                        <label>pronouns note / details</label>
+                        <textarea id="edit-sec-pronouns-note" class="ui-input" rows="3" placeholder="optional small note or extra details...">${escapeAttr(aboutData.pronouns_note || '')}</textarea>
+                    </div>
+                `;
+            } else if (section === 'skills') {
+                titleEl.textContent = 'edit skills';
+                fieldsEl.innerHTML = `
+                    <div class="settings-group">
+                        <label>skills (markdown list)</label>
+                        <textarea id="edit-sec-skills" class="ui-input" rows="10" placeholder="- [Skill Name](URL)">${escapeAttr(aboutData.skills || '')}</textarea>
+                    </div>
+                `;
+            } else if (section === 'socials') {
+                titleEl.textContent = 'edit socials';
+                fieldsEl.innerHTML = `
+                    <div class="settings-group">
+                        <label>socials (markdown list)</label>
+                        <textarea id="edit-sec-socials" class="ui-input" rows="10" placeholder="- [Social Platform](URL)">${escapeAttr(aboutData.socials || '')}</textarea>
+                    </div>
+                `;
+            }
+
+            document.getElementById('edit-section-modal').style.display = 'flex';
         };
 
-        window.closeEditAboutModal = function () {
-            document.getElementById('edit-about-modal').style.display = 'none';
+        window.closeEditSection = function () {
+            document.getElementById('edit-section-modal').style.display = 'none';
+            activeEditSection = null;
         };
 
-        window.saveAboutData = async function () {
-            if (!checkIsOwner()) {
+        window.saveAboutSection = async function () {
+            if (!checkIsOwner() || !activeEditSection) {
                 alert("Permission denied. Only Error Dev can edit the about me page.");
                 return;
             }
 
-            const bio = document.getElementById('edit-bio-input').value.trim();
-            const pronounsRaw = document.getElementById('edit-pronouns-list-input').value.trim();
-            const pronouns = pronounsRaw.split(',').map(s => s.trim()).filter(Boolean);
-            const pronouns_note = document.getElementById('edit-pronouns-note-input').value.trim();
-            const skills = document.getElementById('edit-skills-input').value.trim();
-            const socials = document.getElementById('edit-socials-input').value.trim();
+            if (activeEditSection === 'bio') {
+                aboutData.bio = document.getElementById('edit-sec-bio').value.trim();
+            } else if (activeEditSection === 'pronouns') {
+                const pronounsRaw = document.getElementById('edit-sec-pronouns').value.trim();
+                aboutData.pronouns = pronounsRaw.split(',').map(s => s.trim()).filter(Boolean);
+                aboutData.pronouns_note = document.getElementById('edit-sec-pronouns-note').value.trim();
+            } else if (activeEditSection === 'skills') {
+                aboutData.skills = document.getElementById('edit-sec-skills').value.trim();
+            } else if (activeEditSection === 'socials') {
+                aboutData.socials = document.getElementById('edit-sec-socials').value.trim();
+            }
 
-            aboutData = { bio, pronouns, pronouns_note, skills, socials };
             localStorage.setItem('site_about_data', JSON.stringify(aboutData));
 
             try {
@@ -275,7 +374,7 @@
             }
 
             renderAbout();
-            closeEditAboutModal();
+            closeEditSection();
         };
 
         async function loadHomeBlog() {
@@ -289,11 +388,11 @@
                     const latest = sorted[0];
                     const container = document.getElementById('latest-blog-container');
                     container.innerHTML = `
-                        <div style="font-size:12px; color:var(--fg-muted); margin-bottom:10px;">${latest.date}</div>
-                        <div style="font-size:22px; font-weight:bold; color:var(--accent); margin-bottom:20px;">${latest.title}</div>
+                        <div style="font-family:var(--font-ui); font-size:11px; color:var(--fg-muted); margin-bottom:10px; border-bottom:1px dashed var(--border); padding-bottom:6px;">${latest.date}</div>
+                        <div style="font-family:var(--font-ui); font-size:20px; font-weight:bold; color:var(--accent); margin-bottom:16px;">${latest.title}</div>
                         <div class="markdown-body" style="font-size:15px; line-height:1.8;">${marked.parse(latest.content)}</div>
                     `;
-                    container.onclick = () => {
+                    document.getElementById('latest-blog-card').onclick = () => {
                         window.parent.location.hash = `#Index/Blogs?id=${latest.id}`;
                     };
                 }

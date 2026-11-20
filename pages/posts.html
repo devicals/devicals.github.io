@@ -10,8 +10,7 @@
     <style>
         .post-compose {
             min-height: 110px;
-            background: var(--bg-main);
-            border: 1px solid var(--border);
+            background: var(--bg-sunken);
             color: var(--fg-main);
             padding: 12px 14px;
             font-family: var(--font-ui);
@@ -23,10 +22,17 @@
             resize: vertical;
         }
         .post-card {
-            border: 1px solid var(--border);
-            background: var(--bg-hover);
+            border-top: 1px solid var(--edge-hi);
+            border-left: 1px solid var(--edge-hi);
+            border-right: 1px solid var(--edge-lo);
+            border-bottom: 1px solid var(--edge-lo);
+            background: var(--bg-panel);
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            transition: border-color 0.14s ease;
+        }
+        .post-card:hover {
+            border-color: var(--accent);
         }
         .post-body img {
             max-width: 100%;
@@ -46,22 +52,25 @@
             margin: 0;
         }
         .post-id-btn:hover { color: var(--accent); text-decoration: underline; }
-        .post-actions { display: flex; gap: 16px; align-items: center; margin-top: 14px; }
+        .post-actions { display: flex; gap: 10px; align-items: center; margin-top: 14px; }
         .post-like-btn {
-            width: auto; margin: 0; padding: 6px 14px; font-size: 12px;
-            display: flex; align-items: center; gap: 6px;
+            width: auto; margin: 0; gap: 6px;
         }
-        .post-like-btn.liked { border-color: var(--accent); color: var(--accent); }
+        .post-like-btn.liked {
+            border-color: var(--accent);
+            color: var(--accent) !important;
+            background: var(--accent-dim);
+        }
         .post-comments-toggle {
-            width: auto; margin: 0; padding: 6px 14px; font-size: 12px; background: transparent;
+            width: auto; margin: 0;
         }
-        .post-comments-section { display: none; margin-top: 16px; border-top: 1px dashed var(--border); padding-top: 16px; }
+        .post-comments-section { display: none; margin-top: 16px; border-top: 1px dashed var(--border-bright); padding-top: 16px; }
         .post-comments-section.expanded { display: block; }
         .comment-row { padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
         .comment-row:last-child { border-bottom: none; }
         .copy-toast {
             position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-            background: var(--accent); color: var(--bg-main); padding: 10px 20px;
+            background: var(--accent); color: var(--bg-main); padding: 8px 18px;
             font-family: var(--font-ui); font-size: 12px; font-weight: bold; z-index: 999;
             opacity: 0; transition: opacity 0.2s;
         }
@@ -74,15 +83,15 @@
             <h1 style="margin:0;">posts</h1>
         </div>
 
-        <div id="admin-compose-box" style="display:none; border:1px solid var(--border); background:var(--bg-hover); padding:18px; margin-bottom:32px;">
-            <div style="font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:lowercase;">new post (markdown &amp; pasted inline images supported)</div>
+        <div id="admin-compose-box" style="display:none; border-top:1px solid var(--edge-hi); border-left:1px solid var(--edge-hi); border-right:1px solid var(--edge-lo); border-bottom:1px solid var(--edge-lo); background:var(--bg-panel); padding:18px; margin-bottom:32px;">
+            <div style="font-family:var(--font-ui); font-size:11px; color:var(--fg-muted); margin-bottom:8px; text-transform:lowercase;">new post (markdown &amp; pasted inline images supported)</div>
             <textarea id="post-compose" class="post-compose ui-input" rows="6" placeholder="write a post using markdown... a single line break is a real line break here"></textarea>
 
             <div id="post-canvas-container" style="display:none; margin-bottom:16px; border:1px solid var(--border); padding:12px; background:var(--bg-main);">
                 <div style="display:flex; gap:10px; margin-bottom:8px; align-items:center;">
                     <input type="color" id="post-brush-color" value="#ffffff" style="background:var(--bg-sidebar); border:1px solid var(--border); height:24px;">
                     <input type="range" id="post-brush-size" min="1" max="20" value="3">
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="clearPostCanvas()">clear drawing</button>
+                    <button class="ui-btn ui-btn-sm" style="width:auto; margin:0;" onclick="clearPostCanvas()">clear drawing</button>
                 </div>
                 <canvas id="post-canvas" style="background:#1c1b18; border:1px solid var(--border); width:100%; height:250px; cursor:crosshair;"></canvas>
             </div>
@@ -379,13 +388,13 @@
                             </div>
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <button class="post-id-btn" onclick="copyPostLink('${p.id}')">ID: #${p.id}</button>
-                                ${canDelete ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deletePost('${p.id}')">Delete</button>` : ''}
+                                ${canDelete ? `<button class="ui-btn ui-btn-xs ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="deletePost('${p.id}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>` : ''}
                             </div>
                         </div>
                         <div class="post-body markdown-body">${renderMarkdown(p.content || '')}</div>
                         <div class="post-actions">
-                            <button class="ui-btn post-like-btn ${likedByMe[p.id] ? 'liked' : ''}" onclick="toggleLike('${p.id}')">♥ <span>${likeCounts[p.id] || 0}</span></button>
-                            <button class="ui-btn post-comments-toggle" onclick="toggleComments('${p.id}')">Comments</button>
+                            <button class="ui-btn ui-btn-sm post-like-btn ${likedByMe[p.id] ? 'liked' : ''}" onclick="toggleLike('${p.id}')">♥ <span>${likeCounts[p.id] || 0}</span></button>
+                            <button class="ui-btn ui-btn-sm post-comments-toggle" onclick="toggleComments('${p.id}')">Comments</button>
                         </div>
                         <div class="post-comments-section ${expandedComments[p.id] ? 'expanded' : ''}" id="comments-${p.id}">
                             <div id="comment-list-${p.id}" style="margin-bottom:12px;"><span style="color:var(--fg-muted); font-size:12px;">Loading comments...</span></div>
@@ -441,7 +450,7 @@
                                 <strong style="color:var(--accent);">${escapeHTML(c.name || 'Anonymous')}</strong>
                                 ${badgeHTML}
                             </div>
-                            ${canDelete ? `<button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); padding:2px 6px; font-size:10px;" onclick="deleteComment('${c.id}', '${postId}')">✕</button>` : ''}
+                            ${canDelete ? `<button class="ui-btn ui-btn-xs ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="deleteComment('${c.id}', '${postId}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>` : ''}
                         </div>
                         <div style="margin-top:6px;">${escapeHTML(c.content)}</div>
                     </div>

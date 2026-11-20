@@ -174,9 +174,9 @@
                         <a href="${escapeHTML(p.link)}" target="_blank" class="flat-title" style="font-size:24px;">${escapeHTML(p.name)} ↗</a>
                         <div style="display:flex; gap:8px; align-items:center;">
                             ${p.id ? `<button class="post-id-btn" style="cursor:pointer; background:none; border:none; padding:0; width:auto; margin:0; color:var(--fg-muted); font-size:12px; font-family:var(--font-ui);" onclick="copyProjectLink('${p.id}')">ID: #${p.id}</button>` : ''}
-                            ${isOwnerLocal ? `<div style="display:flex; gap:8px;">
-                                <button class="ui-btn" style="width:auto; margin:0;" onclick="editProject(${idx})">edit</button>
-                                <button class="ui-btn" style="width:auto; margin:0; color:var(--destructive); background:transparent;" onclick="deleteProject(${idx})">delete</button>
+                            ${isOwnerLocal ? `<div style="display:flex; gap:6px;">
+                                <button class="ui-btn ui-icon-btn" style="width:auto; margin:0;" title="edit" aria-label="edit" onclick="editProject(${idx})"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
+                                <button class="ui-btn ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="deleteProject(${idx})"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
                             </div>` : ''}
                         </div>
                     </div>
@@ -277,8 +277,8 @@
                         <div style="display:flex; gap:6px;">
                             ${idx > 0 ? `<button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px;" onclick="moveTab('${k}', -1)">▲</button>` : ''}
                             ${idx < keys.length - 1 ? `<button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px;" onclick="moveTab('${k}', 1)">▼</button>` : ''}
-                            <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px;" onclick="renameTabModal('${k}')">rename</button>
-                            <button class="ui-btn" style="width:auto; margin:0; padding:2px 6px; font-size:11px; color:var(--destructive);" onclick="deleteTabModal('${k}')">delete</button>
+                            <button class="ui-btn ui-btn-xs ui-icon-btn" style="width:auto; margin:0;" title="rename" aria-label="rename" onclick="renameTabModal('${k}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13H3v-2l8.5-8.5z"/></svg></button>
+                            <button class="ui-btn ui-btn-xs ui-icon-btn ui-icon-del" style="width:auto; margin:0;" title="delete" aria-label="delete" onclick="deleteTabModal('${k}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
                         </div>
                     </div>
                 `;

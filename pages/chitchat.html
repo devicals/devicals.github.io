@@ -110,7 +110,7 @@
                             </div>
                             <div style="font-size:13px; line-height:1.6; color:var(--fg-main);">${escapeHTML(m.message || '')}</div>
                         </div>
-                        ${canDelete ? `<button class="ui-btn" style="width:auto; margin:0 0 0 16px; color:var(--destructive); padding:2px 8px; font-size:11px;" onclick="deleteMessage('${m.id}')">Delete</button>` : ''}
+                        ${canDelete ? `<button class="ui-btn ui-btn-xs ui-icon-btn ui-icon-del" style="width:auto; margin:0 0 0 16px;" title="delete" aria-label="delete" onclick="deleteMessage('${m.id}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>` : ''}
                     </div>
                 `;
             }).join('');

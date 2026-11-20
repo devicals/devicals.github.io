@@ -314,7 +314,7 @@
         <div class="tl-saved-item">
           <span class="tl-saved-item-name">${escapeHTML(l.name)}</span>
           <button class="ui-btn tl-mini-btn" onclick="loadSavedList('${l.id}')">load</button>
-          <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteSavedList('${l.id}')">del</button>
+          <button class="ui-btn tl-mini-btn ui-icon-btn ui-icon-del" title="delete" aria-label="delete" onclick="deleteSavedList('${l.id}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
         </div>
       `).join('');
     }
@@ -429,7 +429,7 @@
                   <div class="tl-saved-item">
                       <span class="tl-saved-item-name" style="color:var(--accent); font-weight:bold;">${escapeHTML(code)} (${escapeHTML(info.name || 'untitled')}) <span style="font-weight:normal; color:var(--fg-muted); font-size:10px; margin-left:4px;">${escapeHTML(usesDisplay)}</span></span>
                       <button class="ui-btn tl-mini-btn" onclick="copyCodeStr('${code}')">copy</button>
-                      <button class="ui-btn tl-mini-btn" style="color:var(--destructive);" onclick="deleteMyShareCode('${item.key}', '${code}')">del</button>
+                      <button class="ui-btn tl-mini-btn ui-icon-btn ui-icon-del" title="delete" aria-label="delete" onclick="deleteMyShareCode('${item.key}', '${code}')"><svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 4h11M6 4V2.5h4V4M4.5 4l.7 9.5h5.6l.7-9.5"/></svg></button>
                   </div>
               `;
           }).join('');
