@@ -585,7 +585,7 @@
         '    }',
         '    float dustOcc = 0.0;',
         '    vec2 pp = uv - m * 0.11;',
-        '    if (pp.x > -0.10 && pp.x < 1.35 && pp.y < 0.45) {',
+        '    if (pp.x > -0.10 && pp.x < 1.35 && pp.y < 0.45 && pillarsBaseSDF(pp) < 0.175) {',
         '        float fadeMask = smoothstep(-0.10, 0.05, pp.x) * smoothstep(0.45, 0.28, pp.y);',
         '        vec2 pSwirl = pp;',
         '        pSwirl.x += sin(pp.y * 6.5 + 0.8) * 0.016;',
@@ -593,43 +593,45 @@
         '        float crag = fbm2(pSwirl * 11.0 + warp * 2.6) * 0.068 + noise(pSwirl * 26.0 - warp * 2.0) * 0.028 + noise(pSwirl * 54.0 + warp * 1.4) * 0.011 - 0.042;',
         '        vec2 pw = pSwirl + (warp - 0.5) * 0.058;',
         '        float d0 = pillarsBaseSDF(pw) - crag;',
-        '        vec2 lightDir = vec2(-0.62, 0.78);',
-        '        float dL = pillarsBaseSDF(pw + lightDir * 0.010) - crag;',
-        '        float pillarBody = smoothstep(0.005, -0.004, d0) * fadeMask;',
-        '        float pillarCore = smoothstep(-0.005, -0.042, d0) * fadeMask;',
-        '        float litFace = clamp((dL - d0) * 90.0, 0.0, 1.0);',
-        '        float rimBand = smoothstep(0.008, 0.0, abs(d0)) * (0.14 + 0.86 * litFace) * fadeMask;',
-        '        float tipZone = smoothstep(-0.26, 0.12, pp.y);',
-        '        vec2 extraTex = noise2(pSwirl * vec2(24.0, 8.0) + vec2(warp.x * 1.5, -t * 0.35));',
-        '        float evapStream = smoothstep(0.05, -0.004, d0) * (1.0 - pillarBody) * tipZone * extraTex.x * fadeMask;',
-        '        float innerFold = smoothstep(0.28, 0.80, extraTex.y);',
-        '        vec3 pDustCol = mix(u_rust * 0.36, u_amber * 0.46, litFace * 0.45 * tipZone) * (0.50 + 0.50 * innerFold);',
-        '        vec3 pRimCol = mix(u_amber, u_oxyBright, 0.48 * tipZone);',
-        '        pRimCol = mix(pRimCol, u_hot, smoothstep(0.35, 0.92, rimBand) * (0.40 + 0.60 * tipZone));',
-        '        vec3 pEvapCol = mix(u_oxyBright, u_amber, 0.20);',
-        '        if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
-        '            float pilSpec = pp.y * 1.15 + pp.x * 0.45 + 0.25;',
-        '            pDustCol = prideSpectrum(pilSpec) * (0.24 + 0.24 * innerFold);',
-        '            pRimCol = mix(prideSpectrum(pilSpec + 0.12), u_hot, smoothstep(0.45, 0.95, rimBand) * 0.5);',
-        '            pEvapCol = prideSpectrum(pilSpec + 0.22);',
-        '        } else if (u_spectrumMode > 1.5) {',
-        '            float pilTrans = pp.y * 1.2 + pp.x * 0.5;',
-        '            pDustCol = transSpectrum(pilTrans) * (0.24 + 0.24 * innerFold);',
-        '            pRimCol = mix(transSpectrum(pilTrans + 0.18), u_hot, smoothstep(0.45, 0.95, rimBand) * 0.6);',
-        '            pEvapCol = transSpectrum(pilTrans + 0.30);',
+        '        if (d0 < 0.05) {',
+        '            vec2 lightDir = vec2(-0.62, 0.78);',
+        '            float dL = pillarsBaseSDF(pw + lightDir * 0.010) - crag;',
+        '            float pillarBody = smoothstep(0.005, -0.004, d0) * fadeMask;',
+        '            float pillarCore = smoothstep(-0.005, -0.042, d0) * fadeMask;',
+        '            float litFace = clamp((dL - d0) * 90.0, 0.0, 1.0);',
+        '            float rimBand = smoothstep(0.008, 0.0, abs(d0)) * (0.14 + 0.86 * litFace) * fadeMask;',
+        '            float tipZone = smoothstep(-0.26, 0.12, pp.y);',
+        '            vec2 extraTex = noise2(pSwirl * vec2(24.0, 8.0) + vec2(warp.x * 1.5, -t * 0.35));',
+        '            float evapStream = smoothstep(0.05, -0.004, d0) * (1.0 - pillarBody) * tipZone * extraTex.x * fadeMask;',
+        '            float innerFold = smoothstep(0.28, 0.80, extraTex.y);',
+        '            vec3 pDustCol = mix(u_rust * 0.36, u_amber * 0.46, litFace * 0.45 * tipZone) * (0.50 + 0.50 * innerFold);',
+        '            vec3 pRimCol = mix(u_amber, u_oxyBright, 0.48 * tipZone);',
+        '            pRimCol = mix(pRimCol, u_hot, smoothstep(0.35, 0.92, rimBand) * (0.40 + 0.60 * tipZone));',
+        '            vec3 pEvapCol = mix(u_oxyBright, u_amber, 0.20);',
+        '            if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '                float pilSpec = pp.y * 1.15 + pp.x * 0.45 + 0.25;',
+        '                pDustCol = prideSpectrum(pilSpec) * (0.24 + 0.24 * innerFold);',
+        '                pRimCol = mix(prideSpectrum(pilSpec + 0.12), u_hot, smoothstep(0.45, 0.95, rimBand) * 0.5);',
+        '                pEvapCol = prideSpectrum(pilSpec + 0.22);',
+        '            } else if (u_spectrumMode > 1.5) {',
+        '                float pilTrans = pp.y * 1.2 + pp.x * 0.5;',
+        '                pDustCol = transSpectrum(pilTrans) * (0.24 + 0.24 * innerFold);',
+        '                pRimCol = mix(transSpectrum(pilTrans + 0.18), u_hot, smoothstep(0.45, 0.95, rimBand) * 0.6);',
+        '                pEvapCol = transSpectrum(pilTrans + 0.30);',
+        '            }',
+        '            if (u_isLight > 0.5) {',
+        '                sky = mix(sky, mix(u_rust, u_dark, 0.64), pillarBody * 0.34);',
+        '                sky = mix(sky, u_dark, pillarCore * 0.42);',
+        '                sky = mix(sky, pEvapCol, evapStream * 0.22);',
+        '                sky = mix(sky, u_hot, rimBand * 0.34);',
+        '            } else {',
+        '                sky = mix(sky, pDustCol, pillarBody * 0.84);',
+        '                sky = mix(sky, u_dark, pillarCore * 0.88);',
+        '                sky += pEvapCol * evapStream * 0.22;',
+        '                sky += pRimCol * rimBand * (0.44 + 0.40 * tipZone);',
+        '            }',
+        '            dustOcc = clamp(pillarBody * 0.58 + pillarCore * 0.42, 0.0, 1.0);',
         '        }',
-        '        if (u_isLight > 0.5) {',
-        '            sky = mix(sky, mix(u_rust, u_dark, 0.64), pillarBody * 0.34);',
-        '            sky = mix(sky, u_dark, pillarCore * 0.42);',
-        '            sky = mix(sky, pEvapCol, evapStream * 0.22);',
-        '            sky = mix(sky, u_hot, rimBand * 0.34);',
-        '        } else {',
-        '            sky = mix(sky, pDustCol, pillarBody * 0.84);',
-        '            sky = mix(sky, u_dark, pillarCore * 0.88);',
-        '            sky += pEvapCol * evapStream * 0.22;',
-        '            sky += pRimCol * rimBand * (0.44 + 0.40 * tipZone);',
-        '        }',
-        '        dustOcc = clamp(pillarBody * 0.58 + pillarCore * 0.42, 0.0, 1.0);',
         '    }',
         '    vec2 pNear = (uv - m * 0.15) * 2.1 + vec2(-t * 0.22, t * 0.12);',
         '    float nearWisp = ridged3(pNear + vec2(qMid.y * 0.8, qFar.x * 0.8));',
@@ -687,7 +689,8 @@
         '    return vec3(0.80, 0.56, 1.00);',
         '}',
         'void main() {',
-        '    vec2 uvPos = a_center + u_mouse * a_info.x + a_corner * a_extra.x;',
+        '    vec2 centerUv = a_center + u_mouse * a_info.x;',
+        '    vec2 uvPos = centerUv + a_corner * a_extra.x;',
         '    vec2 ndc = (uvPos + u_uvTransform.xy) * u_ndcScale - 1.0;',
         '    gl_Position = vec4(ndc, 0.0, 1.0);',
         '    v_d = a_corner * a_extra.y;',
@@ -699,13 +702,15 @@
         '    float baseShim = a_style.z > 0.5 ? 0.92 : 0.90;',
         '    float ampShim = a_style.z > 0.5 ? 0.08 : 0.10;',
         '    float shim = (baseShim + ampShim * sin(u_time * a_info.w + a_info.z)) * a_extra.z;',
-        '    v_frag = vec4(a_info.y, shim, a_extra.w, a_style.y);',
+        '    vec2 ppStar = centerUv - u_mouse * 0.11;',
+        '    float occ = (ppStar.x > -0.10 - a_extra.x && ppStar.x < 1.35 + a_extra.x && ppStar.y < 0.45 + a_extra.x) ? a_extra.w : 0.0;',
+        '    v_frag = vec4(a_info.y, shim, occ, a_style.y);',
         '    v_optics = a_style.z > 0.5 ? vec4(140.0, 0.14, 460.0, 68.0) : vec4(26.0, 0.28, 160.0, 18.0);',
         '}'
     ].join('\n');
 
     var starFragSrc = [
-        'precision highp float;',
+        'precision mediump float;',
         'uniform sampler2D u_nebula;',
         'uniform vec2 u_invRes;',
         'uniform float u_isLight;',
@@ -722,10 +727,13 @@
         '    float b = core + halo;',
         '    if (v_frag.w > 0.0) {',
         '        vec2 ad = abs(v_d);',
-        '        float sp = exp(-ad.y * v_optics.z - ad.x * v_optics.w) + exp(-ad.x * v_optics.z - ad.y * v_optics.w);',
-        '        b += sp * v_frag.w;',
+        '        if (min(ad.x, ad.y) < 0.08) {',
+        '            float sp = exp(-ad.y * v_optics.z - ad.x * v_optics.w) + exp(-ad.x * v_optics.z - ad.y * v_optics.w);',
+        '            b += sp * v_frag.w;',
+        '        }',
         '    }',
         '    b *= v_frag.y;',
+        '    if (b < 0.003) discard;',
         '    if (v_frag.z > 0.0) {',
         '        float dustOcc = texture2D(u_nebula, gl_FragCoord.xy * u_invRes).a;',
         '        b *= 1.0 - dustOcc * v_frag.z;',
@@ -935,6 +943,8 @@
     var lastNebTime = -1;
     var lastNebMx = 0;
     var lastNebMy = 0;
+    var lastDrawTime = -1;
+    var lastInteractionTime = -1000;
     var isLightMode = false;
 
     var cursorX = 0;
@@ -968,6 +978,7 @@
     window.__bgCanvasBridge = {
         touch: handleTouchStart,
         move: function (x, y, hovering) {
+            lastInteractionTime = performance.now();
             if (!hasPointer) {
                 mouseX = x;
                 mouseY = y;
@@ -1146,9 +1157,17 @@
                 mouseY = height * 0.5;
             }
 
+            var ts = now || performance.now();
+            var isIdle = (ts - lastInteractionTime) > 600;
+            if (!nebDirty && isIdle && (ts - lastDrawTime) < 32) {
+                scheduleTick();
+                return;
+            }
+            lastDrawTime = ts;
+
             var mx = (mouseX - width * 0.5) * invMinDim;
             var my = -(mouseY - height * 0.5) * invMinDim;
-            var elapsed = ((now || performance.now()) - startTime) * 0.001;
+            var elapsed = (ts - startTime) * 0.001;
             var dtNeb = elapsed - lastNebTime;
             var mouseMoved = Math.abs(mx - lastNebMx) > 0.0004 || Math.abs(my - lastNebMy) > 0.0004;
 
@@ -1156,7 +1175,7 @@
             gl.enableVertexAttribArray(0);
             gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-            if (nebDirty || (mouseMoved && dtNeb >= 0.024) || dtNeb >= 0.080) {
+            if (nebDirty || (mouseMoved && dtNeb >= 0.024) || dtNeb >= 0.120) {
                 gl.bindFramebuffer(gl.FRAMEBUFFER, nebFBO);
                 gl.viewport(0, 0, nebW, nebH);
                 gl.useProgram(nebProgram);

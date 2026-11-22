@@ -7,29 +7,15 @@
       fileType: html
       url: pages/home.html
 
-    - name: Posts
-      type: file
-      fileType: html
-      url: pages/posts.html
-
     - name: Blogs
       type: file
       fileType: html
       url: pages/blogs.html
 
-    - name: Community
-      type: folder
-      children:
-
-        - name: Chits & Chats
-          type: file
-          fileType: html
-          url: pages/chitchat.html
-
-        - name: Gallery
-          type: file
-          fileType: html
-          url: pages/gallery.html
+    - name: Posts
+      type: file
+      fileType: html
+      url: pages/posts.html
 
 - name: Content
   type: folder

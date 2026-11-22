@@ -2783,6 +2783,31 @@
             }
         }
 
+        let lastBirthdaysSignature = '';
+        let lastEventsSignature = '';
+
+        function getBirthdaysSignature() {
+            return [...birthdays]
+                .map(item => {
+                    const t = getBirthdayTiming(item, findMatchedPerson(item.name));
+                    return { daysUntil: t.daysUntil, sig: `${item.id}|${t.isToday}|${t.label}|${t.turningAge}` };
+                })
+                .sort((a, b) => a.daysUntil - b.daysUntil)
+                .map(x => x.sig)
+                .join(';');
+        }
+
+        function getEventsSignature() {
+            return [...events]
+                .map(item => {
+                    const t = getEventTiming(item.startDay, item.startMonth, item.endDay, item.endMonth);
+                    return { daysUntil: t.daysUntil, sig: `${item.id}|${t.daysUntil}|${t.isOngoing}` };
+                })
+                .sort((a, b) => a.daysUntil - b.daysUntil)
+                .map(x => x.sig)
+                .join(';');
+        }
+
         function updateTicks() {
             updateHoveredTooltip();
             refreshActiveModalPreviews();
@@ -2808,24 +2833,19 @@
                 const progressEl = card.querySelector('.js-progress'); if (progressEl) progressEl.style.width = metrics.progressPct + '%';
             });
 
-            document.querySelectorAll('.bday-card').forEach(card => {
-                const nameEl = card.querySelector('.bday-name');
-                const tagEl = card.querySelector('.bday-tag');
-                if (nameEl && tagEl) {
-                    const name = nameEl.getAttribute('data-bday-name');
-                    const b = birthdays.find(item => item.name === name);
-                    if (b) {
-                        const matched = findMatchedPerson(b.name);
-                        const timing = getBirthdayTiming(b, matched);
-                        tagEl.textContent = timing.label;
-                        if (timing.isToday) {
-                            card.classList.add('is-today');
-                        } else {
-                            card.classList.remove('is-today');
-                        }
-                    }
-                }
-            });
+            const nextBdaySig = getBirthdaysSignature();
+            if (lastBirthdaysSignature && nextBdaySig !== lastBirthdaysSignature) {
+                renderBirthdays();
+                checkAndSendNotifications();
+            }
+            lastBirthdaysSignature = nextBdaySig;
+
+            const nextEventSig = getEventsSignature();
+            if (lastEventsSignature && nextEventSig !== lastEventsSignature) {
+                renderEvents();
+                checkAndSendNotifications();
+            }
+            lastEventsSignature = nextEventSig;
         }
 
         function updateNotifBar() {
@@ -2963,6 +2983,9 @@
             setupTooltip();
             setInterval(updateTicks, 1000);
             setInterval(checkAndSendNotifications, 60000);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) updateTicks();
+            });
         });
     </script>
     <script src="../js/bg-canvas.js"></script>

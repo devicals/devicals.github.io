@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — devicals</title>
+    <link rel="icon" href="/assets/favicon.ico">
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        (function () {
+            var isDark = localStorage.getItem('dark-mode') !== 'false';
+            var theme = localStorage.getItem('theme') || 'primary';
+            if (localStorage.getItem('seasonal-pride-themes') !== 'false') {
+                var now = new Date();
+                var m = now.getMonth() + 1;
+                var d = now.getDate();
+                if (m === 6) theme = 'pride';
+                else if (m === 11 && d >= 13 && d <= 19) theme = 'trans';
+            }
+            if (!isDark) {
+                if (theme === 'pride') theme = 'pride-light';
+                else if (theme === 'trans') theme = 'trans-light';
+                else theme = 'light';
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <style>
+        .nf-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .nf-card {
+            width: 100%;
+            max-width: 520px;
+            background: var(--bg-panel);
+            border-top: 2px solid var(--edge-hi);
+            border-left: 2px solid var(--edge-hi);
+            border-right: 2px solid var(--edge-lo);
+            border-bottom: 2px solid var(--edge-lo);
+            padding: 0 24px 24px 24px;
+            font-family: var(--font-ui);
+        }
+        .nf-titlebar {
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--destructive);
+            background: var(--bg-hover);
+            border-bottom: 1px solid var(--border-bright);
+            margin: 0 -24px 20px -24px;
+            padding: 9px 14px;
+            letter-spacing: 0.8px;
+        }
+        .nf-code {
+            font-size: 48px;
+            color: var(--accent);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+        .nf-path {
+            background: var(--bg-sunken);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--fg-muted);
+            margin: 14px 0 20px 0;
+            word-break: break-all;
+        }
+        .nf-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .nf-actions .ui-btn {
+            width: auto;
+            margin: 0;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="nf-wrap">
+        <div class="nf-card">
+            <div class="nf-titlebar">error 404 // signal lost</div>
+            <div class="nf-code">404</div>
+            <div style="font-size:14px; color:var(--fg-main); margin-bottom:6px;">page not found</div>
+            <div style="font-size:12px; color:var(--fg-muted);">the requested resource does not exist or has been moved.</div>
+            <div class="nf-path" id="nf-path"></div>
+            <div class="nf-actions">
+                <a href="/index.html#Index/Home" class="ui-btn" style="border-color:var(--accent); color:var(--accent) !important;">return home</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.getElementById('nf-path').textContent = 'path: ' + window.location.pathname + window.location.search + window.location.hash;
+    </script>
+    <script src="/js/bg-canvas.js"></script>
+</body>
+</html>

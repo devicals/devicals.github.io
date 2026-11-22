@@ -2,15 +2,66 @@ const supabaseUrl = "https://wtasesmqwpnbwzdynnas.supabase.co";
 const supabaseKey = "sb_publishable_ay0PuIePjZwrEgP5XpD5iQ_W5wC-5g9";
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
+const DEFAULT_EXPANDED_FOLDERS = ['Index', 'Content', 'Other_Stuff', 'System'];
+
 let currentUser = null;
 let currentProfile = null;
 let navData = { children: [] };
 let flatNodes = [];
 let commitPage = 1;
-let expandedFolders = JSON.parse(localStorage.getItem('expandedFolders') || '[]');
+let expandedFolders = (() => {
+    try {
+        const raw = localStorage.getItem('expandedFolders');
+        const parsed = raw ? JSON.parse(raw) : [];
+        const list = Array.isArray(parsed) ? parsed : [];
+        if (!localStorage.getItem('expandedFoldersDefaulted')) {
+            DEFAULT_EXPANDED_FOLDERS.forEach(f => {
+                if (!list.includes(f)) list.push(f);
+            });
+            localStorage.setItem('expandedFolders', JSON.stringify(list));
+            localStorage.setItem('expandedFoldersDefaulted', '1');
+        }
+        return list;
+    } catch (e) {
+        return [...DEFAULT_EXPANDED_FOLDERS];
+    }
+})();
 let authModalState = 'login';
 let prevIndicatorLeft = null;
 let indicatorSwapTimer = null;
+let activeRouteToken = 0;
+let validRouteHistory = [];
+
+function recordValidRoute(routeHash) {
+    if (!routeHash) return;
+    if (validRouteHistory[validRouteHistory.length - 1] !== routeHash) {
+        validRouteHistory.push(routeHash);
+        if (validRouteHistory.length > 50) validRouteHistory.shift();
+    }
+}
+
+window.goBackFromNotFound = function () {
+    const currentRaw = decodeURIComponent(window.location.hash.substring(1));
+    while (validRouteHistory.length && validRouteHistory[validRouteHistory.length - 1] === currentRaw) {
+        validRouteHistory.pop();
+    }
+    if (validRouteHistory.length > 0) {
+        window.location.hash = validRouteHistory.pop();
+    } else {
+        window.location.hash = 'Index/Home';
+    }
+};
+
+function setIframeUrlNoHistory(iframe, relUrl) {
+    const absUrl = new URL(relUrl, window.location.href).href;
+    try {
+        if (iframe.contentWindow && iframe.contentWindow.location) {
+            iframe.contentWindow.location.replace(absUrl);
+            return;
+        }
+    } catch (e) {}
+    iframe.src = absUrl;
+}
 
 window.isOwner = false;
 window.OWNER_EMAIL = '3rr0r.d3v@gmail.com';
@@ -34,6 +85,26 @@ function triggerRouteEnterAnimation(el) {
     el.classList.remove('route-entering');
     void el.offsetWidth;
     el.classList.add('route-entering');
+}
+
+function renderNotFoundView(container, routeStr) {
+    const safeRoute = window.escapeAttr(routeStr || 'unknown');
+    container.style.display = 'flex';
+    container.innerHTML = `
+        <div class="not-found-wrap">
+            <div class="not-found-panel">
+                <div class="not-found-titlebar">error 404 // signal lost</div>
+                <div class="not-found-code">404</div>
+                <div style="font-size:14px; color:var(--fg-main); margin-bottom:6px;">page not found</div>
+                <div style="font-size:12px; color:var(--fg-muted);">the requested page does not exist or has been moved.</div>
+                <div class="not-found-path">route: #${safeRoute}</div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a href="#Index/Home" class="ui-btn" style="flex:1; width:auto; margin:0; border-color:var(--accent); color:var(--accent) !important;">return home</a>
+                    <button type="button" class="ui-btn" style="flex:1; width:auto; margin:0;" onclick="goBackFromNotFound()">go back</button>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function updateNavIndicator() {
@@ -182,7 +253,6 @@ function mergeStringArray(serverArr, localArr) {
 function getLocalSettingsSnapshot() {
     return {
         theme: localStorage.getItem('theme') || 'primary',
-        custom_css: localStorage.getItem('custom-css') || '',
         dark_mode: localStorage.getItem('dark-mode') || 'true',
         bg_effect: localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles',
         seasonal_themes: localStorage.getItem('seasonal-pride-themes') !== 'false',
@@ -198,11 +268,6 @@ function mergeSettingsWithLocal(serverSettings) {
     const s = serverSettings || {};
     const local = getLocalSettingsSnapshot();
 
-    let mergedCss = s.custom_css || '';
-    if (local.custom_css && !mergedCss.includes(local.custom_css)) {
-        mergedCss = mergedCss ? (mergedCss + '\n' + local.custom_css) : local.custom_css;
-    }
-
     const rawBg = s.bg_effect || local.bg_effect || 'particles';
     return {
         theme: s.theme || local.theme || 'primary',
@@ -211,7 +276,6 @@ function mergeSettingsWithLocal(serverSettings) {
         seasonal_themes: s.seasonal_themes !== undefined && s.seasonal_themes !== null
             ? (s.seasonal_themes !== false && s.seasonal_themes !== 'false')
             : local.seasonal_themes,
-        custom_css: mergedCss,
         tierlists: mergeArrayByNameOrId(s.tierlists, local.tierlists),
         worldclocks: mergeStringArray(s.worldclocks, local.worldclocks),
         birthdays: mergeArrayByNameOrId(s.birthdays, local.birthdays),
@@ -228,7 +292,6 @@ function applySettingsToLocalStorage(settings) {
     if (settings.seasonal_themes !== undefined && settings.seasonal_themes !== null) {
         localStorage.setItem('seasonal-pride-themes', settings.seasonal_themes ? 'true' : 'false');
     }
-    if (settings.custom_css !== undefined) localStorage.setItem('custom-css', settings.custom_css);
     if (settings.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(settings.tierlists));
     if (settings.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(settings.worldclocks));
     if (settings.birthdays) localStorage.setItem('user_birthdays', JSON.stringify(settings.birthdays));
@@ -254,6 +317,9 @@ function initSynchronousUser() {
             currentUser = parsed;
             currentProfile = parsed;
             window.isOwner = parsed.is_owner === true;
+            if (window.isOwner) {
+                document.body.classList.add('is-owner');
+            }
             if (parsed.is_admin || window.isOwner) {
                 document.body.classList.add('is-admin');
             }
@@ -551,13 +617,7 @@ function applyActiveTheme() {
 }
 
 function loadSettingsLocally() {
-    const customCss = localStorage.getItem('custom-css') || '';
     const bgEffect = localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles';
-
-    const cssBlock = document.getElementById('custom-css-block');
-    if (cssBlock) cssBlock.textContent = customCss;
-    const cssInput = document.getElementById('custom-css-input');
-    if (cssInput) cssInput.value = customCss;
     const bgSel = document.getElementById('bg-effect-selector');
     if (bgSel) bgSel.value = bgEffect;
 
@@ -580,13 +640,6 @@ document.getElementById('theme-selector').onchange = (e) => {
 document.getElementById('seasonal-themes-toggle').onchange = (e) => {
     localStorage.setItem('seasonal-pride-themes', e.target.checked ? 'true' : 'false');
     applyActiveTheme();
-    syncSettingsToServer();
-};
-
-document.getElementById('save-css').onclick = () => {
-    const css = document.getElementById('custom-css-input').value;
-    localStorage.setItem('custom-css', css);
-    document.getElementById('custom-css-block').textContent = css;
     syncSettingsToServer();
 };
 
@@ -623,7 +676,6 @@ window.syncSettingsToServer = async function() {
         const newSettings = {
             ...currentSettings,
             theme: localStorage.getItem('theme') || 'primary',
-            custom_css: localStorage.getItem('custom-css') || '',
             dark_mode: localStorage.getItem('dark-mode') !== 'false',
             bg_effect: localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles',
             seasonal_themes: localStorage.getItem('seasonal-pride-themes') !== 'false',
@@ -667,8 +719,9 @@ function clearCustomSession() {
     currentProfile = null;
     window.isOwner = false;
     document.body.classList.remove('is-admin');
+    document.body.classList.remove('is-owner');
     const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
-    if (rawHash === 'admin') {
+    if (rawHash === 'admin' || rawHash === 'inbox') {
         window.location.hash = "Index/Home";
     }
     renderAuthModal();
@@ -738,21 +791,29 @@ async function handleSession() {
         const nameIsOwner = currentUser.username?.toLowerCase() === 'error dev';
         window.isOwner = currentUser.is_owner === true || emailIsOwner || nameIsOwner;
 
+        document.body.classList.toggle('is-owner', window.isOwner);
+
+        const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
+
         if (currentUser.is_admin || window.isOwner) {
             document.body.classList.add('is-admin');
         } else {
             document.body.classList.remove('is-admin');
-            const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
             if (rawHash === 'admin') {
                 window.location.hash = "Index/Home";
             }
         }
 
+        if (!window.isOwner && rawHash === 'inbox') {
+            window.location.hash = "Index/Home";
+        }
+
         loadPersistentWarnings();
     } else {
         document.body.classList.remove('is-admin');
+        document.body.classList.remove('is-owner');
         const rawHash = (window.location.hash || '').substring(1).split('?')[0].replace(/\s+/g, '_');
-        if (rawHash === 'admin') {
+        if (rawHash === 'admin' || rawHash === 'inbox') {
             window.location.hash = "Index/Home";
         }
     }
@@ -1097,13 +1158,21 @@ function highlightNav() {
             el.classList.add('active');
         }
     });
+    const adminBtn = document.getElementById('admin-trigger');
+    const inboxBtn = document.getElementById('inbox-trigger');
+    if (adminBtn) adminBtn.classList.toggle('active', hash === 'admin');
+    if (inboxBtn) inboxBtn.classList.toggle('active', hash === 'inbox');
     requestAnimationFrame(updateNavIndicator);
 }
 
 async function handleRoute() {
     window.handleRoute = handleRoute;
+    const routeToken = ++activeRouteToken;
     let rawHash = decodeURIComponent(window.location.hash.substring(1));
-    if (!rawHash) { window.location.hash = "Index/Home"; return; }
+    if (!rawHash) {
+        window.history.replaceState(null, null, '#Index/Home');
+        rawHash = 'Index/Home';
+    }
 
     let parts = rawHash.split('?');
     let hash = parts[0].replace(/\s+/g, '_');
@@ -1129,7 +1198,24 @@ async function handleRoute() {
         mdContainer.style.display = 'block';
         mdContainer.scrollTop = 0;
         triggerRouteEnterAnimation(mdContainer);
+        recordValidRoute(rawHash);
         if (window.renderAdminPage) window.renderAdminPage();
+        return;
+    }
+
+    if (hash === 'inbox') {
+        const ident = window.getUserIdentity();
+        if (!ident || !ident.isOwner) {
+            window.location.hash = "Index/Home";
+            if (window.guiAlert) window.guiAlert("access denied: owner privileges required.", "restricted");
+            return;
+        }
+        iframe.style.display = 'none';
+        mdContainer.style.display = 'block';
+        mdContainer.scrollTop = 0;
+        triggerRouteEnterAnimation(mdContainer);
+        recordValidRoute(rawHash);
+        if (window.renderInboxPage) window.renderInboxPage();
         return;
     }
 
@@ -1137,6 +1223,7 @@ async function handleRoute() {
 
     if (node) {
         if (node.type === 'folder') {
+            recordValidRoute(rawHash);
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
             mdContainer.scrollTop = 0;
@@ -1167,17 +1254,8 @@ async function handleRoute() {
             return;
         }
 
-        if (node.fileType === 'spotify') {
-            iframe.style.display = 'none';
-            mdContainer.style.display = 'block';
-            mdContainer.scrollTop = 0;
-            mdContainer.innerHTML = '<div id="spotify-inject"></div>';
-            triggerRouteEnterAnimation(mdContainer);
-            if (window.renderSpotify) window.renderSpotify();
-            return;
-        }
-
         if (node.fileType === 'commits') {
+            recordValidRoute(rawHash);
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
             mdContainer.scrollTop = 0;
@@ -1188,6 +1266,7 @@ async function handleRoute() {
         }
 
         if (node.fileType === 'pdf') {
+            recordValidRoute(rawHash);
             const pdfSrc = encodeURI(node.url || node.file || '');
             iframe.style.display = 'none';
             mdContainer.style.display = 'block';
@@ -1209,29 +1288,53 @@ async function handleRoute() {
         }
 
         if (node.fileType === 'html') {
+            try {
+                const res = await fetch(node.url);
+                if (routeToken !== activeRouteToken) return;
+                if (!res.ok) throw new Error(res.status);
+            } catch (e) {
+                if (routeToken !== activeRouteToken) return;
+                iframe.style.display = 'none';
+                setIframeUrlNoHistory(iframe, 'about:blank');
+                mdContainer.scrollTop = 0;
+                renderNotFoundView(mdContainer, hash);
+                triggerRouteEnterAnimation(mdContainer);
+                return;
+            }
+            recordValidRoute(rawHash);
             mdContainer.style.display = 'none';
+            mdContainer.innerHTML = '';
             iframe.style.display = 'block';
-            iframe.src = node.url + (parts[1] ? '?' + parts[1] : '');
+            setIframeUrlNoHistory(iframe, node.url + (parts[1] ? '?' + parts[1] : ''));
             triggerRouteEnterAnimation(iframe);
             return;
         }
 
         if (node.fileType === 'md') {
             iframe.style.display = 'none';
+            setIframeUrlNoHistory(iframe, 'about:blank');
             mdContainer.style.display = 'block';
             mdContainer.scrollTop = 0;
             try {
                 const res = await fetch(node.file);
-                const text = res.ok ? await res.text() : '## blank page\ncontent not found.';
-                mdContainer.innerHTML = marked.parse(text) + `
-                    <div class="doc-telemetry-footer">
-                        <span>— end of log —</span>
-                        <span id="doc-char-count"></span>
-                    </div>
-                `;
-                updateWordCount(text);
+                if (routeToken !== activeRouteToken) return;
+                if (!res.ok) {
+                    renderNotFoundView(mdContainer, hash);
+                } else {
+                    const text = await res.text();
+                    if (routeToken !== activeRouteToken) return;
+                    recordValidRoute(rawHash);
+                    mdContainer.innerHTML = marked.parse(text) + `
+                        <div class="doc-telemetry-footer">
+                            <span>— end of log —</span>
+                            <span id="doc-char-count"></span>
+                        </div>
+                    `;
+                    updateWordCount(text);
+                }
             } catch (e) {
-                mdContainer.innerHTML = '<h2>error loading document</h2>';
+                if (routeToken !== activeRouteToken) return;
+                renderNotFoundView(mdContainer, hash);
             }
             triggerRouteEnterAnimation(mdContainer);
             return;
@@ -1240,7 +1343,8 @@ async function handleRoute() {
 
     iframe.style.display = 'none';
     mdContainer.style.display = 'block';
-    mdContainer.innerHTML = '<h2 style="color:var(--destructive); margin-top:20px;">page not found</h2>';
+    mdContainer.scrollTop = 0;
+    renderNotFoundView(mdContainer, hash);
     triggerRouteEnterAnimation(mdContainer);
 }
 
