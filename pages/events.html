@@ -66,22 +66,20 @@
         }
 
         .unified-right {
-            flex: 0 0 340px;
-            width: 340px;
-            min-width: 320px;
+            flex: 0 0 320px;
+            width: 320px;
+            min-width: 300px;
             display: flex;
             flex-direction: column;
-            gap: 28px;
+            gap: 24px;
         }
 
-        @media (min-width: 901px) {
-            .unified-layout.sidebar-collapsed .unified-right {
-                display: none !important;
-            }
-            .unified-layout.sidebar-collapsed .unified-left {
-                flex: 1 1 100% !important;
-                max-width: 100% !important;
-            }
+        .unified-layout.sidebar-collapsed .unified-right {
+            display: none !important;
+        }
+        .unified-layout.sidebar-collapsed .unified-left {
+            flex: 1 1 100% !important;
+            max-width: 100% !important;
         }
 
         .section-header {
@@ -249,7 +247,17 @@
             color: var(--destructive);
         }
 
-        .tz-grid {
+        /* At-a-glance grid for Tracked Timezones inside main left area */
+        .tz-people-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Vertical sidebar list for World Clocks */
+        .tz-clocks-sidebar {
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -259,15 +267,19 @@
         .tz-card {
             background: var(--bg-hover);
             border: 1px solid var(--border);
-            padding: 12px 14px;
+            padding: 10px 12px 12px 12px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            gap: 6px;
             font-family: var(--font-ui);
             position: relative;
             box-sizing: border-box;
-            min-height: 120px;
             width: 100%;
+        }
+
+        .tz-card:hover {
+            z-index: 50;
         }
 
         .tz-card.is-local {
@@ -279,7 +291,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
+            gap: 6px;
+        }
+
+        .tz-card-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+            flex: 1;
         }
 
         .tz-card-title {
@@ -287,7 +307,7 @@
             font-weight: bold;
             color: var(--fg-main);
             text-transform: lowercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -301,21 +321,22 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            flex-shrink: 0;
         }
 
         .tz-meta-row {
             display: flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 8px;
+            margin-top: -2px;
         }
 
         .tz-badge {
             color: var(--accent);
             border: 1px solid var(--border);
-            padding: 1px 5px;
+            padding: 0 5px;
             font-size: 10px;
-            line-height: 1.2;
+            line-height: 1.3;
             white-space: nowrap;
             text-transform: lowercase;
             font-weight: bold;
@@ -329,16 +350,17 @@
             font-size: 11px;
             color: var(--fg-muted);
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .tz-clock-text {
-            font-size: 19px;
+            font-size: 18px;
             font-weight: bold;
             color: var(--fg-main);
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             font-variant-numeric: tabular-nums;
-            line-height: 1;
-            margin-bottom: 6px;
+            line-height: 1.1;
         }
 
         .tz-date-row {
@@ -348,7 +370,7 @@
             font-size: 11px;
             color: var(--fg-muted);
             line-height: 1.2;
-            margin-bottom: 8px;
+            margin-top: 2px;
         }
 
         .tz-phase-label {
@@ -360,6 +382,7 @@
             flex-wrap: wrap;
             gap: 4px;
             align-items: center;
+            margin-top: 2px;
         }
 
         .tz-person-pill {
@@ -367,12 +390,18 @@
             border: 1px solid var(--border);
             color: var(--fg-main);
             font-size: 10px;
-            padding: 2px 6px;
+            padding: 1px 6px;
             border-radius: 2px;
             white-space: nowrap;
             max-width: 120px;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
+            transition: border-color 0.15s ease;
+        }
+
+        .tz-person-pill:hover {
+            border-color: var(--accent);
         }
 
         .tz-card-progress {
@@ -483,6 +512,7 @@
             font-size: 12px;
             font-family: var(--font-ui);
             padding: 10px 0;
+            grid-column: 1 / -1;
         }
 
         .custom-tooltip {
@@ -500,12 +530,140 @@
             white-space: nowrap;
         }
 
+        /* Structured Modal & Preview Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.82);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-box {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border);
+            padding: 22px;
+            width: 460px;
+            max-width: 92vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-family: var(--font-ui);
+            box-sizing: border-box;
+        }
+
+        .modal-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            color: var(--fg-muted);
+            margin-bottom: 5px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .form-row > * {
+            min-width: 0;
+        }
+
+        .ui-select {
+            background: var(--bg-hover);
+            color: var(--fg-main);
+            border: 1px solid var(--border);
+            padding: 8px 10px;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .ui-select:focus {
+            border-color: var(--accent);
+        }
+
+        .tz-preview-box {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: var(--bg-hover);
+            border: 1px dashed var(--border);
+            font-size: 11px;
+            color: var(--fg-muted);
+            line-height: 1.4;
+        }
+
+        .tz-preview-box.is-valid {
+            border-color: var(--accent);
+            color: var(--fg-main);
+        }
+
+        .tz-preview-time {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .quick-chip {
+            background: var(--bg-hover);
+            border: 1px solid var(--border);
+            color: var(--fg-muted);
+            font-family: var(--font-ui);
+            font-size: 10px;
+            padding: 2px 7px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .quick-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            color: var(--fg-main);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .modal-error {
+            color: var(--destructive);
+            font-size: 11px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
         @media (max-width: 900px) {
             body {
                 padding: 20px 14px 80px 14px !important;
-            }
-            .desktop-sidebar-toggle-wrap {
-                display: none !important;
             }
             .unified-layout {
                 flex-direction: column !important;
@@ -524,38 +682,24 @@
                 gap: 24px !important;
             }
             .bday-grid {
-                display: grid !important;
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
-                width: 100% !important;
             }
-            .tz-grid {
+            .tz-people-grid,
+            .tz-clocks-sidebar {
                 display: grid !important;
                 grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
                 width: 100% !important;
                 gap: 8px !important;
             }
-            .tz-card {
-                padding: 10px 12px !important;
-                min-height: auto !important;
-            }
             .tz-clock-text {
                 font-size: 17px !important;
-                margin-bottom: 4px !important;
-            }
-            .tz-date-row {
-                margin-bottom: 6px !important;
-                font-size: 10px !important;
-            }
-            .tz-meta-row {
-                margin-bottom: 6px !important;
             }
         }
 
         @media (max-width: 480px) {
-            .bday-grid {
-                grid-template-columns: 1fr !important;
-            }
-            .tz-grid {
+            .bday-grid,
+            .tz-people-grid,
+            .tz-clocks-sidebar {
                 grid-template-columns: 1fr !important;
             }
         }
@@ -565,7 +709,7 @@
     <div class="top-header-bar">
         <h1 style="margin:0; font-size:32px;">events & timezones</h1>
         <div class="desktop-sidebar-toggle-wrap">
-            <button id="sidebar-toggle-btn" class="ui-btn" style="width:auto; margin:0; padding:6px 14px;" onclick="toggleDesktopSidebar()">collapse timezones ›</button>
+            <button id="sidebar-toggle-btn" class="ui-btn" style="width:auto; margin:0; padding:6px 14px;" onclick="toggleDesktopSidebar()">hide world clocks ›</button>
         </div>
     </div>
 
@@ -580,23 +724,10 @@
             <button id="notif-btn" class="ui-btn" style="width:auto; margin:0; padding:4px 10px;" onclick="requestNotifPermission()">enable</button>
         </div>
 
-        <div id="add-event-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
-            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                add events (one per line)
-            </div>
-            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                format: <code>&lt;name&gt;/dd/mm</code> or <code>&lt;name&gt;/dd/mm/dd/mm</code> (range)
-            </div>
-            <textarea id="bulk-event-input" class="ui-input" rows="4" placeholder="Halloween/31/10&#10;Christmas/24/12/25/12"></textarea>
-            <div style="display:flex; gap:10px;">
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAddEvents()">save</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddEventBox()">cancel</button>
-            </div>
-        </div>
-
+        <!-- Bulk Edit Drawers (for power-user batch editing) -->
         <div id="edit-event-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                edit events
+                bulk edit events
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
                 format: <code>&lt;name&gt;/dd/mm</code> or <code>&lt;name&gt;/dd/mm/dd/mm</code>
@@ -608,23 +739,9 @@
             </div>
         </div>
 
-        <div id="add-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
-            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                add birthdays (one per line)
-            </div>
-            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code>
-            </div>
-            <textarea id="bulk-input" class="ui-input" rows="4" placeholder="alice/31/10&#10;bob/15/04/1998"></textarea>
-            <div style="display:flex; gap:10px;">
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAdd()">save</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">cancel</button>
-            </div>
-        </div>
-
         <div id="edit-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                edit birthdays
+                bulk edit birthdays
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
                 format: <code>&lt;name&gt;/dd/mm/yyyy</code> or <code>&lt;name&gt;/dd/mm</code>
@@ -636,38 +753,9 @@
             </div>
         </div>
 
-        <div id="add-standalone-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
-            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                add standalone world clock
-            </div>
-            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                enter offset or city: <code>4</code>, <code>-3</code>, <code>utc-4</code>, <code>tokyo</code>, <code>london</code>
-            </div>
-            <div style="display:flex; gap:10px;">
-                <input type="text" id="standalone-input" class="ui-input" style="margin:0; flex:1;" placeholder="e.g. 4, -3, utc-4, tokyo">
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleSaveStandaloneClock()">save</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddStandaloneBox()">cancel</button>
-            </div>
-        </div>
-
-        <div id="add-people-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
-            <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                add people (one per line)
-            </div>
-            <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
-                format: <code>&lt;name&gt;/&lt;timezone&gt;/&lt;displayed location&gt;</code><br>
-                examples: <code>alice/-4/New York</code>, <code>bob/9/Tokyo</code>, <code>charlie/utc+1/London</code>
-            </div>
-            <textarea id="bulk-people-input" class="ui-input" rows="4" placeholder="alice/-4/New York&#10;bob/9/Tokyo"></textarea>
-            <div style="display:flex; gap:10px;">
-                <button class="ui-btn" style="width:auto; margin:0; border-color:var(--accent); color:var(--accent);" onclick="handleBulkAddPeople()">save</button>
-                <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddPeopleBox()">cancel</button>
-            </div>
-        </div>
-
         <div id="edit-people-box" style="display:none; background:var(--bg-hover); border:1px solid var(--border); padding:20px; margin-bottom:28px;">
             <div style="font-size:12px; font-family:var(--font-ui); color:var(--accent); margin-bottom:8px; font-weight:bold;">
-                edit tracked people
+                bulk edit tracked people
             </div>
             <div style="font-size:11px; font-family:var(--font-ui); color:var(--fg-muted); margin-bottom:12px; line-height:1.5;">
                 format: <code>&lt;name&gt;/&lt;timezone&gt;/&lt;displayed location&gt;</code>
@@ -685,67 +773,177 @@
             <div class="section-header">
                 <div class="panel-section-title">upcoming events (<span id="events-count">0</span>)</div>
                 <div style="display:flex; gap:8px;">
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddEventBox()">add events</button>
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditEventBox()">edit events</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="openEventModal()">+ add event</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditEventBox()">bulk edit</button>
                 </div>
             </div>
             <div id="upcoming-events-grid" class="bday-grid"></div>
 
-            <div class="section-header" style="margin-top:16px;">
+            <div class="section-header">
                 <div class="panel-section-title">upcoming birthdays (<span id="total-count">0</span>)</div>
                 <div style="display:flex; gap:8px;">
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddBox()">add birthdays</button>
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">edit birthdays</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="openBirthdayModal()">+ add birthday</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditBox()">bulk edit</button>
                 </div>
             </div>
             <div id="upcoming-grid" class="bday-grid"></div>
+
+            <div class="section-header">
+                <div class="panel-section-title">tracked timezones (<span id="people-groups-count">0</span>)</div>
+                <div style="display:flex; gap:8px;">
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="openPersonModal()">+ add person</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleEditPeopleBox()">bulk edit</button>
+                </div>
+            </div>
+            <div id="people-grid" class="tz-people-grid"></div>
         </div>
 
         <div class="unified-right" id="sidebar-panel">
             <div>
                 <div class="section-header">
                     <div class="panel-section-title">world clocks (<span id="clocks-count">0</span>)</div>
-                    <button class="ui-btn" style="width:auto; margin:0;" onclick="toggleAddStandaloneBox()">+ add</button>
+                    <button class="ui-btn" style="width:auto; margin:0;" onclick="openClockModal()">+ add</button>
                 </div>
-                <div id="clocks-grid" class="tz-grid"></div>
-            </div>
-
-            <div>
-                <div class="section-header">
-                    <div class="panel-section-title">tracked timezones (<span id="people-groups-count">0</span>)</div>
-                    <div style="display:flex; gap:6px;">
-                        <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="toggleAddPeopleBox()">add</button>
-                        <button class="ui-btn" style="width:auto; margin:0; padding:2px 8px; font-size:11px;" onclick="toggleEditPeopleBox()">edit</button>
-                    </div>
-                </div>
-                <div id="people-grid" class="tz-grid"></div>
+                <div id="clocks-grid" class="tz-clocks-sidebar"></div>
             </div>
         </div>
     </div>
 
-    <div id="edit-birthday-modal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:2000; align-items:center; justify-content:center;">
-        <div class="modal-box" style="background:var(--bg-sidebar); border:1px solid var(--border); padding:24px; width:440px; max-width:92vw; max-height:90vh; overflow-y:auto; font-family:var(--font-ui);">
-            <div class="modal-title" style="font-size:14px; font-weight:bold; color:var(--accent); margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:8px;">edit birthday &amp; timezone</div>
+    <!-- Event Add / Edit Modal -->
+    <div id="event-modal" class="modal" onclick="if(event.target===this) closeEventModal()">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span id="event-modal-title">add event</span>
+                <button class="icon-btn" onclick="closeEventModal()">&#10005;</button>
+            </div>
+            <input type="hidden" id="event-modal-id">
+            <div id="event-modal-error" class="modal-error"></div>
+            <div class="form-group">
+                <label class="form-label">event name</label>
+                <input type="text" id="event-modal-name" class="ui-input" style="margin-bottom:0;" placeholder="e.g. Halloween, Holiday Break">
+            </div>
+            <div class="form-group">
+                <label class="form-label">start date</label>
+                <div class="form-row">
+                    <select id="event-start-month" class="ui-select" style="flex:1;"></select>
+                    <input type="number" id="event-start-day" class="ui-input" style="width:86px; margin-bottom:0;" min="1" max="31" placeholder="day">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="event-is-range" onchange="toggleEventRangeFields()">
+                    <span>multi-day date range</span>
+                </label>
+            </div>
+            <div id="event-end-group" class="form-group" style="display:none;">
+                <label class="form-label">end date</label>
+                <div class="form-row">
+                    <select id="event-end-month" class="ui-select" style="flex:1;"></select>
+                    <input type="number" id="event-end-day" class="ui-input" style="width:86px; margin-bottom:0;" min="1" max="31" placeholder="day">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:18px;">
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveEventModal()">save event</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="closeEventModal()">cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Birthday Add / Edit Modal -->
+    <div id="edit-birthday-modal" class="modal" onclick="if(event.target===this) closeEditBirthdayModal()">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span id="bday-modal-title">edit birthday &amp; timezone</span>
+                <button class="icon-btn" onclick="closeEditBirthdayModal()">&#10005;</button>
+            </div>
             <input type="hidden" id="edit-bday-id">
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">name</label>
-                <input type="text" id="edit-bday-name" class="ui-input" style="margin-bottom:0;" placeholder="e.g. noelle">
+            <div id="bday-modal-error" class="modal-error"></div>
+            <div class="form-group">
+                <label class="form-label">name</label>
+                <input type="text" id="edit-bday-name" class="ui-input" style="margin-bottom:0;" placeholder="e.g. alice">
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">birthday date (dd/mm or dd/mm/yyyy)</label>
-                <input type="text" id="edit-bday-date" class="ui-input" style="margin-bottom:0;" placeholder="e.g. 31/10/2009">
+            <div class="form-group">
+                <label class="form-label">birthday date</label>
+                <div class="form-row">
+                    <select id="edit-bday-month" class="ui-select" style="flex:1;"></select>
+                    <input type="number" id="edit-bday-day" class="ui-input" style="width:76px; margin-bottom:0;" min="1" max="31" placeholder="day">
+                    <input type="number" id="edit-bday-year" class="ui-input" style="width:94px; margin-bottom:0;" min="1900" max="2100" placeholder="year (opt)">
+                </div>
             </div>
-            <div style="margin-bottom:14px;">
-                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">timezone (offset, city, or code)</label>
-                <input type="text" id="edit-bday-tz" class="ui-input" style="margin-bottom:0;" placeholder="e.g. -4, utc-4, tokyo, est">
+            <div class="form-group">
+                <label class="form-label">timezone (code, offset, city, state, or country — optional)</label>
+                <input type="text" id="edit-bday-tz" class="ui-input" style="margin-bottom:0;" placeholder="e.g. Victoria, Australia · EST · utc-4 · Tokyo" oninput="scheduleTzPreview('bday')">
+                <div id="bday-tz-preview" class="tz-preview-box">optional: link a timezone to track their birthday in their local time</div>
+                <div id="bday-tz-suggestions" class="chip-row" style="display:none;"></div>
             </div>
-            <div style="margin-bottom:20px;">
-                <label style="display:block; font-size:11px; color:var(--fg-muted); margin-bottom:4px;">displayed location (optional)</label>
-                <input type="text" id="edit-bday-loc" class="ui-input" style="margin-bottom:0;" placeholder="e.g. New York, Japan">
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">displayed location (optional)</label>
+                <input type="text" id="edit-bday-loc" class="ui-input" style="margin-bottom:0;" placeholder="e.g. Melbourne, New York, Japan">
             </div>
             <div style="display:flex; gap:10px;">
-                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveEditedBirthdayModal()">save changes</button>
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveEditedBirthdayModal()">save birthday</button>
                 <button class="ui-btn" style="width:auto; margin:0;" onclick="closeEditBirthdayModal()">cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- World Clock Add / Edit Modal -->
+    <div id="clock-modal" class="modal" onclick="if(event.target===this) closeClockModal()">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span id="clock-modal-title">add world clock</span>
+                <button class="icon-btn" onclick="closeClockModal()">&#10005;</button>
+            </div>
+            <input type="hidden" id="clock-modal-idx" value="-1">
+            <div id="clock-modal-error" class="modal-error"></div>
+            <div class="form-group">
+                <label class="form-label">timezone, offset, code, or location</label>
+                <input type="text" id="clock-modal-input" class="ui-input" style="margin-bottom:0;" placeholder="e.g. Victoria, Australia · VIC, AUS · EST · utc+9 · Tokyo" oninput="scheduleTzPreview('clock')">
+                <div class="chip-row">
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'UTC', 'clock')">UTC</button>
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'EST', 'clock')">EST</button>
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'PST', 'clock')">PST</button>
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'GMT', 'clock')">GMT</button>
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'CET', 'clock')">CET</button>
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'JST', 'clock')">JST</button>
+                    <button type="button" class="quick-chip" onclick="applyQuickTz('clock-modal-input', 'AEST', 'clock')">AEST</button>
+                </div>
+                <div id="clock-tz-preview" class="tz-preview-box">enter a timezone code, utc/gmt offset, city, state, or country</div>
+                <div id="clock-tz-suggestions" class="chip-row" style="display:none;"></div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:18px;">
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="saveClockModal()">save clock</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="closeClockModal()">cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tracked Person Add / Edit Modal -->
+    <div id="person-modal" class="modal" onclick="if(event.target===this) closePersonModal()">
+        <div class="modal-box">
+            <div class="modal-title">
+                <span id="person-modal-title">add person</span>
+                <button class="icon-btn" onclick="closePersonModal()">&#10005;</button>
+            </div>
+            <input type="hidden" id="person-modal-id">
+            <div id="person-modal-error" class="modal-error"></div>
+            <div class="form-group">
+                <label class="form-label">person name</label>
+                <input type="text" id="person-modal-name" class="ui-input" style="margin-bottom:0;" placeholder="e.g. alice">
+            </div>
+            <div class="form-group">
+                <label class="form-label">timezone, offset, code, or location</label>
+                <input type="text" id="person-modal-tz" class="ui-input" style="margin-bottom:0;" placeholder="e.g. Victoria, America · VIC, AUS · PST · -4" oninput="scheduleTzPreview('person')">
+                <div id="person-tz-preview" class="tz-preview-box">supports codes (EST, JST, AEST), offsets (-4, utc+5:30), or places (Victoria, Australia)</div>
+                <div id="person-tz-suggestions" class="chip-row" style="display:none;"></div>
+            </div>
+            <div class="form-group" style="margin-bottom:20px;">
+                <label class="form-label">displayed location (optional)</label>
+                <input type="text" id="person-modal-loc" class="ui-input" style="margin-bottom:0;" placeholder="e.g. Melbourne, New York, Tokyo">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="ui-btn" style="flex:1; margin:0; border-color:var(--accent); color:var(--accent);" onclick="savePersonModal()">save person</button>
+                <button class="ui-btn" style="width:auto; margin:0;" onclick="closePersonModal()">cancel</button>
             </div>
         </div>
     </div>
@@ -778,24 +976,191 @@
         let activeHoveredBdayName = null;
         let isSidebarCollapsed = false;
 
+        // Comprehensive Timezone Codes, Countries, and Regional Shortcuts
         const KNOWN_MAP = {
+            // Universal
+            'utc': 'UTC', 'gmt': 'UTC', 'z': 'UTC', 'zulu': 'UTC', 'uct': 'UTC',
+            // North America
             'et': 'America/New_York', 'est': 'America/New_York', 'edt': 'America/New_York',
-            'pt': 'America/Los_Angeles', 'pst': 'America/Los_Angeles', 'pdt': 'America/Los_Angeles',
             'ct': 'America/Chicago', 'cst': 'America/Chicago', 'cdt': 'America/Chicago',
             'mt': 'America/Denver', 'mst': 'America/Denver', 'mdt': 'America/Denver',
-            'aest': 'Australia/Sydney', 'aedt': 'Australia/Sydney', 'acst': 'Australia/Adelaide',
-            'acdt': 'Australia/Adelaide', 'awst': 'Australia/Perth', 'jst': 'Asia/Tokyo',
-            'kst': 'Asia/Seoul', 'sgt': 'Asia/Singapore', 'ist': 'Asia/Kolkata',
-            'hkt': 'Asia/Hong_Kong', 'hkst': 'Asia/Hong_Kong', 'cet': 'Europe/Paris',
-            'cest': 'Europe/Paris', 'eet': 'Europe/Athens', 'eest': 'Europe/Athens',
+            'pt': 'America/Los_Angeles', 'pst': 'America/Los_Angeles', 'pdt': 'America/Los_Angeles',
+            'akt': 'America/Anchorage', 'akst': 'America/Anchorage', 'akdt': 'America/Anchorage',
+            'hst': 'Pacific/Honolulu', 'hdt': 'Pacific/Honolulu', 'hast': 'Pacific/Honolulu', 'hadt': 'Pacific/Honolulu',
+            'at': 'America/Halifax', 'ast': 'America/Halifax', 'adt': 'America/Halifax',
+            'nt': 'America/St_Johns', 'nst': 'America/St_Johns', 'ndt': 'America/St_Johns',
+            'sst': 'Pacific/Pago_Pago', 'chst': 'Pacific/Guam',
+            // South & Central America
+            'art': 'America/Argentina/Buenos_Aires', 'brt': 'America/Sao_Paulo', 'brst': 'America/Sao_Paulo',
+            'fnt': 'America/Noronha', 'clt': 'America/Santiago', 'clst': 'America/Santiago',
+            'pyt': 'America/Asuncion', 'pyst': 'America/Asuncion', 'uyt': 'America/Montevideo', 'uyst': 'America/Montevideo',
+            'bot': 'America/La_Paz', 'vet': 'America/Caracas', 'cot': 'America/Bogota',
+            'pet': 'America/Lima', 'ect': 'America/Guayaquil', 'gft': 'America/Cayenne',
+            'srt': 'America/Paramaribo', 'gyt': 'America/Guyana', 'fkt': 'Atlantic/Stanley',
+            'fkst': 'Atlantic/Stanley', 'galt': 'Pacific/Galapagos',
+            // Europe
             'wet': 'Europe/Lisbon', 'west': 'Europe/Lisbon', 'bst': 'Europe/London',
-            'gmt': 'UTC', 'utc': 'UTC', 'hst': 'Pacific/Honolulu', 'akst': 'America/Anchorage',
-            'akdt': 'America/Anchorage', 'nzst': 'Pacific/Auckland', 'nzdt': 'Pacific/Auckland',
+            'cet': 'Europe/Paris', 'cest': 'Europe/Paris', 'met': 'Europe/Paris', 'mest': 'Europe/Paris',
+            'eet': 'Europe/Athens', 'eest': 'Europe/Athens', 'fet': 'Europe/Minsk',
+            'msk': 'Europe/Moscow', 'msd': 'Europe/Moscow', 'samt': 'Europe/Samara',
+            'trt': 'Europe/Istanbul', 'azot': 'Atlantic/Azores', 'azost': 'Atlantic/Azores',
+            'cvt': 'Atlantic/Cape_Verde',
+            // Africa
+            'wat': 'Africa/Lagos', 'cat': 'Africa/Harare', 'sast': 'Africa/Johannesburg', 'eat': 'Africa/Nairobi',
+            // Middle East & Asia
+            'idt': 'Asia/Jerusalem', 'irst': 'Asia/Tehran', 'irdt': 'Asia/Tehran',
+            'gst': 'Asia/Dubai', 'aft': 'Asia/Kabul', 'pkt': 'Asia/Karachi',
+            'ist': 'Asia/Kolkata', 'slst': 'Asia/Colombo', 'npt': 'Asia/Kathmandu',
+            'bdt': 'Asia/Dhaka', 'btt': 'Asia/Thimphu', 'mmt': 'Asia/Yangon',
+            'ict': 'Asia/Bangkok', 'wib': 'Asia/Jakarta', 'wita': 'Asia/Makassar', 'wit': 'Asia/Jayapura',
+            'sgt': 'Asia/Singapore', 'myt': 'Asia/Kuala_Lumpur', 'bnt': 'Asia/Brunei', 'tlt': 'Asia/Dili',
+            'pht': 'Asia/Manila', 'hkt': 'Asia/Hong_Kong', 'hkst': 'Asia/Hong_Kong',
+            'bjt': 'Asia/Shanghai', 'cnst': 'Asia/Shanghai', 'twt': 'Asia/Taipei',
+            'jst': 'Asia/Tokyo', 'kst': 'Asia/Seoul', 'ulat': 'Asia/Ulaanbaatar',
+            'hovt': 'Asia/Hovd', 'chot': 'Asia/Choibalsan',
+            'uzt': 'Asia/Tashkent', 'kgt': 'Asia/Bishkek', 'tjt': 'Asia/Dushanbe', 'tmt': 'Asia/Ashgabat',
+            'azt': 'Asia/Baku', 'get': 'Asia/Tbilisi', 'amt': 'Asia/Yerevan',
+            'yekt': 'Asia/Yekaterinburg', 'omst': 'Asia/Omsk', 'krat': 'Asia/Krasnoyarsk',
+            'irkt': 'Asia/Irkutsk', 'yakt': 'Asia/Yakutsk', 'vlat': 'Asia/Vladivostok',
+            'magt': 'Asia/Magadan', 'pett': 'Asia/Kamchatka',
+            // Australia, NZ & Pacific
+            'aet': 'Australia/Sydney', 'aest': 'Australia/Sydney', 'aedt': 'Australia/Sydney',
+            'acst': 'Australia/Adelaide', 'acdt': 'Australia/Adelaide',
+            'awt': 'Australia/Perth', 'awst': 'Australia/Perth', 'awdt': 'Australia/Perth',
+            'acwst': 'Australia/Eucla', 'lhst': 'Australia/Lord_Howe', 'lhdt': 'Australia/Lord_Howe',
+            'nzt': 'Pacific/Auckland', 'nzst': 'Pacific/Auckland', 'nzdt': 'Pacific/Auckland',
+            'chast': 'Pacific/Chatham', 'chadt': 'Pacific/Chatham',
+            'fjt': 'Pacific/Fiji', 'fjst': 'Pacific/Fiji', 'pgt': 'Pacific/Port_Moresby',
+            'sbt': 'Pacific/Guadalcanal', 'vut': 'Pacific/Efate', 'nct': 'Pacific/Noumea',
+            'tot': 'Pacific/Tongatapu', 'lint': 'Pacific/Kiritimati', 'wakt': 'Pacific/Wake',
+            'nrt': 'Pacific/Nauru', 'tvt': 'Pacific/Funafuti', 'mht': 'Pacific/Majuro',
+            // Major single-zone / primary countries & regional shortcuts
             'london': 'Europe/London', 'tokyo': 'Asia/Tokyo', 'paris': 'Europe/Paris',
-            'berlin': 'Europe/Berlin', 'sydney': 'Australia/Sydney', 'singapore': 'Asia/Singapore'
+            'berlin': 'Europe/Berlin', 'sydney': 'Australia/Sydney', 'melbourne': 'Australia/Melbourne',
+            'brisbane': 'Australia/Brisbane', 'perth': 'Australia/Perth', 'adelaide': 'Australia/Adelaide',
+            'hobart': 'Australia/Hobart', 'darwin': 'Australia/Darwin', 'singapore': 'Asia/Singapore',
+            'uk': 'Europe/London', 'united kingdom': 'Europe/London', 'england': 'Europe/London',
+            'scotland': 'Europe/London', 'wales': 'Europe/London', 'great britain': 'Europe/London',
+            'ireland': 'Europe/Dublin', 'france': 'Europe/Paris', 'germany': 'Europe/Berlin',
+            'italy': 'Europe/Rome', 'spain': 'Europe/Madrid', 'portugal': 'Europe/Lisbon',
+            'netherlands': 'Europe/Amsterdam', 'belgium': 'Europe/Brussels', 'switzerland': 'Europe/Zurich',
+            'austria': 'Europe/Vienna', 'poland': 'Europe/Warsaw', 'sweden': 'Europe/Stockholm',
+            'norway': 'Europe/Oslo', 'denmark': 'Europe/Copenhagen', 'finland': 'Europe/Helsinki',
+            'greece': 'Europe/Athens', 'turkey': 'Europe/Istanbul', 'iceland': 'Atlantic/Reykjavik',
+            'ukraine': 'Europe/Kyiv', 'romania': 'Europe/Bucharest', 'hungary': 'Europe/Budapest',
+            'czechia': 'Europe/Prague', 'czech republic': 'Europe/Prague',
+            'japan': 'Asia/Tokyo', 'south korea': 'Asia/Seoul', 'korea': 'Asia/Seoul',
+            'china': 'Asia/Shanghai', 'taiwan': 'Asia/Taipei', 'hong kong': 'Asia/Hong_Kong',
+            'india': 'Asia/Kolkata', 'pakistan': 'Asia/Karachi', 'bangladesh': 'Asia/Dhaka',
+            'nepal': 'Asia/Kathmandu', 'sri lanka': 'Asia/Colombo', 'thailand': 'Asia/Bangkok',
+            'vietnam': 'Asia/Ho_Chi_Minh', 'philippines': 'Asia/Manila', 'malaysia': 'Asia/Kuala_Lumpur',
+            'uae': 'Asia/Dubai', 'saudi arabia': 'Asia/Riyadh', 'israel': 'Asia/Jerusalem',
+            'iran': 'Asia/Tehran', 'egypt': 'Africa/Cairo', 'south africa': 'Africa/Johannesburg',
+            'nigeria': 'Africa/Lagos', 'kenya': 'Africa/Nairobi',
+            'new zealand': 'Pacific/Auckland', 'nz': 'Pacific/Auckland', 'fiji': 'Pacific/Fiji',
+            'argentina': 'America/Argentina/Buenos_Aires', 'chile': 'America/Santiago',
+            'colombia': 'America/Bogota', 'peru': 'America/Lima', 'venezuela': 'America/Caracas',
+            // Australian states/territories
+            'vic': 'Australia/Melbourne', 'victoria, australia': 'Australia/Melbourne', 'vic, aus': 'Australia/Melbourne', 'vic, au': 'Australia/Melbourne',
+            'nsw': 'Australia/Sydney', 'new south wales': 'Australia/Sydney', 'nsw, aus': 'Australia/Sydney', 'nsw, au': 'Australia/Sydney',
+            'qld': 'Australia/Brisbane', 'queensland': 'Australia/Brisbane', 'qld, aus': 'Australia/Brisbane', 'qld, au': 'Australia/Brisbane',
+            'south australia': 'Australia/Adelaide', 'sa, aus': 'Australia/Adelaide', 'sa, au': 'Australia/Adelaide',
+            'western australia': 'Australia/Perth', 'wa, aus': 'Australia/Perth', 'wa, au': 'Australia/Perth',
+            'tas': 'Australia/Hobart', 'tasmania': 'Australia/Hobart', 'tas, aus': 'Australia/Hobart', 'tas, au': 'Australia/Hobart',
+            'northern territory': 'Australia/Darwin', 'nt, aus': 'Australia/Darwin', 'nt, au': 'Australia/Darwin',
+            'act, aus': 'Australia/Sydney', 'act, au': 'Australia/Sydney', 'australian capital territory': 'Australia/Sydney',
+            // US states (common full names)
+            'california': 'America/Los_Angeles', 'oregon': 'America/Los_Angeles', 'nevada': 'America/Los_Angeles', 'washington': 'America/Los_Angeles',
+            'texas': 'America/Chicago', 'illinois': 'America/Chicago', 'minnesota': 'America/Chicago', 'wisconsin': 'America/Chicago',
+            'louisiana': 'America/Chicago', 'oklahoma': 'America/Chicago', 'alabama': 'America/Chicago', 'missouri': 'America/Chicago',
+            'new york': 'America/New_York', 'florida': 'America/New_York', 'georgia': 'America/New_York', 'massachusetts': 'America/New_York',
+            'pennsylvania': 'America/New_York', 'ohio': 'America/New_York', 'michigan': 'America/New_York', 'virginia': 'America/New_York',
+            'north carolina': 'America/New_York', 'new jersey': 'America/New_York', 'maryland': 'America/New_York', 'connecticut': 'America/New_York',
+            'colorado': 'America/Denver', 'utah': 'America/Denver', 'new mexico': 'America/Denver', 'wyoming': 'America/Denver', 'montana': 'America/Denver',
+            'arizona': 'America/Phoenix', 'alaska': 'America/Anchorage', 'hawaii': 'Pacific/Honolulu'
+        };
+
+        const COUNTRY_ALIASES = {
+            'aus': ['aus', 'au', 'australia'],
+            'au': ['au', 'aus', 'australia'],
+            'australia': ['australia', 'au'],
+            'us': ['us', 'usa', 'united states', 'united states of america', 'america'],
+            'usa': ['usa', 'us', 'united states', 'united states of america', 'america'],
+            'america': ['america', 'united states', 'united states of america', 'usa', 'us'],
+            'united states': ['united states', 'united states of america', 'us', 'usa'],
+            'uk': ['uk', 'gb', 'united kingdom', 'great britain', 'england', 'scotland', 'wales'],
+            'gb': ['gb', 'uk', 'united kingdom', 'great britain'],
+            'united kingdom': ['united kingdom', 'uk', 'gb', 'england'],
+            'england': ['england', 'united kingdom', 'uk', 'gb'],
+            'britain': ['great britain', 'united kingdom', 'uk', 'gb'],
+            'ca': ['ca', 'can', 'canada'],
+            'can': ['can', 'ca', 'canada'],
+            'canada': ['canada', 'ca'],
+            'nz': ['nz', 'new zealand'],
+            'new zealand': ['new zealand', 'nz'],
+            'de': ['de', 'germany', 'deutschland'],
+            'fr': ['fr', 'france'],
+            'jp': ['jp', 'japan'],
+            'cn': ['cn', 'china'],
+            'in': ['in', 'india'],
+            'br': ['br', 'brazil', 'brasil'],
+            'mx': ['mx', 'mexico'],
+            'es': ['es', 'spain'],
+            'it': ['it', 'italy'],
+            'kr': ['kr', 'south korea', 'korea'],
+            'sg': ['sg', 'singapore'],
+            'hk': ['hk', 'hong kong'],
+            'tw': ['tw', 'taiwan'],
+            'id': ['id', 'indonesia'],
+            'ph': ['ph', 'philippines'],
+            'th': ['th', 'thailand'],
+            'vn': ['vn', 'vietnam'],
+            'my': ['my', 'malaysia'],
+            'nl': ['nl', 'netherlands'],
+            'se': ['se', 'sweden'],
+            'no': ['no', 'norway'],
+            'fi': ['fi', 'finland'],
+            'dk': ['dk', 'denmark'],
+            'ch': ['ch', 'switzerland'],
+            'ie': ['ie', 'ireland'],
+            'pt': ['pt', 'portugal'],
+            'za': ['za', 'south africa'],
+            'ar': ['ar', 'argentina'],
+            'cl': ['cl', 'chile'],
+            'ru': ['ru', 'russia'],
+            'ae': ['ae', 'uae', 'united arab emirates'],
+            'uae': ['uae', 'ae', 'united arab emirates']
+        };
+
+        const ADMIN1_ALIASES = {
+            // Australia
+            'vic': ['victoria'], 'victoria': ['victoria'],
+            'nsw': ['new south wales'], 'qld': ['queensland'],
+            'wa': ['western australia', 'washington'], 'sa': ['south australia'],
+            'tas': ['tasmania'], 'act': ['australian capital territory'], 'nt': ['northern territory', 'northwest territories'],
+            // Canada
+            'on': ['ontario'], 'ont': ['ontario'], 'bc': ['british columbia'],
+            'qc': ['quebec', 'québec'], 'ab': ['alberta'], 'mb': ['manitoba'],
+            'sk': ['saskatchewan'], 'ns': ['nova scotia'], 'nb': ['new brunswick'],
+            'pe': ['prince edward island'], 'pei': ['prince edward island'],
+            // USA
+            'al': ['alabama'], 'ak': ['alaska'], 'az': ['arizona'], 'ar': ['arkansas'],
+            'ca': ['california', 'canada'], 'co': ['colorado'], 'ct': ['connecticut'],
+            'de': ['delaware'], 'fl': ['florida'], 'ga': ['georgia'], 'hi': ['hawaii'],
+            'id': ['idaho'], 'il': ['illinois'], 'in': ['indiana'], 'ia': ['iowa'],
+            'ks': ['kansas'], 'ky': ['kentucky'], 'la': ['louisiana'], 'me': ['maine'],
+            'md': ['maryland'], 'ma': ['massachusetts'], 'mi': ['michigan'], 'mn': ['minnesota'],
+            'ms': ['mississippi'], 'mo': ['missouri'], 'mt': ['montana'], 'ne': ['nebraska'],
+            'nv': ['nevada'], 'nh': ['new hampshire'], 'nj': ['new jersey'], 'nm': ['new mexico'],
+            'ny': ['new york'], 'nc': ['north carolina'], 'nd': ['north dakota'], 'oh': ['ohio'],
+            'ok': ['oklahoma'], 'or': ['oregon'], 'pa': ['pennsylvania'], 'ri': ['rhode island'],
+            'sc': ['south carolina'], 'sd': ['south dakota'], 'tn': ['tennessee'], 'tx': ['texas'],
+            'ut': ['utah'], 'vt': ['vermont'], 'va': ['virginia'], 'wv': ['west virginia'],
+            'wi': ['wisconsin'], 'wy': ['wyoming'], 'dc': ['district of columbia', 'washington, d.c.']
         };
 
         const resolvedCache = JSON.parse(localStorage.getItem('tz_resolved_cache') || '{}');
+        const suggestionsCache = {};
         const pendingFetches = new Set();
         const failedResolutions = new Set();
 
@@ -811,18 +1176,27 @@
             if (str === null || str === undefined) return null;
             let clean = String(str).trim().toLowerCase();
             if (!clean) return null;
-            if (clean === 'utc' || clean === 'gmt') return 0;
+            if (clean === 'utc' || clean === 'gmt' || clean === 'z' || clean === 'zulu') return 0;
+
+            let hadPrefix = false;
             if (clean.startsWith('utc') || clean.startsWith('gmt')) {
                 clean = clean.slice(3).trim();
+                hadPrefix = true;
                 if (!clean) return 0;
             }
+
             let isNegative = false;
+            let hadSign = false;
             if (clean.startsWith('-')) {
                 isNegative = true;
+                hadSign = true;
                 clean = clean.slice(1).trim();
             } else if (clean.startsWith('+')) {
+                hadSign = true;
                 clean = clean.slice(1).trim();
             }
+
+            // HH:MM
             const colonMatch = clean.match(/^(\d{1,2}):(\d{2})$/);
             if (colonMatch) {
                 const h = parseInt(colonMatch[1], 10);
@@ -832,6 +1206,21 @@
                     return isNegative ? -total : total;
                 }
             }
+
+            // Compact HHMM (only when prefixed or signed, e.g. +0530, utc+0900)
+            if (hadPrefix || hadSign) {
+                const compactMatch = clean.match(/^(\d{2})(\d{2})$/);
+                if (compactMatch) {
+                    const h = parseInt(compactMatch[1], 10);
+                    const m = parseInt(compactMatch[2], 10);
+                    if (h <= 16 && m < 60) {
+                        const total = h * 60 + m;
+                        return isNegative ? -total : total;
+                    }
+                }
+            }
+
+            // Integer or decimal hours (e.g. 4, -3, 5.5, 5.75)
             const numMatch = clean.match(/^(\d+(?:\.\d+)?)$/);
             if (numMatch) {
                 const val = parseFloat(numMatch[1]);
@@ -843,50 +1232,180 @@
             return null;
         }
 
+        function normalizeQueryKey(z) {
+            return String(z || '').trim().toLowerCase().replace(/\s*,\s*/g, ', ').replace(/\s+/g, ' ');
+        }
+
         function tryLocalResolution(z) {
             if (!z) return null;
             const clean = z.trim();
-            if (clean.toLowerCase() === 'system') return 'system';
-            const lower = clean.toLowerCase();
+            if (clean.toLowerCase() === 'system' || clean.toLowerCase() === 'local') return 'system';
+            const lower = normalizeQueryKey(clean);
             if (KNOWN_MAP[lower]) return KNOWN_MAP[lower];
+
             let dt = DateTime.now().setZone(clean);
             if (dt.isValid) return clean;
+
             if (resolvedCache[lower]) {
                 dt = DateTime.now().setZone(resolvedCache[lower]);
                 if (dt.isValid) return resolvedCache[lower];
             }
+
             const allZones = getIanaTimezones();
             const exactIana = allZones.find(iana => iana.toLowerCase() === lower);
             if (exactIana) return exactIana;
+
             const formattedName = lower.replace(/\s+/g, '_');
             const endMatch = allZones.find(iana => iana.toLowerCase().endsWith('/' + formattedName));
             if (endMatch) return endMatch;
+
             return null;
         }
 
-        async function fetchTimezoneFromApi(z) {
-            const lower = z.trim().toLowerCase();
-            if (resolvedCache[lower] || pendingFetches.has(lower) || failedResolutions.has(lower)) return;
-            pendingFetches.add(lower);
-            try {
-                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(z)}&count=1`);
-                if (geoRes.ok) {
-                    const geoData = await geoRes.json();
-                    if (geoData.results && geoData.results[0] && geoData.results[0].timezone) {
-                        const foundZone = geoData.results[0].timezone;
-                        if (DateTime.now().setZone(foundZone).isValid) {
-                            resolvedCache[lower] = foundZone;
-                            saveCache();
-                            pendingFetches.delete(lower);
-                            renderAll();
-                            return;
+        function expandQualifierTokens(token) {
+            const t = token.trim().toLowerCase();
+            const out = new Set([t]);
+            if (COUNTRY_ALIASES[t]) COUNTRY_ALIASES[t].forEach(a => out.add(a));
+            if (ADMIN1_ALIASES[t]) ADMIN1_ALIASES[t].forEach(a => out.add(a));
+            return Array.from(out);
+        }
+
+        function expandPrimaryPlace(token) {
+            const t = token.trim().toLowerCase();
+            if (ADMIN1_ALIASES[t] && ADMIN1_ALIASES[t].length === 1) {
+                return ADMIN1_ALIASES[t][0];
+            }
+            return token.trim();
+        }
+
+        function scoreGeoCandidate(result, qualifiers) {
+            if (!result || !result.timezone) return -1;
+            const fields = [
+                result.country || '',
+                result.country_code || '',
+                result.admin1 || '',
+                result.admin2 || '',
+                result.admin3 || '',
+                result.name || ''
+            ].map(f => f.toLowerCase().trim()).filter(Boolean);
+
+            let score = 0;
+            for (const q of qualifiers) {
+                const aliases = expandQualifierTokens(q);
+                let matchedQ = false;
+                let bestAliasScore = 0;
+
+                for (const alias of aliases) {
+                    for (const f of fields) {
+                        if (f === alias) {
+                            matchedQ = true;
+                            bestAliasScore = Math.max(bestAliasScore, 100);
+                        } else if (f.split(/[\s,/-]+/).includes(alias)) {
+                            matchedQ = true;
+                            bestAliasScore = Math.max(bestAliasScore, 60);
+                        } else if (alias.length >= 3 && f.includes(alias)) {
+                            matchedQ = true;
+                            bestAliasScore = Math.max(bestAliasScore, 30);
                         }
                     }
                 }
-            } catch(e) {}
+                if (!matchedQ) return -1;
+                score += bestAliasScore;
+            }
+
+            // Tie-breaker by population / prominence
+            const pop = typeof result.population === 'number' ? result.population : 0;
+            score += Math.min(25, Math.log10(pop + 1) * 3);
+            return score;
+        }
+
+        function formatGeoSuggestionLabel(r) {
+            const parts = [r.name];
+            if (r.admin1 && r.admin1.toLowerCase() !== (r.name || '').toLowerCase()) parts.push(r.admin1);
+            if (r.country) parts.push(r.country);
+            return parts.join(', ');
+        }
+
+        async function resolveLocationViaApi(z) {
+            const lower = normalizeQueryKey(z);
+            if (!lower) return null;
+            if (resolvedCache[lower]) return resolvedCache[lower];
+
+            const parts = z.split(',').map(s => s.trim()).filter(Boolean);
+            const primaryRaw = parts[0] || z.trim();
+            const primaryExpanded = expandPrimaryPlace(primaryRaw);
+            const qualifiers = parts.slice(1);
+
+            const urls = [
+                `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(primaryExpanded)}&count=50&language=en&format=json`
+            ];
+            if (qualifiers.length > 0) {
+                urls.push(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(z.trim())}&count=20&language=en&format=json`);
+            }
+
+            let allResults = [];
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data.results) && data.results.length) {
+                            allResults = data.results;
+                            break;
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            if (!allResults.length) return null;
+
+            // Filter valid Luxon zones
+            const validResults = allResults.filter(r => r.timezone && DateTime.now().setZone(r.timezone).isValid);
+            if (!validResults.length) return null;
+
+            let ranked = [];
+            if (qualifiers.length > 0) {
+                ranked = validResults
+                    .map(r => ({ r, score: scoreGeoCandidate(r, qualifiers) }))
+                    .filter(item => item.score >= 0)
+                    .sort((a, b) => b.score - a.score)
+                    .map(item => item.r);
+            } else {
+                ranked = validResults;
+            }
+
+            if (!ranked.length) return null;
+
+            // Store unique timezone suggestions for disambiguation UI
+            const seenLabels = new Set();
+            const sugList = [];
+            for (const item of ranked) {
+                const lbl = formatGeoSuggestionLabel(item);
+                if (!seenLabels.has(lbl)) {
+                    seenLabels.add(lbl);
+                    sugList.push({ label: lbl, timezone: item.timezone });
+                }
+                if (sugList.length >= 6) break;
+            }
+            suggestionsCache[lower] = sugList;
+
+            const chosenZone = ranked[0].timezone;
+            resolvedCache[lower] = chosenZone;
+            saveCache();
+            return chosenZone;
+        }
+
+        async function fetchTimezoneFromApi(z) {
+            const lower = normalizeQueryKey(z);
+            if (!lower || resolvedCache[lower] || pendingFetches.has(lower) || failedResolutions.has(lower)) return;
+            pendingFetches.add(lower);
+            const foundZone = await resolveLocationViaApi(z);
             pendingFetches.delete(lower);
-            failedResolutions.add(lower);
+            if (!foundZone) {
+                failedResolutions.add(lower);
+            }
             renderAll();
+            refreshActiveModalPreviews();
         }
 
         function normalizePeople(list) {
@@ -922,7 +1441,10 @@
             const direct = parseDirectOffsetMinutes(tz);
             if (direct !== null) return direct;
             const resolved = tryLocalResolution(tz);
-            if (!resolved) return 0;
+            if (!resolved) {
+                fetchTimezoneFromApi(tz);
+                return 0;
+            }
             const dt = resolved === 'system' ? DateTime.now() : DateTime.now().setZone(resolved);
             return dt.isValid ? dt.offset : 0;
         }
@@ -1012,11 +1534,20 @@
             const btn = document.getElementById('sidebar-toggle-btn');
             if (isSidebarCollapsed) {
                 layout.classList.add('sidebar-collapsed');
-                if (btn) btn.textContent = '‹ expand timezones';
+                if (btn) btn.textContent = '‹ show world clocks';
             } else {
                 layout.classList.remove('sidebar-collapsed');
-                if (btn) btn.textContent = 'collapse timezones ›';
+                if (btn) btn.textContent = 'hide world clocks ›';
             }
+        }
+
+        function populateMonthSelects() {
+            const ids = ['event-start-month', 'event-end-month', 'edit-bday-month'];
+            const optionsHtml = MONTH_NAMES.map((m, idx) => `<option value="${idx + 1}">${m.toLowerCase()}</option>`).join('');
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = optionsHtml;
+            });
         }
 
         async function initAllData() {
@@ -1115,23 +1646,9 @@
         }
 
         function closeAllBoxes() {
-            document.getElementById('add-box').style.display = 'none';
             document.getElementById('edit-box').style.display = 'none';
-            document.getElementById('add-event-box').style.display = 'none';
             document.getElementById('edit-event-box').style.display = 'none';
-            document.getElementById('add-standalone-box').style.display = 'none';
-            document.getElementById('add-people-box').style.display = 'none';
             document.getElementById('edit-people-box').style.display = 'none';
-        }
-
-        function toggleAddBox() {
-            const el = document.getElementById('add-box');
-            const shouldOpen = el.style.display === 'none';
-            closeAllBoxes();
-            if (shouldOpen) {
-                el.style.display = 'block';
-                document.getElementById('bulk-input').focus();
-            }
         }
 
         function toggleEditBox() {
@@ -1151,16 +1668,6 @@
             }
         }
 
-        function toggleAddEventBox() {
-            const el = document.getElementById('add-event-box');
-            const shouldOpen = el.style.display === 'none';
-            closeAllBoxes();
-            if (shouldOpen) {
-                el.style.display = 'block';
-                document.getElementById('bulk-event-input').focus();
-            }
-        }
-
         function toggleEditEventBox() {
             const el = document.getElementById('edit-event-box');
             const shouldOpen = el.style.display === 'none';
@@ -1174,26 +1681,6 @@
                 document.getElementById('bulk-edit-event-input').value = text;
                 el.style.display = 'block';
                 document.getElementById('bulk-edit-event-input').focus();
-            }
-        }
-
-        function toggleAddStandaloneBox() {
-            const el = document.getElementById('add-standalone-box');
-            const shouldOpen = el.style.display === 'none';
-            closeAllBoxes();
-            if (shouldOpen) {
-                el.style.display = 'block';
-                document.getElementById('standalone-input').focus();
-            }
-        }
-
-        function toggleAddPeopleBox() {
-            const el = document.getElementById('add-people-box');
-            const shouldOpen = el.style.display === 'none';
-            closeAllBoxes();
-            if (shouldOpen) {
-                el.style.display = 'block';
-                document.getElementById('bulk-people-input').focus();
             }
         }
 
@@ -1440,22 +1927,24 @@
         function getClockMetricsForZone(zoneStr) {
             const direct = parseDirectOffsetMinutes(zoneStr);
             if (direct !== null) {
-                return getOffsetGroupMetrics(direct);
+                return { ...getOffsetGroupMetrics(direct), isValid: true, isResolving: false, resolvedName: formatOffsetLabel(direct) };
             }
 
             const resolved = tryLocalResolution(zoneStr);
             if (!resolved) {
                 fetchTimezoneFromApi(zoneStr);
+                const lower = normalizeQueryKey(zoneStr);
                 return {
                     isValid: false,
-                    isResolving: !failedResolutions.has(zoneStr.toLowerCase()),
+                    isResolving: !failedResolutions.has(lower),
                     timeStr: '--:--:--',
-                    dateStr: 'resolving...',
+                    dateStr: failedResolutions.has(lower) ? 'not found' : 'resolving...',
                     phase: 'day',
                     offsetLabel: 'utc',
                     relLabel: '',
                     progressPct: 0,
-                    isLocal: false
+                    isLocal: false,
+                    resolvedName: ''
                 };
             }
 
@@ -1470,7 +1959,8 @@
                     offsetLabel: 'utc',
                     relLabel: '',
                     progressPct: 0,
-                    isLocal: false
+                    isLocal: false,
+                    resolvedName: ''
                 };
             }
 
@@ -1489,7 +1979,8 @@
             return {
                 isValid: true,
                 isResolving: false,
-                timeStr, dateStr, phase, offsetLabel, relLabel, progressPct, isLocal
+                timeStr, dateStr, phase, offsetLabel, relLabel, progressPct, isLocal,
+                resolvedName: resolved === 'system' ? DateTime.now().zoneName : resolved
             };
         }
 
@@ -1511,64 +2002,184 @@
             };
         }
 
-        async function handleBulkAdd() {
-            const raw = document.getElementById('bulk-input').value;
-            const lines = raw.split('\n');
-            let count = 0;
-            lines.forEach(line => {
-                const item = parseBirthdayLine(line);
-                if (item) { birthdays.push(item); count++; }
-            });
-            if (count > 0) {
-                await syncAllToServer();
-                renderBirthdays();
-                document.getElementById('bulk-input').value = '';
-                toggleAddBox();
+        /* ================= Live Preview & Disambiguation for Modals ================= */
+        const previewTimers = {};
+
+        function applyQuickTz(inputId, value, mode) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = value;
+            input.focus();
+            updateTzPreview(mode);
+        }
+
+        function scheduleTzPreview(mode) {
+            clearTimeout(previewTimers[mode]);
+            previewTimers[mode] = setTimeout(() => updateTzPreview(mode), 180);
+        }
+
+        function getModalPreviewIds(mode) {
+            if (mode === 'clock') return { input: 'clock-modal-input', preview: 'clock-tz-preview', sug: 'clock-tz-suggestions', modal: 'clock-modal' };
+            if (mode === 'person') return { input: 'person-modal-tz', preview: 'person-tz-preview', sug: 'person-tz-suggestions', modal: 'person-modal' };
+            return { input: 'edit-bday-tz', preview: 'bday-tz-preview', sug: 'bday-tz-suggestions', modal: 'edit-birthday-modal' };
+        }
+
+        function selectSuggestion(mode, label, zone) {
+            const ids = getModalPreviewIds(mode);
+            const input = document.getElementById(ids.input);
+            if (!input) return;
+            const key = normalizeQueryKey(label);
+            resolvedCache[key] = zone;
+            saveCache();
+            input.value = label;
+            updateTzPreview(mode);
+        }
+
+        function updateTzPreview(mode) {
+            const ids = getModalPreviewIds(mode);
+            const inputEl = document.getElementById(ids.input);
+            const previewEl = document.getElementById(ids.preview);
+            const sugEl = document.getElementById(ids.sug);
+            if (!inputEl || !previewEl || !sugEl) return;
+
+            const raw = inputEl.value.trim();
+            if (!raw) {
+                previewEl.classList.remove('is-valid');
+                previewEl.textContent = mode === 'bday'
+                    ? 'optional: link a timezone to track their birthday in their local time'
+                    : 'enter a timezone code, utc/gmt offset, city, state, or country';
+                sugEl.style.display = 'none';
+                sugEl.innerHTML = '';
+                return;
+            }
+
+            const metrics = getClockMetricsForZone(raw);
+            if (metrics.isValid) {
+                previewEl.classList.add('is-valid');
+                previewEl.innerHTML = `
+                    <div><strong>${escapeHTML(metrics.resolvedName)}</strong> &middot; ${escapeHTML(metrics.offsetLabel)} (${escapeHTML(metrics.relLabel)})</div>
+                    <div class="tz-preview-time">${escapeHTML(metrics.timeStr)} &middot; ${escapeHTML(metrics.dateStr)} (${escapeHTML(metrics.phase)})</div>
+                `;
+            } else if (metrics.isResolving) {
+                previewEl.classList.remove('is-valid');
+                previewEl.textContent = `searching "${raw}"...`;
             } else {
-                alert('No valid birthdays found. Format: <name>/dd/mm or <name>/dd/mm/yyyy');
+                previewEl.classList.remove('is-valid');
+                previewEl.textContent = `could not resolve "${raw}" — try adding country or state (e.g. Victoria, Australia)`;
+            }
+
+            const key = normalizeQueryKey(raw);
+            const sugs = suggestionsCache[key];
+            if (Array.isArray(sugs) && sugs.length > 1) {
+                sugEl.style.display = 'flex';
+                sugEl.innerHTML = sugs.map(s =>
+                    `<button type="button" class="quick-chip" onclick="selectSuggestion('${mode}', '${escapeHTML(s.label).replace(/'/g, "\\'")}', '${escapeHTML(s.timezone).replace(/'/g, "\\'")}')">${escapeHTML(s.label)}</button>`
+                ).join('');
+            } else {
+                sugEl.style.display = 'none';
+                sugEl.innerHTML = '';
             }
         }
 
-        async function handleBulkEditSave() {
-            const raw = document.getElementById('bulk-edit-input').value;
-            const lines = raw.split('\n');
-            const newBirthdays = [];
-            const remainingOld = [...birthdays];
+        function refreshActiveModalPreviews() {
+            if (document.getElementById('clock-modal').style.display === 'flex') updateTzPreview('clock');
+            if (document.getElementById('person-modal').style.display === 'flex') updateTzPreview('person');
+            if (document.getElementById('edit-birthday-modal').style.display === 'flex') updateTzPreview('bday');
+        }
 
-            lines.forEach(line => {
-                const parsed = parseBirthdayLine(line);
-                if (!parsed) return;
-                const existingIndex = remainingOld.findIndex(b => b.name.trim().toLowerCase() === parsed.name.toLowerCase());
-                if (existingIndex !== -1) {
-                    const matched = remainingOld.splice(existingIndex, 1)[0];
-                    newBirthdays.push({ id: matched.id, name: parsed.name, day: parsed.day, month: parsed.month, year: parsed.year });
-                } else {
-                    newBirthdays.push(parsed);
+        /* ================= Event Modal & Bulk Edit ================= */
+        function toggleEventRangeFields() {
+            const checked = document.getElementById('event-is-range').checked;
+            document.getElementById('event-end-group').style.display = checked ? 'block' : 'none';
+        }
+
+        function openEventModal(id = null) {
+            const errEl = document.getElementById('event-modal-error');
+            errEl.style.display = 'none';
+            const now = new Date();
+
+            if (id) {
+                const item = events.find(e => e.id === id);
+                if (!item) return;
+                document.getElementById('event-modal-title').textContent = 'edit event';
+                document.getElementById('event-modal-id').value = item.id;
+                document.getElementById('event-modal-name').value = item.name;
+                document.getElementById('event-start-month').value = String(item.startMonth);
+                document.getElementById('event-start-day').value = item.startDay;
+
+                const hasRange = !!(item.endDay && item.endMonth);
+                document.getElementById('event-is-range').checked = hasRange;
+                document.getElementById('event-end-month').value = String(item.endMonth || item.startMonth);
+                document.getElementById('event-end-day').value = item.endDay || item.startDay;
+            } else {
+                document.getElementById('event-modal-title').textContent = 'add event';
+                document.getElementById('event-modal-id').value = '';
+                document.getElementById('event-modal-name').value = '';
+                document.getElementById('event-start-month').value = String(now.getMonth() + 1);
+                document.getElementById('event-start-day').value = now.getDate();
+                document.getElementById('event-is-range').checked = false;
+                document.getElementById('event-end-month').value = String(now.getMonth() + 1);
+                document.getElementById('event-end-day').value = now.getDate();
+            }
+
+            toggleEventRangeFields();
+            document.getElementById('event-modal').style.display = 'flex';
+            document.getElementById('event-modal-name').focus();
+        }
+
+        function closeEventModal() {
+            document.getElementById('event-modal').style.display = 'none';
+        }
+
+        async function saveEventModal() {
+            const id = document.getElementById('event-modal-id').value;
+            const name = document.getElementById('event-modal-name').value.trim();
+            const startMonth = parseInt(document.getElementById('event-start-month').value, 10);
+            const startDay = parseInt(document.getElementById('event-start-day').value, 10);
+            const isRange = document.getElementById('event-is-range').checked;
+            const endMonth = isRange ? parseInt(document.getElementById('event-end-month').value, 10) : null;
+            const endDay = isRange ? parseInt(document.getElementById('event-end-day').value, 10) : null;
+
+            const errEl = document.getElementById('event-modal-error');
+            if (!name) {
+                errEl.textContent = 'event name is required.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (isNaN(startMonth) || isNaN(startDay) || startDay < 1 || startDay > 31) {
+                errEl.textContent = 'enter a valid start day (1-31).';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (isRange && (isNaN(endMonth) || isNaN(endDay) || endDay < 1 || endDay > 31)) {
+                errEl.textContent = 'enter a valid end day (1-31).';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (id) {
+                const item = events.find(e => e.id === id);
+                if (item) {
+                    item.name = name;
+                    item.startDay = startDay;
+                    item.startMonth = startMonth;
+                    item.endDay = endDay;
+                    item.endMonth = endMonth;
                 }
-            });
+            } else {
+                events.push({
+                    id: 'event_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name, startDay, startMonth, endDay, endMonth
+                });
+            }
 
-            birthdays = newBirthdays;
+            closeEventModal();
             await syncAllToServer();
-            renderBirthdays();
-            toggleEditBox();
+            renderEvents();
         }
 
-        async function handleBulkAddEvents() {
-            const raw = document.getElementById('bulk-event-input').value;
-            const lines = raw.split('\n');
-            let count = 0;
-            lines.forEach(line => {
-                const item = parseEventLine(line);
-                if (item) { events.push(item); count++; }
-            });
-            if (count > 0) {
-                await syncAllToServer();
-                renderEvents();
-                document.getElementById('bulk-event-input').value = '';
-                toggleAddEventBox();
-            } else {
-                alert('No valid events found. Format: <name>/dd/mm or <name>/dd/mm/dd/mm');
-            }
+        function editEvent(id) {
+            openEventModal(id);
         }
 
         async function handleBulkEditEventsSave() {
@@ -1595,13 +2206,198 @@
             toggleEditEventBox();
         }
 
-        async function handleSaveStandaloneClock() {
-            const inputEl = document.getElementById('standalone-input');
-            const val = inputEl.value.trim();
-            if (!val) return;
-            standaloneClocks.push(val);
-            inputEl.value = '';
-            toggleAddStandaloneBox();
+        /* ================= Birthday Modal & Bulk Edit ================= */
+        function openBirthdayModal(id = null) {
+            const errEl = document.getElementById('bday-modal-error');
+            errEl.style.display = 'none';
+            const now = new Date();
+
+            if (id) {
+                const item = birthdays.find(b => b.id === id);
+                if (!item) return;
+                document.getElementById('bday-modal-title').textContent = 'edit birthday & timezone';
+                document.getElementById('edit-bday-id').value = item.id;
+                document.getElementById('edit-bday-name').value = item.name;
+                document.getElementById('edit-bday-month').value = String(item.month);
+                document.getElementById('edit-bday-day').value = item.day;
+                document.getElementById('edit-bday-year').value = item.year || '';
+
+                const matched = findMatchedPerson(item.name);
+                if (matched) {
+                    document.getElementById('edit-bday-tz').value = matched.timezone || '';
+                    document.getElementById('edit-bday-loc').value = matched.location || '';
+                } else {
+                    document.getElementById('edit-bday-tz').value = '';
+                    document.getElementById('edit-bday-loc').value = '';
+                }
+            } else {
+                document.getElementById('bday-modal-title').textContent = 'add birthday';
+                document.getElementById('edit-bday-id').value = '';
+                document.getElementById('edit-bday-name').value = '';
+                document.getElementById('edit-bday-month').value = String(now.getMonth() + 1);
+                document.getElementById('edit-bday-day').value = now.getDate();
+                document.getElementById('edit-bday-year').value = '';
+                document.getElementById('edit-bday-tz').value = '';
+                document.getElementById('edit-bday-loc').value = '';
+            }
+
+            updateTzPreview('bday');
+            document.getElementById('edit-birthday-modal').style.display = 'flex';
+            document.getElementById('edit-bday-name').focus();
+        }
+
+        function editBirthday(id) {
+            openBirthdayModal(id);
+        }
+
+        function closeEditBirthdayModal() {
+            document.getElementById('edit-birthday-modal').style.display = 'none';
+        }
+
+        async function saveEditedBirthdayModal() {
+            const id = document.getElementById('edit-bday-id').value;
+            const name = document.getElementById('edit-bday-name').value.trim();
+            const month = parseInt(document.getElementById('edit-bday-month').value, 10);
+            const day = parseInt(document.getElementById('edit-bday-day').value, 10);
+            const yearRaw = document.getElementById('edit-bday-year').value.trim();
+            const year = yearRaw ? parseInt(yearRaw, 10) : null;
+            const tz = document.getElementById('edit-bday-tz').value.trim();
+            const loc = document.getElementById('edit-bday-loc').value.trim();
+
+            const errEl = document.getElementById('bday-modal-error');
+            if (!name) {
+                errEl.textContent = 'name is required.';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (isNaN(month) || isNaN(day) || day < 1 || day > 31) {
+                errEl.textContent = 'enter a valid day (1-31).';
+                errEl.style.display = 'block';
+                return;
+            }
+            if (year !== null && (isNaN(year) || year < 1900 || year > 2100)) {
+                errEl.textContent = 'enter a valid 4-digit year or leave blank.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (tz && parseDirectOffsetMinutes(tz) === null && !tryLocalResolution(tz)) {
+                await resolveLocationViaApi(tz);
+            }
+
+            let oldName = name;
+            if (id) {
+                const item = birthdays.find(b => b.id === id);
+                if (!item) return;
+                oldName = item.name;
+                item.name = name;
+                item.day = day;
+                item.month = month;
+                item.year = year;
+            } else {
+                birthdays.push({
+                    id: 'bday_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name, day, month, year
+                });
+            }
+
+            const matchedOld = findMatchedPerson(oldName);
+            const matchedNew = findMatchedPerson(name);
+            const matched = matchedOld || matchedNew;
+
+            if (tz) {
+                if (matched) {
+                    matched.name = name;
+                    matched.timezone = tz;
+                    matched.location = loc;
+                    matched.rawLocation = loc ? `${tz}/${loc}` : tz;
+                } else {
+                    trackedPeople.push({
+                        id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                        name: name,
+                        timezone: tz,
+                        location: loc,
+                        rawLocation: loc ? `${tz}/${loc}` : tz
+                    });
+                }
+            } else if (id && matched) {
+                trackedPeople = trackedPeople.filter(p => p.id !== matched.id && p !== matched);
+            }
+
+            closeEditBirthdayModal();
+            await syncAllToServer();
+            renderAll();
+        }
+
+        async function handleBulkEditSave() {
+            const raw = document.getElementById('bulk-edit-input').value;
+            const lines = raw.split('\n');
+            const newBirthdays = [];
+            const remainingOld = [...birthdays];
+
+            lines.forEach(line => {
+                const parsed = parseBirthdayLine(line);
+                if (!parsed) return;
+                const existingIndex = remainingOld.findIndex(b => b.name.trim().toLowerCase() === parsed.name.toLowerCase());
+                if (existingIndex !== -1) {
+                    const matched = remainingOld.splice(existingIndex, 1)[0];
+                    newBirthdays.push({ id: matched.id, name: parsed.name, day: parsed.day, month: parsed.month, year: parsed.year });
+                } else {
+                    newBirthdays.push(parsed);
+                }
+            });
+
+            birthdays = newBirthdays;
+            await syncAllToServer();
+            renderBirthdays();
+            toggleEditBox();
+        }
+
+        /* ================= World Clock Modal ================= */
+        function openClockModal(idx = -1) {
+            const errEl = document.getElementById('clock-modal-error');
+            errEl.style.display = 'none';
+            document.getElementById('clock-modal-idx').value = String(idx);
+
+            if (idx >= 0 && standaloneClocks[idx] !== undefined) {
+                document.getElementById('clock-modal-title').textContent = 'edit world clock';
+                document.getElementById('clock-modal-input').value = standaloneClocks[idx];
+            } else {
+                document.getElementById('clock-modal-title').textContent = 'add world clock';
+                document.getElementById('clock-modal-input').value = '';
+            }
+
+            updateTzPreview('clock');
+            document.getElementById('clock-modal').style.display = 'flex';
+            document.getElementById('clock-modal-input').focus();
+        }
+
+        function closeClockModal() {
+            document.getElementById('clock-modal').style.display = 'none';
+        }
+
+        async function saveClockModal() {
+            const idx = parseInt(document.getElementById('clock-modal-idx').value, 10);
+            const val = document.getElementById('clock-modal-input').value.trim();
+            const errEl = document.getElementById('clock-modal-error');
+
+            if (!val) {
+                errEl.textContent = 'enter a timezone, code, offset, or location.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (parseDirectOffsetMinutes(val) === null && !tryLocalResolution(val)) {
+                await resolveLocationViaApi(val);
+            }
+
+            if (idx >= 0 && standaloneClocks[idx] !== undefined) {
+                standaloneClocks[idx] = val;
+            } else {
+                standaloneClocks.push(val);
+            }
+
+            closeClockModal();
             renderClocks();
             await syncAllToServer();
         }
@@ -1614,24 +2410,75 @@
             await syncAllToServer();
         }
 
-        async function handleBulkAddPeople() {
-            const inputEl = document.getElementById('bulk-people-input');
-            const raw = inputEl.value;
-            const lines = raw.split('\n');
-            let addedCount = 0;
-            lines.forEach(l => {
-                const item = parsePersonLine(l);
-                if (item) { trackedPeople.push(item); addedCount++; }
-            });
-            if (addedCount > 0) {
-                inputEl.value = '';
-                toggleAddPeopleBox();
-                renderTrackedPeople();
-                renderBirthdays();
-                await syncAllToServer();
+        /* ================= Tracked Person Modal & Bulk Edit ================= */
+        function openPersonModal(personId = null, prefillTz = '') {
+            const errEl = document.getElementById('person-modal-error');
+            errEl.style.display = 'none';
+
+            if (personId) {
+                const p = trackedPeople.find(item => item.id === personId);
+                if (!p) return;
+                document.getElementById('person-modal-title').textContent = 'edit person';
+                document.getElementById('person-modal-id').value = p.id;
+                document.getElementById('person-modal-name').value = p.name;
+                document.getElementById('person-modal-tz').value = p.timezone || '';
+                document.getElementById('person-modal-loc').value = p.location || '';
             } else {
-                alert('format: <name>/<timezone>/<displayed location>');
+                document.getElementById('person-modal-title').textContent = 'add person';
+                document.getElementById('person-modal-id').value = '';
+                document.getElementById('person-modal-name').value = '';
+                document.getElementById('person-modal-tz').value = prefillTz || '';
+                document.getElementById('person-modal-loc').value = '';
             }
+
+            updateTzPreview('person');
+            document.getElementById('person-modal').style.display = 'flex';
+            document.getElementById('person-modal-name').focus();
+        }
+
+        function closePersonModal() {
+            document.getElementById('person-modal').style.display = 'none';
+        }
+
+        async function savePersonModal() {
+            const id = document.getElementById('person-modal-id').value;
+            const name = document.getElementById('person-modal-name').value.trim();
+            const tz = document.getElementById('person-modal-tz').value.trim();
+            const loc = document.getElementById('person-modal-loc').value.trim();
+            const errEl = document.getElementById('person-modal-error');
+
+            if (!name || !tz) {
+                errEl.textContent = 'name and timezone are required.';
+                errEl.style.display = 'block';
+                return;
+            }
+
+            if (parseDirectOffsetMinutes(tz) === null && !tryLocalResolution(tz)) {
+                await resolveLocationViaApi(tz);
+            }
+
+            if (id) {
+                const p = trackedPeople.find(item => item.id === id);
+                if (p) {
+                    p.name = name;
+                    p.timezone = tz;
+                    p.location = loc;
+                    p.rawLocation = loc ? `${tz}/${loc}` : tz;
+                }
+            } else {
+                trackedPeople.push({
+                    id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                    name,
+                    timezone: tz,
+                    location: loc,
+                    rawLocation: loc ? `${tz}/${loc}` : tz
+                });
+            }
+
+            closePersonModal();
+            renderTrackedPeople();
+            renderBirthdays();
+            await syncAllToServer();
         }
 
         async function handleBulkEditPeopleSave() {
@@ -1669,134 +2516,8 @@
             await syncAllToServer();
         }
 
-        async function addPersonToOffset(offsetMinutes, offsetLabel) {
-            const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
-            const raw = await promptFn(`add person to ${offsetLabel} (<name>/<displayed location>):`, "");
-            if (!raw) return;
-
-            const parts = raw.split('/');
-            if (parts.length >= 3) {
-                const parsed = parsePersonLine(raw);
-                if (parsed) {
-                    trackedPeople.push(parsed);
-                    renderTrackedPeople();
-                    renderBirthdays();
-                    await syncAllToServer();
-                    return;
-                }
-            }
-
-            const name = parts[0].trim();
-            const loc = parts.length > 1 ? parts.slice(1).join('/').trim() : '';
-            if (name) {
-                trackedPeople.push({
-                    id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                    name,
-                    timezone: offsetLabel,
-                    location: loc,
-                    rawLocation: loc ? `${offsetLabel}/${loc}` : offsetLabel
-                });
-                renderTrackedPeople();
-                renderBirthdays();
-                await syncAllToServer();
-            }
-        }
-
-        function editBirthday(id) {
-            const item = birthdays.find(b => b.id === id);
-            if (!item) return;
-
-            document.getElementById('edit-bday-id').value = item.id;
-            document.getElementById('edit-bday-name').value = item.name;
-            document.getElementById('edit-bday-date').value = formatDisplayDate(item.day, item.month, item.year);
-
-            const matched = findMatchedPerson(item.name);
-            if (matched) {
-                document.getElementById('edit-bday-tz').value = matched.timezone || '';
-                document.getElementById('edit-bday-loc').value = matched.location || '';
-            } else {
-                document.getElementById('edit-bday-tz').value = '';
-                document.getElementById('edit-bday-loc').value = '';
-            }
-
-            document.getElementById('edit-birthday-modal').style.display = 'flex';
-        }
-
-        function closeEditBirthdayModal() {
-            document.getElementById('edit-birthday-modal').style.display = 'none';
-        }
-
-        async function saveEditedBirthdayModal() {
-            const id = document.getElementById('edit-bday-id').value;
-            const item = birthdays.find(b => b.id === id);
-            if (!item) return;
-
-            const name = document.getElementById('edit-bday-name').value.trim();
-            const dateStr = document.getElementById('edit-bday-date').value.trim();
-            const tz = document.getElementById('edit-bday-tz').value.trim();
-            const loc = document.getElementById('edit-bday-loc').value.trim();
-
-            if (!name || !dateStr) {
-                alert('name and date are required.');
-                return;
-            }
-
-            const parsed = parseBirthdayLine(`${name}/${dateStr}`);
-            if (!parsed) {
-                alert('invalid date format. use dd/mm or dd/mm/yyyy.');
-                return;
-            }
-
-            const oldName = item.name;
-            item.name = parsed.name;
-            item.day = parsed.day;
-            item.month = parsed.month;
-            item.year = parsed.year;
-
-            const matchedOld = findMatchedPerson(oldName);
-            const matchedNew = findMatchedPerson(item.name);
-            const matched = matchedOld || matchedNew;
-
-            if (tz) {
-                if (matched) {
-                    matched.name = item.name;
-                    matched.timezone = tz;
-                    matched.location = loc;
-                    matched.rawLocation = loc ? `${tz}/${loc}` : tz;
-                } else {
-                    trackedPeople.push({
-                        id: 'p_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-                        name: item.name,
-                        timezone: tz,
-                        location: loc,
-                        rawLocation: loc ? `${tz}/${loc}` : tz
-                    });
-                }
-            } else if (matched) {
-                trackedPeople = trackedPeople.filter(p => p.id !== matched.id && p !== matched);
-            }
-
-            closeEditBirthdayModal();
-            await syncAllToServer();
-            renderAll();
-        }
-
-        async function editEvent(id) {
-            const item = events.find(e => e.id === id);
-            if (!item) return;
-            const existingFormatted = formatEventExport(item);
-            const promptFn = (window.parent && window.parent.guiPrompt) ? window.parent.guiPrompt : prompt;
-            const updated = await promptFn("edit event (<name>/dd/mm or <name>/dd/mm/dd/mm):", existingFormatted);
-            if (updated === null) return;
-            const parsed = parseEventLine(updated);
-            if (parsed) {
-                item.name = parsed.name; item.startDay = parsed.startDay; item.startMonth = parsed.startMonth;
-                item.endDay = parsed.endDay; item.endMonth = parsed.endMonth;
-                await syncAllToServer();
-                renderEvents();
-            } else {
-                alert("invalid format. use <name>/dd/mm or <name>/dd/mm/dd/mm");
-            }
+        function addPersonToOffset(offsetMinutes, offsetLabel) {
+            openPersonModal(null, offsetLabel);
         }
 
         async function deleteBirthday(id) {
@@ -1945,8 +2666,13 @@
                     <div class="tz-card ${metrics.isLocal ? 'is-local' : ''}" data-zone="${escapeHTML(loc)}">
                         <div>
                             <div class="tz-card-header">
-                                <span class="tz-card-title">${escapeHTML(loc)}</span>
+                                <span class="tz-card-title" title="${escapeHTML(loc)}">${escapeHTML(loc)}</span>
                                 <div class="tz-actions-row">
+                                    <button class="icon-btn" title="edit" onclick="openClockModal(${idx})">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                        </svg>
+                                    </button>
                                     <button class="icon-btn btn-del" title="remove" onclick="deleteStandaloneClock(${idx})">&#10005;</button>
                                 </div>
                             </div>
@@ -1991,7 +2717,7 @@
 
                 const pillsHtml = people.map(p => {
                     const tooltip = p.location ? `${p.name} (${p.location})` : p.name;
-                    return `<span class="tz-person-pill" title="${escapeHTML(tooltip)}">${escapeHTML(p.name)}</span>`;
+                    return `<span class="tz-person-pill" title="${escapeHTML(tooltip)}" onclick="openPersonModal('${escapeHTML(p.id)}')">${escapeHTML(p.name)}</span>`;
                 }).join('');
 
                 const popoverRows = people.map(p => `
@@ -2001,7 +2727,14 @@
                             <span class="tz-popover-name">${escapeHTML(p.name)}</span>
                             ${p.location ? `<span class="tz-popover-loc">&middot; ${escapeHTML(p.location)}</span>` : ''}
                         </div>
-                        <button class="icon-btn btn-del" title="remove" onclick="event.stopPropagation(); deletePerson('${escapeHTML(p.id)}')">&#10005;</button>
+                        <div style="display:flex; align-items:center; gap:2px; flex-shrink:0;">
+                            <button class="icon-btn" title="edit" onclick="event.stopPropagation(); openPersonModal('${escapeHTML(p.id)}')">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                </svg>
+                            </button>
+                            <button class="icon-btn btn-del" title="remove" onclick="event.stopPropagation(); deletePerson('${escapeHTML(p.id)}')">&#10005;</button>
+                        </div>
                     </div>
                 `).join('');
 
@@ -2014,16 +2747,14 @@
                             </div>
                             <div class="tz-popover-list">${popoverRows}</div>
                         </div>
-                        <div>
-                            <div class="tz-card-header">
+                        <div class="tz-card-header">
+                            <div class="tz-card-title-wrap">
                                 <span class="tz-card-title">${escapeHTML(metrics.offsetLabel)}</span>
-                                <div class="tz-actions-row">
-                                    <button class="icon-btn" title="add person" onclick="addPersonToOffset(${offset}, '${escapeHTML(metrics.offsetLabel)}')">+</button>
-                                    <button class="icon-btn btn-del" title="remove timezone" onclick="deleteOffsetGroup(${offset})">&#10005;</button>
-                                </div>
-                            </div>
-                            <div class="tz-meta-row">
                                 <span class="tz-rel-text js-rel">${escapeHTML(metrics.relLabel)}</span>
+                            </div>
+                            <div class="tz-actions-row">
+                                <button class="icon-btn" title="add person" onclick="addPersonToOffset(${offset}, '${escapeHTML(metrics.offsetLabel)}')">+</button>
+                                <button class="icon-btn btn-del" title="remove timezone" onclick="deleteOffsetGroup(${offset})">&#10005;</button>
                             </div>
                         </div>
                         <div>
@@ -2054,6 +2785,7 @@
 
         function updateTicks() {
             updateHoveredTooltip();
+            refreshActiveModalPreviews();
 
             document.querySelectorAll('.tz-card[data-zone]').forEach(card => {
                 const zone = card.getAttribute('data-zone');
@@ -2202,7 +2934,31 @@
             });
         }
 
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                closeEventModal();
+                closeEditBirthdayModal();
+                closeClockModal();
+                closePersonModal();
+            } else if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT') {
+                if (document.getElementById('event-modal').style.display === 'flex') {
+                    e.preventDefault();
+                    saveEventModal();
+                } else if (document.getElementById('edit-birthday-modal').style.display === 'flex') {
+                    e.preventDefault();
+                    saveEditedBirthdayModal();
+                } else if (document.getElementById('clock-modal').style.display === 'flex') {
+                    e.preventDefault();
+                    saveClockModal();
+                } else if (document.getElementById('person-modal').style.display === 'flex') {
+                    e.preventDefault();
+                    savePersonModal();
+                }
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
+            populateMonthSelects();
             initAllData();
             setupTooltip();
             setInterval(updateTicks, 1000);
