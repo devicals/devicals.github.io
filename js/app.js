@@ -1195,6 +1195,7 @@ async function handleRoute() {
             return;
         }
         iframe.style.display = 'none';
+        setIframeUrlNoHistory(iframe, 'about:blank');
         mdContainer.style.display = 'block';
         mdContainer.scrollTop = 0;
         triggerRouteEnterAnimation(mdContainer);
@@ -1211,6 +1212,7 @@ async function handleRoute() {
             return;
         }
         iframe.style.display = 'none';
+        setIframeUrlNoHistory(iframe, 'about:blank');
         mdContainer.style.display = 'block';
         mdContainer.scrollTop = 0;
         triggerRouteEnterAnimation(mdContainer);
@@ -1225,6 +1227,7 @@ async function handleRoute() {
         if (node.type === 'folder') {
             recordValidRoute(rawHash);
             iframe.style.display = 'none';
+            setIframeUrlNoHistory(iframe, 'about:blank');
             mdContainer.style.display = 'block';
             mdContainer.scrollTop = 0;
 
@@ -1257,18 +1260,35 @@ async function handleRoute() {
         if (node.fileType === 'commits') {
             recordValidRoute(rawHash);
             iframe.style.display = 'none';
+            setIframeUrlNoHistory(iframe, 'about:blank');
             mdContainer.style.display = 'block';
             mdContainer.scrollTop = 0;
             commitPage = 1;
-            await renderCommitsPage(mdContainer, true);
+            await renderCommitsPage(mdContainer, true, routeToken);
+            if (routeToken !== activeRouteToken) return;
             triggerRouteEnterAnimation(mdContainer);
             return;
         }
 
         if (node.fileType === 'pdf') {
+            const pdfUrl = node.url || node.file || '';
+            try {
+                const res = await fetch(pdfUrl, { method: 'HEAD' });
+                if (routeToken !== activeRouteToken) return;
+                if (!res.ok) throw new Error(res.status);
+            } catch (e) {
+                if (routeToken !== activeRouteToken) return;
+                iframe.style.display = 'none';
+                setIframeUrlNoHistory(iframe, 'about:blank');
+                mdContainer.scrollTop = 0;
+                renderNotFoundView(mdContainer, hash);
+                triggerRouteEnterAnimation(mdContainer);
+                return;
+            }
             recordValidRoute(rawHash);
-            const pdfSrc = encodeURI(node.url || node.file || '');
+            const pdfSrc = encodeURI(pdfUrl);
             iframe.style.display = 'none';
+            setIframeUrlNoHistory(iframe, 'about:blank');
             mdContainer.style.display = 'block';
             mdContainer.scrollTop = 0;
             mdContainer.innerHTML = `
@@ -1342,26 +1362,30 @@ async function handleRoute() {
     }
 
     iframe.style.display = 'none';
+    setIframeUrlNoHistory(iframe, 'about:blank');
     mdContainer.style.display = 'block';
     mdContainer.scrollTop = 0;
     renderNotFoundView(mdContainer, hash);
     triggerRouteEnterAnimation(mdContainer);
 }
 
-async function renderCommitsPage(container, reset = false) {
+async function renderCommitsPage(container, reset = false, expectedToken = activeRouteToken) {
     if (reset) {
         container.innerHTML = '<h1>commit history</h1><div id="commits-list" style="margin-top:40px;"></div><button id="load-more-commits-btn" class="ui-btn" style="margin-top:20px;" onclick="loadMoreCommits()">load more commits</button>';
     }
     const listEl = document.getElementById('commits-list');
     try {
         const res = await fetch(`https://api.github.com/repos/devicals/devicals.github.io/commits?page=${commitPage}&per_page=10`);
+        if (expectedToken !== activeRouteToken) return;
         if (!res.ok) throw new Error('failed to fetch');
         const commits = await res.json();
+        if (expectedToken !== activeRouteToken) return;
 
         const escapeHTML = (str) => (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
         if (commits.length === 0) {
-            document.getElementById('load-more-commits-btn').style.display = 'none';
+            const btn = document.getElementById('load-more-commits-btn');
+            if (btn) btn.style.display = 'none';
             return;
         }
 
@@ -1372,6 +1396,7 @@ async function renderCommitsPage(container, reset = false) {
             } catch (e) {}
             return c;
         }));
+        if (expectedToken !== activeRouteToken || !listEl || !listEl.isConnected) return;
 
         const rows = commitDetails.map((c) => {
             const sha = (c.sha || '').substring(0, 7);
@@ -1431,7 +1456,7 @@ async function renderCommitsPage(container, reset = false) {
 
 window.loadMoreCommits = function () {
     commitPage++;
-    renderCommitsPage(document.getElementById('page-content'), false);
+    renderCommitsPage(document.getElementById('page-content'), false, activeRouteToken);
 };
 
 function updateWordCount(text) {

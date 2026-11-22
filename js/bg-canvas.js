@@ -18,7 +18,7 @@
             lastHovering = false;
             return false;
         }
-        lastHovering = !!target.closest('a, button, input, select, textarea, .nav-item, .action-btn, .admin-dashboard-btn, [onclick]');
+        lastHovering = !!target.closest('a, button, input, select, textarea, label, .nav-item, .action-btn, .folder-toc-row, .icon-btn, .latest-blog-window, .tilt-wrapper, [onclick]');
         return lastHovering;
     }
 

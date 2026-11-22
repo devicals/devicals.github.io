@@ -12,11 +12,6 @@
       fileType: html
       url: pages/blogs.html
 
-    - name: Posts
-      type: file
-      fileType: html
-      url: pages/posts.html
-
 - name: Content
   type: folder
   children:
@@ -226,8 +221,3 @@
         type: file
         fileType: html
         url: pages/ranking.html
-
-      - name: ZATO Live Tierlist
-        type: file
-        fileType: html
-        url: pages/zato.html

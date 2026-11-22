@@ -2883,9 +2883,8 @@
                 const timing = getBirthdayTiming(b, matched);
                 if (timing.isToday && !notifiedToday.includes(b.id)) {
                     let body = `today is ${b.name}'s birthday!`;
-                    if (b.year) {
-                        const age = now.getFullYear() - b.year;
-                        body = `${b.name} turns ${age} today!`;
+                    if (timing.turningAge !== null) {
+                        body = `${b.name} turns ${timing.turningAge} today!`;
                     }
                     new Notification("birthday reminder", { body, icon: '../assets/favicon.ico' });
                     notifiedToday.push(b.id);

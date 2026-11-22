@@ -358,11 +358,11 @@
         marked.use({ breaks: true, gfm: true });
 
         const DEFAULT_ABOUT = {
-            bio: "hallo there! I'm **Error Dev**, an *Aussie*! I enjoy playing [games](#About%20Me/Games%20I%20%3C3) such as *Minecraft* and *Persona 5 Royal*, experimenting in [Powerpoint](https://powerpoint.office.com), and also watching **movies and TV series**! Not to mention, I also **draw**, **write**, and **code**! Hosted on [Github](https://github.com/devicals)! Also check out my Minecraft projects at [https://modrinth.com/organization/infiniverse](https://modrinth.com/organization/infiniverse)!\n\nContact me at [3rr0r.d3v@gmail.com](mailto:3rr0r.d3v@gmail.com)!",
+            bio: "hai!\ni'm error dev and you can call me error.\n\ni live in australia and i play games and shit idk\ntop 3: minecraft, zato, ultrakill\n\ni sometimes draw or write but i mostly code stuff\n\n───────────────────────\n\ni am ISTP-A 8w9, AuDHD, Non-Binary and AroAce\n\n───────────────────────\n\ndiscord » [https://discord.gg/DBadxrQyby](https://discord.gg/DBadxrQyby)\ntwitter » [https://twitter.com/error_dev_xt](https://x.com/error_dev_xt)\nmodrinth » [https://modrinth.com/organization/infiniverse](https://modrinth.com/organization/infiniverse)",
             pronouns: ["he/him"],
             pronouns_note: "any pronouns are fine, but mostly go by he/him",
             skills: "- [Hypertext Markup Language (HTML)](https://html.com/)\n- [JavaScript (JS)](https://www.javascript.com/)\n- [YAML Ain't Markup Language (YAML)](https://yaml.org/)\n- [JS Object Notation (JSON)](https://www.json.org/)\n- [Flexion (Flexible Object Notation) (FLON)](https://marketplace.visualstudio.com/items?itemName=error-dev.flexion-language)\n- [Cascading Style Sheets (CSS)](https://www.w3.org/Style/CSS/)\n- [Python (PY)](https://www.python.org/)\n- [Beet & Bolt (Minecraft Datapacks)](https://mcbeet.dev/)",
-            socials: "- [Discord](https://discord.com/users/989414384679927838)\n- [Steam](https://steamcommunity.com/id/error_dev/)\n- [Reddit](https://www.reddit.com/user/3RR0R_0FF1C1AL/)\n- [YouTube](https://www.youtube.com/@3rror_dev/)\n- [DeviantART](https://www.deviantart.com/3rrordev)\n- [X / Twitter](https://x.com/error_dev_xt/)\n- [itch.io](https://error-offixial.itch.io/)"
+            socials: "- [Discord](https://discord.com/users/989414384679927838)\n- [Steam](https://steamcommunity.com/id/error_dev/)\n- [Reddit](https://www.reddit.com/user/3RR0R_0FF1C1AL/)\n- [YouTube](https://www.youtube.com/@3rror_dev/)\n- [X / Twitter](https://x.com/error_dev_xt/)\n- [itch.io](https://error-offixial.itch.io/)"
         };
 
         let aboutData = { ...DEFAULT_ABOUT };
@@ -812,11 +812,25 @@
                     const latest = sorted[0];
                     const container = document.getElementById('latest-blog-container');
                     container.innerHTML = `
-                        <div style="font-family:var(--font-ui); font-size:11px; color:var(--fg-muted); margin-bottom:10px; border-bottom:1px dashed var(--border); padding-bottom:6px;">${latest.date}</div>
-                        <div style="font-family:var(--font-ui); font-size:20px; font-weight:bold; color:var(--accent); margin-bottom:16px;">${latest.title}</div>
-                        <div class="markdown-body" style="font-size:15px; line-height:1.8;">${marked.parse(latest.content)}</div>
+                        <div style="font-family:var(--font-ui); font-size:11px; color:var(--fg-muted); margin-bottom:10px; border-bottom:1px dashed var(--border); padding-bottom:6px;">${escapeAttr(latest.date)}</div>
+                        <div style="font-family:var(--font-ui); font-size:20px; font-weight:bold; color:var(--accent); margin-bottom:16px;">${escapeAttr(latest.title)}</div>
+                        <div class="markdown-body" style="font-size:15px; line-height:1.8;">${marked.parse(latest.content || '')}</div>
                     `;
-                    document.getElementById('latest-blog-card').onclick = () => {
+                    container.querySelectorAll('a').forEach(a => {
+                        const href = a.getAttribute('href') || '';
+                        if (href.startsWith('http') || href.startsWith('mailto:')) {
+                            a.setAttribute('target', '_blank');
+                            a.setAttribute('rel', 'noopener noreferrer');
+                        } else if (href.startsWith('#')) {
+                            a.onclick = (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.parent.location.hash = href.substring(1);
+                            };
+                        }
+                    });
+                    document.getElementById('latest-blog-card').onclick = (e) => {
+                        if (e.target.closest('a')) return;
                         window.parent.location.hash = `#Index/Blogs?id=${latest.id}`;
                     };
                 }
@@ -828,10 +842,6 @@
             syncAnonNameField();
             loadAboutData();
             loadHomeBlog();
-            setInterval(() => {
-                updateOwnerUI();
-                syncAnonNameField();
-            }, 1000);
         });
     </script>
     <script src="../js/bg-canvas.js"></script>
