@@ -1400,9 +1400,7 @@ async function renderCommitsPage(container, reset = false, expectedToken = activ
 
         const rows = commitDetails.map((c) => {
             const sha = (c.sha || '').substring(0, 7);
-            const lines = (c.commit?.message || '').split('\n');
-            const summary = escapeHTML(lines[0]);
-            const body = escapeHTML(lines.slice(1).join('\n').trim());
+            const message = escapeHTML((c.commit?.message || '').trim());
             const author = escapeHTML(c.commit?.author?.name || c.author?.login || 'Unknown');
             const dateStr = c.commit?.author?.date;
             const dateDisplay = dateStr ? new Date(dateStr).toLocaleString() : '';
@@ -1437,8 +1435,7 @@ async function renderCommitsPage(container, reset = false, expectedToken = activ
                         <div style="width: 2px; flex: 1; background: var(--border);"></div>
                     </div>
                     <div style="flex: 1; min-width: 0; padding-bottom: 20px; border-bottom: 1px dashed var(--border);">
-                        <div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-main); font-size: 16px; font-weight: bold;">${summary}</div>
-                        ${body ? `<div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-muted); font-size: 13px; margin-top: 8px;">${body}</div>` : ''}
+                        <div style="white-space: pre-wrap; word-break: break-word; color: var(--fg-main); font-size: 16px; font-weight: bold;">${message}</div>
                         ${statsHtml}
                         <div style="color: var(--fg-muted); font-size: 12px; margin-top: 10px;">
                             <span style="color:var(--accent);">${sha}</span> &middot; ${author} &middot; ${dateDisplay}
