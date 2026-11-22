@@ -79,10 +79,29 @@
         } catch (err) {}
     }
 
-    function getThemePalettes() {
+    function resolveActiveBgTheme() {
+        var attr = document.documentElement.getAttribute('data-theme');
+        if (attr) return attr;
         var isDark = localStorage.getItem('dark-mode') !== 'false';
-        var theme = localStorage.getItem('theme') || 'primary';
+        var base = localStorage.getItem('theme') || 'primary';
+        if (localStorage.getItem('seasonal-pride-themes') !== 'false') {
+            var now = new Date();
+            var m = now.getMonth() + 1;
+            var d = now.getDate();
+            if (m === 6) base = 'pride';
+            else if (m === 11 && d >= 13 && d <= 19) base = 'trans';
+        }
         if (!isDark) {
+            if (base === 'pride') return 'pride-light';
+            if (base === 'trans') return 'trans-light';
+            return 'light';
+        }
+        return base;
+    }
+
+    function getThemePalettes() {
+        var theme = resolveActiveBgTheme();
+        if (theme === 'light') {
             return {
                 bg: '#dcd6c7',
                 oxy: '#4a7487',
@@ -94,7 +113,72 @@
                 starWarm: '#7a4522',
                 starCool: '#2f586b',
                 starWhite: '#363026',
-                isLight: 1.0
+                isLight: 1.0,
+                spectrumMode: 0.0
+            };
+        }
+        if (theme === 'pride-light') {
+            return {
+                bg: '#f0ecf5',
+                oxy: '#3b82b6',
+                oxyBright: '#197a49',
+                rust: '#c92a2a',
+                amber: '#d98200',
+                hot: '#7928a1',
+                dark: '#cfc7de',
+                starWarm: '#c92a2a',
+                starCool: '#1a5fb4',
+                starWhite: '#4c1d95',
+                isLight: 1.0,
+                spectrumMode: 1.0
+            };
+        }
+        if (theme === 'trans-light') {
+            return {
+                bg: '#e6f1fa',
+                oxy: '#3a9fd1',
+                oxyBright: '#1989bf',
+                rust: '#c96787',
+                amber: '#e089a3',
+                hot: '#ffffff',
+                dark: '#bdd3e8',
+                starWarm: '#c95679',
+                starCool: '#1989bf',
+                starWhite: '#4f6780',
+                isLight: 1.0,
+                spectrumMode: 2.0
+            };
+        }
+        if (theme === 'pride') {
+            return {
+                bg: '#08070d',
+                oxy: '#3b82f6',
+                oxyBright: '#52d681',
+                rust: '#ff595e',
+                amber: '#ffca3a',
+                hot: '#f8f4ff',
+                dark: '#040308',
+                starWarm: '#ff924c',
+                starCool: '#4ea8de',
+                starWhite: '#ffca3a',
+                isLight: 0.0,
+                spectrumMode: 1.0
+            };
+        }
+        if (theme === 'trans') {
+            return {
+                bg: '#060a10',
+                oxy: '#2c82b0',
+                oxyBright: '#5bcefa',
+                rust: '#9e526b',
+                amber: '#f5a9b8',
+                hot: '#ffffff',
+                dark: '#030508',
+                starWarm: '#f5a9b8',
+                starCool: '#5bcefa',
+                starWhite: '#ffffff',
+                isLight: 0.0,
+                spectrumMode: 2.0
             };
         }
         if (theme === 'obsidian') {
@@ -109,7 +193,8 @@
                 starWarm: '#e0a9d4',
                 starCool: '#9fd8ff',
                 starWhite: '#eceaff',
-                isLight: 0.0
+                isLight: 0.0,
+                spectrumMode: 0.0
             };
         }
         if (theme === 'phosphor') {
@@ -124,7 +209,8 @@
                 starWarm: '#d6e39d',
                 starCool: '#9ef2e2',
                 starWhite: '#dff5e6',
-                isLight: 0.0
+                isLight: 0.0,
+                spectrumMode: 0.0
             };
         }
         if (theme === 'redshift') {
@@ -139,7 +225,8 @@
                 starWarm: '#ffb399',
                 starCool: '#9bc9e0',
                 starWhite: '#f5e4e4',
-                isLight: 0.0
+                isLight: 0.0,
+                spectrumMode: 0.0
             };
         }
         return {
@@ -153,7 +240,8 @@
             starWarm: '#ffd296',
             starCool: '#a8dcff',
             starWhite: '#f4eee2',
-            isLight: 0.0
+            isLight: 0.0,
+            spectrumMode: 0.0
         };
     }
 
@@ -272,6 +360,7 @@
         'uniform vec2 u_mouse;',
         'uniform float u_time;',
         'uniform float u_isLight;',
+        'uniform float u_spectrumMode;',
         'uniform vec3 u_bg;',
         'uniform vec3 u_oxy;',
         'uniform vec3 u_oxyBright;',
@@ -282,6 +371,32 @@
         'const mat2 FBM_ROT = mat2(1.64, 1.23, -1.23, 1.64);',
         'const mat2 RIDGED_ROT = mat2(1.7384, -1.2084, 1.2084, 1.7384);',
         'const vec2 UNPACK16 = vec2(256.0 / 257.0, 1.0 / 257.0);',
+        'vec3 prideSpectrum(float x) {',
+        '    float s = fract(x) * 6.0;',
+        '    vec3 c0 = vec3(0.95, 0.24, 0.30);',
+        '    vec3 c1 = vec3(0.98, 0.56, 0.22);',
+        '    vec3 c2 = vec3(0.98, 0.80, 0.22);',
+        '    vec3 c3 = vec3(0.26, 0.82, 0.48);',
+        '    vec3 c4 = vec3(0.26, 0.58, 0.96);',
+        '    vec3 c5 = vec3(0.70, 0.36, 0.96);',
+        '    if (s < 1.0) return mix(c0, c1, s);',
+        '    if (s < 2.0) return mix(c1, c2, s - 1.0);',
+        '    if (s < 3.0) return mix(c2, c3, s - 2.0);',
+        '    if (s < 4.0) return mix(c3, c4, s - 3.0);',
+        '    if (s < 5.0) return mix(c4, c5, s - 4.0);',
+        '    return mix(c5, c0, s - 5.0);',
+        '}',
+        'vec3 transSpectrum(float x) {',
+        '    float s = fract(x) * 5.0;',
+        '    vec3 b = vec3(0.357, 0.808, 0.980);',
+        '    vec3 p = vec3(0.961, 0.663, 0.722);',
+        '    vec3 w = vec3(1.000, 1.000, 1.000);',
+        '    if (s < 1.0) return mix(b, p, s);',
+        '    if (s < 2.0) return mix(p, w, s - 1.0);',
+        '    if (s < 3.0) return mix(w, p, s - 2.0);',
+        '    if (s < 4.0) return mix(p, b, s - 3.0);',
+        '    return b;',
+        '}',
         'float noise(vec2 p) {',
         '    vec2 i = floor(p);',
         '    vec2 f = p - i;',
@@ -378,6 +493,12 @@
         '    float farBand = exp(-(farBandCoord * farBandCoord) * 0.9);',
         '    vec3 sky = u_bg;',
         '    vec3 farCol = mix(u_oxy, u_rust, smoothstep(0.28, 0.74, qFar.y));',
+        '    float specPhase = (uv.x * 0.35 - uv.y * 0.26) + qFar.x * 0.45 + t * 0.04;',
+        '    if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '        farCol = mix(farCol, prideSpectrum(specPhase) * 0.72, 0.85);',
+        '    } else if (u_spectrumMode > 1.5) {',
+        '        farCol = mix(farCol, transSpectrum(specPhase) * 0.78, 0.80);',
+        '    }',
         '    if (u_isLight > 0.5) {',
         '        sky = mix(sky, farCol, smoothstep(0.25, 0.85, farGas) * 0.20 * (0.4 + 0.6 * farBand));',
         '    } else {',
@@ -397,6 +518,9 @@
         '            float core = exp(-gRad * gRad * 3400.0) * radialMask;',
         '            float dustLane = smoothstep(0.35, 0.95, -spiral) * exp(-gRad * 16.0) * smoothstep(0.015, 0.05, gRad) * radialMask;',
         '            vec3 galCol = mix(u_oxyBright, u_amber, smoothstep(0.07, 0.012, gRad)) * (arms * 0.45 + disk * 0.35);',
+        '            if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '                galCol = prideSpectrum(gAng / 6.28318 + gRad * 4.0) * (arms * 0.48 + disk * 0.35);',
+        '            }',
         '            galCol += u_hot * core * 0.52;',
         '            if (u_isLight > 0.5) {',
         '                float ga = clamp(arms * 0.22 + disk * 0.14 + core * 0.28, 0.0, 0.34);',
@@ -429,6 +553,17 @@
         '    dustHue = mix(dustHue, u_amber, smoothstep(0.45, 0.82, dMid));',
         '    vec3 rimHue = mix(u_amber, u_oxyBright, smoothstep(0.25, 0.75, midColorMix));',
         '    rimHue = mix(rimHue, u_hot, smoothstep(0.45, 0.95, rim));',
+        '    if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '        float midSpec = specPhase + qMid.x * 0.45;',
+        '        dustHue = mix(dustHue, prideSpectrum(midSpec), 0.86);',
+        '        rimHue = mix(rimHue, prideSpectrum(midSpec + 0.18), 0.78);',
+        '        rimHue = mix(rimHue, u_hot, smoothstep(0.55, 0.98, rim) * 0.55);',
+        '    } else if (u_spectrumMode > 1.5) {',
+        '        float midTrans = specPhase + qMid.x * 0.35;',
+        '        dustHue = mix(dustHue, transSpectrum(midTrans), 0.82);',
+        '        rimHue = mix(rimHue, transSpectrum(midTrans + 0.25), 0.75);',
+        '        rimHue = mix(rimHue, u_hot, smoothstep(0.45, 0.95, rim) * 0.65);',
+        '    }',
         '    if (u_isLight > 0.5) {',
         '        sky = mix(sky, dustHue, dMid * 0.24);',
         '        sky = mix(sky, rimHue, rim * 0.16);',
@@ -472,6 +607,17 @@
         '        vec3 pRimCol = mix(u_amber, u_oxyBright, 0.48 * tipZone);',
         '        pRimCol = mix(pRimCol, u_hot, smoothstep(0.35, 0.92, rimBand) * (0.40 + 0.60 * tipZone));',
         '        vec3 pEvapCol = mix(u_oxyBright, u_amber, 0.20);',
+        '        if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '            float pilSpec = pp.y * 1.15 + pp.x * 0.45 + 0.25;',
+        '            pDustCol = prideSpectrum(pilSpec) * (0.24 + 0.24 * innerFold);',
+        '            pRimCol = mix(prideSpectrum(pilSpec + 0.12), u_hot, smoothstep(0.45, 0.95, rimBand) * 0.5);',
+        '            pEvapCol = prideSpectrum(pilSpec + 0.22);',
+        '        } else if (u_spectrumMode > 1.5) {',
+        '            float pilTrans = pp.y * 1.2 + pp.x * 0.5;',
+        '            pDustCol = transSpectrum(pilTrans) * (0.24 + 0.24 * innerFold);',
+        '            pRimCol = mix(transSpectrum(pilTrans + 0.18), u_hot, smoothstep(0.45, 0.95, rimBand) * 0.6);',
+        '            pEvapCol = transSpectrum(pilTrans + 0.30);',
+        '        }',
         '        if (u_isLight > 0.5) {',
         '            sky = mix(sky, mix(u_rust, u_dark, 0.64), pillarBody * 0.34);',
         '            sky = mix(sky, u_dark, pillarCore * 0.42);',
@@ -490,6 +636,11 @@
         '    float nearBandCoord = pNear.y * 0.45 + pNear.x * 0.22;',
         '    float nearMask = smoothstep(0.48, 0.92, nearWisp) * exp(-(nearBandCoord * nearBandCoord) * 1.1);',
         '    vec3 wispHue = mix(u_oxyBright, u_amber, qFar.y);',
+        '    if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '        wispHue = prideSpectrum(specPhase + qFar.y * 0.5 + 0.35);',
+        '    } else if (u_spectrumMode > 1.5) {',
+        '        wispHue = transSpectrum(specPhase + qFar.y * 0.45);',
+        '    }',
         '    if (u_isLight > 0.5) {',
         '        sky = mix(sky, wispHue, nearMask * 0.14);',
         '    } else {',
@@ -518,6 +669,7 @@
         'uniform vec3 u_uvTransform;',
         'uniform vec2 u_ndcScale;',
         'uniform float u_time;',
+        'uniform float u_spectrumMode;',
         'uniform vec3 u_starWarm;',
         'uniform vec3 u_starCool;',
         'uniform vec3 u_starWhite;',
@@ -525,6 +677,15 @@
         'varying vec3 v_col;',
         'varying vec4 v_frag;',
         'varying vec4 v_optics;',
+        'vec3 prideStarCol(float x) {',
+        '    float s = fract(x) * 6.0;',
+        '    if (s < 1.0) return vec3(1.00, 0.45, 0.48);',
+        '    if (s < 2.0) return vec3(1.00, 0.68, 0.38);',
+        '    if (s < 3.0) return vec3(1.00, 0.88, 0.42);',
+        '    if (s < 4.0) return vec3(0.45, 0.92, 0.65);',
+        '    if (s < 5.0) return vec3(0.46, 0.76, 1.00);',
+        '    return vec3(0.80, 0.56, 1.00);',
+        '}',
         'void main() {',
         '    vec2 uvPos = a_center + u_mouse * a_info.x + a_corner * a_extra.x;',
         '    vec2 ndc = (uvPos + u_uvTransform.xy) * u_ndcScale - 1.0;',
@@ -532,6 +693,9 @@
         '    v_d = a_corner * a_extra.y;',
         '    float ct = a_style.x;',
         '    v_col = ct > 1.5 ? u_starWhite : (ct > 0.5 ? u_starCool : u_starWarm);',
+        '    if (u_spectrumMode > 0.5 && u_spectrumMode < 1.5) {',
+        '        v_col = prideStarCol(a_info.z * 0.137);',
+        '    }',
         '    float baseShim = a_style.z > 0.5 ? 0.92 : 0.90;',
         '    float ampShim = a_style.z > 0.5 ? 0.08 : 0.10;',
         '    float shim = (baseShim + ampShim * sin(u_time * a_info.w + a_info.z)) * a_extra.z;',
@@ -567,7 +731,7 @@
         '        b *= 1.0 - dustOcc * v_frag.z;',
         '    }',
         '    if (u_isLight > 0.5) {',
-        '        gl_FragColor = vec4(u_starWhite, min(b * 0.55, 0.7));',
+        '        gl_FragColor = vec4(v_col, min(b * 0.55, 0.7));',
         '    } else {',
         '        gl_FragColor = vec4(v_col * b, 1.0);',
         '    }',
@@ -714,7 +878,7 @@
         ]), gl.STATIC_DRAW);
 
         var nNames = [
-            'u_noiseTex', 'u_uvTransform', 'u_mouse', 'u_time', 'u_isLight',
+            'u_noiseTex', 'u_uvTransform', 'u_mouse', 'u_time', 'u_isLight', 'u_spectrumMode',
             'u_bg', 'u_oxy', 'u_oxyBright', 'u_rust',
             'u_amber', 'u_hot', 'u_dark'
         ];
@@ -727,7 +891,7 @@
 
         var sNames = [
             'u_nebula', 'u_invRes', 'u_mouse', 'u_uvTransform', 'u_ndcScale',
-            'u_time', 'u_isLight', 'u_starWarm', 'u_starCool', 'u_starWhite'
+            'u_time', 'u_spectrumMode', 'u_isLight', 'u_starWarm', 'u_starCool', 'u_starWhite'
         ];
         for (var j = 0; j < sNames.length; j++) {
             starUniforms[sNames[j]] = gl.getUniformLocation(starProgram, sNames[j]);
@@ -864,6 +1028,7 @@
         if (glReady && gl && nebProgram && starProgram) {
             gl.useProgram(nebProgram);
             gl.uniform1f(nebUniforms.u_isLight, pal.isLight);
+            gl.uniform1f(nebUniforms.u_spectrumMode, pal.spectrumMode);
             gl.uniform3fv(nebUniforms.u_bg, hexToVec3(pal.bg));
             gl.uniform3fv(nebUniforms.u_oxy, hexToVec3(pal.oxy));
             gl.uniform3fv(nebUniforms.u_oxyBright, hexToVec3(pal.oxyBright));
@@ -874,6 +1039,7 @@
 
             gl.useProgram(starProgram);
             gl.uniform1f(starUniforms.u_isLight, pal.isLight);
+            gl.uniform1f(starUniforms.u_spectrumMode, pal.spectrumMode);
             gl.uniform3fv(starUniforms.u_starWarm, hexToVec3(pal.starWarm));
             gl.uniform3fv(starUniforms.u_starCool, hexToVec3(pal.starCool));
             gl.uniform3fv(starUniforms.u_starWhite, hexToVec3(pal.starWhite));
@@ -950,7 +1116,7 @@
             mode = e.newValue === 'none' ? 'none' : 'particles';
             applyMode();
         }
-        if (e.key === 'theme' || e.key === 'dark-mode') applyTint();
+        if (e.key === 'theme' || e.key === 'dark-mode' || e.key === 'seasonal-pride-themes') applyTint();
     });
 
     window.setBgEffect = function (val) {

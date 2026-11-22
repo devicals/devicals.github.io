@@ -185,6 +185,7 @@ function getLocalSettingsSnapshot() {
         custom_css: localStorage.getItem('custom-css') || '',
         dark_mode: localStorage.getItem('dark-mode') || 'true',
         bg_effect: localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles',
+        seasonal_themes: localStorage.getItem('seasonal-pride-themes') !== 'false',
         tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
         worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
         birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]'),
@@ -207,6 +208,9 @@ function mergeSettingsWithLocal(serverSettings) {
         theme: s.theme || local.theme || 'primary',
         dark_mode: s.dark_mode !== undefined && s.dark_mode !== null ? s.dark_mode : local.dark_mode,
         bg_effect: rawBg === 'none' ? 'none' : 'particles',
+        seasonal_themes: s.seasonal_themes !== undefined && s.seasonal_themes !== null
+            ? (s.seasonal_themes !== false && s.seasonal_themes !== 'false')
+            : local.seasonal_themes,
         custom_css: mergedCss,
         tierlists: mergeArrayByNameOrId(s.tierlists, local.tierlists),
         worldclocks: mergeStringArray(s.worldclocks, local.worldclocks),
@@ -221,6 +225,9 @@ function applySettingsToLocalStorage(settings) {
     if (settings.theme) localStorage.setItem('theme', settings.theme);
     if (settings.dark_mode !== undefined && settings.dark_mode !== null) localStorage.setItem('dark-mode', String(settings.dark_mode));
     if (settings.bg_effect) localStorage.setItem('bg-effect', settings.bg_effect === 'none' ? 'none' : 'particles');
+    if (settings.seasonal_themes !== undefined && settings.seasonal_themes !== null) {
+        localStorage.setItem('seasonal-pride-themes', settings.seasonal_themes ? 'true' : 'false');
+    }
     if (settings.custom_css !== undefined) localStorage.setItem('custom-css', settings.custom_css);
     if (settings.tierlists) localStorage.setItem('local_tierlists', JSON.stringify(settings.tierlists));
     if (settings.worldclocks) localStorage.setItem('user_world_clocks', JSON.stringify(settings.worldclocks));
@@ -465,42 +472,115 @@ window.authorTagHTML = function (authorProfile) {
     return `<span style="font-size:10px; color:${color}; border:1px solid var(--border); padding:2px 6px; margin-left:6px; white-space:nowrap;">${window.escapeAttr(label)}</span>`;
 };
 
-function loadSettingsLocally() {
+function getActiveSeasonalTheme(now = new Date()) {
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    if (month === 6) return 'pride';
+    if (month === 11 && day >= 13 && day <= 19) return 'trans';
+    return null;
+}
+
+function isSeasonalThemesEnabled() {
+    return localStorage.getItem('seasonal-pride-themes') !== 'false';
+}
+
+function getEffectiveThemeName() {
+    const baseTheme = localStorage.getItem('theme') || 'primary';
+    const seasonal = isSeasonalThemesEnabled() ? getActiveSeasonalTheme() : null;
+    return seasonal || baseTheme;
+}
+
+function getEffectiveDataTheme() {
     const isDark = localStorage.getItem('dark-mode') !== 'false';
-    const theme = localStorage.getItem('theme') || 'primary';
+    const themeName = getEffectiveThemeName();
+    if (!isDark) {
+        if (themeName === 'pride') return 'pride-light';
+        if (themeName === 'trans') return 'trans-light';
+        return 'light';
+    }
+    return themeName;
+}
+
+function updateSeasonalThemeStatus() {
+    const statusEl = document.getElementById('seasonal-theme-status');
+    if (!statusEl) return;
+
+    const seasonal = getActiveSeasonalTheme();
+    const enabled = isSeasonalThemesEnabled();
+    const savedTheme = localStorage.getItem('theme') || 'primary';
+
+    if (!seasonal) {
+        statusEl.textContent = 'applies pride month (jun 1–30) & trans awareness week (nov 13–19).';
+        return;
+    }
+
+    const label = seasonal === 'pride' ? 'pride month' : 'trans awareness week';
+    if (enabled) {
+        if (savedTheme === seasonal) {
+            statusEl.textContent = `active event: ${label} (already set as your permanent theme).`;
+        } else {
+            statusEl.innerHTML = `active now: <strong>${label}</strong> — uncheck to use your saved theme.` +
+                `<button type="button" class="settings-inline-link" onclick="makeSeasonalThemePermanent('${seasonal}')">set permanent</button>`;
+        }
+    } else {
+        statusEl.textContent = `${label} is happening now (auto-apply disabled).`;
+    }
+}
+
+window.makeSeasonalThemePermanent = function (themeKey) {
+    if (!themeKey) return;
+    localStorage.setItem('theme', themeKey);
+    applyActiveTheme();
+    syncSettingsToServer();
+};
+
+function applyActiveTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'primary';
+    const effectiveDataTheme = getEffectiveDataTheme();
+    document.documentElement.setAttribute('data-theme', effectiveDataTheme);
+
+    const themeSel = document.getElementById('theme-selector');
+    if (themeSel) themeSel.value = savedTheme;
+
+    const seasonalToggle = document.getElementById('seasonal-themes-toggle');
+    if (seasonalToggle) seasonalToggle.checked = isSeasonalThemesEnabled();
+
+    updateSeasonalThemeStatus();
+    syncIframeTheme();
+    if (window.refreshBgTheme) window.refreshBgTheme();
+}
+
+function loadSettingsLocally() {
     const customCss = localStorage.getItem('custom-css') || '';
     const bgEffect = localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles';
 
-    document.documentElement.setAttribute('data-theme', !isDark ? 'light' : theme);
     const cssBlock = document.getElementById('custom-css-block');
     if (cssBlock) cssBlock.textContent = customCss;
     const cssInput = document.getElementById('custom-css-input');
     if (cssInput) cssInput.value = customCss;
-    const themeSel = document.getElementById('theme-selector');
-    if (themeSel) themeSel.value = theme;
     const bgSel = document.getElementById('bg-effect-selector');
     if (bgSel) bgSel.value = bgEffect;
+
+    applyActiveTheme();
 }
 
 document.getElementById('toggle-dark-mode').onclick = () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const isLight = current === 'light';
-    const theme = document.getElementById('theme-selector').value;
-    document.documentElement.setAttribute('data-theme', isLight ? theme : 'light');
-    localStorage.setItem('dark-mode', isLight ? 'true' : 'false');
+    const isDark = localStorage.getItem('dark-mode') !== 'false';
+    localStorage.setItem('dark-mode', isDark ? 'false' : 'true');
+    applyActiveTheme();
     syncSettingsToServer();
-    syncIframeTheme();
-    if (window.refreshBgTheme) window.refreshBgTheme();
 };
 
 document.getElementById('theme-selector').onchange = (e) => {
     localStorage.setItem('theme', e.target.value);
-    if (document.documentElement.getAttribute('data-theme') !== 'light') {
-        document.documentElement.setAttribute('data-theme', e.target.value);
-    }
+    applyActiveTheme();
     syncSettingsToServer();
-    syncIframeTheme();
-    if (window.refreshBgTheme) window.refreshBgTheme();
+};
+
+document.getElementById('seasonal-themes-toggle').onchange = (e) => {
+    localStorage.setItem('seasonal-pride-themes', e.target.checked ? 'true' : 'false');
+    applyActiveTheme();
+    syncSettingsToServer();
 };
 
 document.getElementById('save-css').onclick = () => {
@@ -517,13 +597,24 @@ document.getElementById('bg-effect-selector').onchange = (e) => {
     syncSettingsToServer();
 };
 
-function syncIframeTheme() {
+window.syncIframeTheme = function syncIframeTheme() {
     const iframe = document.getElementById('iframe-workspace');
     if (iframe && iframe.contentWindow) {
         const theme = document.documentElement.getAttribute('data-theme');
         try { iframe.contentWindow.document.documentElement.setAttribute('data-theme', theme); } catch (e) {}
         try { if (iframe.contentWindow.refreshBgTheme) iframe.contentWindow.refreshBgTheme(); } catch (e) {}
     }
+};
+
+if (!window._seasonalThemeWatcher) {
+    let lastEffective = getEffectiveDataTheme();
+    window._seasonalThemeWatcher = setInterval(() => {
+        const nextEffective = getEffectiveDataTheme();
+        if (nextEffective !== lastEffective) {
+            lastEffective = nextEffective;
+            applyActiveTheme();
+        }
+    }, 60000);
 }
 
 window.syncSettingsToServer = async function() {
@@ -535,6 +626,7 @@ window.syncSettingsToServer = async function() {
             custom_css: localStorage.getItem('custom-css') || '',
             dark_mode: localStorage.getItem('dark-mode') !== 'false',
             bg_effect: localStorage.getItem('bg-effect') === 'none' ? 'none' : 'particles',
+            seasonal_themes: localStorage.getItem('seasonal-pride-themes') !== 'false',
             tierlists: JSON.parse(localStorage.getItem('local_tierlists') || '[]'),
             worldclocks: JSON.parse(localStorage.getItem('user_world_clocks') || '[]'),
             birthdays: JSON.parse(localStorage.getItem('user_birthdays') || '[]'),

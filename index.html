@@ -126,7 +126,14 @@
                     <option value="obsidian">quasar violet</option>
                     <option value="phosphor">p31 green phosphor</option>
                     <option value="redshift">red-shift crimson</option>
+                    <option value="pride">pride month (rainbow)</option>
+                    <option value="trans">trans awareness (blue, pink &amp; white)</option>
                 </select>
+                <label class="ui-checkbox-row" for="seasonal-themes-toggle">
+                    <input type="checkbox" id="seasonal-themes-toggle" checked>
+                    <span>auto-apply seasonal pride themes</span>
+                </label>
+                <div id="seasonal-theme-status" class="settings-hint"></div>
             </div>
             <div class="settings-group">
                 <label>background cosmos</label>
@@ -194,6 +201,7 @@
         if (wsIframe) {
             wsIframe.addEventListener('load', function () {
                 try {
+                    if (window.syncIframeTheme) window.syncIframeTheme();
                     var idoc = this.contentDocument || this.contentWindow.document;
                     if (idoc && !idoc.querySelector('meta[name="viewport"]')) {
                         var meta = idoc.createElement('meta');
