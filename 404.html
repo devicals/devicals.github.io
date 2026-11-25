@@ -8,6 +8,27 @@
     <link rel="stylesheet" href="/css/style.css">
     <script>
         (function () {
+            var pathname = window.location.pathname;
+            var search = window.location.search || '';
+            var hash = window.location.hash || '';
+
+            // Clean path and check if appending .html matches a standalone file
+            var cleanPath = pathname.replace(/\/+$/, '');
+            var segments = cleanPath.split('/').filter(Boolean);
+            var lastSegment = segments[segments.length - 1] || '';
+
+            if (lastSegment && !lastSegment.includes('.')) {
+                var candidateUrl = cleanPath + '.html' + search + hash;
+                // Synchronously attempt redirect to .html equivalent
+                fetch(cleanPath + '.html', { method: 'HEAD' })
+                    .then(function (res) {
+                        if (res.ok) {
+                            window.location.replace(candidateUrl);
+                        }
+                    })
+                    .catch(function () {});
+            }
+
             var isDark = localStorage.getItem('dark-mode') !== 'false';
             var theme = localStorage.getItem('theme') || 'primary';
             if (localStorage.getItem('seasonal-pride-themes') !== 'false') {

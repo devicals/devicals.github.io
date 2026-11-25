@@ -402,15 +402,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!href || href.startsWith('javascript:')) return;
         if (href.startsWith('mailto:') || link.hasAttribute('download')) return;
 
-        const isHashOnly = href.startsWith('#');
-        const isSiteDomain = href.includes('devicals.github.io') || 
-                            (window.location.hostname && href.includes(window.location.hostname));
+        if (link.target === '_blank' || link.getAttribute('rel')?.includes('external')) return;
 
-        if (isHashOnly || isSiteDomain) {
+        var urlObj;
+        try {
+            urlObj = new URL(link.href, window.location.href);
+        } catch (err) {
+            return;
+        }
+
+        var isSameOrigin = urlObj.origin === window.location.origin;
+        var isHashOnly = href.startsWith('#');
+
+        if (isSameOrigin && !isHashOnly) {
+            var path = urlObj.pathname.replace(/^\/+/, '');
+            if (path.endsWith('.html') && !path.startsWith('pages/') && path !== 'index.html') {
+                return;
+            }
+            if (!urlObj.hash && path !== '' && path !== 'index.html') {
+                return;
+            }
+        }
+
+        if (isHashOnly || (isSameOrigin && urlObj.pathname.endsWith('index.html'))) {
             e.preventDefault();
             let targetHash = 'Index/Home';
-            if (href.includes('#')) {
-                targetHash = href.substring(href.indexOf('#') + 1);
+            if (urlObj.hash) {
+                targetHash = urlObj.hash.substring(1);
             }
             if (targetHash.startsWith('/')) targetHash = targetHash.substring(1);
 
@@ -422,8 +440,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        e.preventDefault();
-        window.open(link.href, '_blank', 'noopener,noreferrer');
+        if (!isSameOrigin) {
+            e.preventDefault();
+            window.open(link.href, '_blank', 'noopener,noreferrer');
+        }
     });
 });
 
