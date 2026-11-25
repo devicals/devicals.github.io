@@ -401,35 +401,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         const href = link.getAttribute('href');
         if (!href || href.startsWith('javascript:')) return;
         if (href.startsWith('mailto:') || link.hasAttribute('download')) return;
+        if (link.target === '_blank') return;
 
-        if (link.target === '_blank' || link.getAttribute('rel')?.includes('external')) return;
-
-        var urlObj;
+        let urlObj;
         try {
             urlObj = new URL(link.href, window.location.href);
         } catch (err) {
             return;
         }
 
-        var isSameOrigin = urlObj.origin === window.location.origin;
-        var isHashOnly = href.startsWith('#');
+        const isSameOrigin = urlObj.origin === window.location.origin;
+        const isHashOnly = href.startsWith('#');
+        const cleanPath = urlObj.pathname.replace(/^\/+/, '');
+        const isIndexRoute = isHashOnly || (isSameOrigin && urlObj.hash && (cleanPath === '' || cleanPath === 'index.html'));
 
-        if (isSameOrigin && !isHashOnly) {
-            var path = urlObj.pathname.replace(/^\/+/, '');
-            if (path.endsWith('.html') && !path.startsWith('pages/') && path !== 'index.html') {
-                return;
-            }
-            if (!urlObj.hash && path !== '' && path !== 'index.html') {
-                return;
-            }
-        }
-
-        if (isHashOnly || (isSameOrigin && urlObj.pathname.endsWith('index.html'))) {
+        if (isIndexRoute) {
             e.preventDefault();
-            let targetHash = 'Index/Home';
-            if (urlObj.hash) {
-                targetHash = urlObj.hash.substring(1);
-            }
+            let targetHash = urlObj.hash ? urlObj.hash.substring(1) : 'Index/Home';
             if (targetHash.startsWith('/')) targetHash = targetHash.substring(1);
 
             if (window.location.hash === '#' + targetHash) {
@@ -440,10 +428,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        if (!isSameOrigin) {
-            e.preventDefault();
-            window.open(link.href, '_blank', 'noopener,noreferrer');
+        if (isSameOrigin) {
+            return;
         }
+
+        e.preventDefault();
+        window.open(link.href, '_blank', 'noopener,noreferrer');
     });
 });
 

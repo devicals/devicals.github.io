@@ -8,25 +8,66 @@
     <link rel="stylesheet" href="/css/style.css">
     <script>
         (function () {
-            var pathname = window.location.pathname;
+            var pathname = window.location.pathname || '/';
             var search = window.location.search || '';
             var hash = window.location.hash || '';
-
-            // Clean path and check if appending .html matches a standalone file
             var cleanPath = pathname.replace(/\/+$/, '');
             var segments = cleanPath.split('/').filter(Boolean);
             var lastSegment = segments[segments.length - 1] || '';
 
-            if (lastSegment && !lastSegment.includes('.')) {
-                var candidateUrl = cleanPath + '.html' + search + hash;
-                // Synchronously attempt redirect to .html equivalent
-                fetch(cleanPath + '.html', { method: 'HEAD' })
-                    .then(function (res) {
-                        if (res.ok) {
-                            window.location.replace(candidateUrl);
+            var showNotFound = function () {
+                document.documentElement.classList.add('nf-ready');
+            };
+
+            if (lastSegment) {
+                var dirPath = segments.length > 1 ? '/' + segments.slice(0, -1).join('/') : '';
+                var baseName = lastSegment.replace(/\.html?$/i, '');
+                var targetLower = (baseName + '.html').toLowerCase();
+
+                var candidates = [];
+                var addCandidate = function (p) {
+                    if (candidates.indexOf(p) === -1 && p !== pathname) {
+                        candidates.push(p);
+                    }
+                };
+
+                addCandidate(dirPath + '/' + baseName + '.html');
+                addCandidate(dirPath + '/' + baseName.toUpperCase() + '.html');
+                addCandidate(dirPath + '/' + baseName.toLowerCase() + '.html');
+                addCandidate(dirPath + '/' + baseName.charAt(0).toUpperCase() + baseName.slice(1).toLowerCase() + '.html');
+
+                (async function () {
+                    for (var i = 0; i < candidates.length; i++) {
+                        try {
+                            var res = await fetch(candidates[i], { method: 'HEAD' });
+                            if (res.ok) {
+                                window.location.replace(candidates[i] + search + hash);
+                                return;
+                            }
+                        } catch (e) {}
+                    }
+
+                    try {
+                        var apiUrl = 'https://api.github.com/repos/devicals/devicals.github.io/contents' + (dirPath || '');
+                        var apiRes = await fetch(apiUrl);
+                        if (apiRes.ok) {
+                            var items = await apiRes.json();
+                            if (Array.isArray(items)) {
+                                var match = items.find(function (item) {
+                                    return item.type === 'file' && item.name && item.name.toLowerCase() === targetLower;
+                                });
+                                if (match) {
+                                    window.location.replace(dirPath + '/' + match.name + search + hash);
+                                    return;
+                                }
+                            }
                         }
-                    })
-                    .catch(function () {});
+                    } catch (e) {}
+
+                    showNotFound();
+                })();
+            } else {
+                showNotFound();
             }
 
             var isDark = localStorage.getItem('dark-mode') !== 'false';
@@ -47,6 +88,9 @@
         })();
     </script>
     <style>
+        html:not(.nf-ready) .nf-card {
+            visibility: hidden;
+        }
         .nf-wrap {
             min-height: 100vh;
             display: flex;
