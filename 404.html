@@ -12,60 +12,146 @@
             var search = window.location.search || '';
             var hash = window.location.hash || '';
             var cleanPath = pathname.replace(/\/+$/, '');
-            var segments = cleanPath.split('/').filter(Boolean);
+            var decodedCleanPath = cleanPath;
+            try {
+                decodedCleanPath = decodeURIComponent(cleanPath);
+            } catch (e) {}
+            var segments = decodedCleanPath.split('/').filter(Boolean);
             var lastSegment = segments[segments.length - 1] || '';
 
             var showNotFound = function () {
                 document.documentElement.classList.add('nf-ready');
             };
 
+            var getRepoSlug = function () {
+                var host = (window.location.hostname || '').toLowerCase();
+                if (host.endsWith('.github.io')) {
+                    var owner = host.split('.')[0];
+                    if (owner) return owner + '/' + host;
+                }
+                return 'devicals/devicals.github.io';
+            };
+
             if (lastSegment) {
                 var dirPath = segments.length > 1 ? '/' + segments.slice(0, -1).join('/') : '';
+                var hasHtmlExt = /\.html?$/i.test(lastSegment);
+                var hasAnyExt = /\.[a-z0-9]+$/i.test(lastSegment);
                 var baseName = lastSegment.replace(/\.html?$/i, '');
-                var targetLower = (baseName + '.html').toLowerCase();
 
-                var candidates = [];
-                var addCandidate = function (p) {
-                    if (candidates.indexOf(p) === -1 && p !== pathname) {
-                        candidates.push(p);
+                if (dirPath === '' && baseName.toLowerCase() === '404') {
+                    showNotFound();
+                } else {
+                    var candidates = [];
+                    var addCandidate = function (p) {
+                        var encoded = encodeURI(p);
+                        if (candidates.indexOf(encoded) === -1 && encoded !== pathname) {
+                            candidates.push(encoded);
+                        }
+                    };
+
+                    if (hasHtmlExt) {
+                        addCandidate(dirPath + '/' + baseName + '.html');
+                        addCandidate(dirPath + '/' + baseName.toUpperCase() + '.html');
+                        addCandidate(dirPath + '/' + baseName.toLowerCase() + '.html');
+                        addCandidate(dirPath + '/' + baseName.charAt(0).toUpperCase() + baseName.slice(1) + '.html');
+                        addCandidate(dirPath + '/' + baseName.charAt(0).toUpperCase() + baseName.slice(1).toLowerCase() + '.html');
+                        addCandidate(dirPath + '/' + baseName + '.htm');
+                    } else {
+                        addCandidate(dirPath + '/' + lastSegment + '.html');
+                        addCandidate(dirPath + '/' + lastSegment.toUpperCase() + '.html');
+                        addCandidate(dirPath + '/' + lastSegment.toLowerCase() + '.html');
+                        addCandidate(dirPath + '/' + lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1) + '.html');
+                        addCandidate(dirPath + '/' + lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).toLowerCase() + '.html');
+                        addCandidate(dirPath + '/' + lastSegment + '.htm');
+                        if (hasAnyExt) {
+                            addCandidate(dirPath + '/' + lastSegment);
+                            addCandidate(dirPath + '/' + lastSegment.toLowerCase());
+                            addCandidate(dirPath + '/' + lastSegment.toUpperCase());
+                        }
+                        addCandidate(dirPath + '/' + lastSegment + '/index.html');
+                        addCandidate(dirPath + '/' + lastSegment.toLowerCase() + '/index.html');
                     }
-                };
 
-                addCandidate(dirPath + '/' + baseName + '.html');
-                addCandidate(dirPath + '/' + baseName.toUpperCase() + '.html');
-                addCandidate(dirPath + '/' + baseName.toLowerCase() + '.html');
-                addCandidate(dirPath + '/' + baseName.charAt(0).toUpperCase() + baseName.slice(1).toLowerCase() + '.html');
+                    (async function () {
+                        for (var i = 0; i < candidates.length; i++) {
+                            try {
+                                var res = await fetch(candidates[i], { method: 'HEAD' });
+                                if (res.ok) {
+                                    var finalPath = '';
+                                    try {
+                                        finalPath = new URL(res.url, window.location.origin).pathname;
+                                    } catch (e) {}
+                                    if (!/\/404\.html?$/i.test(finalPath)) {
+                                        window.location.replace(candidates[i] + search + hash);
+                                        return;
+                                    }
+                                }
+                            } catch (e) {}
+                        }
 
-                (async function () {
-                    for (var i = 0; i < candidates.length; i++) {
+                        var repoSlug = getRepoSlug();
+                        var reqRel = segments.join('/').toLowerCase();
+                        var reqBaseRel = (segments.length > 1 ? segments.slice(0, -1).join('/') + '/' : '') + baseName;
+                        var reqBaseLower = reqBaseRel.toLowerCase();
+                        var matchPath = null;
+
                         try {
-                            var res = await fetch(candidates[i], { method: 'HEAD' });
-                            if (res.ok) {
-                                window.location.replace(candidates[i] + search + hash);
-                                return;
-                            }
-                        } catch (e) {}
-                    }
-
-                    try {
-                        var apiUrl = 'https://api.github.com/repos/devicals/devicals.github.io/contents' + (dirPath || '');
-                        var apiRes = await fetch(apiUrl);
-                        if (apiRes.ok) {
-                            var items = await apiRes.json();
-                            if (Array.isArray(items)) {
-                                var match = items.find(function (item) {
-                                    return item.type === 'file' && item.name && item.name.toLowerCase() === targetLower;
-                                });
-                                if (match) {
-                                    window.location.replace(dirPath + '/' + match.name + search + hash);
-                                    return;
+                            var treeRes = await fetch('https://api.github.com/repos/' + repoSlug + '/git/trees/HEAD?recursive=1');
+                            if (treeRes.ok) {
+                                var treeData = await treeRes.json();
+                                if (treeData && Array.isArray(treeData.tree)) {
+                                    var blobs = treeData.tree.filter(function (item) {
+                                        return item && item.type === 'blob' && item.path && item.path.toLowerCase() !== '404.html';
+                                    });
+                                    var targets = [];
+                                    if (hasHtmlExt || hasAnyExt) targets.push(reqRel);
+                                    targets.push(reqBaseLower + '.html');
+                                    targets.push(reqBaseLower + '.htm');
+                                    if (!hasHtmlExt) {
+                                        targets.push(reqRel + '/index.html');
+                                        targets.push(reqRel + '/index.htm');
+                                    }
+                                    for (var t = 0; t < targets.length; t++) {
+                                        var found = blobs.find(function (b) {
+                                            return b.path.toLowerCase() === targets[t];
+                                        });
+                                        if (found) {
+                                            matchPath = '/' + encodeURI(found.path).replace(/^\/+/, '');
+                                            break;
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    } catch (e) {}
+                        } catch (e) {}
 
-                    showNotFound();
-                })();
+                        if (!matchPath) {
+                            try {
+                                var apiUrl = 'https://api.github.com/repos/' + repoSlug + '/contents' + encodeURI(dirPath || '');
+                                var apiRes = await fetch(apiUrl);
+                                if (apiRes.ok) {
+                                    var items = await apiRes.json();
+                                    if (Array.isArray(items)) {
+                                        var targetLower = (baseName + '.html').toLowerCase();
+                                        var match = items.find(function (item) {
+                                            return item.type === 'file' && item.name && item.name.toLowerCase() !== '404.html' &&
+                                                (item.name.toLowerCase() === targetLower || (hasAnyExt && item.name.toLowerCase() === lastSegment.toLowerCase()));
+                                        });
+                                        if (match) {
+                                            matchPath = encodeURI(dirPath) + '/' + encodeURIComponent(match.name);
+                                        }
+                                    }
+                                }
+                            } catch (e) {}
+                        }
+
+                        if (matchPath && matchPath !== pathname) {
+                            window.location.replace(matchPath + search + hash);
+                            return;
+                        }
+
+                        showNotFound();
+                    })();
+                }
             } else {
                 showNotFound();
             }

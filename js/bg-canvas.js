@@ -74,6 +74,24 @@
                 window.refreshBgTheme = function () {
                     window.parent.refreshBgTheme();
                 };
+
+                document.addEventListener('click', function (e) {
+                    if (e.defaultPrevented) return;
+                    var link = e.target.closest('a');
+                    if (!link) return;
+                    var href = link.getAttribute('href');
+                    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:')) return;
+                    if (link.hasAttribute('download')) return;
+                    if (link.target && link.target !== '_self') return;
+                    try {
+                        var urlObj = new URL(link.href, window.location.href);
+                        if (urlObj.origin === window.location.origin) {
+                            e.preventDefault();
+                            window.top.location.href = urlObj.href;
+                        }
+                    } catch (err) {}
+                });
+
                 return;
             }
         } catch (err) {}

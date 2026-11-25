@@ -1175,6 +1175,113 @@ function highlightNav() {
     requestAnimationFrame(updateNavIndicator);
 }
 
+function isPathInStructure(relPath) {
+    let norm = (relPath || '').replace(/^\/+/, '').replace(/\/+$/, '');
+    try { norm = decodeURIComponent(norm); } catch (e) {}
+    norm = norm.toLowerCase();
+    return flatNodes.some(n => {
+        const u = (n.url || n.file || '').replace(/^\/+/, '').replace(/\/+$/, '').toLowerCase();
+        return u && u === norm;
+    });
+}
+
+async function resolveStandalonePage(rawPath) {
+    let clean = (rawPath || '').replace(/^\/+/, '').replace(/\/+$/, '');
+    try { clean = decodeURIComponent(clean); } catch (e) {}
+    if (!clean) return null;
+
+    const segments = clean.split('/').filter(Boolean);
+    if (!segments.length) return null;
+
+    const lastSegment = segments[segments.length - 1];
+    const dirPath = segments.length > 1 ? '/' + segments.slice(0, -1).join('/') : '';
+    const hasHtmlExt = /\.html?$/i.test(lastSegment);
+    const hasAnyExt = /\.[a-z0-9]+$/i.test(lastSegment);
+    const baseName = lastSegment.replace(/\.html?$/i, '');
+
+    if (dirPath === '' && (baseName.toLowerCase() === '404' || baseName.toLowerCase() === 'index')) {
+        return null;
+    }
+
+    const candidates = [];
+    const addCandidate = (p) => {
+        const encoded = encodeURI(p);
+        if (!candidates.includes(encoded)) candidates.push(encoded);
+    };
+
+    if (hasHtmlExt) {
+        addCandidate(dirPath + '/' + baseName + '.html');
+        addCandidate(dirPath + '/' + baseName.toUpperCase() + '.html');
+        addCandidate(dirPath + '/' + baseName.toLowerCase() + '.html');
+        addCandidate(dirPath + '/' + baseName.charAt(0).toUpperCase() + baseName.slice(1) + '.html');
+        addCandidate(dirPath + '/' + baseName.charAt(0).toUpperCase() + baseName.slice(1).toLowerCase() + '.html');
+        addCandidate(dirPath + '/' + baseName + '.htm');
+    } else {
+        addCandidate(dirPath + '/' + lastSegment + '.html');
+        addCandidate(dirPath + '/' + lastSegment.toUpperCase() + '.html');
+        addCandidate(dirPath + '/' + lastSegment.toLowerCase() + '.html');
+        addCandidate(dirPath + '/' + lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1) + '.html');
+        addCandidate(dirPath + '/' + lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).toLowerCase() + '.html');
+        addCandidate(dirPath + '/' + lastSegment + '.htm');
+        if (hasAnyExt) {
+            addCandidate(dirPath + '/' + lastSegment);
+            addCandidate(dirPath + '/' + lastSegment.toLowerCase());
+            addCandidate(dirPath + '/' + lastSegment.toUpperCase());
+        }
+        addCandidate(dirPath + '/' + lastSegment + '/index.html');
+        addCandidate(dirPath + '/' + lastSegment.toLowerCase() + '/index.html');
+    }
+
+    for (let i = 0; i < candidates.length; i++) {
+        if (isPathInStructure(candidates[i])) continue;
+        try {
+            const res = await fetch(candidates[i], { method: 'HEAD' });
+            if (res.ok) {
+                let finalPath = '';
+                try { finalPath = new URL(res.url, window.location.origin).pathname; } catch (e) {}
+                if (!/\/404\.html?$/i.test(finalPath)) {
+                    return candidates[i];
+                }
+            }
+        } catch (e) {}
+    }
+
+    try {
+        const host = (window.location.hostname || '').toLowerCase();
+        const repoSlug = host.endsWith('.github.io') && host.split('.')[0]
+            ? host.split('.')[0] + '/' + host
+            : 'devicals/devicals.github.io';
+        const treeRes = await fetch(`https://api.github.com/repos/${repoSlug}/git/trees/HEAD?recursive=1`);
+        if (treeRes.ok) {
+            const treeData = await treeRes.json();
+            if (treeData && Array.isArray(treeData.tree)) {
+                const blobs = treeData.tree.filter(item => item && item.type === 'blob' && item.path && item.path.toLowerCase() !== '404.html' && item.path.toLowerCase() !== 'index.html');
+                const reqRel = segments.join('/').toLowerCase();
+                const reqBaseLower = ((segments.length > 1 ? segments.slice(0, -1).join('/') + '/' : '') + baseName).toLowerCase();
+                const targets = [];
+                if (hasHtmlExt || hasAnyExt) targets.push(reqRel);
+                targets.push(reqBaseLower + '.html');
+                targets.push(reqBaseLower + '.htm');
+                if (!hasHtmlExt) {
+                    targets.push(reqRel + '/index.html');
+                    targets.push(reqRel + '/index.htm');
+                }
+                for (let t = 0; t < targets.length; t++) {
+                    const found = blobs.find(b => b.path.toLowerCase() === targets[t]);
+                    if (found) {
+                        const resolved = '/' + encodeURI(found.path).replace(/^\/+/, '');
+                        if (!isPathInStructure(resolved)) {
+                            return resolved;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (e) {}
+
+    return null;
+}
+
 async function handleRoute() {
     window.handleRoute = handleRoute;
     const routeToken = ++activeRouteToken;
@@ -1375,6 +1482,13 @@ async function handleRoute() {
     setIframeUrlNoHistory(iframe, 'about:blank');
     mdContainer.style.display = 'block';
     mdContainer.scrollTop = 0;
+    mdContainer.innerHTML = '';
+    const standaloneUrl = await resolveStandalonePage(parts[0]);
+    if (routeToken !== activeRouteToken) return;
+    if (standaloneUrl) {
+        window.location.replace(standaloneUrl + (parts[1] ? '?' + parts[1] : ''));
+        return;
+    }
     renderNotFoundView(mdContainer, hash);
     triggerRouteEnterAnimation(mdContainer);
 }
