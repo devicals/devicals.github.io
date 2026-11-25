@@ -1135,6 +1135,7 @@
             let queryToken = 0;
             let editorState = null;
             let axisRaf = null;
+            let pendingAxisTarget = null;
             let expandRaf = null;
             let frameObserver = null;
             let cooldownTimer = null;
@@ -2110,11 +2111,26 @@
             function activateSettledExpand(animateExpand) {
                 stopExpandTracking();
 
+                if (axisRaf !== null) {
+                    cancelAnimationFrame(axisRaf);
+                    axisRaf = null;
+                }
+                stopServoSound();
+
                 const layer = document.getElementById('crt-axis-layer');
+                const xLine = document.getElementById('crt-axis-x');
+                const yLine = document.getElementById('crt-axis-y');
                 const target = document.getElementById('crt-axis-target');
                 const svg = document.getElementById('crt-expand-svg');
                 const frame = document.getElementById('signal-frame');
                 if (!layer || !target || !svg || !frame) return;
+
+                if (pendingAxisTarget) {
+                    if (xLine) xLine.style.left = pendingAxisTarget.xp + '%';
+                    if (yLine) yLine.style.top = pendingAxisTarget.yp + '%';
+                    target.style.left = pendingAxisTarget.xp + '%';
+                    target.style.top = pendingAxisTarget.yp + '%';
+                }
 
                 layer.classList.add('is-active');
                 layer.classList.add('is-locked-only');
@@ -2157,8 +2173,8 @@
                     frame.style.opacity = '1';
 
                     const animStart = performance.now();
-                    function trackFrame(now) {
-                        if (now - animStart < 360) {
+                    function trackFrame() {
+                        if (performance.now() - animStart < 360) {
                             updateExpandLines();
                             expandRaf = requestAnimationFrame(trackFrame);
                         } else {
@@ -2179,6 +2195,7 @@
 
             function stopAxisAnimation() {
                 stopServoSound();
+                pendingAxisTarget = null;
                 if (axisRaf !== null) {
                     cancelAnimationFrame(axisRaf);
                     axisRaf = null;
@@ -2208,6 +2225,7 @@
 
                 const targetXPct = Math.max(0, Math.min(100, (parseFloat(xStr) / 70) * 100));
                 const targetYPct = Math.max(0, Math.min(100, (parseFloat(yStr) / 70) * 100));
+                pendingAxisTarget = { xp: targetXPct, yp: targetYPct };
 
                 const w = Math.max(1, bezel.clientWidth);
                 const h = Math.max(1, bezel.clientHeight);
@@ -2236,8 +2254,8 @@
                 applyPos(0, 0);
                 const startTime = performance.now();
 
-                function step(now) {
-                    const elapsed = now - startTime;
+                function step() {
+                    const elapsed = Math.max(0, performance.now() - startTime);
                     const p = Math.min(1, elapsed / travelMs);
                     applyPos(targetXPct * p, targetYPct * p);
                     if (p < 1) {
@@ -2454,7 +2472,7 @@
                 const parts = s.split('.');
                 const wholeNum = parseInt(parts[0], 10);
                 const decNum = parts[1] ? parseInt(parts[1], 10) : 0;
-                if (isNaN(num) || isNaN(decNum)) return null;
+                if (isNaN(wholeNum) || isNaN(decNum)) return null;
                 const total = wholeNum + decNum / 10;
                 if (total < 0 || total > 70) return null;
                 const formatted = String(wholeNum).padStart(2, '0') + '.' + String(decNum);
